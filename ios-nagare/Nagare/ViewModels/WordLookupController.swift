@@ -1,0 +1,151 @@
+import Foundation
+import Observation
+
+nonisolated enum PopupTab: Int, CaseIterable, Sendable {
+    case dictionary, flashcard, examples
+
+    var symbol: String {
+        switch self {
+        case .dictionary: "book.closed"
+        case .flashcard: "rectangle.on.rectangle"
+        case .examples: "text.alignleft"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .dictionary: "Dictionary"
+        case .flashcard: "Flashcard preview"
+        case .examples: "Example sentences"
+        }
+    }
+}
+
+/// Drives the tap-to-understand popup. The tap itself saves the word; there is no save button.
+@Observable
+@MainActor
+final class WordLookupController {
+    struct Selection: Equatable {
+        let clip: Clip
+        let lineIndex: Int
+        let tokenIndex: Int
+        let token: Token
+        var sentence: String { clip.lines[safe: lineIndex]?.text ?? token.surface }
+        var translation: String { clip.lines[safe: lineIndex]?.translation ?? "" }
+    }
+
+    private(set) var selection: Selection?
+    private(set) var explanation: WordExplanation?
+    private(set) var occurrenceCount: Int = 0
+    private(set) var context: ContextExplanation?
+    private(set) var isLoadingContext = false
+    var tab: PopupTab = .dictionary
+    /// Bumps on every tap so the badge can animate.
+    private(set) var tapPulse: Int = 0
+    /// When true (onboarding demo), never touches the network.
+    @ObservationIgnored var offlineOnly = false
+
+    @ObservationIgnored private var lookupTask: Task<Void, Never>?
+    @ObservationIgnored private var contextTask: Task<Void, Never>?
+
+    var isPresented: Bool { selection != nil }
+
+    func isSelected(clipId: String, lineIndex: Int, tokenIndex: Int) -> Bool {
+        guard let selection else { return false }
+        return selection.clip.id == clipId && selection.lineIndex == lineIndex && selection.tokenIndex == tokenIndex
+    }
+
+    func select(token: Token, tokenIndex: Int, lineIndex: Int, clip: Clip, app: AppModel) {
+        guard token.tappable else { return }
+        Haptics.light()
+        let sameWord = selection?.token.surface == token.surface
+        let newSelection = Selection(clip: clip, lineIndex: lineIndex, tokenIndex: tokenIndex, token: token)
+        selection = newSelection
+        if !sameWord {
+            tab = .dictionary
+            context = nil
+            contextTask?.cancel()
+        }
+        let instant = app.lexicon.instantExplanation(for: token) ?? .fallback(for: token)
+        explanation = instant
+        occurrenceCount = app.recordTap(token: token, explanation: instant, clip: clip, lineIndex: lineIndex)
+        tapPulse += 1
+        track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
+
+        guard instant.source == .fallback, !offlineOnly else { return }
+        lookupTask?.cancel()
+        let service = app.explainService
+        let userId = app.purchases.appUserId
+        let sentence = newSelection.sentence
+        lookupTask = Task { [weak self, weak app] in
+            let outcome = await service.lookup(token: token, sentence: sentence, appUserId: userId)
+            guard !Task.isCancelled, let self, self.selection == newSelection else { return }
+            self.explanation = outcome.explanation
+            app?.persistCache(outcome.newCache)
+            app?.updateDefinitions(for: token, with: outcome.explanation)
+        }
+    }
+
+    func loadContextIfNeeded(app: AppModel) {
+        guard let selection, context == nil, !isLoadingContext else { return }
+        let fallback = Self.offlineContext(for: selection, app: app)
+        if offlineOnly {
+            context = fallback
+            return
+        }
+        isLoadingContext = true
+        let service = app.explainService
+        let userId = app.purchases.appUserId
+        contextTask = Task { [weak self, weak app] in
+            let outcome = await service.context(token: selection.token, sentence: selection.sentence, appUserId: userId, fallback: fallback)
+            guard let self, !Task.isCancelled else { return }
+            self.isLoadingContext = false
+            guard self.selection == selection else { return }
+            self.context = outcome.context
+            app?.persistCache(outcome.newCache)
+        }
+    }
+
+    func dismiss() {
+        lookupTask?.cancel()
+        contextTask?.cancel()
+        isLoadingContext = false
+        selection = nil
+        explanation = nil
+        context = nil
+    }
+
+    /// Graceful offline "context" built from local data: the real sentence plus other clips using the same word.
+    static func offlineContext(for selection: Selection, app: AppModel) -> ContextExplanation {
+        let token = selection.token
+        let base = token.dictionaryForm
+        var examples: [String] = []
+        for clip in app.clips {
+            for line in clip.lines where line.tokens.contains(where: { $0.dictionaryForm == base }) {
+                let entry = "\(line.text)\n\(line.translation)"
+                if line.text != selection.sentence, !examples.contains(entry) { examples.append(entry) }
+            }
+        }
+        let gloss = token.definitions.first ?? app.lexicon.entry(for: base)?.definitions.first ?? "this word"
+        var explanation = "In “\(selection.sentence)”, \(token.surface) means “\(gloss)”."
+        if token.baseForm != nil {
+            explanation += " It's a form of \(base) (\(token.baseReading ?? token.dictionaryRomaji))."
+        }
+        if let formality = token.formality {
+            explanation += " Register: \(formality)."
+        }
+        explanation += " Line meaning: \(selection.translation)"
+        let related = app.clips
+            .flatMap { $0.lines.flatMap(\.tokens) }
+            .filter { $0.pos == token.pos && $0.dictionaryForm != base && $0.tappable && $0.jlpt == token.jlpt }
+            .map(\.dictionaryForm)
+        var seen = Set<String>()
+        let relatedUnique = related.filter { seen.insert($0).inserted }.prefix(4)
+        return ContextExplanation(
+            contextualExplanation: explanation,
+            examples: Array(examples.prefix(3)),
+            relatedWords: Array(relatedUnique),
+            isFallback: true
+        )
+    }
+}

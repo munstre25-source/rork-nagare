@@ -1,0 +1,270 @@
+import SwiftUI
+
+/// The floating tap-to-understand card. Always dark (lives over the player/transcript).
+struct TapPopupCard: View {
+    var onOpenClip: ((Clip, Int) -> Void)?
+
+    @Environment(AppModel.self) private var app
+    @Environment(WordLookupController.self) private var lookup
+    @State private var showAllDefinitions: Bool = false
+    @State private var badgeBump: Bool = false
+
+    var body: some View {
+        if let selection = lookup.selection, let explanation = lookup.explanation {
+            VStack(alignment: .leading, spacing: Spacing.m) {
+                header(selection: selection, explanation: explanation)
+                WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: true)
+                tabRow
+                Group {
+                    switch lookup.tab {
+                    case .dictionary: dictionaryTab(explanation)
+                    case .flashcard: flashcardTab(selection: selection, explanation: explanation)
+                    case .examples: examplesTab
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(.opacity)
+            }
+            .padding(Spacing.l)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .fill(Color.bgElevatedDark)
+                    .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .environment(\.colorScheme, .dark)
+            .onChange(of: lookup.tapPulse) { _, _ in
+                showAllDefinitions = false
+                badgeBump = true
+                Task {
+                    try? await Task.sleep(for: .milliseconds(180))
+                    badgeBump = false
+                }
+            }
+        }
+    }
+
+    private func header(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
+        HStack(alignment: .top, spacing: Spacing.m) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: Spacing.m) {
+                    Text(explanation.word)
+                        .font(NagareFont.jp(38, bold: true, relativeTo: .largeTitle))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Button {
+                        SpeechService.shared.speak(selection.token.surface)
+                    } label: {
+                        Image(systemName: "speaker.wave.2")
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Play pronunciation")
+                }
+                if !explanation.readings.isEmpty {
+                    Text(explanation.readings.joined(separator: ", "))
+                        .font(NagareFont.jp(15, relativeTo: .subheadline))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+                Text(explanation.romaji)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.5))
+                if let base = selection.token.baseForm {
+                    Text("from \(base)")
+                        .font(NagareFont.jp(13, relativeTo: .footnote))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            Spacer(minLength: 0)
+            OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
+                .scaleEffect(badgeBump ? 1.25 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                .animation(.snappy, value: lookup.occurrenceCount)
+        }
+    }
+
+    private var tabRow: some View {
+        HStack(spacing: Spacing.s) {
+            ForEach(PopupTab.allCases, id: \.self) { tab in
+                Button {
+                    Haptics.selection()
+                    withAnimation(.snappy) { lookup.tab = tab }
+                    if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                } label: {
+                    Image(systemName: tab.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(lookup.tab == tab ? Color.nagareOrange : .white.opacity(0.55))
+                        .frame(width: 52, height: 44)
+                        .background(
+                            lookup.tab == tab ? Color.nagareOrange.opacity(0.14) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                }
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
+            }
+            Spacer()
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1).offset(y: 4)
+        }
+    }
+
+    private func dictionaryTab(_ explanation: WordExplanation) -> some View {
+        let defs = explanation.definitions
+        let visible = showAllDefinitions ? defs : Array(defs.prefix(2))
+        return VStack(alignment: .leading, spacing: Spacing.s) {
+            ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
+                DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: true)
+            }
+            HStack {
+                if defs.count > 2, !showAllDefinitions {
+                    Button {
+                        withAnimation(.snappy) { showAllDefinitions = true }
+                    } label: {
+                        Label("\(defs.count - 2) more", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.tappableBlue)
+                            .frame(minHeight: 44)
+                    }
+                }
+                Spacer()
+                if defs.count > 1 {
+                    HStack(spacing: 5) {
+                        ForEach(0..<min(defs.count, 5), id: \.self) { i in
+                            Circle()
+                                .fill(i < visible.count ? Color.nagareOrange : Color.white.opacity(0.3))
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                    .accessibilityHidden(true)
+                }
+            }
+            if let note = explanation.formalityNote {
+                Label(note.capitalized + " register", systemImage: "quote.bubble")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+        }
+    }
+
+    private func flashcardTab(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            Text("Added to your deck")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.nagareOrange)
+                .textCase(.uppercase)
+            HighlightedSentence(sentence: selection.sentence, target: selection.token.surface, size: 17, baseColor: .white)
+            Text(selection.translation)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.6))
+            HStack(spacing: Spacing.s) {
+                Image(systemName: "clock.arrow.circlepath")
+                Text("First review in 10 minutes · \(selection.clip.channelName)")
+            }
+            .font(.footnote)
+            .foregroundStyle(.white.opacity(0.5))
+        }
+        .padding(Spacing.m)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.definitionTints[0], in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var examplesTab: some View {
+        if let context = lookup.context {
+            VStack(alignment: .leading, spacing: Spacing.s) {
+                Text(context.contextualExplanation)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(context.examples.prefix(2).enumerated()), id: \.offset) { index, example in
+                    Text(example)
+                        .font(NagareFont.jp(14, relativeTo: .subheadline))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(Spacing.m)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.definitionTints[(index + 1) % 3], in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                if !context.relatedWords.isEmpty {
+                    Text("Related: " + context.relatedWords.joined(separator: " · "))
+                        .font(NagareFont.jp(13, relativeTo: .footnote))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+            }
+        } else {
+            HStack(spacing: Spacing.s) {
+                ProgressView().tint(.white)
+                Text("Finding examples…").font(.subheadline).foregroundStyle(.white.opacity(0.6))
+            }
+            .frame(minHeight: 60)
+            .onAppear { lookup.loadContextIfNeeded(app: app) }
+        }
+    }
+}
+
+/// Numbered definition entry on a soft pastel card.
+struct DefinitionRow: View {
+    let number: Int
+    let tag: String?
+    let text: String
+    var dark: Bool = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
+            Text("\(number)")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(dark ? Color.white.opacity(0.6) : .secondary)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(dark ? Color.white.opacity(0.08) : Color.primary.opacity(0.06)))
+            if let tag {
+                PillView(text: tag, style: dark ? .neutralDark : .pos)
+            }
+            Text(text)
+                .font(.body)
+                .foregroundStyle(dark ? Color.white : Color.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Spacing.m)
+        .padding(.vertical, 10)
+        .background(tint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var tint: Color {
+        let tints: [Color] = dark
+            ? [Color(hex: "#1E2733"), Color(hex: "#23252B"), Color(hex: "#2A2230")]
+            : Color.definitionTints
+        return tints[(number - 1) % tints.count]
+    }
+}
+
+/// A sentence with the target word highlighted in orange.
+struct HighlightedSentence: View {
+    let sentence: String
+    let target: String
+    var size: CGFloat = 18
+    var baseColor: Color = .primary
+
+    var body: some View {
+        Text(attributed)
+            .font(NagareFont.jp(size, relativeTo: .body))
+            .lineSpacing(4)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var attributed: AttributedString {
+        var result = AttributedString(sentence)
+        result.foregroundColor = baseColor
+        if !target.isEmpty, let range = result.range(of: target) {
+            result[range].foregroundColor = Color.nagareOrange
+            result[range].font = NagareFont.jp(size, bold: true, relativeTo: .body)
+        }
+        return result
+    }
+}
