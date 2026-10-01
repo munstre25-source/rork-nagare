@@ -14,6 +14,7 @@ struct ProfileView: View {
     @State private var showCustomerCenter: Bool = false
     @State private var restoreMessage: String?
     @State private var confirmReset: Bool = false
+    @State private var confirmDeleteAccount: Bool = false
     @State private var showMarketingShowcase: Bool = false
     var onGiveFeedback: (() -> Void)? = nil
 
@@ -88,6 +89,11 @@ struct ProfileView: View {
             Button("Reset words & history", role: .destructive) { app.resetDemoData() }
         } message: {
             Text("Your saved words and watch history return to the starter set.")
+        }
+        .confirmationDialog("Delete all data?", isPresented: $confirmDeleteAccount, titleVisibility: .visible) {
+            Button("Delete All Data", role: .destructive) { app.deleteAllUserData() }
+        } message: {
+            Text("This permanently erases words, decks, watch history, and settings on this device and returns you to onboarding. Jojo has no cloud account. To cancel Jojo Pro, use Manage Subscription or Settings → Apple ID → Subscriptions.")
         }
     }
 
@@ -225,8 +231,11 @@ struct ProfileView: View {
             settingsToggle(symbol: "lock.open", title: "Unlock by level",
                            isOn: Binding(get: { app.profile.gateContentByLevel }, set: { app.setGateContentByLevel($0) }))
             Divider().padding(.leading, 52)
-            settingsToggle(symbol: "timer", title: "Hide daily goal bar",
-                           isOn: Binding(get: { app.profile.hideDailyGoalBar }, set: { app.setHideDailyGoalBar($0) }))
+            settingsToggle(symbol: "timer", title: "Daily progress bar",
+                           isOn: Binding(
+                            get: { !app.profile.hideDailyGoalBar },
+                            set: { app.setHideDailyGoalBar(!$0) }
+                           ))
             Divider().padding(.leading, 52)
 
             settingsHeader("Creator")
@@ -246,7 +255,7 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
             HStack(spacing: Spacing.m) {
                 Image(systemName: "bell").frame(width: 28)
-                Toggle("Reminders", isOn: Binding(
+                Toggle("Study & review reminders", isOn: Binding(
                     get: { app.profile.remindersEnabled },
                     set: { value in Task { await app.setReminders(value) } }
                 ))
@@ -269,6 +278,8 @@ struct ProfileView: View {
                     }
                 }
             }
+            Divider().padding(.leading, 52)
+            SettingsRow(symbol: "trash", title: "Delete All Data", tint: .red) { confirmDeleteAccount = true }
             Divider().padding(.leading, 52)
 
             settingsHeader("Legal & support")

@@ -1,9 +1,10 @@
 import Foundation
 import UserNotifications
 
-/// Local notifications: daily streak nudge, streak-at-risk, and the pre-charge trial reminder.
+/// Local notifications: daily streak nudge, review due cards, streak-at-risk, and trial reminder.
 enum NotificationService {
     private static let dailyId = "nagare.daily"
+    private static let reviewId = "nagare.review.due"
     private static let atRiskId = "nagare.streak.atrisk"
     private static let trialId = "nagare.trial.reminder"
 
@@ -21,7 +22,7 @@ enum NotificationService {
         return settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
     }
 
-    /// Daily nudge at 19:00.
+    /// Daily streak / study nudge at 19:00.
     static func scheduleDailyReminder() {
         let content = UNMutableNotificationContent()
         content.title = "Your daily flow is waiting"
@@ -31,6 +32,33 @@ enum NotificationService {
         components.hour = 19
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         add(UNNotificationRequest(identifier: dailyId, content: content, trigger: trigger))
+    }
+
+    /// Morning review nudge when flashcards are due.
+    static func scheduleReviewReminder(dueCount: Int) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [reviewId])
+        guard dueCount > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = dueCount == 1 ? "1 card is due" : "\(dueCount) cards are due"
+        content.body = "Quick review keeps words sticky. Open Vocab to practice."
+        content.sound = .default
+        content.userInfo = ["deepLink": "jojo://review"]
+
+        var components = DateComponents()
+        components.hour = 10
+        components.minute = 0
+        let calendar = Calendar.current
+        let now = Date()
+        if let todayAt10 = calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTime),
+           calendar.isDate(todayAt10, inSameDayAs: now) {
+            let trigger = UNCalendarNotificationTrigger(dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: todayAt10), repeats: false)
+            add(UNNotificationRequest(identifier: reviewId, content: content, trigger: trigger))
+        } else if let tomorrowAt10 = calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTime) {
+            let trigger = UNCalendarNotificationTrigger(dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: tomorrowAt10), repeats: false)
+            add(UNNotificationRequest(identifier: reviewId, content: content, trigger: trigger))
+        }
     }
 
     /// Gentle streak-at-risk nudge at 21:30 today if the goal hasn't been met yet.
@@ -69,7 +97,12 @@ enum NotificationService {
     }
 
     static func cancelReminders() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, atRiskId])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, atRiskId])
+    }
+
+    static func cancelAll() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
 
     private static func add(_ request: UNNotificationRequest) {

@@ -1,28 +1,40 @@
 import UIKit
 
-/// UIKit haptic helpers.
+/// UIKit haptic helpers. Generators are prepared before firing for snappier feedback.
 enum Haptics {
+    private static let lightGenerator = UIImpactFeedbackGenerator(style: .light)
+    private static let mediumGenerator = UIImpactFeedbackGenerator(style: .medium)
+    private static let softGenerator = UIImpactFeedbackGenerator(style: .soft)
+    private static let selectionGenerator = UISelectionFeedbackGenerator()
+    private static let notificationGenerator = UINotificationFeedbackGenerator()
+
     static func light() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        lightGenerator.prepare()
+        lightGenerator.impactOccurred()
     }
 
     static func medium() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        mediumGenerator.prepare()
+        mediumGenerator.impactOccurred()
     }
 
     static func soft() {
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        softGenerator.prepare()
+        softGenerator.impactOccurred()
     }
 
     static func selection() {
-        UISelectionFeedbackGenerator().selectionChanged()
+        selectionGenerator.prepare()
+        selectionGenerator.selectionChanged()
     }
 
     static func success() {
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        notificationGenerator.prepare()
+        notificationGenerator.notificationOccurred(.success)
     }
 
     static func warning() {
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        notificationGenerator.prepare()
+        notificationGenerator.notificationOccurred(.warning)
     }
 }

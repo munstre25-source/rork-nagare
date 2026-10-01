@@ -386,6 +386,7 @@ final class AppModel {
         }
         word.lastReviewedAt = Date()
         save()
+        refreshAllReminders()
     }
 
     // MARK: Watch time & goal
@@ -503,8 +504,7 @@ final class AppModel {
             let granted = await NotificationService.requestAuthorization()
             profile.remindersEnabled = granted
             if granted {
-                NotificationService.scheduleDailyReminder()
-                if !isGoalReached { NotificationService.scheduleStreakAtRisk(streak: currentStreak) }
+                refreshAllReminders()
             }
         } else {
             profile.remindersEnabled = false
@@ -516,6 +516,24 @@ final class AppModel {
     func refreshStreakReminder() {
         guard profile.remindersEnabled, !isGoalReached else { return }
         NotificationService.scheduleStreakAtRisk(streak: currentStreak)
+    }
+
+    /// Re-schedule daily, review, and streak-at-risk notifications from current local state.
+    func refreshAllReminders() {
+        guard profile.remindersEnabled else { return }
+        NotificationService.scheduleDailyReminder()
+        NotificationService.scheduleReviewReminder(dueCount: dueWordCount)
+        if isGoalReached {
+            NotificationService.cancelStreakAtRisk()
+        } else {
+            NotificationService.scheduleStreakAtRisk(streak: currentStreak)
+        }
+    }
+
+    var dueWordCount: Int {
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        let now = Date()
+        return words.filter { $0.dueAt <= now }.count
     }
 
     // MARK: Onboarding
@@ -637,5 +655,32 @@ final class AppModel {
         save()
         seedDemoDataIfNeeded()
         track("demo_data_reset")
+    }
+
+    /// Apple 5.1.1-style deletion: wipe all on-device learning data and return to onboarding.
+    /// Jojo has no cloud account; App Store subscriptions are canceled in Apple ID settings.
+    func deleteAllUserData() {
+        Haptics.warning()
+        NotificationService.cancelAll()
+
+        ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).forEach { context.delete($0) }
+        ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }
+        ((try? context.fetch(FetchDescriptor<CachedExplanation>())) ?? []).forEach { context.delete($0) }
+        ((try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []).forEach { context.delete($0) }
+
+        watchLog = [:]
+        lookedUpKeys = []
+        pendingFeedClipId = nil
+        pendingDeepLink = nil
+        goalCelebrationCount = 0
+        unsavedWatchSeconds = 0
+
+        let fresh = UserProfile()
+        context.delete(profile)
+        context.insert(fresh)
+        profile = fresh
+        save()
+        rebuildClips()
+        track("account_data_deleted")
     }
 }

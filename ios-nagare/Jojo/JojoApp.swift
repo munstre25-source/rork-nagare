@@ -64,6 +64,7 @@ struct JojoApp: App {
                 WidgetSnapshotPublisher.publish(from: app)
                 MetaAttribution.activateApp()
                 MetaAttribution.syncToRevenueCat()
+                app.refreshAllReminders()
             }
         }
     }
