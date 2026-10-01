@@ -44,8 +44,13 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     }
 
     private var html: String {
-        """
-        <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        // `origin` + `widget_referrer` + a real youtube.com baseURL are required to avoid
+        // Error 152-4 ("embedder identity") in WKWebView / simulators.
+        let origin = "https://www.youtube.com"
+        return """
+        <!DOCTYPE html><html><head>
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
         <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style>
         </head><body><div id="p"></div>
         <script src="https://www.youtube.com/iframe_api"></script>
@@ -53,8 +58,20 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         var player;
         function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
         function onYouTubeIframeAPIReady(){
-          player=new YT.Player('p',{videoId:'\(clip.videoId)',playerVars:{playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,iv_load_policy:3,cc_load_policy:0},
-            events:{onReady:function(){post({e:'ready'});},onStateChange:function(ev){post({e:'state',v:ev.data});}}});
+          player=new YT.Player('p',{
+            host:'https://www.youtube.com',
+            videoId:'\(clip.videoId)',
+            playerVars:{
+              playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,
+              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,
+              origin:'\(origin)',widget_referrer:'\(origin)'
+            },
+            events:{
+              onReady:function(){post({e:'ready'});},
+              onStateChange:function(ev){post({e:'state',v:ev.data});},
+              onError:function(ev){post({e:'error',v:ev.data});}
+            }
+          });
         }
         function nTime(){ if(player&&player.getCurrentTime){post({e:'time',v:player.getCurrentTime()});} }
         </script></body></html>
@@ -154,6 +171,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             // 0 ended, 1 playing, 2 paused
             if value == 0, !didFinish { finish() }
             if value == 1 { isPlaying = true }
+        case "error":
+            // Surface embed failures (e.g. 152) in logs so simulator issues are obvious.
+            print("[YouTube] player error \(value.map { String(Int($0)) } ?? "?") for \(clip.videoId)")
         default:
             break
         }
