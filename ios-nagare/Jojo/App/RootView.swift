@@ -46,6 +46,7 @@ struct MainTabView: View {
     @State private var tab: AppTab = .feed
     @State private var showFeedbackPrompt = false
     @State private var showManualFeedback = false
+    @State private var showCancellationSurvey = false
 
     var body: some View {
         TabView(selection: $tab) {
@@ -85,6 +86,12 @@ struct MainTabView: View {
                 break
             }
         }
+        .onChange(of: app.purchases.pendingCancellationSurvey) { _, pending in
+            guard pending, app.shouldPresentCancellationSurvey else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                showCancellationSurvey = true
+            }
+        }
         .onAppear {
             let badge = UITabBarItem.appearance()
             badge.badgeColor = UIColor(hex: "#FF6B00")
@@ -95,12 +102,20 @@ struct MainTabView: View {
                     showFeedbackPrompt = true
                 }
             }
+            if app.shouldPresentCancellationSurvey {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    showCancellationSurvey = true
+                }
+            }
         }
         .sheet(isPresented: $showFeedbackPrompt) {
             FeedbackFlowSheet { showFeedbackPrompt = false }
         }
         .sheet(isPresented: $showManualFeedback) {
             FeedbackFlowSheet { showManualFeedback = false }
+        }
+        .sheet(isPresented: $showCancellationSurvey) {
+            CancellationSurveySheet { showCancellationSurvey = false }
         }
     }
 }

@@ -2,7 +2,17 @@ import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared
 import { requireEnv, utcDayString } from "../_shared/env.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 
-const CATEGORIES = new Set(["bug", "feature", "general"]);
+const CATEGORIES = new Set([
+  "bug",
+  "feature",
+  "general",
+  "cancel_price",
+  "cancel_time",
+  "cancel_content",
+  "cancel_hard",
+  "cancel_curious",
+  "cancel_other",
+]);
 
 type Body = {
   enjoyed?: boolean | null;
@@ -27,11 +37,12 @@ Deno.serve(async (req) => {
     const category = categoryRaw && CATEGORIES.has(categoryRaw) ? categoryRaw : null;
     const message = (body.message ?? "").trim().slice(0, 2000);
 
-    // Positive "yes I'm enjoying" can be empty message; negative / direct feedback needs text or category.
+    // Positive "yes I'm enjoying" can be empty message; negative / cancellation needs text or category.
+    const isCancellation = category?.startsWith("cancel_") === true;
     if (enjoyed === false && !message && !category) {
       return errorResponse(400, "Tell us a bit more");
     }
-    if (enjoyed === null && !message) {
+    if (enjoyed === null && !message && !isCancellation) {
       return errorResponse(400, "Message required");
     }
 

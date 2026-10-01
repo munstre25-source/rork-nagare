@@ -61,7 +61,11 @@ final class PurchaseManager {
     private(set) var isRestoring = false
     private(set) var offeringFailed = false
     private(set) var debugBypassActive = false
+    /// Set when we observe trial auto-renew turn off so the UI can ask why.
+    private(set) var pendingCancellationSurvey = false
     private var streamTask: Task<Void, Never>?
+    private var previousWillRenew: Bool?
+    private var previousInTrial: Bool?
     private static let bypassKey = "nagare.debug.bypass"
     private static let localIdKey = "nagare.local.anon.id"
     /// Last known entitlement, used until RevenueCat delivers fresh CustomerInfo (avoids a paywall flash at launch).
@@ -219,6 +223,10 @@ final class PurchaseManager {
         apply(info)
     }
 
+    func clearCancellationSurvey() {
+        pendingCancellationSurvey = false
+    }
+
     #if DEBUG
     /// DEBUG ONLY: unlocks the app without StoreKit. The Edge Function will reject calls (no real entitlement),
     /// so explanations silently come from the local dictionary.
@@ -226,12 +234,42 @@ final class PurchaseManager {
         debugBypassActive = true
         UserDefaults.standard.set(true, forKey: Self.bypassKey)
     }
+
+    /// DEBUG: force the cancellation survey UI without a real StoreKit cancel.
+    func debugTriggerCancellationSurvey() {
+        pendingCancellationSurvey = true
+    }
     #endif
 
     private func apply(_ info: CustomerInfo) {
         customerInfo = info
         let entitlement = info.entitlements.all[StoreConstants.entitlementId]
-        isEntitlementActive = entitlement?.isActive == true
+        let active = entitlement?.isActive == true
+        let willRenew = entitlement?.willRenew == true
+        let inTrial = entitlement?.periodType == .trial
+
+        // Trial started → user turned off renewal (still entitled until trial ends),
+        // or access dropped right after a trial cancel.
+        let canceledTrialRenewal =
+            previousWillRenew == true
+            && !willRenew
+            && (inTrial || previousInTrial == true)
+        let lostTrialAccess =
+            previousInTrial == true
+            && previousWillRenew == true
+            && !active
+        if canceledTrialRenewal || lostTrialAccess {
+            pendingCancellationSurvey = true
+            track("trial_cancellation_detected", props: [
+                "still_active": active ? "1" : "0",
+                "in_trial": inTrial ? "1" : "0",
+            ])
+        }
+
+        previousWillRenew = active ? willRenew : false
+        previousInTrial = active ? inTrial : false
+
+        isEntitlementActive = active
         if let entitlement, entitlement.isActive {
             status = SubscriptionStatus(
                 productId: entitlement.productIdentifier,

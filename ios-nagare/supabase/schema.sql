@@ -184,7 +184,10 @@ create table if not exists public.feedback_items (
   id bigint generated always as identity primary key,
   app_user_id text not null,
   enjoyed boolean,
-  category text check (category is null or category in ('bug','feature','general')),
+  category text check (category is null or category in (
+    'bug','feature','general',
+    'cancel_price','cancel_time','cancel_content','cancel_hard','cancel_curious','cancel_other'
+  )),
   message text not null default '',
   status text not null default 'new' check (status in ('new','reviewed','done')),
   created_at timestamptz not null default now()

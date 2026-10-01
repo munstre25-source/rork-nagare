@@ -173,7 +173,9 @@ Test: sandbox purchase → RevenueCat Customer History → Meta Ads delivery row
 - Onboarding asks **How did you find Jojo?** (Instagram / TikTok / web / App Store / …) → `submit-acquisition`
 - After ~15 min watched or 4 main-app opens: **Are you enjoying Jojo?** sheet → `submit-feedback`
 - Profile → **Give feedback** anytime
+- After a **trial auto-renew cancel**: soft reason sheet → `submit-feedback` (`cancel_price`, `cancel_time`, …)
 - Local review UI: `tools/insights-dashboard` (`python3 -m http.server 8787`) with URL + anon key + `ADMIN_TOKEN`
+- Private HQ: https://socialreporthq.com/hq/jojo-insights
 
 ## Testing purchases
 `Nagare.storekit` contains both products; yearly uses a **3-day** free trial. In Xcode, go to Scheme → Run → Options →

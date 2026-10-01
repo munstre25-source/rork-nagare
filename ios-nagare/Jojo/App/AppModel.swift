@@ -594,6 +594,23 @@ final class AppModel {
         save()
     }
 
+    /// True when RevenueCat reports a trial cancel and we haven't surveyed this period yet.
+    var shouldPresentCancellationSurvey: Bool {
+        guard purchases.pendingCancellationSurvey else { return false }
+        let exp = purchases.status?.expirationDate?.timeIntervalSince1970 ?? 0
+        if exp > 0, abs(profile.cancellationSurveyExpiration - exp) < 1 {
+            return false
+        }
+        return true
+    }
+
+    func markCancellationSurveyHandled() {
+        let exp = purchases.status?.expirationDate?.timeIntervalSince1970 ?? Date().timeIntervalSince1970
+        profile.cancellationSurveyExpiration = exp
+        purchases.clearCancellationSurvey()
+        save()
+    }
+
     // MARK: Demo data
 
     /// Seeds 36 saved words (with real clip context) and a short watch history so no screen is empty.

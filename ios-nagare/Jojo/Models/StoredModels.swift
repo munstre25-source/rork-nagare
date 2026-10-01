@@ -85,6 +85,8 @@ final class UserProfile {
     var feedbackPromptDeferredUntil: Date?
     /// Sessions in the main app (after onboarding) — used to time the enjoy/feedback ask.
     var mainAppOpenCount: Int = 0
+    /// Expiration timestamp (timeIntervalSince1970) we already surveyed for after a trial cancel.
+    var cancellationSurveyExpiration: Double = 0
 
     init() {}
 

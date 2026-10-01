@@ -48,5 +48,8 @@ struct JojoCustomerCenter: View {
             .onCustomerCenterRestoreFailed { error in
                 print("[Purchases] customer center restore failed: \(error.localizedDescription)")
             }
+            .onDisappear {
+                Task { await app.purchases.refreshCustomerInfo() }
+            }
     }
 }
