@@ -10,8 +10,10 @@ nonisolated enum StoreConstants {
     static let yearlyProductId = "yearly"
     static let fallbackMonthlyPrice = "$9.99"
     static let fallbackYearlyPrice = "$59.99"
-    static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")
-    static let privacyURL = URL(string: "https://nagare.app/privacy")
+    static let termsURL = URL(string: "https://socialreporthq.com/jojo/terms")
+    static let privacyURL = URL(string: "https://socialreporthq.com/jojo/privacy")
+    static let supportURL = URL(string: "https://socialreporthq.com/jojo/support")
+    static let supportEmail = "support@socialreporthq.com"
 }
 
 /// DEBUG-only paywall bypass so the app can be previewed in the simulator without StoreKit.

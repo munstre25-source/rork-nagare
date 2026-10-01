@@ -9,15 +9,20 @@ nonisolated enum Secrets {
 
     static let supabaseURL: String = value("SUPABASE_URL", env: "EXPO_PUBLIC_SUPABASE_URL", placeholder: "YOUR_SUPABASE_URL")
     static let supabaseAnonKey: String = value("SUPABASE_ANON_KEY", env: "EXPO_PUBLIC_SUPABASE_ANON_KEY", placeholder: "YOUR_SUPABASE_ANON_KEY")
-    /// RevenueCat public SDK key. DEBUG builds use the Test Store key (works without App Store Connect);
-    /// release builds use the App Store key. A `REVENUECAT_API_KEY` in Secrets.plist overrides both.
+    /// RevenueCat public SDK key. DEBUG builds use the Test Store key; release builds use the App Store key.
+    /// Prefer `REVENUECAT_TEST_API_KEY` / `REVENUECAT_IOS_API_KEY`. `REVENUECAT_API_KEY` overrides either.
     static let revenueCatAPIKey: String = {
         #if DEBUG
-        let envKey = "EXPO_PUBLIC_REVENUECAT_TEST_API_KEY"
+        return revenueCatValue(
+            preferredKey: "REVENUECAT_TEST_API_KEY",
+            env: "EXPO_PUBLIC_REVENUECAT_TEST_API_KEY"
+        )
         #else
-        let envKey = "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY"
+        return revenueCatValue(
+            preferredKey: "REVENUECAT_IOS_API_KEY",
+            env: "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY"
+        )
         #endif
-        return value("REVENUECAT_API_KEY", env: envKey, placeholder: "YOUR_REVENUECAT_API_KEY")
     }()
 
     static var isSupabaseConfigured: Bool {
@@ -48,5 +53,12 @@ nonisolated enum Secrets {
         if let v = plist[key] as? String, isReal(v) { return v }
         if let v = Config.allValues[env], isReal(v) { return v }
         return placeholder
+    }
+
+    private static func revenueCatValue(preferredKey: String, env: String) -> String {
+        if let override = plist["REVENUECAT_API_KEY"] as? String, isReal(override) { return override }
+        if let preferred = plist[preferredKey] as? String, isReal(preferred) { return preferred }
+        if let fromEnv = Config.allValues[env], isReal(fromEnv) { return fromEnv }
+        return "YOUR_REVENUECAT_API_KEY"
     }
 }

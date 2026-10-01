@@ -187,6 +187,7 @@ struct PaywallView: View {
                     .disabled(purchases.isRestoring || purchases.isPurchasing)
                 if let terms = StoreConstants.termsURL { Button("Terms") { openURL(terms) } }
                 if let privacy = StoreConstants.privacyURL { Button("Privacy") { openURL(privacy) } }
+                if let support = StoreConstants.supportURL { Button("Support") { openURL(support) } }
             }
             .font(.footnote.weight(.medium))
             .foregroundStyle(.white.opacity(0.65))

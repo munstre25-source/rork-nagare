@@ -143,8 +143,9 @@ curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
 - Offering: `default` (current), with `$rc_monthly` → product `monthly` ($9.99/mo) and `$rc_annual` → product `yearly`
   ($59.99/yr). Both products exist in the Test Store and the App Store app and are attached to the entitlement.
   In App Store Connect, create auto-renewable subscriptions `monthly` and `yearly` in one group, each with a 7-day free trial.
-- API keys: DEBUG builds use `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` (Test Store), release builds use
-  `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`. `REVENUECAT_API_KEY` in `Secrets.plist` overrides both.
+- API keys: DEBUG builds use `REVENUECAT_TEST_API_KEY` / `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` (Test Store);
+  release builds use `REVENUECAT_IOS_API_KEY` / `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`. A single
+  `REVENUECAT_API_KEY` in `Secrets.plist` overrides both when set.
 - For the App Store app, add RevenueCat's In-App Purchase Key (App Store Connect → Users and Access → Integrations)
   and confirm the dashboard shows Valid credentials.
 - Paywall: if a RevenueCat Paywall is published for the `default` offering, the app shows it (RevenueCatUI).
@@ -198,4 +199,4 @@ Enable the App Group on both the app and widget App IDs in the Apple Developer p
 - Social-proof ratings and quotes are sample content.
 - Noto Sans JP is bundled as static Regular/Bold subsets (Latin + kana + CJK unified). Hiragino Sans is the fallback.
 - The SwiftData models are CloudKit-compatible, but CloudKit sync is disabled (`cloudKitDatabase: .none`).
-- Terms uses Apple's standard EULA. Replace the Privacy URL in `StoreConstants`.
+- Terms / Privacy / Support: `https://socialreporthq.com/jojo/{terms,privacy,support}` (`StoreConstants`). Contact: `support@socialreporthq.com`.

@@ -6,6 +6,7 @@ import StoreKit
 /// Progress + settings. Follows system light/dark.
 struct ProfileView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.openURL) private var openURL
     @Query private var words: [SavedWord]
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showGoalPicker: Bool = false
@@ -266,6 +267,26 @@ struct ProfileView: View {
                     case .cancelled, .pending: break
                     case .failed(let message): restoreMessage = message
                     }
+                }
+            }
+            Divider().padding(.leading, 52)
+
+            settingsHeader("Legal & support")
+            if let support = StoreConstants.supportURL {
+                SettingsRow(symbol: "questionmark.circle", title: "Support") { openURL(support) }
+                Divider().padding(.leading, 52)
+            }
+            if let privacy = StoreConstants.privacyURL {
+                SettingsRow(symbol: "hand.raised", title: "Privacy Policy") { openURL(privacy) }
+                Divider().padding(.leading, 52)
+            }
+            if let terms = StoreConstants.termsURL {
+                SettingsRow(symbol: "doc.text", title: "Terms of Use") { openURL(terms) }
+                Divider().padding(.leading, 52)
+            }
+            SettingsRow(symbol: "envelope", title: "Email support", value: StoreConstants.supportEmail) {
+                if let mail = URL(string: "mailto:\(StoreConstants.supportEmail)?subject=Jojo%20Support") {
+                    openURL(mail)
                 }
             }
             Divider().padding(.leading, 52)
