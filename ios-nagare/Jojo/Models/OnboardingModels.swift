@@ -147,16 +147,16 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case welcome = 16
     /// What should Jojo call you?
     case name = 17
-    /// Hands-on flashcard rating, using the word just tapped in the demo.
+    /// Hands-on flashcard rating before the App Store ask.
     case flashcardTry = 18
 
-    /// Presentation order. Both hands-on beats (`demo`, `flashcardTry`) land before
-    /// `appReview` so we only ask for a rating after the learner has used the product.
+    /// Presentation order. `demo` (raw 7) is retired but kept on the enum so mid-funnel
+    /// resumes still decode; anyone parked there is remapped to `flashcardTry`.
     static let flow: [OnboardingStep] = [
         .splash,
         .valueCaptions, .valueTap, .valueFlashcards,
         .name, .motivation, .taste, .level,
-        .demo, .flashcardTry,
+        .flashcardTry,
         .socialProof, .dailyGoal, .journey, .notifications,
         .trialTimeline, .appReview, .acquisition,
         .paywall, .welcome
@@ -204,8 +204,6 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         }
     }
 
-    /// Cream is the brand default; only the live-video beat goes dark.
-    var surface: BrandSurface {
-        self == .demo ? .cinema : .cream
-    }
+    /// Cream everywhere — the live-clip demo beat is gone.
+    var surface: BrandSurface { .cream }
 }

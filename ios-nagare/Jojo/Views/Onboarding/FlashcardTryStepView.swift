@@ -1,9 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// The word tapped during the demo comes straight back as a real flashcard, rated with the
-/// real Again / Good buttons that write to the real scheduler. By the time we ask for an
-/// App Store rating, the learner has run the product's entire loop with their own hands.
+/// Hands-on flashcard: flip a real card and rate it with Again / Good so the learner
+/// has used the review loop before we ask for an App Store rating.
 struct FlashcardTryStepView: View {
     let onContinue: () -> Void
 
@@ -27,15 +26,15 @@ struct FlashcardTryStepView: View {
                     MascotCoach(message: coachMessage)
                     if answeredGood == nil {
                         OnboardingTitle(
-                            title: revealed ? "Now be honest with me." : "Remember this one?",
+                            title: revealed ? "Now be honest with me." : "Your first flashcard.",
                             subtitle: revealed
                             ? "Tap how it went. Jojo schedules the next showing for you."
-                            : "You tapped it a second ago — so it's already a card. Flip it over."
+                            : "Flip it, then rate it — same buttons you'll use every day."
                         )
                     } else {
                         OnboardingTitle(
-                            title: "That's the whole loop.",
-                            subtitle: "Watch, tap, rate. Your deck builds itself out of clips you actually enjoyed."
+                            title: "That's the review loop.",
+                            subtitle: "Tap words while you watch, then rate them here. Your deck builds itself."
                         )
                     }
                     if let card {
@@ -128,7 +127,7 @@ struct FlashcardTryStepView: View {
             }
             if !word.contextSentence.isEmpty {
                 Divider().overlay(Color.jojoPaperStroke)
-                Text("From the clip you just watched")
+                Text("From a real clip")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.jojoInkFaint)
                 HighlightedSentence(
@@ -226,8 +225,7 @@ struct FlashcardTryStepView: View {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { answeredGood = good }
     }
 
-    /// If the demo somehow produced no saved word, tap one on the learner's behalf so this
-    /// screen is never a dead end.
+    /// Seed one saved word from a recommended clip so this screen is never empty.
     private func seedFallbackIfNeeded() {
         guard words.isEmpty, let clip = app.recommendedClip(preferShort: true) else { return }
         for (lineIndex, line) in clip.lines.enumerated() {
@@ -240,6 +238,7 @@ struct FlashcardTryStepView: View {
                 clip: clip,
                 lineIndex: lineIndex
             )
+            app.noteFirstTappedWord(token)
             return
         }
     }

@@ -13,9 +13,6 @@ synchronized target folder), then fill in:
 
 Any value still starting with `YOUR_` is treated as not configured, and the app runs fully offline.
 
-## Launch marketing demo
-After the splash, first-time users see **Play app demo** / **Skip** before onboarding.
-
 ## Record a marketing video (screen recording)
 In the app: **Profile → Record marketing demo**.
 

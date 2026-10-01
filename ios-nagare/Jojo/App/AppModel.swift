@@ -570,12 +570,6 @@ final class AppModel {
         fetchWord(key: key)
     }
 
-    func markLaunchDemoSeen() {
-        guard !profile.hasSeenLaunchDemo else { return }
-        profile.hasSeenLaunchDemo = true
-        save()
-    }
-
     func completeOnboarding() {
         profile.firstClipId = recommendedClip()?.id
         seedDemoDataIfNeeded()
