@@ -11,12 +11,12 @@ struct DailyGoalBar: View {
             Text(app.isGoalReached ? "Goal done" : "\(app.minutesLeft) min left")
                 .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(.primary.opacity(0.9))
                 .contentTransition(.numericText())
                 .fixedSize()
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.12))
+                    Capsule().fill(Color.primary.opacity(0.1))
                     Capsule()
                         .fill(LinearGradient(colors: [Color(hex: "#FF8A2B"), .jojoOrange], startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(8, proxy.size.width * app.goalProgress))
@@ -27,7 +27,7 @@ struct DailyGoalBar: View {
             ZStack {
                 Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(app.isGoalReached ? Color.jojoOrange : .white.opacity(0.7))
+                    .foregroundStyle(app.isGoalReached ? Color.jojoOrange : .secondary)
                     .scaleEffect(trophyBounce ? 1.5 : 1)
                     .rotationEffect(.degrees(trophyBounce ? -12 : 0))
                 if showConfetti {

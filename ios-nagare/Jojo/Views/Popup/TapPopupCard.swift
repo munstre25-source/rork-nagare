@@ -28,7 +28,7 @@ struct TapPopupCard: View {
             .padding(Spacing.l)
             .background(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(Color.bgElevatedDark)
+                    .fill(Color(hex: "#1C1C1E"))
                     .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
             )
             .overlay(

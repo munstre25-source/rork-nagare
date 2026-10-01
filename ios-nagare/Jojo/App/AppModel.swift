@@ -574,22 +574,49 @@ final class AppModel {
         profile.firstClipId = recommendedClip()?.id
         seedDemoDataIfNeeded()
         profile.onboardingCompleted = true
+        profile.onboardingCompletedAt = Date()
+        // Baselines exclude seeded watch history + seed vocab from the soft ask.
+        profile.feedbackBaselineWatchSeconds = totalWatchSeconds
+        profile.feedbackBaselineWordCount = savedWordCount
         save()
         track("onboarding_completed", props: ["first_clip": profile.firstClipId ?? "none"])
     }
 
     // MARK: Feedback prompt
 
+    /// Minimum time after onboarding before we soft-ask. Seeded demo data must not short-circuit this.
+    private static let feedbackCooldown: TimeInterval = 48 * 3600
+    /// New watch time (beyond the onboarding baseline) that counts as enough value.
+    private static let feedbackWatchDeltaSeconds: Double = 10 * 60
+    /// New saved words (beyond the onboarding baseline) that count as enough value.
+    private static let feedbackWordDelta: Int = 5
+    /// At least this many main-app opens after onboarding.
+    private static let feedbackMinOpens: Int = 3
+
+    private var savedWordCount: Int {
+        ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).count
+    }
+
     /// Call when the main tabs appear. Returns true when the enjoy/feedback sheet should show.
     @discardableResult
     func noteMainAppOpenAndShouldAskFeedback() -> Bool {
         guard profile.onboardingCompleted else { return false }
+        ensureFeedbackBaselinesIfNeeded()
         profile.mainAppOpenCount += 1
         save()
         return shouldPresentFeedbackPrompt
     }
 
-    /// ~15 min watched, or 4 opens after onboarding, and not deferred/completed.
+    /// Legacy profiles (completed before baselines existed) get a fresh cool-down from now.
+    private func ensureFeedbackBaselinesIfNeeded() {
+        guard profile.onboardingCompleted, profile.onboardingCompletedAt == nil else { return }
+        profile.onboardingCompletedAt = Date()
+        profile.feedbackBaselineWatchSeconds = totalWatchSeconds
+        profile.feedbackBaselineWordCount = savedWordCount
+    }
+
+    /// Soft ask only after cool-down + real post-onboarding engagement (watch or new cards).
+    /// Seeded demo watch/words are excluded via baselines taken at `completeOnboarding()`.
     var shouldPresentFeedbackPrompt: Bool {
         guard profile.onboardingCompleted else { return false }
         let state = profile.feedbackPromptState
@@ -599,8 +626,15 @@ final class AppModel {
            until > Date() {
             return false
         }
-        let minutes = totalWatchSeconds / 60
-        return minutes >= 15 || profile.mainAppOpenCount >= 4
+        guard let completedAt = profile.onboardingCompletedAt,
+              Date().timeIntervalSince(completedAt) >= Self.feedbackCooldown else {
+            return false
+        }
+        guard profile.mainAppOpenCount >= Self.feedbackMinOpens else { return false }
+
+        let watchDelta = totalWatchSeconds - profile.feedbackBaselineWatchSeconds
+        let wordDelta = savedWordCount - profile.feedbackBaselineWordCount
+        return watchDelta >= Self.feedbackWatchDeltaSeconds || wordDelta >= Self.feedbackWordDelta
     }
 
     func deferFeedbackPrompt(days: Int) {

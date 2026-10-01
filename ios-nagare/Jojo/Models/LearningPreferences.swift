@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// Appearance preference for Vocab / Profile (Feed stays dark for the player).
+/// Appearance preference for the whole app (Feed, Vocab, and Profile share one scheme).
 nonisolated enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
     case system, light, dark
     var id: String { rawValue }

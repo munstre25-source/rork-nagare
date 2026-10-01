@@ -80,7 +80,7 @@ struct ValuePropCarousel: View {
     private var captionsIllustration: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
             if let clip = app.clip(id: "kissa-stories-01") {
-                Color.bgElevatedDark
+                Color(hex: "#1C1C1E")
                     .frame(height: 150)
                     .overlay { GradientPoster(clip: clip, isAnimating: true).allowsHitTesting(false) }
                     .clipShape(.rect(cornerRadius: Radius.card, style: .continuous))
@@ -104,7 +104,7 @@ struct ValuePropCarousel: View {
             }
         }
         .padding(Spacing.l)
-        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .background(Color(hex: "#121212"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
     }
 
@@ -139,7 +139,7 @@ struct ValuePropCarousel: View {
             }
             .padding(Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .background(Color(hex: "#121212"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
             .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
 
             if didTapWord {

@@ -61,18 +61,18 @@ struct ClipQuizOverlay: View {
                 HStack {
                     Text("Quick check")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                     Spacer()
                     Button("Skip") {
                         Haptics.selection()
                         onFinished()
                     }
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
                     .frame(minHeight: 44)
                 }
                 if questions.isEmpty {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(Color.jojoOrange)
                 } else if index >= questions.count {
                     done
                 } else {
@@ -81,7 +81,7 @@ struct ClipQuizOverlay: View {
             }
             .padding(Spacing.l)
             .frame(maxWidth: 420)
-            .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
             .padding(Spacing.l)
         }
         .onAppear {
@@ -98,7 +98,7 @@ struct ClipQuizOverlay: View {
                 .foregroundStyle(Color.jojoOrange)
             Text(q.prompt)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             ForEach(Array(q.options.enumerated()), id: \.offset) { i, option in
                 Button {
                     guard selected == nil else { return }
@@ -117,7 +117,7 @@ struct ClipQuizOverlay: View {
                     HStack {
                         Text(option)
                             .font(.body.weight(.medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                             .multilineTextAlignment(.leading)
                         Spacer()
                         if let selected {
@@ -138,10 +138,10 @@ struct ClipQuizOverlay: View {
     }
 
     private func optionBackground(_ i: Int, correct: Int) -> Color {
-        guard let selected else { return Color.white.opacity(0.08) }
+        guard let selected else { return Color.fieldFill }
         if i == correct { return Color.spokenGreen.opacity(0.35) }
         if i == selected { return Color.againBackground.opacity(0.35) }
-        return Color.white.opacity(0.06)
+        return Color.fieldFill.opacity(0.6)
     }
 
     private var done: some View {
@@ -151,10 +151,10 @@ struct ClipQuizOverlay: View {
                 .foregroundStyle(Color.jojoOrange)
             Text("\(correctCount)/\(questions.count) correct")
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Text("Nice — keep scrolling.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(.secondary)
             Button {
                 track("clip_quiz_done", props: ["clip": clip.id, "correct": String(correctCount)])
                 onFinished()

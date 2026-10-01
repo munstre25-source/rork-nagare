@@ -56,9 +56,6 @@ struct MainTabView: View {
                     Label("Feed", systemImage: tab == .feed ? "play.circle.fill" : "play.circle")
                 }
                 .tag(AppTab.feed)
-                .toolbarBackground(Color.bgPlayer, for: .tabBar)
-                .toolbarBackground(.visible, for: .tabBar)
-                .toolbarColorScheme(.dark, for: .tabBar)
             VocabView()
                 .tabItem {
                     Label("Vocab", systemImage: tab == .vocab ? "book.fill" : "book")
@@ -72,6 +69,8 @@ struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .tint(Color.jojoVermilion)
+        .toolbarBackground(Color.canvas, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil { tab = .feed }
@@ -99,7 +98,8 @@ struct MainTabView: View {
             if app.pendingDeepLink == .review { tab = .vocab }
             if app.pendingDeepLink == .feed { tab = .feed }
             if app.noteMainAppOpenAndShouldAskFeedback() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                // Let them land in the feed first — don't slap the sheet on over the first clip.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
                     showFeedbackPrompt = true
                 }
             }

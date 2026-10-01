@@ -182,7 +182,7 @@ struct ClipVideoView: View {
         VStack(spacing: 0) {
             HStack(spacing: 2) {
                 ShareLink(item: shareText) {
-                    ControlIcon(systemImage: "square.and.arrow.up")
+                    ControlIcon(systemImage: "square.and.arrow.up", tint: .white)
                 }
                 .accessibilityLabel("Share clip")
                 PlaybackClock(clip: clip, player: player)
@@ -211,7 +211,7 @@ struct ClipVideoView: View {
                 .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
                 if let onFullscreen {
                     Button(action: onFullscreen) {
-                        ControlIcon(systemImage: "arrow.up.left.and.arrow.down.right")
+                        ControlIcon(systemImage: "arrow.up.left.and.arrow.down.right", tint: .white)
                     }
                     .accessibilityLabel("Fullscreen")
                 }
@@ -219,7 +219,7 @@ struct ClipVideoView: View {
                     Haptics.selection()
                     coordinator.toggleMute()
                 } label: {
-                    ControlIcon(systemImage: coordinator.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    ControlIcon(systemImage: coordinator.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", tint: .white)
                 }
                 .accessibilityLabel(coordinator.isMuted ? "Unmute" : "Mute")
             }
@@ -311,7 +311,7 @@ private struct Scrubber: View {
 
 struct ControlIcon: View {
     let systemImage: String
-    var tint: Color = .white
+    var tint: Color = .primary
 
     var body: some View {
         Image(systemName: systemImage)

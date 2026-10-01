@@ -53,10 +53,9 @@ struct FeedView: View {
                 }
             }
         }
-        .background(Color.bgPlayer.ignoresSafeArea())
+        .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
-        .environment(\.colorScheme, .dark)
         .onAppear(perform: setup)
         .onChange(of: isActiveTab) { _, active in
             if active { resumeIfPossible() } else { coordinator.pause(); lookup.dismiss() }
@@ -88,11 +87,9 @@ struct FeedView: View {
         }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(clip: clip)
-                .environment(\.colorScheme, .dark)
         }
         .sheet(item: $reportClip) { clip in
             ClipInfoSheet(clip: clip)
-                .environment(\.colorScheme, .dark)
         }
         .sheet(isPresented: $showSearch) {
             SearchView()
@@ -118,7 +115,7 @@ struct FeedView: View {
                             VStack(spacing: 6) {
                                 Text(item.rawValue)
                                     .font(.title3.weight(tab == item ? .semibold : .regular))
-                                    .foregroundStyle(tab == item ? .white : .white.opacity(0.5))
+                                    .foregroundStyle(tab == item ? Color.primary : Color.secondary)
                                 Capsule()
                                     .fill(tab == item ? Color.jojoOrange : .clear)
                                     .frame(width: 44, height: 3)
@@ -191,10 +188,10 @@ struct FeedView: View {
                 .foregroundStyle(Color.jojoOrange)
             Text("Follow channels you like")
                 .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             Text("Tap Follow on any clip in For You, then come back here for a tighter feed.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button {
                 withAnimation(.snappy) { tab = .forYou }

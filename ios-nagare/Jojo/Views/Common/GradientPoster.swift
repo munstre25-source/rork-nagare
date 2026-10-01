@@ -101,20 +101,20 @@ struct ChannelRow: View {
                 if emphasizesTitle {
                     Text(clip.title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                     Text(clip.channelName)
                         .font(.caption)
-                        .foregroundStyle(Color.white.opacity(0.55))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 } else {
                     Text(clip.channelName)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                     Text("\(clip.categoryKind.displayName) · \(clip.difficulty)")
                         .font(.subheadline)
-                        .foregroundStyle(Color.white.opacity(0.55))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -126,12 +126,12 @@ struct ChannelRow: View {
                 } label: {
                     Text(app.isFollowing(channel: clip.channelName) ? "Following" : "Follow")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? .white.opacity(0.7) : .black)
+                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? .secondary : .white)
                         .padding(.horizontal, 12)
                         .frame(minHeight: 32)
                         .background(
                             app.isFollowing(channel: clip.channelName)
-                                ? Color.white.opacity(0.14)
+                                ? Color.fieldFill
                                 : Color.jojoOrange,
                             in: Capsule()
                         )
@@ -155,11 +155,11 @@ struct NextClipPeek: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(clip.title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                 Text(clip.channelName)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -169,14 +169,14 @@ struct NextClipPeek: View {
                 Text("Next")
                     .font(.caption2.weight(.bold))
             }
-            .foregroundStyle(.white.opacity(0.55))
+            .foregroundStyle(.secondary)
         }
         .padding(.horizontal, Spacing.l)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity)
         .background(
             LinearGradient(
-                colors: [.clear, Color.bgPlayer.opacity(0.92), Color.bgPlayer],
+                colors: [.clear, Color.canvas.opacity(0.92), Color.canvas],
                 startPoint: .top,
                 endPoint: .bottom
             )

@@ -26,17 +26,17 @@ struct SearchView: View {
                             suggestionsView
                         } else if hits.isEmpty {
                             VStack(spacing: Spacing.s) {
-                                Image(systemName: "text.magnifyingglass").font(.largeTitle).foregroundStyle(.white.opacity(0.35))
-                                Text("No clips say “\(query)” yet").font(.headline).foregroundStyle(.white)
+                                Image(systemName: "text.magnifyingglass").font(.largeTitle).foregroundStyle(.tertiary)
+                                Text("No clips say “\(query)” yet").font(.headline).foregroundStyle(.primary)
                                 Text("Try kana, kanji or romaji, e.g. たべ, 食べ or tabe.")
-                                    .font(.subheadline).foregroundStyle(.white.opacity(0.55))
+                                    .font(.subheadline).foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, 50)
                         } else {
                             Text("\(hits.count) \(hits.count == 1 ? "moment" : "moments") in \(Set(hits.map(\.clip.id)).count) clips")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.6))
+                                .foregroundStyle(.secondary)
                                 .padding(.horizontal, Spacing.l)
                             LazyVStack(spacing: Spacing.m) {
                                 ForEach(hits) { hit in
@@ -51,7 +51,7 @@ struct SearchView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 if lookup.isPresented {
-                    Color.black.opacity(0.45)
+                    Color.primary.opacity(0.35)
                         .ignoresSafeArea()
                         .onTapGesture { withAnimation(.snappy) { lookup.dismiss() } }
                         .transition(.opacity)
@@ -64,7 +64,7 @@ struct SearchView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .background(Color.bgPlayer.ignoresSafeArea())
+            .background(Color.canvas.ignoresSafeArea())
             .navigationTitle("Search & Listen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -72,10 +72,9 @@ struct SearchView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .toolbarBackground(Color.bgPlayer, for: .navigationBar)
+            .toolbarBackground(Color.canvas, for: .navigationBar)
         }
         .environment(lookup)
-        .environment(\.colorScheme, .dark)
         .onAppear {
             if query.isEmpty { query = initialQuery }
             isFocused = initialQuery.isEmpty
@@ -89,31 +88,31 @@ struct SearchView: View {
 
     private var searchField: some View {
         HStack(spacing: Spacing.s) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.white.opacity(0.5))
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField("Search kanji, kana or romaji", text: $query)
                 .focused($isFocused)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             if !query.isEmpty {
                 Button {
                     query = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.5)).frame(width: 44, height: 44)
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("Clear search")
             }
         }
         .padding(.leading, Spacing.m)
         .frame(minHeight: 48)
-        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, Spacing.l)
     }
 
     private var suggestionsView: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
-            Text("Try searching").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
+            Text("Try searching").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Spacing.s)], alignment: .leading, spacing: Spacing.s) {
                 ForEach(suggestions, id: \.self) { s in
                     Button {
@@ -122,9 +121,9 @@ struct SearchView: View {
                     } label: {
                         Text(s)
                             .font(JojoFont.jp(16, relativeTo: .body))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(Color.bgElevatedDark, in: Capsule())
+                            .background(Color.fieldFill, in: Capsule())
                     }
                 }
             }
@@ -141,15 +140,15 @@ private struct SearchHitCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
             HStack(spacing: Spacing.m) {
-                Color.bgElevatedDark
+                Color.fieldFill
                     .frame(width: 84, height: 52)
                     .overlay { GradientPoster(clip: hit.clip, showsSymbol: false).allowsHitTesting(false) }
                     .overlay { Image(systemName: "play.fill").foregroundStyle(.white) }
                     .clipShape(.rect(cornerRadius: 10, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(hit.clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
+                    Text(hit.clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
                     Text("\(hit.clip.channelName) · \(formatClock(hit.clip.lines[safe: hit.lineIndex]?.start ?? 0))")
-                        .font(.caption).foregroundStyle(.white.opacity(0.55))
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
                 Button(action: onPlay) {
@@ -164,7 +163,7 @@ private struct SearchHitCard: View {
             TranscriptLineView(clip: hit.clip, lineIndex: hit.lineIndex, spokenTokenIndex: nil, highlightSurface: query)
         }
         .padding(Spacing.m)
-        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.hairlineDark, lineWidth: 1))
+        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke, lineWidth: 1))
     }
 }

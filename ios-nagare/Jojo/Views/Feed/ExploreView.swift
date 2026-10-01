@@ -28,10 +28,10 @@ struct ExploreView: View {
                     VStack(spacing: Spacing.m) {
                         Image(systemName: favoritesOnly ? "bookmark" : "line.3.horizontal.decrease.circle")
                             .font(.largeTitle)
-                            .foregroundStyle(.white.opacity(0.4))
+                            .foregroundStyle(.tertiary)
                         Text(favoritesOnly ? "Long-press any clip or tap the bookmark to save it here." : "No clips match these filters yet.")
                             .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         Button("Clear filters") { clearFilters() }
                             .font(.subheadline.weight(.semibold))
@@ -61,7 +61,7 @@ struct ExploreView: View {
                     Haptics.selection()
                     favoritesOnly.toggle()
                 } label: {
-                    FilterChip(title: "Saved", systemImage: favoritesOnly ? "bookmark.fill" : "bookmark", isSelected: favoritesOnly, dark: true)
+                    FilterChip(title: "Saved", systemImage: favoritesOnly ? "bookmark.fill" : "bookmark", isSelected: favoritesOnly)
                 }
                 Menu {
                     Button("Any difficulty") { difficulty = nil }
@@ -69,7 +69,7 @@ struct ExploreView: View {
                         Button(d.rawValue) { difficulty = d }
                     }
                 } label: {
-                    FilterChip(title: difficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: difficulty != nil, dark: true)
+                    FilterChip(title: difficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: difficulty != nil)
                 }
                 Menu {
                     Button("Any topic") { topic = nil }
@@ -77,7 +77,7 @@ struct ExploreView: View {
                         Button { topic = c } label: { Label(c.displayName, systemImage: c.symbol) }
                     }
                 } label: {
-                    FilterChip(title: topic?.displayName ?? "Topic", systemImage: "square.grid.2x2.fill", isSelected: topic != nil, dark: true)
+                    FilterChip(title: topic?.displayName ?? "Topic", systemImage: "square.grid.2x2.fill", isSelected: topic != nil)
                 }
                 Menu {
                     Button("Any source") { source = nil }
@@ -85,7 +85,7 @@ struct ExploreView: View {
                         Button(s.displayName) { source = s }
                     }
                 } label: {
-                    FilterChip(title: source?.displayName ?? "Source type", systemImage: "play.tv.fill", isSelected: source != nil, dark: true)
+                    FilterChip(title: source?.displayName ?? "Source type", systemImage: "play.tv.fill", isSelected: source != nil)
                 }
                 if difficulty != nil || topic != nil || source != nil || favoritesOnly {
                     Button("Clear") { clearFilters() }
@@ -147,8 +147,8 @@ private struct ExploreClipCard: View {
             HStack(spacing: Spacing.m) {
                 ChannelAvatar(clip: clip, size: 34)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
-                    Text("\(clip.channelName) · \(clip.difficulty)").font(.caption).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                    Text(clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
+                    Text("\(clip.channelName) · \(clip.difficulty)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
@@ -169,15 +169,15 @@ private struct ExploreClipCard: View {
                 } label: {
                     Label("Loop line", systemImage: "repeat")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
             .buttonStyle(PressableStyle())
         }
         .padding(Spacing.m)
-        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.hairlineDark, lineWidth: 1))
+        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.cardStroke, lineWidth: 1))
     }
 }

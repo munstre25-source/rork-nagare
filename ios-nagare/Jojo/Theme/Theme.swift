@@ -34,11 +34,13 @@ extension Color {
     }
 
     // MARK: Backgrounds
+    /// Pure black for the video frame itself — never lightens with appearance.
     static let bgPlayer = Color(hex: "#0A0A0A")
-    static let bgSurfaceDark = Color(hex: "#121212")
-    static let bgElevatedDark = Color(hex: "#1C1C1E")
-    static let hairlineDark = Color(hex: "#2A2A2A")
-    /// Light mode uses the icon's cream paper so the brand survives the jump out of onboarding.
+    /// Raised chrome under the transcript / feed cards. Cream in light, near-black in dark.
+    static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
+    static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
+    static let hairlineDark = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
+    /// App page background — same family as Vocab / Profile so every tab matches.
     static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0A0A0A")
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")

@@ -90,6 +90,12 @@ final class UserProfile {
     var feedbackPromptDeferredUntil: Date?
     /// Sessions in the main app (after onboarding) — used to time the enjoy/feedback ask.
     var mainAppOpenCount: Int = 0
+    /// When onboarding finished; feedback cool-down starts here (nil = legacy / not yet migrated).
+    var onboardingCompletedAt: Date?
+    /// `totalWatchSeconds` snapshot at onboarding end so seeded demo watch doesn't unlock feedback.
+    var feedbackBaselineWatchSeconds: Double = 0
+    /// Saved-word count at onboarding end so seeded vocab doesn't unlock feedback.
+    var feedbackBaselineWordCount: Int = 0
     /// Expiration timestamp (timeIntervalSince1970) we already surveyed for after a trial cancel.
     var cancellationSurveyExpiration: Double = 0
 

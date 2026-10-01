@@ -50,7 +50,7 @@ struct TranscriptLineView: View {
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
                         .font(forceDenseAids ? .subheadline : .body)
-                        .foregroundStyle(Color.white.opacity(0.62))
+                        .foregroundStyle(Color.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

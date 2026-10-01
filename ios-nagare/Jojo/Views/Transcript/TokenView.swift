@@ -38,13 +38,13 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.white.opacity(0.6))
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.secondary)
                     .lineLimit(1)
                     .fixedSize()
             }
             Text(token.surface)
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(state == .selected ? Color.jojoOrange : .white)
+                .foregroundStyle(state == .selected ? Color.jojoOrange : Color.primary)
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, token.tappable ? 6 : 0)
@@ -54,7 +54,7 @@ struct TokenView: View {
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.white.opacity(0.5))
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.secondary)
                     .lineLimit(1)
                     .fixedSize()
             }

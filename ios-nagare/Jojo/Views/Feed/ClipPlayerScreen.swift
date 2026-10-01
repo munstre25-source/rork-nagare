@@ -22,14 +22,14 @@ struct ClipPlayerScreen: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
                         .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.1), in: Circle())
+                        .background(Color.fieldFill, in: Circle())
                 }
                 .accessibilityLabel("Close")
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(clip.title).font(.headline).foregroundStyle(.white).lineLimit(1)
-                    Text(clip.channelName).font(.caption).foregroundStyle(.white.opacity(0.55))
+                    Text(clip.title).font(.headline).foregroundStyle(.primary).lineLimit(1)
+                    Text(clip.channelName).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
@@ -43,17 +43,16 @@ struct ClipPlayerScreen: View {
                 onInfo: { infoClip = clip }
             )
         }
-        .background(Color.bgPlayer.ignoresSafeArea())
+        .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
-        .environment(\.colorScheme, .dark)
         .onAppear {
             coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
             coordinator.activate(clip, startLine: startLine, loopLine: loopLine)
         }
         .onDisappear { coordinator.stop() }
         .sheet(item: $infoClip) { clip in
-            ClipInfoSheet(clip: clip).environment(\.colorScheme, .dark)
+            ClipInfoSheet(clip: clip)
         }
     }
 }

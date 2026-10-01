@@ -212,7 +212,7 @@ struct MockPopupCard: View {
             DefinitionRow(number: 1, tag: "noun", text: "weather; the elements", dark: true)
         }
         .padding(Spacing.l)
-        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.white.opacity(0.08)))
         .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
     }
@@ -234,7 +234,7 @@ struct MockReviewCard: View {
             DefinitionRow(number: 1, tag: "ichidan", text: "to eat", dark: true)
             HighlightedSentence(sentence: "コンビニでおにぎりを食べました。", target: "食べ", size: 16, baseColor: .white)
             if let clip {
-                Color.bgElevatedDark
+                Color(hex: "#1C1C1E")
                     .frame(height: 96)
                     .overlay { GradientPoster(clip: clip, showsSymbol: false).allowsHitTesting(false) }
                     .overlay { Image(systemName: "play.fill").foregroundStyle(.white).frame(width: 44, height: 44).background(.black.opacity(0.4), in: Circle()) }
@@ -248,8 +248,8 @@ struct MockReviewCard: View {
             }
         }
         .padding(Spacing.l)
-        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.hairlineDark))
+        .background(Color(hex: "#121212"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color(hex: "#2A2A2A")))
         .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
     }
 }
