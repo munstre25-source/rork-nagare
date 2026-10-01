@@ -49,14 +49,9 @@
           "familyShareable": false,
           "groupNumber": 2,
           "internalID": "8C3D4E5F",
-          "introductoryOffer": {
-            "internalID": "9D4E5F60",
-            "paymentMode": "free",
-            "subscriptionPeriod": "P1W"
-          },
           "localizations": [
             {
-              "description": "Full access to Jojo Pro, billed monthly",
+              "description": "Full access to Jojo Pro, billed monthly. No free trial.",
               "displayName": "Jojo Pro Monthly",
               "locale": "en_US"
             }

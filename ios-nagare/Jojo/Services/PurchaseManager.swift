@@ -280,17 +280,19 @@ final class PurchaseManager {
     }
 
     /// e.g. "3-day free trial", read from the product's introductory discount.
+    /// Monthly has no free trial — only yearly.
     func trialText(_ package: Package?) -> String {
+        guard let package else { return "" }
+        let productId = package.storeProduct.productIdentifier
+        if productId == StoreConstants.monthlyProductId { return "" }
         guard isTrialEligible else { return "" }
-        guard let discount = package?.storeProduct.introductoryDiscount else {
-            // Fallback before StoreKit products load — yearly intro is 3 days.
-            let id = package?.storeProduct.productIdentifier ?? package?.identifier ?? ""
-            if id == StoreConstants.yearlyProductId || id.contains("year") {
+        guard let discount = package.storeProduct.introductoryDiscount else {
+            if productId == StoreConstants.yearlyProductId || productId.contains("year") {
                 return "3-day free trial"
             }
             return ""
         }
-        guard discount.paymentMode == .freeTrial else { return "Intro offer available" }
+        guard discount.paymentMode == .freeTrial else { return "" }
         let period = discount.subscriptionPeriod
         switch period.unit {
         case .day: return "\(period.value)-day free trial"
@@ -301,12 +303,14 @@ final class PurchaseManager {
         }
     }
 
-    /// Trial length in days for reminders / copy. Nil when no free trial applies.
+    /// Trial length in days for reminders / copy. Nil when no free trial applies (e.g. monthly).
     func trialLengthDays(_ package: Package?) -> Int? {
+        guard let package else { return nil }
+        let productId = package.storeProduct.productIdentifier
+        if productId == StoreConstants.monthlyProductId { return nil }
         guard isTrialEligible else { return nil }
-        guard let discount = package?.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else {
-            let id = package?.storeProduct.productIdentifier ?? package?.identifier ?? ""
-            if id == StoreConstants.yearlyProductId || id.contains("year") { return 3 }
+        guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else {
+            if productId == StoreConstants.yearlyProductId || productId.contains("year") { return 3 }
             return nil
         }
         let period = discount.subscriptionPeriod

@@ -127,6 +127,8 @@ struct PaywallView: View {
         return text.isEmpty ? "" : text.prefix(1).uppercased() + text.dropFirst()
     }
 
+    private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
+
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
     private var subscriptionDisclosure: String {
         let price = purchases.priceText(
@@ -134,10 +136,10 @@ struct PaywallView: View {
             fallback: plan == .yearly ? StoreConstants.fallbackYearlyPrice : StoreConstants.fallbackMonthlyPrice
         )
         let period = plan == .yearly ? "year" : "month"
-        if purchases.isTrialEligible, !trialLine.isEmpty {
+        if selectedPackageHasTrial, !trialLine.isEmpty {
             return "\(trialLine), then \(price)/\(period) for Jojo Pro. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
         }
-        return "\(price)/\(period) for Jojo Pro. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        return "\(price)/\(period) for Jojo Pro. No free trial on Monthly. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
     }
 
     private func planCard(_ choice: PlanChoice, title: String, price: String, detail: String, badge: String?, package: Package?) -> some View {
@@ -186,7 +188,7 @@ struct PaywallView: View {
                 if purchases.isPurchasing || purchases.isRestoring {
                     ProgressView().tint(.white)
                 } else {
-                    Text(purchases.isTrialEligible ? "Start My Free Trial" : "Subscribe Now")
+                    Text(selectedPackageHasTrial ? "Start My Free Trial" : "Subscribe Now")
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
