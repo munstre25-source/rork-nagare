@@ -129,6 +129,10 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
+    private var primaryCTATitle: String {
+        selectedPackageHasTrial ? "Start Free Trial" : "Continue"
+    }
+
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
     private var subscriptionDisclosure: String {
         let price = purchases.priceText(
@@ -188,7 +192,9 @@ struct PaywallView: View {
                 if purchases.isPurchasing || purchases.isRestoring {
                     ProgressView().tint(.white)
                 } else {
-                    Text(selectedPackageHasTrial ? "Start My Free Trial" : "Subscribe Now")
+                    Text(primaryCTATitle)
+                        .contentTransition(.opacity)
+                        .animation(.snappy, value: primaryCTATitle)
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
