@@ -1,10 +1,14 @@
 {
+  "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
-      "name": "Nagare",
+      "name": "Jojo",
       "path": "ios-nagare",
-      "framework": "swift"
+      "framework": "swift",
+      "settings": {
+        "displayName": "Jojo",
+        "iosBundleId": "com.socialreporthq.jojo"
+      }
     }
-  ],
-  "$schema": "https://rork.com/schema/rork.json"
+  ]
 }
