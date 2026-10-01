@@ -126,7 +126,7 @@ struct ChannelRow: View {
                 } label: {
                     Text(app.isFollowing(channel: clip.channelName) ? "Following" : "Follow")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? .secondary : .white)
+                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? Color.secondary : Color.white)
                         .padding(.horizontal, 12)
                         .frame(minHeight: 32)
                         .background(
