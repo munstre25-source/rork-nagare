@@ -28,16 +28,10 @@ struct MotivationStepView: View {
                 .padding(.horizontal, Spacing.l)
                 .padding(.top, Spacing.l)
             }
-            VStack(spacing: Spacing.xs) {
-                Button("Continue") { save(Array(selected)) }
-                    .buttonStyle(PrimaryButtonStyle(isEnabled: !selected.isEmpty))
-                    .disabled(selected.isEmpty)
-                Button("Prefer not to say") { save([]) }
-                    .font(.subheadline)
-                    .foregroundStyle(Color.jojoInkSoft)
-                    .frame(minHeight: 44)
-            }
-            .padding(.horizontal, Spacing.l)
+            Button("Continue") { save(Array(selected)) }
+                .buttonStyle(PrimaryButtonStyle(isEnabled: !selected.isEmpty))
+                .disabled(selected.isEmpty)
+                .padding(.horizontal, Spacing.l)
         }
         .onAppear { selected = Set(app.profile.motivations) }
     }

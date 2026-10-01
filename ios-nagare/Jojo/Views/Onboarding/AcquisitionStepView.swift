@@ -47,22 +47,13 @@ struct AcquisitionStepView: View {
                 .padding(.horizontal, Spacing.l)
                 .padding(.top, Spacing.l)
             }
-            VStack(spacing: Spacing.xs) {
-                Button {
-                    Task { await submit() }
-                } label: {
-                    Text(isSubmitting ? "Saving…" : "Continue")
-                }
-                .buttonStyle(PrimaryButtonStyle(isEnabled: selected != nil && !isSubmitting))
-                .disabled(selected == nil || isSubmitting)
-                Button("Prefer not to say") {
-                    Haptics.light()
-                    onContinue()
-                }
-                .font(.subheadline)
-                .foregroundStyle(Color.jojoInkSoft)
-                .frame(minHeight: 44)
+            Button {
+                Task { await submit() }
+            } label: {
+                Text(isSubmitting ? "Saving…" : "Continue")
             }
+            .buttonStyle(PrimaryButtonStyle(isEnabled: selected != nil && !isSubmitting))
+            .disabled(selected == nil || isSubmitting)
             .padding(.horizontal, Spacing.l)
         }
         .onAppear {

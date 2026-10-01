@@ -49,16 +49,10 @@ struct NameStepView: View {
             }
             .scrollIndicators(.hidden)
 
-            VStack(spacing: Spacing.xs) {
-                Button("Continue") { save(trimmed) }
-                    .buttonStyle(PrimaryButtonStyle(isEnabled: !trimmed.isEmpty))
-                    .disabled(trimmed.isEmpty)
-                Button("Skip for now") { save("") }
-                    .font(.subheadline)
-                    .foregroundStyle(Color.jojoInkSoft)
-                    .frame(minHeight: 44)
-            }
-            .padding(.horizontal, Spacing.l)
+            Button("Continue") { save(trimmed) }
+                .buttonStyle(PrimaryButtonStyle(isEnabled: !trimmed.isEmpty))
+                .disabled(trimmed.isEmpty)
+                .padding(.horizontal, Spacing.l)
         }
         .onAppear {
             name = app.profile.firstName

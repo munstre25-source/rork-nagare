@@ -270,25 +270,16 @@ struct NotificationStepView: View {
             OnboardingTitle(title: "Protect your streak with a daily nudge?", subtitle: "One gentle reminder in the evening. Never spammy.")
             notificationPreview
             Spacer()
-            VStack(spacing: Spacing.xs) {
-                Button("Turn on reminders") {
-                    Haptics.light()
-                    app.profile.notificationsAsked = true
-                    Task {
-                        await app.setReminders(true)
-                        track("onboarding_notifications_answer", props: ["granted": app.profile.remindersEnabled ? "1" : "0"])
-                        onContinue()
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                Button("Not now") {
-                    track("onboarding_notifications_answer", props: ["granted": "skipped"])
+            Button("Turn on reminders") {
+                Haptics.light()
+                app.profile.notificationsAsked = true
+                Task {
+                    await app.setReminders(true)
+                    track("onboarding_notifications_answer", props: ["granted": app.profile.remindersEnabled ? "1" : "0"])
                     onContinue()
                 }
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color.jojoInkSoft)
-                .frame(minHeight: 44)
             }
+            .buttonStyle(PrimaryButtonStyle())
         }
         .padding(.horizontal, Spacing.l)
         .padding(.bottom, Spacing.m)

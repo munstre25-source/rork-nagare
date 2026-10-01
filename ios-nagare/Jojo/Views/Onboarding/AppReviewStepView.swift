@@ -61,21 +61,6 @@ struct AppReviewStepView: View {
                     Text(didAskReview ? "Continue" : "Rate Jojo")
                 }
                 .buttonStyle(PrimaryButtonStyle())
-
-                if !didAskReview {
-                    Button {
-                        Haptics.selection()
-                        track("onboarding_appreview_skipped")
-                        onContinue()
-                    } label: {
-                        Text("Not now")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(Color.jojoInkFaint)
-                            .underline()
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.horizontal, Spacing.l)
             .padding(.bottom, Spacing.l)
