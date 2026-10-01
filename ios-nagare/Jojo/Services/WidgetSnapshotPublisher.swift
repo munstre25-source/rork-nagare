@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import WidgetKit
 
 /// Publishes a retention snapshot into the App Group for home-screen widgets.
