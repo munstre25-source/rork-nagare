@@ -142,7 +142,8 @@ curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
 - Entitlement: `nagare_learn_japanese_pro`
 - Offering: `default` (current), with `$rc_monthly` → product `monthly` ($9.99/mo) and `$rc_annual` → product `yearly`
   ($59.99/yr). Both products exist in the Test Store and the App Store app and are attached to the entitlement.
-  In App Store Connect, create auto-renewable subscriptions `monthly` and `yearly` in one group, each with a 7-day free trial.
+  In App Store Connect, create auto-renewable subscriptions `monthly` and `yearly` in one group.
+  Yearly intro offer: **3-day free trial**. Monthly may omit a trial or use its own offer.
 - API keys: DEBUG builds use `REVENUECAT_TEST_API_KEY` / `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` (Test Store);
   release builds use `REVENUECAT_IOS_API_KEY` / `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`. A single
   `REVENUECAT_API_KEY` in `Secrets.plist` overrides both when set.
@@ -175,7 +176,7 @@ Test: sandbox purchase → RevenueCat Customer History → Meta Ads delivery row
 - Local review UI: `tools/insights-dashboard` (`python3 -m http.server 8787`) with URL + anon key + `ADMIN_TOKEN`
 
 ## Testing purchases
-`Nagare.storekit` contains both products with the 7-day trial. In Xcode, go to Scheme → Run → Options →
+`Nagare.storekit` contains both products; yearly uses a **3-day** free trial. In Xcode, go to Scheme → Run → Options →
 StoreKit Configuration and select `Nagare.storekit`. For live explanations, use a StoreKit sandbox purchase so the
 Edge Function sees a real `pro` entitlement.
 
@@ -195,7 +196,7 @@ Enable the App Group on both the app and widget App IDs in the Apple Developer p
 - The paywall is hard: no free tier. The daily goal timer is motivational only.
 - The level badge (N5→N1) is estimated from known and learning word counts.
 - The streak counts consecutive days with at least 1 minute watched.
-- A streak-at-risk nudge fires at 21:30 and the daily reminder at 19:00. The Day-5 trial reminder is scheduled after a purchase when notifications are allowed.
+- A streak-at-risk nudge fires at 21:30 and the daily reminder at 19:00. A Day-2 reminder is scheduled after starting a 3-day yearly trial when notifications are allowed.
 - Social-proof ratings and quotes are sample content.
 - Noto Sans JP is bundled as static Regular/Bold subsets (Latin + kana + CJK unified). Hiragino Sans is the fallback.
 - The SwiftData models are CloudKit-compatible, but CloudKit sync is disabled (`cloudKitDatabase: .none`).

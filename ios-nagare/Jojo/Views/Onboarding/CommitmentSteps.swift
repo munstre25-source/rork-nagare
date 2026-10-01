@@ -266,11 +266,11 @@ struct TrialTimelineStepView: View {
         VStack(spacing: Spacing.l) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
-                    OnboardingTitle(title: "How your free trial works", subtitle: "Cancel anytime, right up to Day 7.")
+                    OnboardingTitle(title: "How your free trial works", subtitle: "3 days free on Yearly. Cancel anytime before Day 3.")
                     VStack(alignment: .leading, spacing: 0) {
-                        timelineRow(symbol: "lock.open.fill", title: "Today", detail: "Full access starts. Every clip, every word.", isFirst: true)
-                        timelineRow(symbol: "bell.fill", title: "Day 5", detail: "We'll remind you before your trial ends.")
-                        timelineRow(symbol: "star.fill", title: "Day 7", detail: "Trial ends. Subscription begins unless cancelled.", isLast: true)
+                        timelineRow(symbol: "lock.open.fill", title: "Today", detail: "Full Jojo Pro access starts immediately.", isFirst: true)
+                        timelineRow(symbol: "bell.fill", title: "Day 2", detail: "We'll remind you before your trial ends.")
+                        timelineRow(symbol: "star.fill", title: "Day 3", detail: "Trial ends. Yearly subscription begins unless cancelled.", isLast: true)
                     }
                     VStack(alignment: .leading, spacing: Spacing.m) {
                         ForEach(["Unlimited clips", "Tap-to-understand on every word", "Automatic flashcards", "Full progress tracking"], id: \.self) { item in

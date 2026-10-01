@@ -279,10 +279,17 @@ final class PurchaseManager {
         package?.storeProduct.localizedPriceString ?? fallback
     }
 
-    /// e.g. "7-day free trial", read from the product's introductory discount.
+    /// e.g. "3-day free trial", read from the product's introductory discount.
     func trialText(_ package: Package?) -> String {
         guard isTrialEligible else { return "" }
-        guard let discount = package?.storeProduct.introductoryDiscount else { return "7-day free trial" }
+        guard let discount = package?.storeProduct.introductoryDiscount else {
+            // Fallback before StoreKit products load — yearly intro is 3 days.
+            let id = package?.storeProduct.productIdentifier ?? package?.identifier ?? ""
+            if id == StoreConstants.yearlyProductId || id.contains("year") {
+                return "3-day free trial"
+            }
+            return ""
+        }
         guard discount.paymentMode == .freeTrial else { return "Intro offer available" }
         let period = discount.subscriptionPeriod
         switch period.unit {
@@ -291,6 +298,24 @@ final class PurchaseManager {
         case .month: return "\(period.value)-month free trial"
         case .year: return "\(period.value)-year free trial"
         @unknown default: return "Free trial"
+        }
+    }
+
+    /// Trial length in days for reminders / copy. Nil when no free trial applies.
+    func trialLengthDays(_ package: Package?) -> Int? {
+        guard isTrialEligible else { return nil }
+        guard let discount = package?.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else {
+            let id = package?.storeProduct.productIdentifier ?? package?.identifier ?? ""
+            if id == StoreConstants.yearlyProductId || id.contains("year") { return 3 }
+            return nil
+        }
+        let period = discount.subscriptionPeriod
+        switch period.unit {
+        case .day: return period.value
+        case .week: return period.value * 7
+        case .month: return period.value * 30
+        case .year: return period.value * 365
+        @unknown default: return nil
         }
     }
 

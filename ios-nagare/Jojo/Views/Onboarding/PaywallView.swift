@@ -127,6 +127,19 @@ struct PaywallView: View {
         return text.isEmpty ? "" : text.prefix(1).uppercased() + text.dropFirst()
     }
 
+    /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
+    private var subscriptionDisclosure: String {
+        let price = purchases.priceText(
+            selectedPackage,
+            fallback: plan == .yearly ? StoreConstants.fallbackYearlyPrice : StoreConstants.fallbackMonthlyPrice
+        )
+        let period = plan == .yearly ? "year" : "month"
+        if purchases.isTrialEligible, !trialLine.isEmpty {
+            return "\(trialLine), then \(price)/\(period) for Jojo Pro. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        }
+        return "\(price)/\(period) for Jojo Pro. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+    }
+
     private func planCard(_ choice: PlanChoice, title: String, price: String, detail: String, badge: String?, package: Package?) -> some View {
         let isSelected = plan == choice
         return Button {
@@ -178,10 +191,11 @@ struct PaywallView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(purchases.isPurchasing || purchases.isRestoring)
-            Text(purchases.isTrialEligible && !trialLine.isEmpty ? "\(trialLine). Cancel anytime before it ends." : "Renews automatically. Cancel anytime in Settings.")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.5))
+            Text(subscriptionDisclosure)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.55))
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: Spacing.l) {
                 Button("Restore Purchases") { Task { await restore() } }
                     .disabled(purchases.isRestoring || purchases.isPurchasing)
@@ -218,7 +232,10 @@ struct PaywallView: View {
         case .success:
             Haptics.success()
             track("onboarding_payment_success", props: ["plan": plan == .yearly ? "yearly" : "monthly"])
-            if await NotificationService.isAuthorized() { NotificationService.scheduleTrialReminder() }
+            if await NotificationService.isAuthorized(),
+               let days = purchases.trialLengthDays(selectedPackage) {
+                NotificationService.scheduleTrialReminder(trialDays: days)
+            }
             onSubscribed()
         case .cancelled:
             track("onboarding_payment_cancelled")

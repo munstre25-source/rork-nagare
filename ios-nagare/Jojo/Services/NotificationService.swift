@@ -1,11 +1,11 @@
 import Foundation
 import UserNotifications
 
-/// Local notifications: daily streak nudge, streak-at-risk, and the Day-5 trial reminder.
+/// Local notifications: daily streak nudge, streak-at-risk, and the pre-charge trial reminder.
 enum NotificationService {
     private static let dailyId = "nagare.daily"
     private static let atRiskId = "nagare.streak.atrisk"
-    private static let trialId = "nagare.trial.day5"
+    private static let trialId = "nagare.trial.reminder"
 
     static func requestAuthorization() async -> Bool {
         do {
@@ -54,13 +54,17 @@ enum NotificationService {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [atRiskId])
     }
 
-    /// Reminder on Day 5 of the 7-day free trial.
-    static func scheduleTrialReminder() {
+    /// Reminder one day before a free trial ends (default: 3-day yearly trial → fire after 2 days).
+    static func scheduleTrialReminder(trialDays: Int = 3) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [trialId])
+        guard trialDays > 1 else { return }
+        let fireAfterDays = max(1, trialDays - 1)
         let content = UNMutableNotificationContent()
-        content.title = "Your free trial ends in 2 days"
-        content.body = "Jojo Pro renews on Day 7. Cancel anytime in Settings before then."
+        content.title = "Your free trial ends tomorrow"
+        content.body = "Jojo Pro renews after your \(trialDays)-day trial unless you cancel at least 24 hours before it ends (Settings → Apple ID → Subscriptions)."
         content.sound = .default
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5 * 86_400, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(fireAfterDays * 86_400), repeats: false)
         add(UNNotificationRequest(identifier: trialId, content: content, trigger: trigger))
     }
 
