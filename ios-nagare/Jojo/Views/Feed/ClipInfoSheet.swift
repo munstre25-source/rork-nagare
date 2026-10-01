@@ -41,7 +41,11 @@ struct ClipInfoSheet: View {
                 } header: {
                     Text("Source")
                 } footer: {
-                    Text("Jojo streams clips from their original source and never re-hosts video. All rights belong to the creators.")
+                    // External platforms (Crunchyroll, Netflix, etc.) own their streams and
+                    // closed captions. Jojo only embeds YouTube (or similar) URLs the creators
+                    // already published, and draws its own learner transcript — never scraped
+                    // licensed captions or re-hosted video. Keep this note if sources change.
+                    Text("Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
                 }
                 Section {
                     Button(role: .destructive) {

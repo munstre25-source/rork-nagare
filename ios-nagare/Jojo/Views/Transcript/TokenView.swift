@@ -13,6 +13,8 @@ struct TokenView: View {
     var highlight: Bool = false
     var pulse: Bool = false
     var tooltip: String?
+    var showFurigana: Bool = true
+    var showRomaji: Bool = true
     let onTap: () -> Void
 
     @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 11
@@ -33,25 +35,29 @@ struct TokenView: View {
 
     private var content: some View {
         VStack(spacing: 2) {
-            Text(token.furigana ?? " ")
-                .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.6))
-                .lineLimit(1)
-                .fixedSize()
+            if showFurigana {
+                Text(token.furigana ?? " ")
+                    .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
+                    .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.6))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
             Text(token.surface)
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(.white)
+                .foregroundStyle(state == .selected ? Color.nagareOrange : .white)
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, token.tappable ? 6 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
                 .overlay(alignment: .bottom) { underline }
-            Text(token.romaji.isEmpty ? " " : token.romaji)
-                .font(.system(size: romajiSize))
-                .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.5))
-                .lineLimit(1)
-                .fixedSize()
+            if showRomaji {
+                Text(token.romaji.isEmpty ? " " : token.romaji)
+                    .font(.system(size: romajiSize))
+                    .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.5))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
         }
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
@@ -77,7 +83,13 @@ struct TokenView: View {
     private var wordBackground: some View {
         switch state {
         case .selected:
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.nagareOrange)
+            // Outline so the word stays readable (always-visible reading aids).
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.nagareOrange, lineWidth: 2.5)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.nagareOrange.opacity(0.18))
+                )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(Color.spokenGreen, lineWidth: 2)

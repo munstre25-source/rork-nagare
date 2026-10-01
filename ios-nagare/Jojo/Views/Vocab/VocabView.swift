@@ -20,6 +20,7 @@ struct VocabView: View {
     @State private var query: String = ""
     @State private var sort: VocabSort = .recent
     @State private var jlpt: String?
+    @State private var posFilter: StudyPosFilter = .all
     @State private var sourceChannel: String?
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showDeckBuilder: Bool = false
@@ -36,9 +37,11 @@ struct VocabView: View {
                     || word.readings.contains { JapaneseText.hiragana($0).contains(hq) }
                     || JapaneseText.normalizedRomaji(word.romaji).contains(nq)
                     || word.definitions.contains { $0.localizedStandardContains(q) }
+                    || word.jaDefinitions.contains { $0.localizedStandardContains(q) }
             }
         }
         if let jlpt { result = result.filter { $0.jlpt == jlpt } }
+        if posFilter != .all { result = result.filter { posFilter.matches($0.pos) } }
         if let sourceChannel {
             result = result.filter { app.clip(id: $0.contextClipId)?.channelName == sourceChannel }
         }
@@ -99,6 +102,16 @@ struct VocabView: View {
         .sheet(isPresented: $showSearch) {
             SearchView(initialQuery: query)
         }
+        .onAppear { openPendingReviewIfNeeded() }
+        .onChange(of: app.pendingDeepLink) { _, _ in openPendingReviewIfNeeded() }
+    }
+
+    private func openPendingReviewIfNeeded() {
+        guard app.pendingDeepLink == .review else { return }
+        app.clearDeepLink()
+        section = .review
+        let pool = dueWords.isEmpty ? words : dueWords
+        startReview(Array(pool), title: "Review")
     }
 
     // MARK: All Words
@@ -140,6 +153,13 @@ struct VocabView: View {
                         FilterChip(title: jlpt ?? "JLPT", isSelected: jlpt != nil)
                     }
                     Menu {
+                        ForEach(StudyPosFilter.allCases) { filter in
+                            Button(filter.title) { posFilter = filter }
+                        }
+                    } label: {
+                        FilterChip(title: posFilter == .all ? "Word type" : posFilter.title, isSelected: posFilter != .all)
+                    }
+                    Menu {
                         Button("Any source") { sourceChannel = nil }
                         ForEach(channels, id: \.self) { channel in
                             Button(channel) { sourceChannel = channel }
@@ -157,9 +177,15 @@ struct VocabView: View {
             .contentMargins(.horizontal, Spacing.l, for: .scrollContent)
 
             Button {
-                startReview(Array(dueWords.isEmpty ? filtered : dueWords), title: "Review")
+                let dueFiltered = dueWords.filter { word in
+                    (jlpt == nil || word.jlpt == jlpt) && posFilter.matches(word.pos)
+                }
+                let pool = dueFiltered.isEmpty ? filtered : dueFiltered
+                startReview(Array(pool), title: "Review")
             } label: {
-                Label("Review \(min(10, dueWords.isEmpty ? filtered.count : dueWords.count)) cards", systemImage: "play.fill")
+                let dueFilteredCount = dueWords.filter { (jlpt == nil || $0.jlpt == jlpt) && posFilter.matches($0.pos) }.count
+                let count = min(10, dueFilteredCount == 0 ? filtered.count : dueFilteredCount)
+                Label("Review \(count) cards", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(words.isEmpty)
@@ -274,15 +300,25 @@ struct VocabView: View {
 
 struct VocabRow: View {
     let word: SavedWord
+    @Environment(AppModel.self) private var app
+
+    private var gloss: String {
+        word.displayDefinitions(mode: app.profile.dictionary).first ?? word.gloss
+    }
 
     var body: some View {
         HStack(spacing: Spacing.m) {
             OccurrenceBadge(count: word.occurrenceCount, size: 36)
             VStack(alignment: .leading, spacing: 2) {
+                if app.profile.showFurigana, !word.primaryReading.isEmpty {
+                    Text(word.primaryReading)
+                        .font(JojoFont.jp(12, relativeTo: .caption))
+                        .foregroundStyle(.secondary)
+                }
                 Text(word.surface)
                     .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
                     .foregroundStyle(.primary)
-                Text(word.gloss)
+                Text(gloss)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -302,7 +338,7 @@ struct VocabRow: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(word.surface), \(word.primaryReading), \(word.gloss), seen \(word.occurrenceCount) times")
+        .accessibilityLabel("\(word.surface), \(word.primaryReading), \(gloss), seen \(word.occurrenceCount) times")
     }
 }
 

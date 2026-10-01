@@ -33,5 +33,10 @@ Package.resolved
 .env
 Config.swift
 
-# Nagare secrets (copy Config/Secrets.example.plist)
+# Nagare / Jojo secrets (copy Config/Secrets.example.plist)
 Nagare/Config/Secrets.plist
+Jojo/Config/Secrets.plist
+Config/Secrets.plist
+**/Secrets.plist
+!Config/Secrets.example.plist
+!**/Secrets.example.plist

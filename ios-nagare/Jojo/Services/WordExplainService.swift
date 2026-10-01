@@ -102,8 +102,10 @@ actor WordExplainService {
     }
 
     private func decodeLookup(_ data: Data, token: Token, source: WordExplanation.Source) -> WordExplanation? {
-        guard let response = try? JSONDecoder().decode(LookupResponse.self, from: data),
-              let definitions = response.definitions, !definitions.isEmpty else { return nil }
+        guard let response = try? JSONDecoder().decode(LookupResponse.self, from: data) else { return nil }
+        let definitions = response.definitions ?? []
+        let jaDefinitions = response.jaDefinitions ?? []
+        guard !definitions.isEmpty || !jaDefinitions.isEmpty else { return nil }
         return WordExplanation(
             word: token.surface,
             readings: response.readings?.isEmpty == false ? (response.readings ?? []) : token.allReadings,
@@ -111,7 +113,8 @@ actor WordExplainService {
             pos: response.pos ?? token.pos,
             conjugationClass: response.conjugationClass ?? token.conjugationClass,
             jlpt: token.jlpt,
-            definitions: definitions,
+            definitions: definitions.isEmpty ? token.definitions : definitions,
+            jaDefinitions: jaDefinitions.isEmpty ? token.jaDefinitions : jaDefinitions,
             formalityNote: response.formalityNote ?? token.formality,
             source: source
         )

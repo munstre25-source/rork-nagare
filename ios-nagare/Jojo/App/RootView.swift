@@ -26,6 +26,12 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.4), value: app.profile.onboardingCompleted)
         .animation(.easeInOut(duration: 0.4), value: app.purchases.isSubscribed)
+        .task(id: app.profile.onboardingCompleted) {
+            // After onboarding, ask for ATT once so RevenueCat can attach IDFA when allowed.
+            guard app.profile.onboardingCompleted else { return }
+            try? await Task.sleep(for: .milliseconds(800))
+            await MetaAttribution.requestTrackingIfNeededAndSync()
+        }
     }
 }
 
@@ -38,6 +44,8 @@ struct MainTabView: View {
     @Environment(AppModel.self) private var app
     @Query private var words: [SavedWord]
     @State private var tab: AppTab = .feed
+    @State private var showFeedbackPrompt = false
+    @State private var showManualFeedback = false
 
     var body: some View {
         TabView(selection: $tab) {
@@ -55,19 +63,44 @@ struct MainTabView: View {
                 }
                 .badge(words.count)
                 .tag(AppTab.vocab)
-            ProfileView()
+            ProfileView(onGiveFeedback: { showManualFeedback = true })
                 .tabItem {
                     Label("Profile", systemImage: tab == .profile ? "person.fill" : "person")
                 }
                 .tag(AppTab.profile)
         }
         .tint(Color.adaptive(light: "#111111", dark: "#FFFFFF"))
+        .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil { tab = .feed }
+        }
+        .onChange(of: app.pendingDeepLink) { _, link in
+            switch link {
+            case .review:
+                tab = .vocab
+            case .feed:
+                tab = .feed
+                app.clearDeepLink()
+            case nil:
+                break
+            }
         }
         .onAppear {
             let badge = UITabBarItem.appearance()
             badge.badgeColor = UIColor(hex: "#FF6B00")
+            if app.pendingDeepLink == .review { tab = .vocab }
+            if app.pendingDeepLink == .feed { tab = .feed }
+            if app.noteMainAppOpenAndShouldAskFeedback() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    showFeedbackPrompt = true
+                }
+            }
+        }
+        .sheet(isPresented: $showFeedbackPrompt) {
+            FeedbackFlowSheet { showFeedbackPrompt = false }
+        }
+        .sheet(isPresented: $showManualFeedback) {
+            FeedbackFlowSheet { showManualFeedback = false }
         }
     }
 }

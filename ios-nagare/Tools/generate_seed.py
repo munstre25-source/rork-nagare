@@ -8,14 +8,14 @@ Generates the bundled seed content for Nagare:
 Edit the data below and re-run:  python3 Tools/generate_seed.py
 Every token surface used in a clip line MUST exist in DICT (the script asserts this).
 
-REAL VIDEO SWAP-IN: each clip has "videoId": "PLACEHOLDER_...". Replace it with a real
-11-character YouTube ID and adjust "duration" + per-line timings ("times") to match the video.
-The app switches to the YouTube IFrame player automatically for real IDs.
+REAL VIDEO SWAP-IN: each clip has a real 11-character YouTube ID (embeddable, public).
+Adjust "duration" + per-line timings ("times") to match the video segment you want.
+The app uses the YouTube IFrame player for these IDs.
 """
 import json, os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "..", "Nagare", "Resources")
+OUT = os.path.join(HERE, "..", "Jojo", "Resources")
 
 # surface: (reading, romaji, pos, jlpt, [defs], extras)
 # extras: conj (godan/ichidan/irregular), form (plain/polite/keigo/casual),
@@ -319,75 +319,76 @@ PUNCT = {"、", "。", "!", "?", "「", "」", "…"}
 
 # ---------- Clips ----------
 # Each line: "surface|surface|…" ; use "何@なん" to pick a specific reading for that token.
+# Real embeddable YouTube shorts/clips (JP region, public). Transcripts remain learner-authored.
 CLIPS = [
- dict(id="kissa-stories-01", videoId="PLACEHOLDER_kissa01", title="Rainy Afternoon at the Kissaten", channel="Kissa Stories",
+ dict(id="kissa-stories-01", videoId="m4yJzEGcHgk", title="Rainy Afternoon at the Kissaten", channel="Kissa Stories",
       avatar="#C9803F", category="drama", difficulty="Beginner", duration=24, gradient=["#3B2414", "#8A4B22", "#E3A35B"],
       lines=[("今日|は|天気|が|いい|です|ね", "The weather's nice today, isn't it?"),
              ("コーヒー|を|二つ|ください", "Two coffees, please."),
              ("ここ|の|ケーキ|は|本当|に|美味しい|です|よ", "The cake here is really delicious, you know.")]),
- dict(id="konbini-diaries-01", videoId="PLACEHOLDER_konbini01", title="Late Night Onigiri Run", channel="Konbini Diaries",
+ dict(id="konbini-diaries-01", videoId="nACwMFy3BIE", title="Late Night Onigiri Run", channel="Konbini Diaries",
       avatar="#E0463A", category="drama", difficulty="Beginner", duration=24, gradient=["#0E1A2B", "#1F3F5C", "#E0463A"],
       lines=[("いらっしゃいませ", "Welcome!"),
              ("コンビニ|で|おにぎり|を|食べ|まし|た|。", "I ate an onigiri at the konbini."),
              ("温め|ます|か", "Would you like it heated up?"),
              ("はい|、|お願い|し|ます", "Yes, please.")]),
- dict(id="hoshizora-academy-07", videoId="PLACEHOLDER_hoshizora07", title="The Promise on the Rooftop", channel="Hoshizora Anime Club",
+ dict(id="hoshizora-academy-07", videoId="pbb2DE9x2yg", title="The Promise on the Rooftop", channel="Hoshizora Anime Club",
       avatar="#4B6BFF", category="anime", difficulty="Intermediate", duration=22, gradient=["#0B1030", "#2B2F7A", "#F29E4C"],
       lines=[("え|?|嘘|でしょ|!", "What? No way!"),
              ("俺|は|絶対|に|諦め|ない|ぞ", "I'm never giving up!"),
              ("みんな|を|守る|ため|に|強く|なり|たい", "I want to get stronger to protect everyone.")]),
- dict(id="neko-cafe-02", videoId="PLACEHOLDER_nekocafe02", title="A New Friend at the Neko Café", channel="Mochi Animation",
+ dict(id="neko-cafe-02", videoId="CY5J2CLozlo", title="A New Friend at the Neko Café", channel="Mochi Animation",
       avatar="#F4A6C0", category="anime", difficulty="Beginner", duration=18, gradient=["#2A1B2E", "#7A3E6B", "#F7C6A3"],
       lines=[("何|これ|、|可愛い|!", "What's this? So cute!"),
              ("この|猫|は|私|の|友達|だ|よ", "This cat is my friend."),
              ("一緒|に|遊ぼ|う", "Let's play together.")]),
- dict(id="ramen-road-trip-03", videoId="PLACEHOLDER_ramen03", title="Tonkotsu in Fukuoka", channel="Tabi Tabi TV",
+ dict(id="ramen-road-trip-03", videoId="YOBPp4m5MQQ", title="Tonkotsu in Fukuoka", channel="Tabi Tabi TV",
       avatar="#F2B134", category="variety", difficulty="Intermediate", duration=28, gradient=["#2B1405", "#9C3D10", "#F2B134"],
       lines=[("これ|は|めっちゃ|美味しい|です|ね|!", "This is seriously delicious!"),
              ("スープ|が|濃く|て|最高|です", "The broth is so rich, it's the best."),
              ("次|は|どこ|に|行き|ましょう|か", "Where shall we go next?")]),
- dict(id="quiz-showdown-11", videoId="PLACEHOLDER_quiz11", title="Final Round: Landmarks", channel="Waiwai Variety",
+ dict(id="quiz-showdown-11", videoId="rgXw4VWQKOw", title="Final Round: Landmarks", channel="Waiwai Variety",
       avatar="#22C1C3", category="variety", difficulty="Advanced", duration=30, gradient=["#06212B", "#0E6E78", "#FDBB2D"],
       lines=[("正解|は|なんと|東京|タワー|でし|た|!", "And the correct answer is… Tokyo Tower!"),
              ("全然|分から|なかっ|た|です", "I had no idea at all."),
              ("悔しい|けど|次|こそ|勝ち|ます", "It stings, but next time I'll win for sure.")]),
- dict(id="kitsune-yuki-stream-01", videoId="PLACEHOLDER_yuki01", title="Evening Stream Opening", channel="Kitsune Yuki Ch.",
+ dict(id="kitsune-yuki-stream-01", videoId="0ZYJkcNHFNY", title="Evening Stream Opening", channel="Kitsune Yuki Ch.",
       avatar="#FF8FAB", category="vtuber", difficulty="Beginner", duration=22, gradient=["#1B0F2E", "#5B2A86", "#FF8FAB"],
       lines=[("みんな|、|こんばんは|!", "Good evening, everyone!"),
              ("今日|も|来|て|くれ|て|ありがとう", "Thanks for coming again today."),
              ("コメント|を|読み|ます|ね", "I'll read your comments.")]),
- dict(id="tsukimi-rin-zatsudan-05", videoId="PLACEHOLDER_rin05", title="Late-Night Zatsudan", channel="Tsukimi Rin Ch.",
+ dict(id="tsukimi-rin-zatsudan-05", videoId="4YmjVPjA8To", title="Late-Night Zatsudan", channel="Tsukimi Rin Ch.",
       avatar="#8EC5FC", category="vtuber", difficulty="Intermediate", duration=32, gradient=["#050B1F", "#1D2B64", "#8EC5FC"],
       lines=[("実は|昨日|、|全然|寝|て|ない|ん|です", "Actually, I barely slept at all last night."),
              ("眠い|けど|頑張り|ます", "I'm sleepy, but I'll do my best."),
              ("明日|の|配信|も|楽しみ|に|し|て|て|ね", "Look forward to tomorrow's stream too!")]),
- dict(id="harajuku-street-02", videoId="PLACEHOLDER_harajuku02", title="What's Your Favorite Food?", channel="Machi no Koe",
+ dict(id="harajuku-street-02", videoId="7XgJ81N8svY", title="What's Your Favorite Food?", channel="Machi no Koe",
       avatar="#34C759", category="interview", difficulty="Beginner", duration=26, gradient=["#10261A", "#2E7D4F", "#F6E27F"],
       lines=[("すみません|、|ちょっと|いい|です|か", "Excuse me, do you have a moment?"),
              ("好き|な|食べ物|は|何@なん|です|か", "What's your favorite food?"),
              ("寿司|が|一番|好き|です", "I like sushi the most.")]),
- dict(id="words-that-matter-04", videoId="PLACEHOLDER_words04", title="Words That Matter", channel="Machi no Koe",
+ dict(id="words-that-matter-04", videoId="2uuaak0kXOg", title="Words That Matter", channel="Machi no Koe",
       avatar="#34C759", category="interview", difficulty="Advanced", duration=36, gradient=["#1C1917", "#57402F", "#D6B48A"],
       lines=[("あなた|に|とって|大切|な|言葉|は|何@なん|です|か", "What words are important to you?"),
              ("母|が|言っ|た|「|大丈夫|」|と|いう|言葉|です", "The word 'daijoubu' that my mother used to say."),
              ("辛い|時|に|いつも|思い出し|ます", "I always remember it when times are hard.")]),
- dict(id="piyo-picnic-01", videoId="PLACEHOLDER_piyo01", title="Piyo's Picnic", channel="Hiyoko Kids",
+ dict(id="piyo-picnic-01", videoId="gmTLiz1n5Gs", title="Piyo's Picnic", channel="Hiyoko Kids",
       avatar="#FFD23F", category="kids", difficulty="Beginner", duration=22, gradient=["#1E3A5F", "#3FA7D6", "#FFD23F"],
       lines=[("おはよう|!", "Good morning!"),
              ("今日|は|公園|に|行こ|う", "Let's go to the park today."),
              ("りんご|を|一つ|どうぞ", "Here, have an apple."),
              ("ありがとう|!|美味しい|ね", "Thank you! It's yummy!")]),
- dict(id="counting-kuma-03", videoId="PLACEHOLDER_kuma03", title="Counting with Kuma", channel="Hiyoko Kids",
+ dict(id="counting-kuma-03", videoId="GINghDX1-VQ", title="Counting with Kuma", channel="Hiyoko Kids",
       avatar="#FFD23F", category="kids", difficulty="Beginner", duration=18, gradient=["#12355B", "#4E9F3D", "#FFE66D"],
       lines=[("一|、|二|、|三|!", "One, two, three!"),
              ("空|が|青い|ね", "The sky is so blue."),
              ("明日|も|一緒|に|遊ぼ|う|ね", "Let's play together tomorrow too!")]),
- dict(id="boss-rush-live-09", videoId="PLACEHOLDER_boss09", title="Boss Rush: Attempt #37", channel="GameNama",
+ dict(id="boss-rush-live-09", videoId="8jJ_NDh2Ylc", title="Boss Rush: Attempt #37", channel="GameNama",
       avatar="#A3E635", category="gaming", difficulty="Intermediate", duration=24, gradient=["#0A0F0A", "#1F4D2B", "#A3E635"],
       lines=[("やばい|、|ボス|が|強|すぎる|!", "Oh no, this boss is way too strong!"),
              ("もう|一回|やろ|う", "Let's go one more time."),
              ("よし|、|勝っ|た|!", "Yes! I won!")]),
- dict(id="speedrun-commentary-02", videoId="PLACEHOLDER_speedrun02", title="The Frame-Perfect Jump", channel="GameNama",
+ dict(id="speedrun-commentary-02", videoId="z-4E2ii8zWE", title="The Frame-Perfect Jump", channel="GameNama",
       avatar="#A3E635", category="gaming", difficulty="Advanced", duration=34, gradient=["#0B0B14", "#3A1C71", "#FF6B00"],
       lines=[("この|ジャンプ|は|タイミング|が|難しい|ん|です|よ", "The timing on this jump is really tricky."),
              ("一日|中|練習|し|て|やっと|できる|よう|に|なり|まし|た", "I practiced all day and finally got it down."),

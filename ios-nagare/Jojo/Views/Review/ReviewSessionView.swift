@@ -91,27 +91,30 @@ struct ReviewSessionView: View {
     }
 
     private func card(for word: SavedWord) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.l) {
+        let defs = word.displayDefinitions(mode: app.profile.dictionary)
+        return VStack(alignment: .leading, spacing: Spacing.l) {
             WordHeaderCard(
                 surface: word.surface,
                 readings: word.readings,
                 romaji: word.romaji,
                 pos: word.pos,
                 conjugationClass: word.conjugationClass,
-                jlpt: word.jlpt
+                jlpt: word.jlpt,
+                showFurigana: app.profile.showFurigana,
+                showRomaji: app.profile.showRomaji
             )
             SectionTitle("Definition")
             VStack(spacing: Spacing.s) {
-                let defs = showAllDefs ? word.definitions : Array(word.definitions.prefix(2))
-                ForEach(Array(defs.enumerated()), id: \.offset) { index, def in
+                let visible = showAllDefs ? defs : Array(defs.prefix(2))
+                ForEach(Array(visible.enumerated()), id: \.offset) { index, def in
                     DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def)
                 }
-                if word.definitions.count > 2, !showAllDefs {
+                if defs.count > 2, !showAllDefs {
                     Button {
                         withAnimation(.snappy) { showAllDefs = true }
                     } label: {
                         HStack {
-                            Label("\(word.definitions.count - 2) more", systemImage: "plus")
+                            Label("\(defs.count - 2) more", systemImage: "plus")
                             Spacer()
                             Image(systemName: "chevron.right")
                         }

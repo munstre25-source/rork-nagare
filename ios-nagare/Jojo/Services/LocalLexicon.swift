@@ -12,7 +12,14 @@ nonisolated struct LocalLexicon: Sendable {
 
     /// Instant explanation: seed token data first, then the local dictionary (surface, then base form).
     func instantExplanation(for token: Token) -> WordExplanation? {
-        if let seeded = WordExplanation.fromToken(token) { return seeded }
+        if var seeded = WordExplanation.fromToken(token) {
+            if seeded.jaDefinitions.isEmpty,
+               let entry = entries[token.surface] ?? token.baseForm.flatMap({ entries[$0] }),
+               !entry.jaDefinitions.isEmpty {
+                seeded.jaDefinitions = entry.jaDefinitions
+            }
+            return seeded
+        }
         if let entry = entries[token.surface] { return .fromDictionary(entry, surface: token.surface) }
         if let base = token.baseForm, let entry = entries[base] {
             var explanation = WordExplanation.fromDictionary(entry, surface: token.surface)
@@ -25,10 +32,12 @@ nonisolated struct LocalLexicon: Sendable {
 
     /// Enriches a token with dictionary data (used for remote clips that ship without definitions).
     func enriched(_ token: Token) -> Token {
-        guard token.definitions.isEmpty, token.tappable else { return token }
+        guard token.tappable else { return token }
+        guard token.definitions.isEmpty || token.jaDefinitions.isEmpty else { return token }
         guard let entry = entries[token.surface] ?? token.baseForm.flatMap({ entries[$0] }) else { return token }
         var copy = token
-        copy.definitions = entry.definitions
+        if copy.definitions.isEmpty { copy.definitions = entry.definitions }
+        if copy.jaDefinitions.isEmpty { copy.jaDefinitions = entry.jaDefinitions }
         if copy.jlpt == nil { copy.jlpt = entry.jlpt }
         if copy.conjugationClass == nil { copy.conjugationClass = entry.conjugationClass }
         if copy.reading == nil, copy.containsKanji { copy.reading = entry.readings.first }

@@ -9,6 +9,8 @@ struct LiveTranscriptPanel: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var onlyCurrentLine: Bool = false
+    /// Feed immersive mode: always show furigana + romaji + JP/EN.
+    var forceDenseAids: Bool = false
 
     @Environment(WordLookupController.self) private var lookup
 
@@ -24,13 +26,14 @@ struct LiveTranscriptPanel: View {
                             pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
                             isPulsing: isPulsing,
                             tooltip: index == currentLine ? tooltip : nil,
-                            isActive: index == currentLine || lookup.selection?.lineIndex == index
+                            isActive: index == currentLine || lookup.selection?.lineIndex == index,
+                            forceDenseAids: forceDenseAids
                         )
                         .id(index)
                     }
                 }
                 .padding(.horizontal, Spacing.l)
-                .padding(.top, tooltip == nil ? Spacing.l : 48)
+                .padding(.top, tooltip == nil ? (forceDenseAids ? Spacing.m : Spacing.l) : 48)
                 .padding(.bottom, Spacing.l)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

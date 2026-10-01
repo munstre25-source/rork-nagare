@@ -13,6 +13,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
     var conjugationClass: String?
     var jlpt: String?
     var definitions: [String]
+    var jaDefinitions: [String]
     var formality: String?
     var tappable: Bool
     /// Dictionary form for conjugated stems (e.g. 食べ → 食べる).
@@ -21,14 +22,16 @@ nonisolated struct Token: Codable, Hashable, Sendable {
     var baseRomaji: String?
 
     enum CodingKeys: String, CodingKey {
-        case surface, reading, altReadings, romaji, start, end, pos, conjugationClass, jlpt, definitions, formality, tappable, baseForm, baseReading, baseRomaji
+        case surface, reading, altReadings, romaji, start, end, pos, conjugationClass, jlpt, definitions, jaDefinitions, formality, tappable, baseForm, baseReading, baseRomaji
         case altReadingsSnake = "alt_readings"
         case conjugationSnake = "conjugation_class"
+        case jaDefinitionsSnake = "ja_definitions"
     }
 
     init(surface: String, reading: String? = nil, altReadings: [String] = [], romaji: String, start: Double, end: Double,
          pos: String, conjugationClass: String? = nil, jlpt: String? = nil, definitions: [String] = [],
-         formality: String? = nil, tappable: Bool = true, baseForm: String? = nil, baseReading: String? = nil, baseRomaji: String? = nil) {
+         jaDefinitions: [String] = [], formality: String? = nil, tappable: Bool = true,
+         baseForm: String? = nil, baseReading: String? = nil, baseRomaji: String? = nil) {
         self.surface = surface
         self.reading = reading
         self.altReadings = altReadings
@@ -39,6 +42,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         self.conjugationClass = conjugationClass
         self.jlpt = jlpt
         self.definitions = definitions
+        self.jaDefinitions = jaDefinitions
         self.formality = formality
         self.tappable = tappable
         self.baseForm = baseForm
@@ -60,6 +64,8 @@ nonisolated struct Token: Codable, Hashable, Sendable {
             ?? c.decodeIfPresent(String.self, forKey: .conjugationSnake)
         jlpt = try c.decodeIfPresent(String.self, forKey: .jlpt)
         definitions = try c.decodeIfPresent([String].self, forKey: .definitions) ?? []
+        jaDefinitions = try c.decodeIfPresent([String].self, forKey: .jaDefinitions)
+            ?? c.decodeIfPresent([String].self, forKey: .jaDefinitionsSnake) ?? []
         formality = try c.decodeIfPresent(String.self, forKey: .formality)
         tappable = try c.decodeIfPresent(Bool.self, forKey: .tappable) ?? (pos != "punctuation")
         baseForm = try c.decodeIfPresent(String.self, forKey: .baseForm)
@@ -79,6 +85,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         try c.encodeIfPresent(conjugationClass, forKey: .conjugationClass)
         try c.encodeIfPresent(jlpt, forKey: .jlpt)
         try c.encode(definitions, forKey: .definitions)
+        try c.encode(jaDefinitions, forKey: .jaDefinitions)
         try c.encodeIfPresent(formality, forKey: .formality)
         try c.encode(tappable, forKey: .tappable)
         try c.encodeIfPresent(baseForm, forKey: .baseForm)

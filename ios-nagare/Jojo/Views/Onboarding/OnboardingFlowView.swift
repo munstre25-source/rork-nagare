@@ -5,6 +5,8 @@ struct OnboardingFlowView: View {
     @Environment(AppModel.self) private var app
     @State private var step: OnboardingStep = .splash
     @State private var showSplash: Bool = true
+    @State private var showDemoGate: Bool = false
+    @State private var showDemoPlayer: Bool = false
     @State private var isForward: Bool = true
     @State private var didLoad: Bool = false
 
@@ -12,15 +14,42 @@ struct OnboardingFlowView: View {
 
     var body: some View {
         ZStack {
-            OnboardingBackground()
+            if step.usesLightChrome {
+                Color(hex: "#FFF6EE").ignoresSafeArea()
+            } else {
+                OnboardingBackground()
+            }
             if showSplash {
                 SplashView {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         showSplash = false
-                        if step == .splash { go(to: .valueCaptions) }
+                        if shouldOfferLaunchDemo {
+                            showDemoGate = true
+                        } else if step == .splash {
+                            go(to: .valueCaptions)
+                        }
                     }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
+            } else if showDemoPlayer {
+                AppMarketingDemoView {
+                    finishLaunchDemo()
+                }
+                .transition(.opacity)
+            } else if showDemoGate {
+                LaunchDemoGateView(
+                    onPlay: {
+                        withAnimation(.easeInOut(duration: 0.35)) {
+                            showDemoGate = false
+                            showDemoPlayer = true
+                        }
+                    },
+                    onSkip: {
+                        track("launch_demo_skip")
+                        finishLaunchDemo()
+                    }
+                )
+                .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
                     header
@@ -35,16 +64,35 @@ struct OnboardingFlowView: View {
                 }
             }
         }
-        .environment(\.colorScheme, .dark)
+        .environment(\.colorScheme, step.usesLightChrome ? .light : .dark)
+        .animation(.easeInOut(duration: 0.35), value: step.usesLightChrome)
         .onAppear {
             guard !didLoad else { return }
             didLoad = true
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
             if step == .welcome, !app.purchases.isSubscribed { step = .paywall }
+            // Resume mid-funnel: skip splash + demo gate.
+            if step != .splash {
+                showSplash = false
+                showDemoGate = false
+            }
         }
         .onChange(of: step) { _, newStep in
             app.setOnboardingStep(newStep)
             track("onboarding_\(newStep.analyticsName)_view", props: ["step": String(newStep.rawValue)])
+        }
+    }
+
+    private var shouldOfferLaunchDemo: Bool {
+        !app.profile.hasSeenLaunchDemo && (step == .splash || step == .valueCaptions)
+    }
+
+    private func finishLaunchDemo() {
+        app.markLaunchDemoSeen()
+        withAnimation(.easeInOut(duration: 0.4)) {
+            showDemoPlayer = false
+            showDemoGate = false
+            if step == .splash { go(to: .valueCaptions) }
         }
     }
 
@@ -58,6 +106,7 @@ struct OnboardingFlowView: View {
 
     @ViewBuilder
     private var header: some View {
+        let light = step.usesLightChrome
         HStack(spacing: Spacing.m) {
             if step.allowsBack, step != .valueTap, step != .valueFlashcards {
                 Button {
@@ -65,9 +114,9 @@ struct OnboardingFlowView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(light ? Color(hex: "#3A3A3A") : .white)
                         .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.08), in: Circle())
+                        .background((light ? Color.black.opacity(0.06) : Color.white.opacity(0.08)), in: Circle())
                 }
                 .accessibilityLabel("Back")
             } else {
@@ -76,7 +125,7 @@ struct OnboardingFlowView: View {
             if step.showsProgress, let index = progressSteps.firstIndex(of: step) {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.12))
+                        Capsule().fill(light ? Color.black.opacity(0.08) : Color.white.opacity(0.12))
                         Capsule().fill(Color.nagareOrange)
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
                             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
@@ -121,6 +170,10 @@ struct OnboardingFlowView: View {
             NotificationStepView { next() }
         case .trialTimeline:
             TrialTimelineStepView { next() }
+        case .appReview:
+            AppReviewStepView { next() }
+        case .acquisition:
+            AcquisitionStepView { next() }
         case .paywall:
             PaywallView(allowsDebugBypass: true) {
                 go(to: .welcome)

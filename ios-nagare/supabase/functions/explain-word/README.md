@@ -1,4 +1,4 @@
-# explain-word Edge Function (contract)
+# explain-word Edge Function
 
 The app never talks to Gemini. It calls this function only:
 
@@ -14,10 +14,13 @@ Content-Type: application/json
 
 Responses:
 
-- `lookup` → `{ word, readings[], romaji, pos, conjugation_class, definitions[], formality_note, audio_hint }`
+- `lookup` → `{ word, readings[], romaji, pos, conjugation_class, definitions[], ja_definitions[], formality_note, audio_hint }`
 - `context` → `{ contextual_explanation, examples[], related_words[] }`
 
-The server owns: the Gemini 2.5 Flash Lite call and key, a shared cache, verifying the
-`pro` entitlement for `x-app-user-id` via the RevenueCat REST API, and per-user rate limiting.
-Return 401/403 for no entitlement and 429 when rate limited. The app silently falls back to local data
-on any non-2xx, network failure or its 2.5 s timeout.
+The server owns: Gemini (model from `GEMINI_MODEL_EXPLAIN`), a shared `word_explanations` cache keyed with `PROMPT_VERSION`, verifying the `nagare_learn_japanese_pro` entitlement for `x-app-user-id` via RevenueCat (positive **and** negative results cached a few minutes), per-IP / per-JWT ingress limits **before** any RevenueCat call, per-user rate limits, and a global daily Gemini call cap.
+
+When the request uses an authenticated Supabase user JWT, `x-app-user-id` must match `app_metadata.revenuecat_app_user_id`. Requests that still use the shared anon key skip that bind and rely on per-IP ingress limits.
+
+Return 401/403 for no entitlement / bind failure and 429 when rate limited or over the global cap. The app silently falls back to local data on any non-2xx, network failure or its 2.5 s timeout.
+
+See the main [README](../../../README.md#backend-edge-functions) for secrets and curl examples.

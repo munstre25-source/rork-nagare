@@ -60,9 +60,51 @@ final class UserProfile {
     var remindersEnabled: Bool = false
     var notificationsAsked: Bool = false
     var favoriteClipIds: [String] = []
+    /// Channel names the user follows (For You / Following split).
+    var followedChannelNames: [String] = []
     var lastGoalCelebratedDay: String = ""
     var didSeedDemoData: Bool = false
     var firstClipId: String?
+    /// Launch marketing demo was played or skipped (don't show again mid-funnel).
+    var hasSeenLaunchDemo: Bool = false
+
+    // Learning preferences (defaults keep existing behaviour).
+    var appearanceMode: String = AppearanceMode.system.rawValue
+    var subtitleMode: String = SubtitleMode.both.rawValue
+    var showFurigana: Bool = true
+    var showRomaji: Bool = true
+    var dictionaryMode: String = DictionaryMode.english.rawValue
+    var hideDailyGoalBar: Bool = false
+    /// When true, For You only surfaces clips at the user's level or one step harder.
+    var gateContentByLevel: Bool = true
+
+    /// Onboarding: Instagram / TikTok / App Store / etc.
+    var acquisitionSource: String = ""
+    /// none | deferred | completed
+    var feedbackPromptState: String = "none"
+    var feedbackPromptDeferredUntil: Date?
+    /// Sessions in the main app (after onboarding) — used to time the enjoy/feedback ask.
+    var mainAppOpenCount: Int = 0
 
     init() {}
+
+    var appearance: AppearanceMode {
+        get { AppearanceMode(rawValue: appearanceMode) ?? .system }
+        set { appearanceMode = newValue.rawValue }
+    }
+
+    var subtitles: SubtitleMode {
+        get { SubtitleMode(rawValue: subtitleMode) ?? .both }
+        set { subtitleMode = newValue.rawValue }
+    }
+
+    var dictionary: DictionaryMode {
+        get { DictionaryMode(rawValue: dictionaryMode) ?? .english }
+        set { dictionaryMode = newValue.rawValue }
+    }
+
+    var readingLevel: ReadingLevel {
+        get { ReadingLevel(rawValue: level) ?? .beginner }
+        set { level = newValue.rawValue }
+    }
 }

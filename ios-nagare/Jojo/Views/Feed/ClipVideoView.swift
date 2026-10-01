@@ -15,15 +15,18 @@ struct ClipVideoView: View {
     var onActivate: () -> Void = {}
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
+    var onShadowing: (() -> Void)?
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
-    @State private var heartBurst: Bool = false
+    @State private var saveBurst: Bool = false
+    @State private var savedWordLabel: String?
+    @State private var holdHint: Bool = false
 
     var body: some View {
         ZStack {
             surface
-            if player?.isPlaying != true {
+            if player?.isPlaying != true, !coordinator.isHoldSlowActive {
                 Image(systemName: "play.fill")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)
@@ -33,36 +36,64 @@ struct ClipVideoView: View {
                     .transition(.scale.combined(with: .opacity))
                     .allowsHitTesting(false)
             }
-            if heartBurst {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 84))
-                    .foregroundStyle(Color.nagareOrange)
-                    .shadow(color: .black.opacity(0.4), radius: 12)
-                    .transition(.scale(scale: 0.3).combined(with: .opacity))
-                    .allowsHitTesting(false)
+            if coordinator.isHoldSlowActive {
+                VStack(spacing: 6) {
+                    Image(systemName: "tortoise.fill")
+                        .font(.title2)
+                    Text("0.75× · looping line")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(.black.opacity(0.55), in: Capsule())
+                .transition(.opacity)
+                .allowsHitTesting(false)
+            }
+            if saveBurst {
+                VStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 64))
+                        .foregroundStyle(Color.nagareOrange)
+                        .shadow(color: .black.opacity(0.4), radius: 12)
+                    if let savedWordLabel {
+                        Text(savedWordLabel)
+                            .font(JojoFont.jp(18, bold: true, relativeTo: .headline))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.black.opacity(0.55), in: Capsule())
+                    }
+                }
+                .transition(.scale(scale: 0.3).combined(with: .opacity))
+                .allowsHitTesting(false)
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture {
+        .onTapGesture(count: 2) { doubleTapSave() }
+        .onTapGesture(count: 1) {
             if let player {
                 withAnimation(.snappy) { player.togglePlay() }
             } else {
                 onActivate()
             }
         }
-        .onLongPressGesture(minimumDuration: 0.45) {
-            let added = app.toggleFavorite(clip.id)
-            Haptics.success()
-            guard added else { return }
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { heartBurst = true }
-            Task {
-                try? await Task.sleep(for: .milliseconds(750))
-                withAnimation(.easeOut(duration: 0.25)) { heartBurst = false }
+        .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 48, pressing: { pressing in
+            if pressing {
+                if player == nil { onActivate() }
+                coordinator.beginHoldSlow()
+                withAnimation(.snappy) { holdHint = true }
+                Haptics.medium()
+            } else {
+                coordinator.endHoldSlow()
+                withAnimation(.snappy) { holdHint = false }
             }
-        }
+        }, perform: {})
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(clip.title) video")
+        .accessibilityHint("Double tap to save the current line. Hold to slow and loop.")
         .accessibilityAction(named: "Play or pause") { player?.togglePlay() }
+        .accessibilityAction(named: "Save current line") { doubleTapSave() }
         .accessibilityAction(named: "Save to favorites") { _ = app.toggleFavorite(clip.id) }
         .overlay(alignment: .topLeading) { sourceBadge }
         .overlay(alignment: .trailing) {
@@ -72,6 +103,26 @@ struct ClipVideoView: View {
             if showsControls { controls }
         }
         .clipped()
+    }
+
+    private func doubleTapSave() {
+        let lineIndex = player?.currentLineIndex ?? 0
+        let count = app.saveLine(clip: clip, lineIndex: lineIndex)
+        guard count > 0 else {
+            Haptics.warning()
+            return
+        }
+        Haptics.success()
+        let surface = clip.lines[safe: lineIndex]?.tokens.first(where: \.tappable)?.surface
+        savedWordLabel = surface.map { "Saved · \($0)" } ?? "Saved \(count) words"
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { saveBurst = true }
+        Task {
+            try? await Task.sleep(for: .milliseconds(900))
+            withAnimation(.easeOut(duration: 0.25)) {
+                saveBurst = false
+                savedWordLabel = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -88,18 +139,22 @@ struct ClipVideoView: View {
     }
 
     private var sourceBadge: some View {
-        HStack(spacing: 6) {
-            Image(systemName: clip.hasRealVideo ? "play.rectangle.fill" : "waveform")
-                .foregroundStyle(clip.hasRealVideo ? Color(hex: "#FF0033") : Color.nagareOrange)
-            Text(clip.hasRealVideo ? "YouTube" : "Jojo Preview")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
+        Group {
+            if clip.hasRealVideo {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.rectangle.fill")
+                        .foregroundStyle(Color(hex: "#FF0033"))
+                    Text("YouTube")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.black.opacity(0.4), in: Capsule())
+                .padding(Spacing.m)
+                .accessibilityLabel("Source: YouTube")
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(.black.opacity(0.4), in: Capsule())
-        .padding(Spacing.m)
-        .accessibilityLabel(clip.hasRealVideo ? "Source: YouTube" : "Preview clip")
     }
 
     private var rail: some View {
@@ -111,6 +166,9 @@ struct ClipVideoView: View {
             ) {
                 Haptics.light()
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
+            }
+            if let onShadowing {
+                RailButton(systemImage: "mic.fill", label: "Shadowing practice", action: onShadowing)
             }
             if let onInfo {
                 RailButton(systemImage: "info.circle", label: "Clip info", action: onInfo)

@@ -81,6 +81,13 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
 nonisolated enum ReadingLevel: String, CaseIterable, Identifiable, Sendable {
     case beginner, intermediate, advanced
     var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .beginner: "Beginner (N5–N4)"
+        case .intermediate: "Intermediate (N3–N2)"
+        case .advanced: "Advanced (N2–N1)"
+        }
+    }
     var difficulty: Difficulty {
         switch self {
         case .beginner: .beginner
@@ -90,11 +97,41 @@ nonisolated enum ReadingLevel: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+nonisolated enum AcquisitionSource: String, CaseIterable, Identifiable, Sendable {
+    case instagram, tiktok, webSearch = "web_search", appStore = "app_store", youtube, friend, other
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .instagram: "Instagram"
+        case .tiktok: "TikTok"
+        case .webSearch: "Web search / Google"
+        case .appStore: "App Store"
+        case .youtube: "YouTube"
+        case .friend: "Friend / word of mouth"
+        case .other: "Somewhere else"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .instagram: "camera"
+        case .tiktok: "music.note"
+        case .webSearch: "magnifyingglass"
+        case .appStore: "apple.logo"
+        case .youtube: "play.rectangle.fill"
+        case .friend: "person.2.fill"
+        case .other: "ellipsis.circle"
+        }
+    }
+}
+
 /// Every onboarding screen, persisted by raw value so the flow resumes exactly where it was left.
 nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case splash = 0
     case valueCaptions, valueTap, valueFlashcards
-    case motivation, taste, level, demo, socialProof, dailyGoal, journey, notifications, trialTimeline, paywall, welcome
+    case motivation, taste, level, demo, socialProof, dailyGoal, journey, notifications, trialTimeline, appReview
+    /// Where did you hear about Jojo? Inserted before paywall.
+    case acquisition
+    case paywall, welcome
 
     var analyticsName: String {
         switch self {
@@ -109,6 +146,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         case .journey: "journey"
         case .notifications: "notifications"
         case .trialTimeline: "trial_timeline"
+        case .appReview: "appreview"
+        case .acquisition: "acquisition"
         case .paywall: "paywall"
         case .welcome: "welcome"
         }
@@ -127,4 +166,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         default: true
         }
     }
+
+    /// Light cream review ask — header chrome should invert for contrast.
+    var usesLightChrome: Bool { self == .appReview }
 }

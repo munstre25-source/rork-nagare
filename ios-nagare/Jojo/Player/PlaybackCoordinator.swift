@@ -9,9 +9,13 @@ final class PlaybackCoordinator {
     private(set) var player: (any ClipPlayer)?
     private(set) var preferredRate: Double = 1
     private(set) var isMuted: Bool = false
+    /// True while the user is hold-to-slow practicing.
+    private(set) var isHoldSlowActive: Bool = false
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
     @ObservationIgnored private var resumeAfterPopup = false
+    @ObservationIgnored private var rateBeforeHold: Double = 1
+    @ObservationIgnored private var loopBeforeHold: ClosedRange<Double>?
 
     var activeClipId: String? { player?.clip.id }
 
@@ -53,6 +57,28 @@ final class PlaybackCoordinator {
     func toggleMute() {
         isMuted.toggle()
         player?.setMuted(isMuted)
+    }
+
+    /// Hold-to-practice: slow to 0.75× and loop the current line until released.
+    func beginHoldSlow() {
+        guard let player, !isHoldSlowActive else { return }
+        isHoldSlowActive = true
+        rateBeforeHold = preferredRate
+        loopBeforeHold = player.loopRange
+        preferredRate = 0.75
+        player.setRate(0.75)
+        if let line = player.clip.lines[safe: player.currentLineIndex] {
+            player.setLoop(max(0, line.start - 0.3)...min(player.duration, line.end + 0.5))
+        }
+        if !player.isPlaying { player.play() }
+    }
+
+    func endHoldSlow() {
+        guard isHoldSlowActive else { return }
+        isHoldSlowActive = false
+        preferredRate = rateBeforeHold
+        player?.setRate(rateBeforeHold)
+        player?.setLoop(loopBeforeHold)
     }
 
     func pause() {

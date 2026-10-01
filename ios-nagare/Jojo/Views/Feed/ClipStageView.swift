@@ -12,9 +12,13 @@ struct ClipStageView: View {
     var showsChannelRow: Bool = true
     var channelTrailing: AnyView?
     var showsRail: Bool = true
+    /// TikTok-style feed page: title-forward chrome, dense karaoke, next-clip peek.
+    var immersiveFeed: Bool = false
+    var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
+    var onShadowing: (() -> Void)?
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
@@ -24,42 +28,63 @@ struct ClipStageView: View {
         lookup.selection?.clip.id == clip.id
     }
 
+    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 9 : videoAspect }
+    private var resolvedOnlyCurrent: Bool { immersiveFeed ? true : onlyCurrentLine }
+
     var body: some View {
         let player = coordinator.player(for: clip)
-        VStack(spacing: 0) {
-            if showsChannelRow {
-                ChannelRow(clip: clip, trailing: channelTrailing)
-                    .padding(.vertical, 10)
-            }
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsRail: showsRail,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                onInfo: onInfo
-            )
-            .aspectRatio(videoAspect, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .overlay(alignment: .bottom) { popupLayer }
-            .zIndex(1)
-            TranscriptSection(
-                clip: clip,
-                player: player,
-                onlyCurrentLine: onlyCurrentLine,
-                pulseTokenIndex: pulseTokenIndex,
-                isPulsing: isPulsing,
-                tooltip: tooltip
-            )
-            .overlay {
-                if isPopupHere {
-                    Color.black.opacity(0.5)
-                        .contentShape(Rectangle())
-                        .onTapGesture { dismiss() }
-                        .transition(.opacity)
-                        .accessibilityLabel("Dismiss word card")
-                        .accessibilityAddTraits(.isButton)
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                if showsChannelRow {
+                    ChannelRow(
+                        clip: clip,
+                        trailing: channelTrailing,
+                        emphasizesTitle: immersiveFeed
+                    )
+                    .padding(.vertical, immersiveFeed ? 6 : 10)
                 }
+                ClipVideoView(
+                    clip: clip,
+                    player: player,
+                    showsRail: showsRail,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing
+                )
+                .aspectRatio(resolvedAspect, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .bottom) { popupLayer }
+                .zIndex(1)
+                TranscriptSection(
+                    clip: clip,
+                    player: player,
+                    onlyCurrentLine: resolvedOnlyCurrent,
+                    pulseTokenIndex: pulseTokenIndex,
+                    isPulsing: isPulsing,
+                    tooltip: tooltip,
+                    forceDenseAids: immersiveFeed
+                )
+                .overlay {
+                    if isPopupHere {
+                        Color.black.opacity(0.5)
+                            .contentShape(Rectangle())
+                            .onTapGesture { dismiss() }
+                            .transition(.opacity)
+                            .accessibilityLabel("Dismiss word card")
+                            .accessibilityAddTraits(.isButton)
+                    }
+                }
+                if immersiveFeed {
+                    // Reserve space so the next-clip peek doesn't cover karaoke.
+                    Color.clear.frame(height: nextClip == nil || isPopupHere ? 8 : 64)
+                }
+            }
+
+            if immersiveFeed, let nextClip, !isPopupHere {
+                NextClipPeek(clip: nextClip)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
             }
         }
         .onChange(of: isPopupHere) { _, presented in
@@ -116,6 +141,7 @@ struct TranscriptSection: View {
     var pulseTokenIndex: Int?
     var isPulsing: Bool = false
     var tooltip: String?
+    var forceDenseAids: Bool = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -125,7 +151,8 @@ struct TranscriptSection: View {
             pulseTokenIndex: pulseTokenIndex,
             isPulsing: isPulsing,
             tooltip: tooltip,
-            onlyCurrentLine: onlyCurrentLine
+            onlyCurrentLine: onlyCurrentLine,
+            forceDenseAids: forceDenseAids
         )
     }
 }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jojo Insights</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Local admin</p>
+      <h1>Jojo Insights</h1>
+    </div>
+    <button id="refresh" type="button">Refresh</button>
+  </header>
+
+  <section class="card config">
+    <h2>Connection</h2>
+    <label>Supabase URL
+      <input id="supabaseUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" />
+    </label>
+    <label>Anon / publishable key
+      <input id="anonKey" type="password" placeholder="SUPABASE_ANON_KEY" autocomplete="off" />
+    </label>
+    <label>Admin token
+      <input id="adminToken" type="password" placeholder="ADMIN_TOKEN" autocomplete="off" />
+    </label>
+    <p class="hint">Stored only in this browser’s localStorage. Do not expose on a public host.</p>
+    <button id="saveConfig" type="button">Save &amp; load</button>
+  </section>
+
+  <section class="grid stats" id="stats" hidden>
+    <article class="card stat">
+      <p class="label">Acquisition answers</p>
+      <p class="value" id="acqTotal">0</p>
+    </article>
+    <article class="card stat">
+      <p class="label">Feedback items</p>
+      <p class="value" id="fbTotal">0</p>
+    </article>
+    <article class="card stat">
+      <p class="label">Enjoying · Yes</p>
+      <p class="value" id="enjoyYes">0</p>
+    </article>
+    <article class="card stat">
+      <p class="label">Enjoying · No</p>
+      <p class="value" id="enjoyNo">0</p>
+    </article>
+  </section>
+
+  <section class="card" id="sourcesCard" hidden>
+    <h2>Where users found Jojo</h2>
+    <div id="sources" class="bars"></div>
+  </section>
+
+  <section class="card" id="feedbackCard" hidden>
+    <div class="row">
+      <h2>Feedback</h2>
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+        <option value="new">New</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="done">Done</option>
+      </select>
+    </div>
+    <div id="feedbackList" class="list"></div>
+  </section>
+
+  <p id="error" class="error" hidden></p>
+  <script src="./app.js"></script>
+</body>
+</html>

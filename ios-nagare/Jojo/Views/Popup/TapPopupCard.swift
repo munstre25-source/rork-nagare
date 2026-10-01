@@ -50,6 +50,11 @@ struct TapPopupCard: View {
     private func header(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
         HStack(alignment: .top, spacing: Spacing.m) {
             VStack(alignment: .leading, spacing: 4) {
+                if app.profile.showFurigana, !explanation.readings.isEmpty {
+                    Text(explanation.readings.joined(separator: ", "))
+                        .font(JojoFont.jp(15, relativeTo: .subheadline))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
                 HStack(spacing: Spacing.m) {
                     Text(explanation.word)
                         .font(JojoFont.jp(38, bold: true, relativeTo: .largeTitle))
@@ -66,14 +71,11 @@ struct TapPopupCard: View {
                     }
                     .accessibilityLabel("Play pronunciation")
                 }
-                if !explanation.readings.isEmpty {
-                    Text(explanation.readings.joined(separator: ", "))
-                        .font(JojoFont.jp(15, relativeTo: .subheadline))
-                        .foregroundStyle(.white.opacity(0.85))
+                if app.profile.showRomaji, !explanation.romaji.isEmpty {
+                    Text(explanation.romaji)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.5))
                 }
-                Text(explanation.romaji)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.5))
                 if let base = selection.token.baseForm {
                     Text("from \(base)")
                         .font(JojoFont.jp(13, relativeTo: .footnote))
@@ -116,7 +118,7 @@ struct TapPopupCard: View {
     }
 
     private func dictionaryTab(_ explanation: WordExplanation) -> some View {
-        let defs = explanation.definitions
+        let defs = explanation.displayDefinitions(mode: app.profile.dictionary)
         let visible = showAllDefinitions ? defs : Array(defs.prefix(2))
         return VStack(alignment: .leading, spacing: Spacing.s) {
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
@@ -150,6 +152,43 @@ struct TapPopupCard: View {
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.55))
             }
+            relatedClipsRail(for: explanation.word)
+        }
+    }
+
+    @ViewBuilder
+    private func relatedClipsRail(for surface: String) -> some View {
+        let hits = app.clips.filter { clip in
+            clip.lines.contains { line in
+                line.tokens.contains { $0.dictionaryForm == surface || $0.surface == surface }
+            }
+        }.prefix(4)
+        if hits.count > 1 {
+            VStack(alignment: .leading, spacing: Spacing.s) {
+                Text("Also in")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .textCase(.uppercase)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.s) {
+                        ForEach(Array(hits), id: \.id) { clip in
+                            Button {
+                                Haptics.selection()
+                                app.pendingFeedClipId = clip.id
+                                lookup.dismiss()
+                            } label: {
+                                Text(clip.channelName)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 12)
+                                    .frame(minHeight: 36)
+                                    .background(Color.white.opacity(0.12), in: Capsule())
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.top, Spacing.s)
         }
     }
 

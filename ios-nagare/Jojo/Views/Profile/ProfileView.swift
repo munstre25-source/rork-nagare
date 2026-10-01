@@ -13,6 +13,8 @@ struct ProfileView: View {
     @State private var showCustomerCenter: Bool = false
     @State private var restoreMessage: String?
     @State private var confirmReset: Bool = false
+    @State private var showMarketingShowcase: Bool = false
+    var onGiveFeedback: (() -> Void)? = nil
 
     private var known: Int { words.filter { $0.state == .known }.count }
     private var learning: Int { words.filter { $0.state == .learning }.count }
@@ -70,6 +72,9 @@ struct ProfileView: View {
             .navigationTitle("Profile")
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
+        .fullScreenCover(isPresented: $showMarketingShowcase) {
+            MarketingShowcaseView()
+        }
         .sheet(isPresented: $showGoalPicker) { DailyGoalSheet() }
         .manageSubscriptionsSheet(isPresented: $showManageSubs)
         .sheet(isPresented: $showCustomerCenter) { JojoCustomerCenter() }
@@ -173,6 +178,69 @@ struct ProfileView: View {
 
     private var settings: some View {
         VStack(spacing: 0) {
+            settingsHeader("Appearance")
+            Menu {
+                ForEach(AppearanceMode.allCases) { mode in
+                    Button(mode.title) { app.setAppearance(mode) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "circle.lefthalf.filled", title: "Theme", value: app.profile.appearance.title)
+            }
+            Divider().padding(.leading, 52)
+
+            settingsHeader("Subtitles & reading")
+            Menu {
+                ForEach(SubtitleMode.allCases) { mode in
+                    Button(mode.title) { app.setSubtitleMode(mode) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "captions.bubble", title: "Subtitles", value: app.profile.subtitles.title)
+            }
+            Divider().padding(.leading, 52)
+            settingsToggle(symbol: "textformat.ja", title: "Furigana on cards",
+                           isOn: Binding(get: { app.profile.showFurigana }, set: { app.setShowFurigana($0) }))
+            Divider().padding(.leading, 52)
+            settingsToggle(symbol: "character", title: "Romaji under words",
+                           isOn: Binding(get: { app.profile.showRomaji }, set: { app.setShowRomaji($0) }))
+            Divider().padding(.leading, 52)
+            Menu {
+                ForEach(DictionaryMode.allCases) { mode in
+                    Button(mode.title) { app.setDictionaryMode(mode) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "character.book.closed.ja", title: "Dictionary", value: app.profile.dictionary.title)
+            }
+            Divider().padding(.leading, 52)
+
+            settingsHeader("Study focus")
+            Menu {
+                ForEach(ReadingLevel.allCases) { level in
+                    Button(level.title) { app.setReadingLevel(level) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "chart.bar.fill", title: "Content level", value: app.profile.readingLevel.title)
+            }
+            Divider().padding(.leading, 52)
+            settingsToggle(symbol: "lock.open", title: "Unlock by level",
+                           isOn: Binding(get: { app.profile.gateContentByLevel }, set: { app.setGateContentByLevel($0) }))
+            Divider().padding(.leading, 52)
+            settingsToggle(symbol: "timer", title: "Hide daily goal bar",
+                           isOn: Binding(get: { app.profile.hideDailyGoalBar }, set: { app.setHideDailyGoalBar($0) }))
+            Divider().padding(.leading, 52)
+
+            settingsHeader("Creator")
+            SettingsRow(symbol: "record.circle", title: "Record marketing demo") {
+                showMarketingShowcase = true
+            }
+            Divider().padding(.leading, 52)
+            if let onGiveFeedback {
+                SettingsRow(symbol: "bubble.left.and.bubble.right", title: "Give feedback") {
+                    onGiveFeedback()
+                }
+                Divider().padding(.leading, 52)
+            }
+
+            settingsHeader("Account")
             SettingsRow(symbol: "target", title: "Daily goal", value: "\(app.profile.dailyGoalMinutes) min") { showGoalPicker = true }
             Divider().padding(.leading, 52)
             HStack(spacing: Spacing.m) {
@@ -187,7 +255,6 @@ struct ProfileView: View {
             .frame(minHeight: 54)
             Divider().padding(.leading, 52)
             SettingsRow(symbol: "star", title: "Manage Subscription", value: planText) {
-                // Customer Center when RevenueCat is live; Apple's sheet as the offline fallback.
                 if app.purchases.isConfigured { showCustomerCenter = true } else { showManageSubs = true }
             }
             Divider().padding(.leading, 52)
@@ -205,6 +272,44 @@ struct ProfileView: View {
             SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red) { confirmReset = true }
         }
         .cardStyle()
+    }
+
+    private func settingsHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.l)
+            .padding(.top, Spacing.m)
+            .padding(.bottom, 4)
+    }
+
+    private func settingsToggle(symbol: String, title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: Spacing.m) {
+            Image(systemName: symbol).frame(width: 28)
+            Toggle(title, isOn: isOn).tint(.nagareOrange)
+        }
+        .padding(.horizontal, Spacing.l)
+        .frame(minHeight: 54)
+    }
+}
+
+private struct SettingsRowLabel: View {
+    let symbol: String
+    let title: String
+    var value: String?
+
+    var body: some View {
+        HStack(spacing: Spacing.m) {
+            Image(systemName: symbol).frame(width: 28)
+            Text(title).foregroundStyle(.primary)
+            Spacer()
+            if let value { Text(value).foregroundStyle(.secondary) }
+            Image(systemName: "chevron.up.chevron.down").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, Spacing.l)
+        .frame(minHeight: 54)
+        .contentShape(Rectangle())
     }
 }
 

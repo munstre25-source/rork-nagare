@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct JojoApp: App {
+    @UIApplicationDelegateAdaptor(JojoAppDelegate.self) private var appDelegate
     private let container: ModelContainer
     @State private var purchases: PurchaseManager
     @State private var app: AppModel
@@ -48,11 +49,21 @@ struct JojoApp: App {
                 .task {
                     app.startRemoteSync()
                     await purchases.refreshCustomerInfo()
+                    WidgetSnapshotPublisher.publish(from: app)
+                    MetaAttribution.activateApp()
+                    MetaAttribution.syncToRevenueCat()
+                }
+                .onOpenURL { url in
+                    if MetaAttribution.handleOpenURL(url) { return }
+                    app.handleDeepLink(url)
                 }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await purchases.refreshCustomerInfo() }
+                WidgetSnapshotPublisher.publish(from: app)
+                MetaAttribution.activateApp()
+                MetaAttribution.syncToRevenueCat()
             }
         }
     }

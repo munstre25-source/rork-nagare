@@ -84,28 +84,105 @@ struct ChannelAvatar: View {
     }
 }
 
-/// Channel attribution row: avatar, name, subtitle.
+/// Channel attribution row: avatar, name, subtitle, optional Follow.
 struct ChannelRow: View {
     let clip: Clip
     var trailing: AnyView?
+    var showsFollow: Bool = true
+    /// When true, lead with clip title + channel (TikTok-style feed chrome).
+    var emphasizesTitle: Bool = false
+
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         HStack(spacing: Spacing.m) {
             ChannelAvatar(clip: clip)
             VStack(alignment: .leading, spacing: 1) {
-                Text(clip.channelName)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                Text("\(clip.categoryKind.displayName) · \(clip.difficulty)")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.white.opacity(0.55))
-                    .lineLimit(1)
+                if emphasizesTitle {
+                    Text(clip.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(clip.channelName)
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                        .lineLimit(1)
+                } else {
+                    Text(clip.channelName)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text("\(clip.categoryKind.displayName) · \(clip.difficulty)")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 0)
+            if showsFollow {
+                Button {
+                    Haptics.selection()
+                    withAnimation(.snappy) { _ = app.toggleFollow(channel: clip.channelName) }
+                } label: {
+                    Text(app.isFollowing(channel: clip.channelName) ? "Following" : "Follow")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? .white.opacity(0.7) : .black)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 32)
+                        .background(
+                            app.isFollowing(channel: clip.channelName)
+                                ? Color.white.opacity(0.14)
+                                : Color.nagareOrange,
+                            in: Capsule()
+                        )
+                }
+                .accessibilityLabel(app.isFollowing(channel: clip.channelName) ? "Unfollow \(clip.channelName)" : "Follow \(clip.channelName)")
+            }
             trailing
         }
         .padding(.horizontal, Spacing.l)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// Peek of the next clip at the bottom of a feed page — scroll affordance.
+struct NextClipPeek: View {
+    let clip: Clip
+
+    var body: some View {
+        HStack(spacing: Spacing.m) {
+            ChannelAvatar(clip: clip, size: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(clip.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Text(clip.channelName)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            VStack(spacing: 2) {
+                Image(systemName: "chevron.compact.up")
+                    .font(.system(size: 16, weight: .bold))
+                Text("Next")
+                    .font(.caption2.weight(.bold))
+            }
+            .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(.horizontal, Spacing.l)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(
+            LinearGradient(
+                colors: [.clear, Color.bgPlayer.opacity(0.92), Color.bgPlayer],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .bottom)
+        )
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("Next: \(clip.title) by \(clip.channelName). Swipe up.")
     }
 }

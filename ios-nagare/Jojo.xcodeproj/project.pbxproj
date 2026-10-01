@@ -7,11 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		JOJOWDG0EBLD000000000001 /* JojoWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = JOJOWDG01APP000000000001 /* JojoWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		XXA1B2C3D4E5F60718293AXX /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = XXB2C3D4E5F6071829304BXX /* RevenueCatUI */; };
 		XXD63457E41125E77BACFDXX /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = XX8F6E1A701EA04CDCEA3DXX /* RevenueCat */; };
+		META0FBSDKCORE00000001 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = META0FBSDKCORE00000002 /* FacebookCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		JOJOWDG09PRX000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 105FC5722E9EAD3100EA8BCF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = JOJOWDG04TGT000000000001;
+			remoteInfo = JojoWidgets;
+		};
 		105FC58A2E9EAD3200EA8BCF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 105FC5722E9EAD3100EA8BCF /* Project object */;
@@ -29,12 +38,23 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		JOJOWDG01APP000000000001 /* JojoWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JojoWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		105FC57A2E9EAD3100EA8BCF /* Jojo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jojo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		105FC5892E9EAD3200EA8BCF /* JojoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JojoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		105FC5932E9EAD3200EA8BCF /* JojoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JojoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		JOJOWDG02GRP000000000001 /* JojoWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = JojoWidgets;
+			sourceTree = "<group>";
+		};
+		JOJOWDG03SHR000000000001 /* JojoShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = JojoShared;
+			sourceTree = "<group>";
+		};
 		105FC57C2E9EAD3100EA8BCF /* Jojo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Jojo;
@@ -53,12 +73,20 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		JOJOWDG05FRM000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		105FC5772E9EAD3100EA8BCF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				XXD63457E41125E77BACFDXX /* RevenueCat in Frameworks */,
 				XXA1B2C3D4E5F60718293AXX /* RevenueCatUI in Frameworks */,
+				META0FBSDKCORE00000001 /* FacebookCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +106,20 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		JOJOWDG0FCPY000000000001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				JOJOWDG0EBLD000000000001 /* JojoWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXGroup section */
 		105FC5712E9EAD3100EA8BCF = {
 			isa = PBXGroup;
@@ -93,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				105FC57A2E9EAD3100EA8BCF /* Jojo.app */,
+				JOJOWDG01APP000000000001 /* JojoWidgets.appex */,
 				105FC5892E9EAD3200EA8BCF /* JojoTests.xctest */,
 				105FC5932E9EAD3200EA8BCF /* JojoUITests.xctest */,
 			);
@@ -109,18 +152,22 @@
 				105FC5762E9EAD3100EA8BCF /* Sources */,
 				105FC5772E9EAD3100EA8BCF /* Frameworks */,
 				105FC5782E9EAD3100EA8BCF /* Resources */,
+				JOJOWDG0FCPY000000000001 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				JOJOWDG08DEP000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				105FC57C2E9EAD3100EA8BCF /* Jojo */,
+				JOJOWDG03SHR000000000001 /* JojoShared */,
 			);
 			name = Jojo;
 			packageProductDependencies = (
 				XX8F6E1A701EA04CDCEA3DXX /* RevenueCat */,
 				XXB2C3D4E5F6071829304BXX /* RevenueCatUI */,
+				META0FBSDKCORE00000002 /* FacebookCore */,
 			);
 			productName = Jojo;
 			productReference = 105FC57A2E9EAD3100EA8BCF /* Jojo.app */;
@@ -172,6 +219,29 @@
 			productReference = 105FC5932E9EAD3200EA8BCF /* JojoUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		JOJOWDG04TGT000000000001 /* JojoWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = JOJOWDG0DLST000000000001 /* Build configuration list for PBXNativeTarget "JojoWidgets" */;
+			buildPhases = (
+				JOJOWDG06SRC000000000001 /* Sources */,
+				JOJOWDG05FRM000000000001 /* Frameworks */,
+				JOJOWDG07RES000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				JOJOWDG02GRP000000000001 /* JojoWidgets */,
+				JOJOWDG03SHR000000000001 /* JojoShared */,
+			);
+			name = JojoWidgets;
+			packageProductDependencies = (
+			);
+			productName = JojoWidgets;
+			productReference = JOJOWDG01APP000000000001 /* JojoWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -193,6 +263,9 @@
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 105FC5792E9EAD3100EA8BCF;
 					};
+					JOJOWDG04TGT000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 				};
 			};
 			buildConfigurationList = 105FC5752E9EAD3100EA8BCF /* Build configuration list for PBXProject "Jojo" */;
@@ -210,16 +283,25 @@
 			projectRoot = "";
 			targets = (
 				105FC5792E9EAD3100EA8BCF /* Jojo */,
+				JOJOWDG04TGT000000000001 /* JojoWidgets */,
 				105FC5882E9EAD3200EA8BCF /* JojoTests */,
 				105FC5922E9EAD3200EA8BCF /* JojoUITests */,
 			);
 			packageReferences = (
 				XX56D7F10BAEE1D3529BF9XX /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+				META0FBSDKPKG000000003 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		JOJOWDG07RES000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		105FC5782E9EAD3100EA8BCF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -244,6 +326,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		JOJOWDG06SRC000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		105FC5762E9EAD3100EA8BCF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -268,6 +357,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		JOJOWDG08DEP000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = JOJOWDG04TGT000000000001 /* JojoWidgets */;
+			targetProxy = JOJOWDG09PRX000000000001 /* PBXContainerItemProxy */;
+		};
 		105FC58B2E9EAD3200EA8BCF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 105FC5792E9EAD3100EA8BCF /* Jojo */;
@@ -405,6 +499,7 @@
 		105FC59E2E9EAD3200EA8BCF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Jojo/Jojo.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -412,6 +507,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Jojo/Info.plist;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -440,6 +536,7 @@
 		105FC59F2E9EAD3200EA8BCF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Jojo/Jojo.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -447,6 +544,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Jojo/Info.plist;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -556,6 +654,68 @@
 			};
 			name = Release;
 		};
+		JOJOWDG0BDBG000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = JojoWidgets/JojoWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JojoWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Jojo;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.socialreporthq.jojo.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		JOJOWDG0CREL000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = JojoWidgets/JojoWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = JojoWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Jojo;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.socialreporthq.jojo.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -595,6 +755,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		JOJOWDG0DLST000000000001 /* Build configuration list for PBXNativeTarget "JojoWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				JOJOWDG0BDBG000000000001 /* Debug */,
+				JOJOWDG0CREL000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -604,6 +773,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 5.0.0;
+			};
+		};
+		META0FBSDKPKG000000003 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/facebook-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 18.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -618,6 +795,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = XX56D7F10BAEE1D3529BF9XX /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
 			productName = RevenueCatUI;
+		};
+		META0FBSDKCORE00000002 /* FacebookCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = META0FBSDKPKG000000003 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */;
+			productName = FacebookCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -97,6 +97,10 @@ final class PurchaseManager {
             print("[Purchases] RevenueCat API key not set, running without RevenueCat")
             offeringFailed = true
             isEntitlementActive = false
+            #if DEBUG
+            // Unblock onboarding/feed when secrets aren't wired yet.
+            activateDebugBypass()
+            #endif
             return
         }
         guard !Purchases.isConfigured else { return }
@@ -107,6 +111,7 @@ final class PurchaseManager {
         #endif
         // No appUserID passed → RevenueCat generates and persists an anonymous ID.
         Purchases.configure(with: Configuration.Builder(withAPIKey: Secrets.revenueCatAPIKey).build())
+        MetaAttribution.syncToRevenueCat()
         streamTask = Task { [weak self] in
             for await info in Purchases.shared.customerInfoStream {
                 self?.apply(info)

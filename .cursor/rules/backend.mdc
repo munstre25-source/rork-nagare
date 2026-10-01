@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+- Never hard-code secrets. Read them from Deno.env.get().
+- Every table has RLS enabled. Clients never write to clips; only service-role Edge Functions do.
+- Admin functions require header x-admin-token == ADMIN_TOKEN.
+- Match the existing clip/token data format in README.md, supabase/schema.sql and Tools/generate_seed.py.
+- Do not change existing Swift UI behavior or offline fallbacks.
+- Never print or log secret values.

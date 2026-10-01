@@ -19,11 +19,13 @@ struct WordDetailView: View {
                     pos: word.pos,
                     conjugationClass: word.conjugationClass,
                     jlpt: word.jlpt,
-                    badge: word.occurrenceCount
+                    badge: word.occurrenceCount,
+                    showFurigana: app.profile.showFurigana,
+                    showRomaji: app.profile.showRomaji
                 )
                 SectionTitle("Definition")
                 VStack(spacing: Spacing.s) {
-                    ForEach(Array(word.definitions.enumerated()), id: \.offset) { index, def in
+                    ForEach(Array(word.displayDefinitions(mode: app.profile.dictionary).enumerated()), id: \.offset) { index, def in
                         DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def)
                     }
                 }
@@ -99,9 +101,17 @@ struct WordHeaderCard: View {
     let conjugationClass: String?
     let jlpt: String?
     var badge: Int?
+    var showFurigana: Bool = true
+    var showRomaji: Bool = true
 
     var body: some View {
         VStack(spacing: Spacing.s) {
+            if showFurigana, !readings.isEmpty {
+                Text(readings.joined(separator: " · "))
+                    .font(JojoFont.jp(18, relativeTo: .subheadline))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             HStack(spacing: Spacing.s) {
                 Text(surface)
                     .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
@@ -115,10 +125,12 @@ struct WordHeaderCard: View {
                 .tint(.primary)
                 .accessibilityLabel("Play pronunciation")
             }
-            Text(([readings.joined(separator: ", ")].filter { !$0.isEmpty } + [romaji]).joined(separator: " · "))
-                .font(JojoFont.jp(16, relativeTo: .subheadline))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            if showRomaji, !romaji.isEmpty {
+                Text(romaji)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             WordPills(pos: pos, conjugationClass: conjugationClass, jlpt: jlpt)
         }
         .frame(maxWidth: .infinity)

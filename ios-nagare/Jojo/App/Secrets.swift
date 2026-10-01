@@ -26,6 +26,12 @@ nonisolated enum Secrets {
 
     static var isRevenueCatConfigured: Bool { isReal(revenueCatAPIKey) }
 
+    /// Meta / Facebook app credentials (public App ID + Client Token from Developers → Settings → Advanced).
+    /// Used only for install attribution + `$fbAnonId`; purchases go through RevenueCat → Conversions API.
+    static let metaAppID: String = value("META_APP_ID", env: "EXPO_PUBLIC_META_APP_ID", placeholder: "YOUR_META_APP_ID")
+    static let metaClientToken: String = value("META_CLIENT_TOKEN", env: "EXPO_PUBLIC_META_CLIENT_TOKEN", placeholder: "YOUR_META_CLIENT_TOKEN")
+    static var isMetaConfigured: Bool { isReal(metaAppID) && isReal(metaClientToken) }
+
     private static func isReal(_ value: String) -> Bool {
         !value.isEmpty && !value.hasPrefix(placeholderPrefix)
     }
