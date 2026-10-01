@@ -14,6 +14,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private(set) var isMuted = false
     private(set) var loopRange: ClosedRange<Double>?
     private(set) var isReady = false
+    /// True after the IFrame API reports an embed/playability error.
+    private(set) var embedFailed = false
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
 
@@ -21,6 +23,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var wantsPlay = false
     @ObservationIgnored private var watchAccumulator: Double = 0
     @ObservationIgnored private var didFinish = false
+    @ObservationIgnored private var didRetryNocookie = false
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
 
     var duration: Double { clip.durationSec }
@@ -34,36 +37,46 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+        config.allowsPictureInPictureMediaPlayback = false
+        if #available(iOS 15.4, *) {
+            config.preferences.isElementFullscreenEnabled = false
+        }
         config.userContentController.add(WeakMessageHandler(self), name: "yt")
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
         view.backgroundColor = .black
         view.scrollView.isScrollEnabled = false
-        view.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
+        view.scrollView.contentInsetAdjustmentBehavior = .never
+        // Mute-first autoplay is required on iOS WKWebView; we unmute after play starts if desired.
+        loadPlayerHTML(in: view, host: "https://www.youtube.com")
         return view
     }
 
-    private var html: String {
+    private func loadPlayerHTML(in view: WKWebView, host: String) {
+        view.loadHTMLString(html(host: host), baseURL: URL(string: host))
+    }
+
+    private func html(host: String) -> String {
         // `origin` + `widget_referrer` + a real youtube.com baseURL are required to avoid
-        // Error 152-4 ("embedder identity") in WKWebView / simulators.
-        let origin = "https://www.youtube.com"
+        // Error 152/153 ("embedder identity") in WKWebView / simulators.
+        let origin = host
         return """
         <!DOCTYPE html><html><head>
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
         <meta name="referrer" content="strict-origin-when-cross-origin">
         <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style>
         </head><body><div id="p"></div>
-        <script src="https://www.youtube.com/iframe_api"></script>
+        <script src="\(host)/iframe_api"></script>
         <script>
         var player;
         function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
         function onYouTubeIframeAPIReady(){
           player=new YT.Player('p',{
-            host:'https://www.youtube.com',
+            host:'\(host)',
             videoId:'\(clip.videoId)',
             playerVars:{
               playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,
-              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,
+              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,autoplay:1,mute:1,
               origin:'\(origin)',widget_referrer:'\(origin)'
             },
             events:{
@@ -82,7 +95,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         wantsPlay = true
         didFinish = false
         isPlaying = true
-        run("player&&player.playVideo()")
+        // Start muted so iOS allows autoplay; unmute once playback actually begins if desired.
+        run("player&&player.mute();player&&player.playVideo()")
         startPolling()
     }
 
@@ -155,8 +169,10 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         switch event {
         case "ready":
             isReady = true
+            embedFailed = false
             setRate(rate)
-            setMuted(isMuted)
+            // Keep muted until we confirm playing, then apply user mute preference.
+            run("player&&player.mute()")
             if currentTime > 0 { seek(to: currentTime) }
             if wantsPlay { play() }
         case "time":
@@ -170,10 +186,19 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         case "state":
             // 0 ended, 1 playing, 2 paused
             if value == 0, !didFinish { finish() }
-            if value == 1 { isPlaying = true }
+            if value == 1 {
+                isPlaying = true
+                if !isMuted { run("player&&player.unMute()") }
+            }
         case "error":
-            // Surface embed failures (e.g. 152) in logs so simulator issues are obvious.
+            embedFailed = true
             print("[YouTube] player error \(value.map { String(Int($0)) } ?? "?") for \(clip.videoId)")
+            // One retry via youtube-nocookie host — helps some embedder-identity failures.
+            if !didRetryNocookie {
+                didRetryNocookie = true
+                isReady = false
+                loadPlayerHTML(in: webView, host: "https://www.youtube-nocookie.com")
+            }
         default:
             break
         }

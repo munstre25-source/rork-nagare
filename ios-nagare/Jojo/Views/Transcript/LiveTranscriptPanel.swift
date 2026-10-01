@@ -15,38 +15,52 @@ struct LiveTranscriptPanel: View {
     @Environment(WordLookupController.self) private var lookup
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: Spacing.xl) {
-                    ForEach(visibleLines, id: \.self) { index in
-                        TranscriptLineView(
-                            clip: clip,
-                            lineIndex: index,
-                            spokenTokenIndex: index == currentLine ? spokenToken : nil,
-                            pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
-                            isPulsing: isPulsing,
-                            tooltip: index == currentLine ? tooltip : nil,
-                            isActive: index == currentLine || lookup.selection?.lineIndex == index,
-                            forceDenseAids: forceDenseAids
-                        )
-                        .id(index)
+        Group {
+            if onlyCurrentLine {
+                // Compact — never nest a vertical ScrollView inside the feed pager.
+                lineStack
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.top, tooltip == nil ? Spacing.m : 48)
+                    .padding(.bottom, Spacing.m)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        lineStack
+                            .padding(.horizontal, Spacing.l)
+                            .padding(.top, tooltip == nil ? Spacing.l : 48)
+                            .padding(.bottom, Spacing.l)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-                .padding(.horizontal, Spacing.l)
-                .padding(.top, tooltip == nil ? (forceDenseAids ? Spacing.m : Spacing.l) : 48)
-                .padding(.bottom, Spacing.l)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .scrollDisabled(onlyCurrentLine)
-            .onChange(of: currentLine) { _, newValue in
-                guard lookup.selection == nil else { return }
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    proxy.scrollTo(newValue, anchor: .top)
+                    .onChange(of: currentLine) { _, newValue in
+                        guard lookup.selection == nil else { return }
+                        withAnimation(.easeInOut(duration: 0.35)) {
+                            proxy.scrollTo(newValue, anchor: .top)
+                        }
+                    }
+                    .onAppear { proxy.scrollTo(currentLine, anchor: .top) }
                 }
             }
-            .onAppear { proxy.scrollTo(currentLine, anchor: .top) }
         }
         .background(Color.bgSurfaceDark)
+    }
+
+    private var lineStack: some View {
+        VStack(alignment: .leading, spacing: Spacing.xl) {
+            ForEach(visibleLines, id: \.self) { index in
+                TranscriptLineView(
+                    clip: clip,
+                    lineIndex: index,
+                    spokenTokenIndex: index == currentLine ? spokenToken : nil,
+                    pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
+                    isPulsing: isPulsing,
+                    tooltip: index == currentLine ? tooltip : nil,
+                    isActive: index == currentLine || lookup.selection?.lineIndex == index,
+                    forceDenseAids: forceDenseAids
+                )
+                .id(index)
+            }
+        }
     }
 
     private var visibleLines: [Int] {

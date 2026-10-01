@@ -33,60 +33,54 @@ struct ClipStageView: View {
 
     var body: some View {
         let player = coordinator.player(for: clip)
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                if showsChannelRow {
-                    ChannelRow(
-                        clip: clip,
-                        trailing: channelTrailing,
-                        emphasizesTitle: immersiveFeed
-                    )
-                    .padding(.vertical, immersiveFeed ? 6 : 10)
-                }
-                ClipVideoView(
+        VStack(spacing: 0) {
+            if showsChannelRow {
+                ChannelRow(
                     clip: clip,
-                    player: player,
-                    showsRail: showsRail,
-                    onActivate: onActivate,
-                    onFullscreen: onFullscreen,
-                    onInfo: onInfo,
-                    onShadowing: onShadowing
+                    trailing: channelTrailing,
+                    emphasizesTitle: immersiveFeed
                 )
-                .aspectRatio(resolvedAspect, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .bottom) { popupLayer }
-                .zIndex(1)
-                TranscriptSection(
-                    clip: clip,
-                    player: player,
-                    onlyCurrentLine: resolvedOnlyCurrent,
-                    pulseTokenIndex: pulseTokenIndex,
-                    isPulsing: isPulsing,
-                    tooltip: tooltip,
-                    forceDenseAids: immersiveFeed
-                )
-                .overlay {
-                    if isPopupHere {
-                        Color.black.opacity(0.5)
-                            .contentShape(Rectangle())
-                            .onTapGesture { dismiss() }
-                            .transition(.opacity)
-                            .accessibilityLabel("Dismiss word card")
-                            .accessibilityAddTraits(.isButton)
-                    }
-                }
-                if immersiveFeed {
-                    // Reserve space so the next-clip peek doesn't cover karaoke.
-                    Color.clear.frame(height: nextClip == nil || isPopupHere ? 8 : 64)
-                }
+                .padding(.vertical, immersiveFeed ? 6 : 10)
             }
 
-            if immersiveFeed, let nextClip, !isPopupHere {
-                NextClipPeek(clip: nextClip)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .allowsHitTesting(false)
+            ClipVideoView(
+                clip: clip,
+                player: player,
+                showsRail: showsRail,
+                onActivate: onActivate,
+                onFullscreen: onFullscreen,
+                onInfo: onInfo,
+                onShadowing: onShadowing
+            )
+            .aspectRatio(resolvedAspect, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .layoutPriority(1)
+            .overlay(alignment: .bottom) { popupLayer }
+            .zIndex(1)
+
+            TranscriptSection(
+                clip: clip,
+                player: player,
+                onlyCurrentLine: resolvedOnlyCurrent,
+                pulseTokenIndex: pulseTokenIndex,
+                isPulsing: isPulsing,
+                tooltip: tooltip,
+                forceDenseAids: immersiveFeed
+            )
+            .fixedSize(horizontal: false, vertical: true)
+
+            if immersiveFeed {
+                Spacer(minLength: 0)
+                if let nextClip, !isPopupHere {
+                    NextClipPeek(clip: nextClip)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .allowsHitTesting(false)
+                } else {
+                    Color.clear.frame(height: 8)
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {

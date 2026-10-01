@@ -147,36 +147,34 @@ struct FeedView: View {
             if tab == .following, clips.isEmpty {
                 followingEmpty
             } else {
-                GeometryReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(clips.enumerated()), id: \.element.id) { index, clip in
-                                ClipStageView(
-                                    clip: clip,
-                                    immersiveFeed: true,
-                                    nextClip: clips.indices.contains(index + 1) ? clips[index + 1] : nil,
-                                    onActivate: { coordinator.activate(clip) },
-                                    onFullscreen: {
-                                        coordinator.pause()
-                                        pendingLoopLine = nil
-                                        fullscreenClip = clip
-                                    },
-                                    onInfo: { infoClip = clip },
-                                    onShadowing: {
-                                        coordinator.pause()
-                                        shadowingClip = clip
-                                    }
-                                )
-                                .frame(width: proxy.size.width, height: proxy.size.height)
-                                .id(clip.id)
-                            }
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(clips.enumerated()), id: \.element.id) { index, clip in
+                            ClipStageView(
+                                clip: clip,
+                                immersiveFeed: true,
+                                nextClip: clips.indices.contains(index + 1) ? clips[index + 1] : nil,
+                                onActivate: { coordinator.activate(clip) },
+                                onFullscreen: {
+                                    coordinator.pause()
+                                    pendingLoopLine = nil
+                                    fullscreenClip = clip
+                                },
+                                onInfo: { infoClip = clip },
+                                onShadowing: {
+                                    coordinator.pause()
+                                    shadowingClip = clip
+                                }
+                            )
+                            .containerRelativeFrame(.vertical)
+                            .id(clip.id)
                         }
-                        .scrollTargetLayout()
                     }
-                    .scrollTargetBehavior(.paging)
-                    .scrollPosition(id: $currentId)
-                    .scrollDisabled(lookup.isPresented || quizClip != nil)
+                    .scrollTargetLayout()
                 }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $currentId)
+                .scrollDisabled(lookup.isPresented || quizClip != nil)
             }
         }
     }

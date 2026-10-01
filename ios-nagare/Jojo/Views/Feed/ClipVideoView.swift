@@ -137,7 +137,7 @@ struct ClipVideoView: View {
             ZStack {
                 GradientPoster(clip: clip, isAnimating: false)
                 YouTubePlayerView(player: youtube)
-                    .opacity(youtube.isReady ? 1 : 0)
+                    .opacity(youtube.isReady || youtube.embedFailed ? 1 : 0.01)
             }
         } else {
             GradientPoster(clip: clip, isAnimating: player?.isPlaying == true)
