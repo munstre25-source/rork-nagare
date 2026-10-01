@@ -65,6 +65,8 @@ final class UserProfile {
     var lastGoalCelebratedDay: String = ""
     var didSeedDemoData: Bool = false
     var firstClipId: String?
+    /// Launch marketing demo was played or skipped (don't show again mid-funnel).
+    var hasSeenLaunchDemo: Bool = false
 
     // Learning preferences (defaults keep existing behaviour).
     var appearanceMode: String = AppearanceMode.system.rawValue

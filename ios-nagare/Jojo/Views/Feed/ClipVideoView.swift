@@ -127,7 +127,13 @@ struct ClipVideoView: View {
 
     @ViewBuilder
     private var surface: some View {
-        if let youtube = player as? YouTubeClipPlayer {
+        if let local = player as? LocalClipPlayer {
+            ZStack {
+                GradientPoster(clip: clip, isAnimating: false)
+                LocalPlayerView(player: local)
+                    .opacity(local.isReady ? 1 : 0)
+            }
+        } else if let youtube = player as? YouTubeClipPlayer {
             ZStack {
                 GradientPoster(clip: clip, isAnimating: false)
                 YouTubePlayerView(player: youtube)
@@ -140,7 +146,20 @@ struct ClipVideoView: View {
 
     private var sourceBadge: some View {
         Group {
-            if clip.hasRealVideo {
+            if clip.hasLocalVideo {
+                HStack(spacing: 6) {
+                    Image(systemName: "film.fill")
+                        .foregroundStyle(Color.jojoOrange)
+                    Text("Local")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.black.opacity(0.4), in: Capsule())
+                .padding(Spacing.m)
+                .accessibilityLabel("Source: Local video")
+            } else if clip.hasRealVideo {
                 HStack(spacing: 6) {
                     Image(systemName: "play.rectangle.fill")
                         .foregroundStyle(Color(hex: "#FF0033"))

@@ -146,6 +146,31 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
         return videoId.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
     }
 
+    /// Bundled `Clips/{id}.mp4` (preferred in Simulator / Rork for reliable playback).
+    var hasLocalVideo: Bool { Self.bundledVideoURL(for: id) != nil }
+
+    /// Local file or YouTube — anything that isn't the simulated poster.
+    var hasPlayableVideo: Bool { hasLocalVideo || hasRealVideo }
+
+    static func bundledVideoURL(for clipId: String) -> URL? {
+        let candidates: [(String?, String)] = [
+            ("Clips", clipId),
+            ("Resources/Clips", clipId),
+            (nil, clipId),
+        ]
+        for (subdir, name) in candidates {
+            if let subdir,
+               let url = Bundle.main.url(forResource: name, withExtension: "mp4", subdirectory: subdir) {
+                return url
+            }
+            if subdir == nil,
+               let url = Bundle.main.url(forResource: name, withExtension: "mp4") {
+                return url
+            }
+        }
+        return nil
+    }
+
     var youtubeURL: URL? {
         hasRealVideo ? URL(string: "https://www.youtube.com/watch?v=\(videoId)") : nil
     }

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Playback engine for a clip. Two implementations: `SimulatedClipPlayer` (default, no video)
-/// and `YouTubeClipPlayer` (WKWebView + official IFrame Player API) for clips with real IDs.
+/// Playback engine for a clip. Implementations: `LocalClipPlayer` (bundled MP4),
+/// `YouTubeClipPlayer` (WKWebView IFrame API), and `SimulatedClipPlayer` (poster + TTS).
 @MainActor
 protocol ClipPlayer: AnyObject {
     var clip: Clip { get }
@@ -57,11 +57,14 @@ extension ClipPlayer {
     }
 }
 
-/// Builds the right player for a clip.
+/// Builds the right player for a clip. Local bundle wins so Simulator / Rork can record
+/// walkthroughs without relying on YouTube embeds.
 @MainActor
 enum ClipPlayerFactory {
     static func make(for clip: Clip) -> any ClipPlayer {
-        clip.hasRealVideo ? YouTubeClipPlayer(clip: clip) : SimulatedClipPlayer(clip: clip)
+        if clip.hasLocalVideo { return LocalClipPlayer(clip: clip) }
+        if clip.hasRealVideo { return YouTubeClipPlayer(clip: clip) }
+        return SimulatedClipPlayer(clip: clip)
     }
 }
 

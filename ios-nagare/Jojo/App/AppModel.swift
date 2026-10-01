@@ -186,7 +186,8 @@ final class AppModel {
             if disliked.contains(clip.categoryKind) { s -= 3 }
             s -= Double(abs(clip.difficultyKind.rank - level)) * 1.5
             // Prefer real YouTube footage over simulated posters for feed authenticity.
-            if clip.hasRealVideo { s += 8 }
+            if clip.hasLocalVideo { s += 10 }
+            else if clip.hasRealVideo { s += 8 }
             s += Double(abs(clip.id.utf8.reduce(7) { ($0 &* 31 &+ Int($1)) % 997 })) / 997.0
             return s
         }
@@ -568,6 +569,12 @@ final class AppModel {
 
     func savedWord(key: String) -> SavedWord? {
         fetchWord(key: key)
+    }
+
+    func markLaunchDemoSeen() {
+        guard !profile.hasSeenLaunchDemo else { return }
+        profile.hasSeenLaunchDemo = true
+        save()
     }
 
     func completeOnboarding() {
