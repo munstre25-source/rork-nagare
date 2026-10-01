@@ -74,7 +74,7 @@ struct ReviewSessionView: View {
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.1))
-                    Capsule().fill(Color.nagareOrange)
+                    Capsule().fill(Color.jojoOrange)
                         .frame(width: proxy.size.width * (total == 0 ? 0 : Double(completed) / Double(total)))
                         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: completed)
                 }
@@ -213,17 +213,14 @@ private struct ReviewCompleteView: View {
         VStack(spacing: Spacing.l) {
             Spacer()
             ZStack {
-                Circle().fill(Color.nagareOrangeSoft).frame(width: 150, height: 150)
+                Circle().fill(Color.jojoOrangeSoft).frame(width: 170, height: 170)
                     .scaleEffect(appeared ? 1 : 0.4)
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 72))
-                    .foregroundStyle(Color.nagareOrange)
-                    .symbolEffect(.bounce, value: appeared)
+                JojoMascot(height: 180)
                     .scaleEffect(appeared ? 1 : 0.2)
                 if appeared { ConfettiBurst(count: 22, radius: 110) }
             }
             Text("Session complete")
-                .font(.largeTitle.weight(.bold))
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
             Text("\(reviewed) cards reviewed · \(good) remembered")
                 .font(.headline)
                 .foregroundStyle(.secondary)

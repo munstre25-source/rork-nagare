@@ -53,9 +53,13 @@ struct PaywallView: View {
                 } label: {
                     Text(errorMessage)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.jojoInk)
                         .padding(Spacing.m)
-                        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             }
@@ -81,10 +85,13 @@ struct PaywallView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.l) {
                     VStack(alignment: .leading, spacing: Spacing.s) {
-                        Text("流れ PRO")
-                            .font(JojoFont.jp(14, bold: true, relativeTo: .caption))
-                            .tracking(2)
-                            .foregroundStyle(Color.nagareOrange)
+                        HStack(spacing: Spacing.s) {
+                            JojoMascotAvatar(size: 40)
+                            Text("JOJO PRO")
+                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                .tracking(2)
+                                .foregroundStyle(Color.jojoVermilion)
+                        }
                         OnboardingTitle(title: "Flow into Japanese, every day.",
                                         subtitle: "Unlimited clips, tap-to-understand on every word and flashcards that build themselves.")
                     }
@@ -102,12 +109,12 @@ struct PaywallView: View {
                              package: purchases.monthly)
                     if let errorMessage {
                         HStack(alignment: .top, spacing: Spacing.s) {
-                            Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(Color.nagareOrange)
-                            Text(errorMessage).font(.subheadline).foregroundStyle(.white.opacity(0.85))
+                            Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(Color.jojoVermilion)
+                            Text(errorMessage).font(.subheadline).foregroundStyle(Color.jojoInk)
                         }
                         .padding(Spacing.m)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.nagareOrange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(Color.jojoOrange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .transition(.opacity)
                     }
                 }
@@ -156,29 +163,35 @@ struct PaywallView: View {
                 HStack {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
-                        .foregroundStyle(isSelected ? Color.nagareOrange : .white.opacity(0.35))
-                    Text(title).font(.title3.weight(.bold)).foregroundStyle(.white)
+                        .foregroundStyle(isSelected ? Color.jojoOrange : Color.jojoInkFaint.opacity(0.6))
+                    Text(title)
+                        .font(.system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(Color.jojoInk)
                     Spacer()
                     if let badge {
                         Text(badge).font(.caption.weight(.heavy)).foregroundStyle(.white)
                             .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Color.nagareOrange, in: Capsule())
+                            .background(
+                                LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing),
+                                in: Capsule()
+                            )
                     }
                 }
-                Text(price).font(.headline).foregroundStyle(.white)
-                Text(detail).font(.subheadline).foregroundStyle(.white.opacity(0.6))
+                Text(price).font(.headline).foregroundStyle(Color.jojoInk)
+                Text(detail).font(.subheadline).foregroundStyle(Color.jojoInkSoft)
                 if isSelected, !purchases.trialText(package).isEmpty {
                     Label(purchases.trialText(package).capitalizedFirst + ", then " + price, systemImage: "gift.fill")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.nagareOrange)
+                        .foregroundStyle(Color.jojoVermilion)
                         .transition(.opacity)
                 }
             }
             .padding(Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                .strokeBorder(isSelected ? Color.nagareOrange : Color.hairlineDark, lineWidth: isSelected ? 2 : 1))
+                .strokeBorder(isSelected ? Color.jojoOrange : Color.jojoPaperStroke, lineWidth: isSelected ? 2 : 1))
+            .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.16 : 0.05), radius: 14, y: 6)
         }
         .buttonStyle(PressableStyle())
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -201,7 +214,7 @@ struct PaywallView: View {
             .disabled(purchases.isPurchasing || purchases.isRestoring)
             Text(subscriptionDisclosure)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(Color.jojoInkFaint)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: Spacing.l) {
@@ -212,7 +225,7 @@ struct PaywallView: View {
                 if let support = StoreConstants.supportURL { Button("Support") { openURL(support) } }
             }
             .font(.footnote.weight(.medium))
-            .foregroundStyle(.white.opacity(0.65))
+            .foregroundStyle(Color.jojoInkSoft)
             .frame(minHeight: 44)
             #if DEBUG
             if allowsDebugBypass, DebugFlags.allowPaywallBypass {

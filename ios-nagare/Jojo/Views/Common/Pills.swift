@@ -47,7 +47,7 @@ struct OccurrenceBadge: View {
             .foregroundStyle(.white)
             .contentTransition(.numericText(value: Double(count)))
             .frame(width: size, height: size)
-            .background(Color.nagareOrange, in: Circle())
+            .background(Color.jojoOrange, in: Circle())
             .accessibilityLabel("Encountered \(count) times")
     }
 }
@@ -76,16 +76,27 @@ struct WordPills: View {
     }
 }
 
-/// Primary orange call-to-action button style with a press animation.
+/// Primary call-to-action: the app icon's orange ramp, with a press animation.
 struct PrimaryButtonStyle: ButtonStyle {
     var isEnabled: Bool = true
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
+            .font(.system(.headline, design: .rounded, weight: .semibold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Color.nagareOrange.opacity(isEnabled ? 1 : 0.35), in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
+            .background {
+                RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.jojoOrangeLight, Color.jojoOrange, Color.jojoVermilion],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .opacity(isEnabled ? 1 : 0.32)
+            }
+            .shadow(color: Color.jojoVermilion.opacity(isEnabled ? 0.3 : 0), radius: 14, y: 6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -119,7 +130,7 @@ struct FilterChip: View {
         .frame(minHeight: 40)
         .foregroundStyle(isSelected ? .white : (dark ? Color.white.opacity(0.9) : Color.primary))
         .background(
-            isSelected ? Color.nagareOrange : (dark ? Color.bgElevatedDark : Color.fieldFill),
+            isSelected ? Color.jojoOrange : (dark ? Color.bgElevatedDark : Color.fieldFill),
             in: Capsule()
         )
         .contentShape(Capsule())

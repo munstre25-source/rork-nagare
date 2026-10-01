@@ -38,13 +38,13 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.6))
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.white.opacity(0.6))
                     .lineLimit(1)
                     .fixedSize()
             }
             Text(token.surface)
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(state == .selected ? Color.nagareOrange : .white)
+                .foregroundStyle(state == .selected ? Color.jojoOrange : .white)
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, token.tappable ? 6 : 0)
@@ -54,7 +54,7 @@ struct TokenView: View {
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected ? Color.nagareOrange : Color.white.opacity(0.5))
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.white.opacity(0.5))
                     .lineLimit(1)
                     .fixedSize()
             }
@@ -85,10 +85,10 @@ struct TokenView: View {
         case .selected:
             // Outline so the word stays readable (always-visible reading aids).
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.nagareOrange, lineWidth: 2.5)
+                .strokeBorder(Color.jojoOrange, lineWidth: 2.5)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.nagareOrange.opacity(0.18))
+                        .fill(Color.jojoOrange.opacity(0.18))
                 )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -96,7 +96,7 @@ struct TokenView: View {
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.spokenGreen.opacity(0.12)))
         case .normal:
             if highlight {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.nagareOrange.opacity(0.28))
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.jojoOrange.opacity(0.28))
             }
         }
     }

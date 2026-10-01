@@ -100,10 +100,10 @@ struct TapPopupCard: View {
                 } label: {
                     Image(systemName: tab.symbol)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(lookup.tab == tab ? Color.nagareOrange : .white.opacity(0.55))
+                        .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : .white.opacity(0.55))
                         .frame(width: 52, height: 44)
                         .background(
-                            lookup.tab == tab ? Color.nagareOrange.opacity(0.14) : Color.clear,
+                            lookup.tab == tab ? Color.jojoOrange.opacity(0.14) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
                 }
@@ -140,7 +140,7 @@ struct TapPopupCard: View {
                     HStack(spacing: 5) {
                         ForEach(0..<min(defs.count, 5), id: \.self) { i in
                             Circle()
-                                .fill(i < visible.count ? Color.nagareOrange : Color.white.opacity(0.3))
+                                .fill(i < visible.count ? Color.jojoOrange : Color.white.opacity(0.3))
                                 .frame(width: 6, height: 6)
                         }
                     }
@@ -196,7 +196,7 @@ struct TapPopupCard: View {
         VStack(alignment: .leading, spacing: Spacing.s) {
             Text("Added to your deck")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
                 .textCase(.uppercase)
             HighlightedSentence(sentence: selection.sentence, target: selection.token.surface, size: 17, baseColor: .white)
             Text(selection.translation)
@@ -301,7 +301,7 @@ struct HighlightedSentence: View {
         var result = AttributedString(sentence)
         result.foregroundColor = baseColor
         if !target.isEmpty, let range = result.range(of: target) {
-            result[range].foregroundColor = Color.nagareOrange
+            result[range].foregroundColor = Color.jojoOrange
             result[range].font = JojoFont.jp(size, bold: true, relativeTo: .body)
         }
         return result

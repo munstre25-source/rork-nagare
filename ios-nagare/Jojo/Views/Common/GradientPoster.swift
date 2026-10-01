@@ -132,7 +132,7 @@ struct ChannelRow: View {
                         .background(
                             app.isFollowing(channel: clip.channelName)
                                 ? Color.white.opacity(0.14)
-                                : Color.nagareOrange,
+                                : Color.jojoOrange,
                             in: Capsule()
                         )
                 }

@@ -95,7 +95,7 @@ struct ClipQuizOverlay: View {
         VStack(alignment: .leading, spacing: Spacing.m) {
             Text("\(index + 1)/\(questions.count)")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text(q.prompt)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.white)
@@ -148,7 +148,7 @@ struct ClipQuizOverlay: View {
         VStack(spacing: Spacing.m) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text("\(correctCount)/\(questions.count) correct")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
@@ -163,7 +163,7 @@ struct ClipQuizOverlay: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .foregroundStyle(.white)
-                    .background(Color.nagareOrange, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.jojoOrange, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .padding(.top, Spacing.s)
         }

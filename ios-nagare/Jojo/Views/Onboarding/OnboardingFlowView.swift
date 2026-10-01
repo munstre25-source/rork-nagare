@@ -10,15 +10,11 @@ struct OnboardingFlowView: View {
     @State private var isForward: Bool = true
     @State private var didLoad: Bool = false
 
-    private var progressSteps: [OnboardingStep] { OnboardingStep.allCases.filter(\.showsProgress) }
+    private var progressSteps: [OnboardingStep] { OnboardingStep.flow.filter(\.showsProgress) }
 
     var body: some View {
         ZStack {
-            if step.usesLightChrome {
-                Color(hex: "#FFF6EE").ignoresSafeArea()
-            } else {
-                OnboardingBackground()
-            }
+            background
             if showSplash {
                 SplashView {
                     withAnimation(.easeInOut(duration: 0.5)) {
@@ -64,8 +60,9 @@ struct OnboardingFlowView: View {
                 }
             }
         }
-        .environment(\.colorScheme, step.usesLightChrome ? .light : .dark)
-        .animation(.easeInOut(duration: 0.35), value: step.usesLightChrome)
+        .environment(\.brandSurface, activeSurface)
+        .environment(\.colorScheme, activeSurface == .cinema ? .dark : .light)
+        .animation(.easeInOut(duration: 0.35), value: activeSurface == .cinema)
         .onAppear {
             guard !didLoad else { return }
             didLoad = true
@@ -80,6 +77,21 @@ struct OnboardingFlowView: View {
         .onChange(of: step) { _, newStep in
             app.setOnboardingStep(newStep)
             track("onboarding_\(newStep.analyticsName)_view", props: ["step": String(newStep.rawValue)])
+        }
+    }
+
+    /// The launch demo and the in-funnel video beat are the only dark moments.
+    private var activeSurface: BrandSurface {
+        if showDemoPlayer { return .cinema }
+        return step.surface
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        if activeSurface == .cinema {
+            OnboardingBackground()
+        } else {
+            JojoBrandBackground(showsHills: !showSplash, showsPetals: true)
         }
     }
 
@@ -106,7 +118,7 @@ struct OnboardingFlowView: View {
 
     @ViewBuilder
     private var header: some View {
-        let light = step.usesLightChrome
+        let onCream = activeSurface == .cream
         HStack(spacing: Spacing.m) {
             if step.allowsBack, step != .valueTap, step != .valueFlashcards {
                 Button {
@@ -114,9 +126,14 @@ struct OnboardingFlowView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(light ? Color(hex: "#3A3A3A") : .white)
+                        .foregroundStyle(onCream ? Color.jojoInk : .white)
                         .frame(width: 44, height: 44)
-                        .background((light ? Color.black.opacity(0.06) : Color.white.opacity(0.08)), in: Circle())
+                        .background(onCream ? Color.jojoPaper : Color.white.opacity(0.08), in: Circle())
+                        .overlay {
+                            if onCream {
+                                Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
+                            }
+                        }
                 }
                 .accessibilityLabel("Back")
             } else {
@@ -125,19 +142,21 @@ struct OnboardingFlowView: View {
             if step.showsProgress, let index = progressSteps.firstIndex(of: step) {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(light ? Color.black.opacity(0.08) : Color.white.opacity(0.12))
-                        Capsule().fill(Color.nagareOrange)
+                        Capsule().fill(onCream ? Color.jojoInk.opacity(0.08) : Color.white.opacity(0.12))
+                        Capsule()
+                            .fill(LinearGradient(colors: [Color.jojoOrangeLight, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing))
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
                             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
                     }
                 }
-                .frame(height: 5)
+                .frame(height: 6)
                 .accessibilityElement()
                 .accessibilityLabel("Step \(index + 1) of \(progressSteps.count)")
             } else {
                 Spacer()
             }
-            Color.clear.frame(width: 44, height: 44)
+            JojoMascotAvatar(size: 36)
+                .opacity(step.showsProgress ? 1 : 0)
         }
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
@@ -149,9 +168,11 @@ struct OnboardingFlowView: View {
         switch step {
         case .splash, .valueCaptions, .valueTap, .valueFlashcards:
             ValuePropCarousel(step: Binding(get: { step }, set: { newValue in
-                isForward = newValue.rawValue > step.rawValue
+                isForward = newValue.flowIndex > step.flowIndex
                 step = newValue
             })) { next() }
+        case .name:
+            NameStepView { next() }
         case .motivation:
             MotivationStepView { next() }
         case .taste:
@@ -160,6 +181,8 @@ struct OnboardingFlowView: View {
             LevelStepView { next() }
         case .demo:
             DemoStepView { next() }
+        case .flashcardTry:
+            FlashcardTryStepView { next() }
         case .socialProof:
             SocialProofStepView { next() }
         case .dailyGoal:
@@ -186,24 +209,24 @@ struct OnboardingFlowView: View {
     }
 
     private func next() {
-        guard let nextStep = OnboardingStep(rawValue: step.rawValue + 1) else { return }
+        guard let nextStep = step.advanced(by: 1) else { return }
         go(to: nextStep)
     }
 
     private func back() {
-        guard let previous = OnboardingStep(rawValue: step.rawValue - 1), previous != .splash else { return }
+        guard let previous = step.advanced(by: -1), previous != .splash else { return }
         Haptics.selection()
         isForward = false
         withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) { step = previous }
     }
 
     private func go(to target: OnboardingStep) {
-        isForward = target.rawValue >= step.rawValue
+        isForward = target.flowIndex >= step.flowIndex
         withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) { step = target }
     }
 }
 
-/// 0. Splash: logo in, orange stroke draws itself in under a second, then dissolves.
+/// 0. Splash: Jojo rises onto the cream paper, the brush stroke draws itself, then it dissolves.
 struct SplashView: View {
     let onFinish: () -> Void
     @State private var progress: CGFloat = 0

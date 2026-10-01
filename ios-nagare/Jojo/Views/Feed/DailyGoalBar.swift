@@ -18,7 +18,7 @@ struct DailyGoalBar: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.white.opacity(0.12))
                     Capsule()
-                        .fill(LinearGradient(colors: [Color(hex: "#FF8A2B"), .nagareOrange], startPoint: .leading, endPoint: .trailing))
+                        .fill(LinearGradient(colors: [Color(hex: "#FF8A2B"), .jojoOrange], startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(8, proxy.size.width * app.goalProgress))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: app.goalProgress)
                 }
@@ -27,7 +27,7 @@ struct DailyGoalBar: View {
             ZStack {
                 Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(app.isGoalReached ? Color.nagareOrange : .white.opacity(0.7))
+                    .foregroundStyle(app.isGoalReached ? Color.jojoOrange : .white.opacity(0.7))
                     .scaleEffect(trophyBounce ? 1.5 : 1)
                     .rotationEffect(.degrees(trophyBounce ? -12 : 0))
                 if showConfetti {
@@ -58,7 +58,7 @@ struct DailyGoalBar: View {
 /// Small radial particle burst.
 struct ConfettiBurst: View {
     @State private var expanded: Bool = false
-    var colors: [Color] = [.nagareOrange, Color(hex: "#FFD23F"), Color(hex: "#34C759"), .white]
+    var colors: [Color] = [.jojoOrange, Color(hex: "#FFD23F"), Color(hex: "#34C759"), .white]
     var count: Int = 14
     var radius: CGFloat = 40
 

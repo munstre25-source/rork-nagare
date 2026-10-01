@@ -155,9 +155,9 @@ private struct SearchHitCard: View {
                 Button(action: onPlay) {
                     Image(systemName: "headphones")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.nagareOrange)
+                        .foregroundStyle(Color.jojoOrange)
                         .frame(width: 44, height: 44)
-                        .background(Color.nagareOrange.opacity(0.15), in: Circle())
+                        .background(Color.jojoOrange.opacity(0.15), in: Circle())
                 }
                 .accessibilityLabel("Listen in context")
             }

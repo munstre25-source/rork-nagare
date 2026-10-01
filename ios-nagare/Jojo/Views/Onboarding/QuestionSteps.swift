@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Step 4: multi-select motivation.
+/// Multi-select motivation.
 struct MotivationStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
@@ -10,6 +10,8 @@ struct MotivationStepView: View {
         VStack(spacing: Spacing.l) {
             ScrollView {
                 VStack(spacing: Spacing.m) {
+                    MascotCoach(message: coachMessage)
+                        .padding(.bottom, Spacing.xs)
                     OnboardingTitle(title: "What's pulling you toward Japanese?", subtitle: "Pick as many as you like.")
                         .padding(.bottom, Spacing.s)
                     ForEach(Motivation.allCases) { m in
@@ -32,12 +34,18 @@ struct MotivationStepView: View {
                     .disabled(selected.isEmpty)
                 Button("Prefer not to say") { save([]) }
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(Color.jojoInkSoft)
                     .frame(minHeight: 44)
             }
             .padding(.horizontal, Spacing.l)
         }
         .onAppear { selected = Set(app.profile.motivations) }
+    }
+
+    private var coachMessage: String {
+        app.profile.firstName.isEmpty
+        ? "Tell me why you're here and I'll pick clips to match."
+        : "Tell me why you're here, \(app.profile.firstName), and I'll pick clips to match."
     }
 
     private func save(_ values: [String]) {
@@ -48,7 +56,7 @@ struct MotivationStepView: View {
     }
 }
 
-/// Step 5: Tinder-style swipe stack of genres.
+/// Tinder-style swipe stack of genres.
 struct TasteSwipeStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
@@ -67,10 +75,14 @@ struct TasteSwipeStepView: View {
             ZStack {
                 if index >= tastes.count {
                     VStack(spacing: Spacing.m) {
-                        Image(systemName: "sparkles").font(.system(size: 48)).foregroundStyle(Color.nagareOrange)
-                        Text("Your feed is tuned.").font(.title2.weight(.bold)).foregroundStyle(.white)
+                        JojoMascot(height: 150)
+                        Text("Your feed is tuned.")
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .foregroundStyle(Color.jojoInk)
                         Text(liked.isEmpty ? "We'll start with a bit of everything." : "Starting with \(liked.compactMap { Taste(rawValue: $0)?.title }.prefix(2).joined(separator: " & ")).")
-                            .font(.subheadline).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.jojoInkSoft)
+                            .multilineTextAlignment(.center)
                     }
                     .transition(.scale.combined(with: .opacity))
                 } else {
@@ -94,8 +106,8 @@ struct TasteSwipeStepView: View {
 
             if index < tastes.count {
                 HStack(spacing: Spacing.xxl) {
-                    swipeButton(symbol: "xmark", color: .white.opacity(0.8), label: "Not for me") { decide(like: false) }
-                    swipeButton(symbol: "heart.fill", color: .nagareOrange, label: "Interested") { decide(like: true) }
+                    swipeButton(symbol: "xmark", color: .jojoInkSoft, label: "Not for me") { decide(like: false) }
+                    swipeButton(symbol: "heart.fill", color: .jojoVermilion, label: "Interested") { decide(like: true) }
                 }
                 .padding(.bottom, Spacing.m)
             } else {
@@ -130,8 +142,9 @@ struct TasteSwipeStepView: View {
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(color)
                 .frame(width: 68, height: 68)
-                .background(Color.bgElevatedDark, in: Circle())
-                .overlay(Circle().strokeBorder(Color.hairlineDark))
+                .background(Color.jojoPaper, in: Circle())
+                .overlay(Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1))
+                .shadow(color: Color.jojoVermilion.opacity(0.1), radius: 12, y: 5)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(label)
@@ -166,26 +179,26 @@ private struct TasteCard: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 4) {
-                Text(taste.title).font(.title.weight(.bold)).foregroundStyle(.white)
+                Text(taste.title).font(.system(.title, design: .rounded, weight: .bold)).foregroundStyle(.white)
                 Text(taste.subtitle).font(.headline).foregroundStyle(.white.opacity(0.8))
             }
             .padding(Spacing.xl)
         }
         .overlay(alignment: .topLeading) {
-            stamp("INTO IT", color: .nagareOrange).opacity(Double(max(0, drag.width) / 100)).padding(Spacing.xl)
+            stamp("INTO IT", color: .jojoOrangeLight).opacity(Double(max(0, drag.width) / 100)).padding(Spacing.xl)
         }
         .overlay(alignment: .topTrailing) {
             stamp("PASS", color: .white).opacity(Double(max(0, -drag.width) / 100)).padding(Spacing.xl)
         }
         .frame(maxWidth: 380, maxHeight: 440)
         .clipShape(.rect(cornerRadius: 28, style: .continuous))
-        .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
+        .shadow(color: Color.jojoVermilion.opacity(0.18), radius: 22, y: 12)
         .accessibilityElement(children: .combine)
     }
 
     private func stamp(_ text: String, color: Color) -> some View {
         Text(text)
-            .font(.title2.weight(.heavy))
+            .font(.system(.title2, design: .rounded, weight: .heavy))
             .foregroundStyle(color)
             .padding(.horizontal, 12).padding(.vertical, 6)
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(color, lineWidth: 3))
@@ -193,7 +206,7 @@ private struct TasteCard: View {
     }
 }
 
-/// Step 6: "Which of these can you read comfortably?"
+/// "Which of these can you read comfortably?"
 struct LevelStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
@@ -229,7 +242,8 @@ struct LevelStepView: View {
     }
 
     private func levelCard(_ level: ReadingLevel, label: String, words: [StaticSentence.Word], translation: String, underline: Bool = true) -> some View {
-        Button {
+        let isSelected = selected == level
+        return Button {
             Haptics.medium()
             selected = level
             app.profile.level = level.rawValue
@@ -244,16 +258,33 @@ struct LevelStepView: View {
                 Text(label.uppercased())
                     .font(.caption.weight(.bold))
                     .tracking(1.2)
-                    .foregroundStyle(selected == level ? .white : Color.nagareOrange)
-                StaticSentence(words: words, size: level == .advanced ? 20 : 24, showsUnderline: underline)
+                    .foregroundStyle(isSelected ? Color.white : Color.jojoVermilion)
+                StaticSentence(
+                    words: words,
+                    size: level == .advanced ? 20 : 24,
+                    showsUnderline: underline,
+                    surface: isSelected ? .cinema : .cream
+                )
                 Text(translation)
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.jojoInkSoft)
             }
             .padding(Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(selected == level ? Color.nagareOrange.opacity(0.9) : Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.hairlineDark))
+            .background {
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .fill(
+                        isSelected
+                        ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        : AnyShapeStyle(Color.jojoPaper)
+                    )
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
+            )
+            .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : 0.06), radius: 14, y: 6)
+            .animation(.snappy, value: isSelected)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel("\(label): \(translation)")

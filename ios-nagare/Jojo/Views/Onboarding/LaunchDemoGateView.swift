@@ -26,11 +26,8 @@ struct LaunchDemoGateView: View {
                     onSkip()
                 } label: {
                     Text("Skip")
-                        .font(.headline)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
                 }
+                .buttonStyle(SecondaryButtonStyle())
                 .accessibilityLabel("Skip app demo")
             }
             .padding(.horizontal, Spacing.l)
@@ -172,7 +169,7 @@ private struct LiveAppDemoReel: View {
             if saveBurst {
                 Image(systemName: "sparkles")
                     .font(.system(size: 72))
-                    .foregroundStyle(Color.nagareOrange)
+                    .foregroundStyle(Color.jojoOrange)
                     .shadow(color: .black.opacity(0.5), radius: 16)
                     .transition(.scale.combined(with: .opacity))
                     .allowsHitTesting(false)

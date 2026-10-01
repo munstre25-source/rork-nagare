@@ -80,7 +80,7 @@ struct CancellationSurveySheet: View {
                     } label: {
                         HStack {
                             Image(systemName: selected == reason ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selected == reason ? Color.nagareOrange : .secondary)
+                                .foregroundStyle(selected == reason ? Color.jojoOrange : .secondary)
                             Text(reason.title)
                                 .foregroundStyle(.primary)
                             Spacer()
@@ -90,7 +90,7 @@ struct CancellationSurveySheet: View {
                         .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(selected == reason ? Color.nagareOrange : .clear, lineWidth: 1.5)
+                                .strokeBorder(selected == reason ? Color.jojoOrange : .clear, lineWidth: 1.5)
                         )
                     }
                     .buttonStyle(.plain)
@@ -126,7 +126,7 @@ struct CancellationSurveySheet: View {
             Spacer()
             Image(systemName: "heart.fill")
                 .font(.system(size: 40))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text("Thanks — that helps a lot.")
                 .font(.title3.weight(.bold))
                 .multilineTextAlignment(.center)

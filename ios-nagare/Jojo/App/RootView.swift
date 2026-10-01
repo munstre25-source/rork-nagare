@@ -13,11 +13,12 @@ struct RootView: View {
             } else if !app.purchases.isSubscribed {
                 // Returning user whose subscription lapsed: hard paywall, no tabs.
                 ZStack {
-                    OnboardingBackground()
+                    JojoBrandBackground()
                     PaywallView(allowsDebugBypass: true) {}
                         .frame(maxWidth: 560)
                 }
-                .environment(\.colorScheme, .dark)
+                .environment(\.brandSurface, .cream)
+                .environment(\.colorScheme, .light)
                 .transition(.opacity)
             } else {
                 MainTabView()
@@ -70,7 +71,7 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.profile)
         }
-        .tint(Color.adaptive(light: "#111111", dark: "#FFFFFF"))
+        .tint(Color.jojoVermilion)
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil { tab = .feed }

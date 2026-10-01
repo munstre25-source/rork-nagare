@@ -35,7 +35,7 @@ struct ExploreView: View {
                             .multilineTextAlignment(.center)
                         Button("Clear filters") { clearFilters() }
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.nagareOrange)
+                            .foregroundStyle(Color.jojoOrange)
                             .frame(minHeight: 44)
                     }
                     .frame(maxWidth: .infinity)
@@ -90,7 +90,7 @@ struct ExploreView: View {
                 if difficulty != nil || topic != nil || source != nil || favoritesOnly {
                     Button("Clear") { clearFilters() }
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.nagareOrange)
+                        .foregroundStyle(Color.jojoOrange)
                         .frame(minHeight: 44)
                 }
             }
@@ -161,7 +161,7 @@ private struct ExploreClipCard: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(Color.nagareOrange, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(Color.jojoOrange, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 Button {
                     Haptics.light()

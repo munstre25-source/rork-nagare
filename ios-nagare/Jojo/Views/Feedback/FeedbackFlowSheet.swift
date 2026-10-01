@@ -62,7 +62,7 @@ struct FeedbackFlowSheet: View {
             Spacer(minLength: Spacing.l)
             Image(systemName: "face.smiling")
                 .font(.system(size: 44))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text("Are you enjoying Jojo?")
                 .font(.title2.weight(.bold))
                 .multilineTextAlignment(.center)
@@ -111,7 +111,7 @@ struct FeedbackFlowSheet: View {
                             .frame(minHeight: 36)
                             .foregroundStyle(category == cat ? Color.white : Color.primary)
                             .background(
-                                category == cat ? Color.nagareOrange : Color.fieldFill,
+                                category == cat ? Color.jojoOrange : Color.fieldFill,
                                 in: Capsule()
                             )
                     }
@@ -150,7 +150,7 @@ struct FeedbackFlowSheet: View {
             Spacer()
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text("Thanks — we read every note.")
                 .font(.title3.weight(.bold))
                 .multilineTextAlignment(.center)

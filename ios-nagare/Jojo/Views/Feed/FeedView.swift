@@ -120,7 +120,7 @@ struct FeedView: View {
                                     .font(.title3.weight(tab == item ? .semibold : .regular))
                                     .foregroundStyle(tab == item ? .white : .white.opacity(0.5))
                                 Capsule()
-                                    .fill(tab == item ? Color.nagareOrange : .clear)
+                                    .fill(tab == item ? Color.jojoOrange : .clear)
                                     .frame(width: 44, height: 3)
                             }
                             .frame(minHeight: 44)
@@ -188,7 +188,7 @@ struct FeedView: View {
         VStack(spacing: Spacing.m) {
             Image(systemName: "person.2.fill")
                 .font(.largeTitle)
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
             Text("Follow channels you like")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
@@ -204,7 +204,7 @@ struct FeedView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
                     .frame(minHeight: 48)
-                    .background(Color.nagareOrange, in: Capsule())
+                    .background(Color.jojoOrange, in: Capsule())
             }
             .padding(.top, Spacing.s)
         }

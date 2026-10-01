@@ -124,23 +124,60 @@ nonisolated enum AcquisitionSource: String, CaseIterable, Identifiable, Sendable
     }
 }
 
-/// Every onboarding screen, persisted by raw value so the flow resumes exactly where it was left.
+/// Every onboarding screen. Raw values are frozen because `profile.onboardingStep`
+/// persists them — new screens are appended and slotted into `flow` instead.
 nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case splash = 0
-    case valueCaptions, valueTap, valueFlashcards
-    case motivation, taste, level, demo, socialProof, dailyGoal, journey, notifications, trialTimeline, appReview
-    /// Where did you hear about Jojo? Inserted before paywall.
-    case acquisition
-    case paywall, welcome
+    case valueCaptions = 1
+    case valueTap = 2
+    case valueFlashcards = 3
+    case motivation = 4
+    case taste = 5
+    case level = 6
+    case demo = 7
+    case socialProof = 8
+    case dailyGoal = 9
+    case journey = 10
+    case notifications = 11
+    case trialTimeline = 12
+    case appReview = 13
+    /// Where did you hear about Jojo?
+    case acquisition = 14
+    case paywall = 15
+    case welcome = 16
+    /// What should Jojo call you?
+    case name = 17
+    /// Hands-on flashcard rating, using the word just tapped in the demo.
+    case flashcardTry = 18
+
+    /// Presentation order. Both hands-on beats (`demo`, `flashcardTry`) land before
+    /// `appReview` so we only ask for a rating after the learner has used the product.
+    static let flow: [OnboardingStep] = [
+        .splash,
+        .valueCaptions, .valueTap, .valueFlashcards,
+        .name, .motivation, .taste, .level,
+        .demo, .flashcardTry,
+        .socialProof, .dailyGoal, .journey, .notifications,
+        .trialTimeline, .appReview, .acquisition,
+        .paywall, .welcome
+    ]
+
+    var flowIndex: Int { Self.flow.firstIndex(of: self) ?? 0 }
+
+    func advanced(by offset: Int) -> OnboardingStep? {
+        Self.flow[safe: flowIndex + offset]
+    }
 
     var analyticsName: String {
         switch self {
         case .splash: "splash"
         case .valueCaptions, .valueTap, .valueFlashcards: "valueprop"
+        case .name: "name"
         case .motivation: "motivation"
         case .taste: "taste"
         case .level: "level"
         case .demo: "demo"
+        case .flashcardTry: "flashcard_try"
         case .socialProof: "socialproof"
         case .dailyGoal: "dailygoal"
         case .journey: "journey"
@@ -167,6 +204,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         }
     }
 
-    /// Light cream review ask — header chrome should invert for contrast.
-    var usesLightChrome: Bool { self == .appReview }
+    /// Cream is the brand default; only the live-video beat goes dark.
+    var surface: BrandSurface {
+        self == .demo ? .cinema : .cream
+    }
 }

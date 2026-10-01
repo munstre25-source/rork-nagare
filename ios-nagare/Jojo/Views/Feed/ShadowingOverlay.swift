@@ -61,10 +61,10 @@ struct ShadowingOverlay: View {
             Spacer()
             Text(phaseLabel)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color.nagareOrangeSoft, in: Capsule())
+                .background(Color.jojoOrangeSoft, in: Capsule())
         }
     }
 

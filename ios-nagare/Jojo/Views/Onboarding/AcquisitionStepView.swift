@@ -34,9 +34,14 @@ struct AcquisitionStepView: View {
                     if selected == .other {
                         TextField("Optional: where?", text: $otherDetail)
                             .textInputAutocapitalization(.sentences)
+                            .tint(Color.jojoOrange)
+                            .foregroundStyle(Color.jojoInk)
                             .padding(Spacing.m)
-                            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                            .foregroundStyle(.white)
+                            .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
+                            )
                     }
                 }
                 .padding(.horizontal, Spacing.l)
@@ -55,7 +60,7 @@ struct AcquisitionStepView: View {
                     onContinue()
                 }
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(Color.jojoInkSoft)
                 .frame(minHeight: 44)
             }
             .padding(.horizontal, Spacing.l)

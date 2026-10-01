@@ -543,6 +543,33 @@ final class AppModel {
         save()
     }
 
+    func setFirstName(_ name: String) {
+        profile.firstName = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
+        save()
+    }
+
+    /// Their name when we have one, otherwise a warm stand-in so copy always reads naturally.
+    var displayName: String {
+        profile.firstName.isEmpty ? "friend" : profile.firstName
+    }
+
+    /// Remembers the word tapped in the onboarding demo so it can come back as their first card.
+    func noteFirstTappedWord(_ token: Token) {
+        guard profile.firstTappedWordKey.isEmpty else { return }
+        profile.firstTappedWordKey = Self.wordKey(for: token)
+        save()
+    }
+
+    func markFlashcardTried() {
+        guard !profile.didTryFlashcard else { return }
+        profile.didTryFlashcard = true
+        save()
+    }
+
+    func savedWord(key: String) -> SavedWord? {
+        fetchWord(key: key)
+    }
+
     func markLaunchDemoSeen() {
         guard !profile.hasSeenLaunchDemo else { return }
         profile.hasSeenLaunchDemo = true

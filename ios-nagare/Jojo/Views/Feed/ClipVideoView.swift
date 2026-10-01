@@ -54,7 +54,7 @@ struct ClipVideoView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 64))
-                        .foregroundStyle(Color.nagareOrange)
+                        .foregroundStyle(Color.jojoOrange)
                         .shadow(color: .black.opacity(0.4), radius: 12)
                     if let savedWordLabel {
                         Text(savedWordLabel)
@@ -161,7 +161,7 @@ struct ClipVideoView: View {
         VStack(spacing: Spacing.s) {
             RailButton(
                 systemImage: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
-                tint: app.isFavorite(clip.id) ? .nagareOrange : .white,
+                tint: app.isFavorite(clip.id) ? .jojoOrange : .white,
                 label: app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip"
             ) {
                 Haptics.light()
@@ -206,7 +206,7 @@ struct ClipVideoView: View {
                     if player == nil { onActivate() }
                     player?.toggleLoopCurrentLine()
                 } label: {
-                    ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .nagareOrange : .white)
+                    ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .jojoOrange : .white)
                 }
                 .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
                 if let onFullscreen {
@@ -274,9 +274,9 @@ private struct Scrubber: View {
             let progress = dragProgress ?? ((player?.currentTime ?? 0) / max(clip.durationSec, 1))
             ZStack(alignment: .leading) {
                 Capsule().fill(.white.opacity(0.22)).frame(height: 3)
-                Capsule().fill(Color.nagareOrange).frame(width: proxy.size.width * progress, height: 3)
+                Capsule().fill(Color.jojoOrange).frame(width: proxy.size.width * progress, height: 3)
                 Circle()
-                    .fill(Color.nagareOrange)
+                    .fill(Color.jojoOrange)
                     .frame(width: dragProgress == nil ? 0 : 14, height: 14)
                     .offset(x: proxy.size.width * progress - 7)
             }

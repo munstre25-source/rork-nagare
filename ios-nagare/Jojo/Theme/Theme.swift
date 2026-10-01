@@ -38,14 +38,33 @@ extension Color {
     static let bgSurfaceDark = Color(hex: "#121212")
     static let bgElevatedDark = Color(hex: "#1C1C1E")
     static let hairlineDark = Color(hex: "#2A2A2A")
-    static let canvas = Color.adaptive(light: "#F4F4F6", dark: "#0A0A0A")
+    /// Light mode uses the icon's cream paper so the brand survives the jump out of onboarding.
+    static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0A0A0A")
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
-    static let cardStroke = Color.adaptive(light: "#E6E6EA", dark: "#2A2A2A")
-    static let fieldFill = Color.adaptive(light: "#EBEBEF", dark: "#1C1C1E")
+    static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
+    static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
 
     // MARK: Accent
-    static let nagareOrange = Color(hex: "#FF6B00")
-    static let nagareOrangeSoft = Color(hex: "#FF6B00").opacity(0.16)
+    static let jojoOrange = Color(hex: "#FF6B00")
+    static let jojoOrangeSoft = Color(hex: "#FF6B00").opacity(0.16)
+
+    // MARK: Brand (sampled from the app icon: orange ground, cream paper, sumi ink)
+    /// The deep vermilion of the hachimaki dot, the book and the rising sun.
+    static let jojoVermilion = Color(hex: "#F0400F")
+    /// Lighter end of the orange ramp, used for gradients and hills.
+    static let jojoOrangeLight = Color(hex: "#FFA23D")
+    /// Primary brand surface — identical to the mascot artwork's background.
+    static let jojoCream = Color(hex: "#FFF6EE")
+    /// One step warmer than `jojoCream`, for layered washes.
+    static let jojoCreamDeep = Color(hex: "#FDEBDA")
+    static let jojoInk = Color(hex: "#2A2A2A")
+    static let jojoInkSoft = Color(hex: "#6B6B6B")
+    static let jojoInkFaint = Color(hex: "#A79C92")
+    /// Card fill / hairline on the cream surface.
+    static let jojoPaper = Color(hex: "#FFFFFF")
+    static let jojoPaperStroke = Color(hex: "#F2E2D1")
+    static let jojoBlossom = Color(hex: "#F3A8B4")
+    static let jojoGold = Color(hex: "#F5C542")
 
     // MARK: Word states
     static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")

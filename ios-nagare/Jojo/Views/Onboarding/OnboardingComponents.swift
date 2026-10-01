@@ -1,38 +1,27 @@
 import SwiftUI
 
-/// Near-black atmospheric background with a slow warm glow.
-struct OnboardingBackground: View {
-    var body: some View {
-        ZStack {
-            Color.bgPlayer
-            RadialGradient(colors: [Color.nagareOrange.opacity(0.22), .clear], center: .init(x: 0.85, y: -0.05), startRadius: 10, endRadius: 420)
-            RadialGradient(colors: [Color(hex: "#3B82F6").opacity(0.08), .clear], center: .init(x: 0.0, y: 1.0), startRadius: 10, endRadius: 380)
-        }
-        .ignoresSafeArea()
-    }
-}
-
-/// The 流れ wordmark with a self-drawing orange brush stroke.
+/// Splash / welcome lockup: mascot above the wordmark with a brush stroke between them.
 struct JojoLogo: View {
     var drawProgress: CGFloat = 1
     var size: CGFloat = 1
+    var showsMascot: Bool = true
 
     var body: some View {
-        VStack(spacing: 10 * size) {
-            Text("流れ")
-                .font(JojoFont.jp(64 * size, bold: true, relativeTo: .largeTitle))
-                .foregroundStyle(.white)
+        VStack(spacing: 12 * size) {
+            if showsMascot {
+                JojoMascot(height: 200 * size)
+            }
+            JojoWordmark(size: 46 * size)
             FlowStroke()
                 .trim(from: 0, to: drawProgress)
                 .stroke(
-                    LinearGradient(colors: [Color(hex: "#FF8A2B"), .nagareOrange], startPoint: .leading, endPoint: .trailing),
-                    style: StrokeStyle(lineWidth: 7 * size, lineCap: .round, lineJoin: .round)
+                    LinearGradient(colors: [Color.jojoOrangeLight, .jojoVermilion], startPoint: .leading, endPoint: .trailing),
+                    style: StrokeStyle(lineWidth: 6 * size, lineCap: .round, lineJoin: .round)
                 )
-                .frame(width: 170 * size, height: 26 * size)
-            Text("NAGARE")
-                .font(.system(size: 15 * size, weight: .semibold))
-                .tracking(7 * size)
-                .foregroundStyle(.white.opacity(0.7))
+                .frame(width: 150 * size, height: 22 * size)
+            Text("日本語、流れるように")
+                .font(JojoFont.jp(13 * size, relativeTo: .caption))
+                .foregroundStyle(Color.jojoInkSoft)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Jojo")
@@ -57,16 +46,19 @@ struct OnboardingTitle: View {
     let title: String
     var subtitle: String?
 
+    @Environment(\.brandSurface) private var surface
+
     var body: some View {
+        let palette = BrandPalette.resolve(surface)
         VStack(alignment: .leading, spacing: Spacing.s) {
             Text(title)
-                .font(.system(.largeTitle, design: .default, weight: .bold))
-                .foregroundStyle(.white)
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(palette.title)
                 .fixedSize(horizontal: false, vertical: true)
             if let subtitle {
                 Text(subtitle)
                     .font(.body)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(palette.subtle)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -87,42 +79,56 @@ struct StaticSentence: View {
     let words: [Word]
     var size: CGFloat = 24
     var showsUnderline: Bool = true
+    /// Illustrations that mimic the in-app video chrome stay on the cinema surface.
+    var surface: BrandSurface = .cinema
+    /// Supply this to let the learner actually tap a word (value-prop demo).
+    var onTapWord: ((Int) -> Void)?
 
     var body: some View {
         FlowLayout(spacing: 4, lineSpacing: 10) {
-            ForEach(Array(words.enumerated()), id: \.offset) { _, word in
-                VStack(spacing: 2) {
-                    Text(word.furigana ?? " ")
-                        .font(JojoFont.jp(size * 0.45, relativeTo: .caption2))
-                        .foregroundStyle(word.state == .selected ? Color.nagareOrange : .white.opacity(0.6))
-                    Text(word.surface)
-                        .font(JojoFont.jp(size, bold: true, relativeTo: .title2))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .background {
-                            switch word.state {
-                            case .selected:
-                                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.nagareOrange)
-                            case .spoken:
-                                RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.spokenGreen, lineWidth: 2)
-                            case .normal:
-                                Color.clear
-                            }
-                        }
-                        .overlay(alignment: .bottom) {
-                            if showsUnderline, word.tappable, word.state != .selected {
-                                Capsule().fill(Color.tappableBlue).frame(height: 3).padding(.horizontal, 4).offset(y: 3)
-                            }
-                        }
-                    if let romaji = word.romaji {
-                        Text(romaji)
-                            .font(.system(size: size * 0.45))
-                            .foregroundStyle(word.state == .selected ? Color.nagareOrange : .white.opacity(0.5))
-                    }
+            ForEach(Array(words.enumerated()), id: \.offset) { index, word in
+                if let onTapWord, word.tappable {
+                    Button { onTapWord(index) } label: { wordStack(word) }
+                        .buttonStyle(PressableStyle())
+                } else {
+                    wordStack(word)
                 }
-                .fixedSize()
             }
         }
+    }
+
+    private func wordStack(_ word: Word) -> some View {
+        let palette = BrandPalette.resolve(surface)
+        return VStack(spacing: 2) {
+            Text(word.furigana ?? " ")
+                .font(JojoFont.jp(size * 0.45, relativeTo: .caption2))
+                .foregroundStyle(word.state == .selected ? Color.jojoOrange : palette.subtle)
+            Text(word.surface)
+                .font(JojoFont.jp(size, bold: true, relativeTo: .title2))
+                .foregroundStyle(word.state == .selected ? Color.white : palette.title)
+                .padding(.horizontal, 5)
+                .background {
+                    switch word.state {
+                    case .selected:
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.jojoOrange)
+                    case .spoken:
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.spokenGreen, lineWidth: 2)
+                    case .normal:
+                        Color.clear
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    if showsUnderline, word.tappable, word.state != .selected {
+                        Capsule().fill(Color.tappableBlue).frame(height: 3).padding(.horizontal, 4).offset(y: 3)
+                    }
+                }
+            if let romaji = word.romaji {
+                Text(romaji)
+                    .font(.system(size: size * 0.45))
+                    .foregroundStyle(word.state == .selected ? Color.jojoOrange : palette.faint)
+            }
+        }
+        .fixedSize()
     }
 }
 
@@ -138,25 +144,43 @@ struct OptionCard: View {
             if let symbol {
                 Image(systemName: symbol)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(isSelected ? .white : Color.nagareOrange)
+                    .foregroundStyle(isSelected ? .white : Color.jojoVermilion)
                     .frame(width: 44, height: 44)
-                    .background(isSelected ? Color.white.opacity(0.2) : Color.nagareOrangeSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(
+                        isSelected ? Color.white.opacity(0.22) : Color.jojoOrange.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline).foregroundStyle(.white)
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(isSelected ? .white : Color.jojoInk)
                 if let subtitle {
-                    Text(subtitle).font(.subheadline).foregroundStyle(.white.opacity(0.7))
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.jojoInkSoft)
                 }
             }
             Spacer(minLength: 0)
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.3))
+                .foregroundStyle(isSelected ? .white : Color.jojoInkFaint.opacity(0.5))
         }
         .padding(Spacing.l)
         .frame(minHeight: 72)
-        .background(isSelected ? Color.nagareOrange : Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(isSelected ? .clear : Color.hairlineDark))
+        .background {
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .fill(
+                    isSelected
+                    ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    : AnyShapeStyle(Color.jojoPaper)
+                )
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
+        )
+        .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : 0.06), radius: isSelected ? 14 : 10, y: 5)
         .contentShape(Rectangle())
         .animation(.snappy, value: isSelected)
         .accessibilityElement(children: .combine)
@@ -164,7 +188,8 @@ struct OptionCard: View {
     }
 }
 
-/// Frozen tap-to-understand card (value-prop illustration).
+/// Frozen tap-to-understand card (value-prop illustration). Mirrors the real in-app
+/// popup, which floats over video — so it stays dark even on the cream canvas.
 struct MockPopupCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
@@ -189,7 +214,7 @@ struct MockPopupCard: View {
         .padding(Spacing.l)
         .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.white.opacity(0.08)))
-        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+        .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
     }
 }
 
@@ -225,5 +250,6 @@ struct MockReviewCard: View {
         .padding(Spacing.l)
         .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.hairlineDark))
+        .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
     }
 }

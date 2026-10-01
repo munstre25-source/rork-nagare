@@ -88,7 +88,7 @@ struct VocabView: View {
                     } label: {
                         Image(systemName: "text.magnifyingglass")
                     }
-                    .tint(.nagareOrange)
+                    .tint(.jojoOrange)
                     .accessibilityLabel("Search & Listen in clips")
                 }
             }
@@ -246,7 +246,7 @@ struct VocabView: View {
                 } label: {
                     Label("New", systemImage: "plus").font(.subheadline.weight(.semibold)).frame(minHeight: 44)
                 }
-                .tint(.nagareOrange)
+                .tint(.jojoOrange)
             }
             .padding(.horizontal, Spacing.l)
 
@@ -351,15 +351,15 @@ private struct DeckRow: View {
         HStack(spacing: Spacing.m) {
             Image(systemName: symbol)
                 .font(.headline)
-                .foregroundStyle(Color.nagareOrange)
+                .foregroundStyle(Color.jojoOrange)
                 .frame(width: 44, height: 44)
-                .background(Color.nagareOrangeSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color.jojoOrangeSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline).foregroundStyle(.primary)
                 Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Color.nagareOrange)
+            Image(systemName: "play.circle.fill").font(.title2).foregroundStyle(Color.jojoOrange)
         }
         .padding(Spacing.m)
         .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))

@@ -78,6 +78,13 @@ final class UserProfile {
     /// When true, For You only surfaces clips at the user's level or one step harder.
     var gateContentByLevel: Bool = true
 
+    /// What the learner asked to be called. Empty means "no name given".
+    var firstName: String = ""
+    /// The word tapped during the onboarding demo, replayed as their first flashcard.
+    var firstTappedWordKey: String = ""
+    /// They rated a card by hand during onboarding, so the review UI is already familiar.
+    var didTryFlashcard: Bool = false
+
     /// Onboarding: Instagram / TikTok / App Store / etc.
     var acquisitionSource: String = ""
     /// none | deferred | completed

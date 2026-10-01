@@ -18,8 +18,8 @@ struct DemoStepView: View {
     var body: some View {
         VStack(spacing: 0) {
             OnboardingTitle(
-                title: didTap ? "That's it. That's the whole app." : "Try it. Tap the glowing word.",
-                subtitle: didTap ? "It's saved to your flashcards already. No button needed." : "This is a real clip from your feed, looping one line."
+                title: didTap ? "Saved. No button needed." : "Your turn — tap the glowing word.",
+                subtitle: didTap ? "It's a flashcard now, with this clip and this sentence attached." : "A real clip from your feed, looping one line."
             )
             .padding(.horizontal, Spacing.l)
             .padding(.vertical, Spacing.m)
@@ -64,6 +64,8 @@ struct DemoStepView: View {
         .onDisappear { coordinator.stop() }
         .onChange(of: lookup.tapPulse) { _, _ in
             guard !didTap else { return }
+            // Remembered so the very next step can replay it as their first flashcard.
+            if let token = lookup.selection?.token { app.noteFirstTappedWord(token) }
             track("onboarding_demo_word_tapped", props: ["word": lookup.selection?.token.surface ?? ""])
             Task {
                 try? await Task.sleep(for: .milliseconds(500))

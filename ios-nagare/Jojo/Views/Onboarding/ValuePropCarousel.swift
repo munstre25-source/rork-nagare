@@ -1,10 +1,14 @@
 import SwiftUI
 
-/// Steps 1-3: value-prop carousel with progress dots.
+/// Steps 1-3: value-prop carousel with progress dots. Page two is hands-on — the learner
+/// taps a real word and the dictionary card springs in, so the core gesture is taught
+/// before any question is asked.
 struct ValuePropCarousel: View {
     @Binding var step: OnboardingStep
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
+
+    @State private var didTapWord: Bool = false
 
     private let pages: [OnboardingStep] = [.valueCaptions, .valueTap, .valueFlashcards]
 
@@ -16,12 +20,11 @@ struct ValuePropCarousel: View {
                     captionsIllustration
                 }
                 .tag(OnboardingStep.valueCaptions)
-                page(title: "Tap any word.\nUnderstand instantly.",
-                     subtitle: "Reading, meaning and grammar in one tap, without pausing the vibe.") {
-                    MockPopupCard()
-                        .scaleEffect(0.96)
-                        .rotationEffect(.degrees(-1.5))
-                        .padding(.horizontal, Spacing.s)
+                page(title: didTapWord ? "That's the whole gesture." : "Tap any word.\nUnderstand instantly.",
+                     subtitle: didTapWord
+                     ? "Reading, meaning and grammar — and the clip never loses its place."
+                     : "Go ahead: tap 天気 in the line below.") {
+                    tapIllustration
                 }
                 .tag(OnboardingStep.valueTap)
                 page(title: "Flashcards\nbuild themselves.",
@@ -35,7 +38,7 @@ struct ValuePropCarousel: View {
             HStack(spacing: 8) {
                 ForEach(pages, id: \.self) { p in
                     Capsule()
-                        .fill(p == step ? Color.nagareOrange : Color.white.opacity(0.25))
+                        .fill(p == step ? Color.jojoOrange : Color.jojoInk.opacity(0.18))
                         .frame(width: p == step ? 22 : 8, height: 8)
                         .animation(.snappy, value: step)
                 }
@@ -62,6 +65,7 @@ struct ValuePropCarousel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 OnboardingTitle(title: title, subtitle: subtitle)
+                    .animation(.snappy, value: didTapWord)
                 content()
                     .frame(maxWidth: .infinity)
             }
@@ -70,6 +74,8 @@ struct ValuePropCarousel: View {
         }
         .scrollIndicators(.hidden)
     }
+
+    // MARK: Page 1 — captions
 
     private var captionsIllustration: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
@@ -94,12 +100,12 @@ struct ValuePropCarousel: View {
             HStack(spacing: Spacing.l) {
                 legend(color: .tappableBlue, text: "Tap to learn")
                 legend(color: .spokenGreen, text: "Being spoken")
-                legend(color: .nagareOrange, text: "Just tapped")
+                legend(color: .jojoOrange, text: "Just tapped")
             }
         }
         .padding(Spacing.l)
         .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.hairlineDark))
+        .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
     }
 
     private func legend(color: Color, text: String) -> some View {
@@ -107,5 +113,70 @@ struct ValuePropCarousel: View {
             Capsule().fill(color).frame(width: 14, height: 4)
             Text(text).font(.caption).foregroundStyle(.white.opacity(0.6))
         }
+    }
+
+    // MARK: Page 2 — hands-on tap
+
+    private var tapIllustration: some View {
+        VStack(spacing: Spacing.m) {
+            VStack(alignment: .leading, spacing: Spacing.m) {
+                StaticSentence(
+                    words: [
+                        .init(surface: "今日", furigana: "きょう", romaji: "kyou", tappable: false),
+                        .init(surface: "は", romaji: "wa", tappable: false),
+                        .init(surface: "天気", furigana: "てんき", romaji: "tenki", state: didTapWord ? .selected : .normal),
+                        .init(surface: "が", romaji: "ga", tappable: false),
+                        .init(surface: "いい", romaji: "ii", tappable: false),
+                        .init(surface: "です", romaji: "desu", tappable: false),
+                        .init(surface: "ね", romaji: "ne", tappable: false)
+                    ],
+                    size: 26,
+                    onTapWord: { _ in tapWord() }
+                )
+                if !didTapWord {
+                    TapHint()
+                }
+            }
+            .padding(Spacing.l)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .shadow(color: .black.opacity(0.22), radius: 20, y: 10)
+
+            if didTapWord {
+                MockPopupCard()
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.9, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -16)),
+                        removal: .opacity
+                    ))
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.78), value: didTapWord)
+    }
+
+    private func tapWord() {
+        guard !didTapWord else { return }
+        Haptics.medium()
+        track("onboarding_valueprop_word_tapped")
+        didTapWord = true
+    }
+}
+
+/// Pulsing "tap here" affordance pointing at the underlined word.
+private struct TapHint: View {
+    @State private var pulse: Bool = false
+
+    var body: some View {
+        HStack(spacing: Spacing.s) {
+            Image(systemName: "hand.tap.fill")
+                .font(.subheadline.weight(.bold))
+                .scaleEffect(pulse ? 1.14 : 0.92)
+            Text("Tap the underlined word")
+                .font(.subheadline.weight(.semibold))
+        }
+        .foregroundStyle(Color.jojoOrangeLight)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true)) { pulse = true }
+        }
+        .accessibilityHidden(true)
     }
 }
