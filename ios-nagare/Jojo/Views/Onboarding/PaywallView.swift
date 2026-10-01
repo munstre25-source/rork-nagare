@@ -136,8 +136,10 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
+    /// Yearly is the trial plan; Monthly is pay-now. Drive the CTA from the selection itself
+    /// so it stays correct even when RevenueCat hasn't returned intro-offer metadata yet.
     private var primaryCTATitle: String {
-        selectedPackageHasTrial ? "Start Free Trial" : "Continue"
+        plan == .yearly ? "Start Free Trial" : "Continue"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.

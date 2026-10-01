@@ -10,6 +10,10 @@ struct AppReviewStepView: View {
     @Environment(\.requestReview) private var requestReview
     @State private var appeared = false
     @State private var starsLit = 0
+    /// True after we've asked the system for a review — stay on this screen so the
+    /// sheet lands here, not on the next (acquisition) step. Apple's dialog is async
+    /// and may take a second or two to appear; navigating away races it.
+    @State private var didAskReview = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,31 +51,31 @@ struct AppReviewStepView: View {
 
             VStack(spacing: Spacing.m) {
                 Button {
-                    Haptics.medium()
-                    track("onboarding_appreview_rated")
-                    Task { @MainActor in
-                        requestReview()
-                        // Give the system sheet a beat before advancing.
-                        try? await Task.sleep(for: .milliseconds(500))
+                    if didAskReview {
+                        Haptics.light()
                         onContinue()
+                    } else {
+                        askForReview()
                     }
                 } label: {
-                    Text("I rated Jojo")
+                    Text(didAskReview ? "Continue" : "Rate Jojo")
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
-                Button {
-                    Haptics.selection()
-                    track("onboarding_appreview_skipped")
-                    onContinue()
-                } label: {
-                    Text("Not now")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Color.jojoInkFaint)
-                        .underline()
-                        .frame(minHeight: 44)
+                if !didAskReview {
+                    Button {
+                        Haptics.selection()
+                        track("onboarding_appreview_skipped")
+                        onContinue()
+                    } label: {
+                        Text("Not now")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color.jojoInkFaint)
+                            .underline()
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, Spacing.l)
             .padding(.bottom, Spacing.l)
@@ -128,5 +132,15 @@ struct AppReviewStepView: View {
                 Haptics.selection()
             }
         }
+    }
+
+    private func askForReview() {
+        Haptics.medium()
+        track("onboarding_appreview_rated")
+        // Stay on this screen. `requestReview()` is fire-and-forget and the system
+        // sheet often appears after a delay — advancing immediately dropped it onto
+        // the acquisition questionnaire instead.
+        requestReview()
+        withAnimation(.snappy) { didAskReview = true }
     }
 }
