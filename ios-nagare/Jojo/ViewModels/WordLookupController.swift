@@ -44,6 +44,8 @@ final class WordLookupController {
     private(set) var tapPulse: Int = 0
     /// When true (onboarding demo), never touches the network.
     @ObservationIgnored var offlineOnly = false
+    /// When true (sneak peek), show the popup without saving words to Vocab.
+    @ObservationIgnored var previewOnly = false
 
     @ObservationIgnored private var lookupTask: Task<Void, Never>?
     @ObservationIgnored private var contextTask: Task<Void, Never>?
@@ -68,11 +70,17 @@ final class WordLookupController {
         }
         let instant = app.lexicon.instantExplanation(for: token) ?? .fallback(for: token)
         explanation = instant
-        occurrenceCount = app.recordTap(token: token, explanation: instant, clip: clip, lineIndex: lineIndex)
+        if previewOnly {
+            occurrenceCount = 1
+        } else {
+            occurrenceCount = app.recordTap(token: token, explanation: instant, clip: clip, lineIndex: lineIndex)
+        }
         tapPulse += 1
-        track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
+        if !previewOnly {
+            track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
+        }
 
-        guard instant.source == .fallback, !offlineOnly else { return }
+        guard instant.source == .fallback, !offlineOnly, !previewOnly else { return }
         lookupTask?.cancel()
         let service = app.explainService
         let userId = app.purchases.appUserId

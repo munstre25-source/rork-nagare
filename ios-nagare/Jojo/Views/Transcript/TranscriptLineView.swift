@@ -13,6 +13,8 @@ struct TranscriptLineView: View {
     var isActive: Bool = true
     /// Feed immersive: always furigana + romaji + JP/EN regardless of profile toggles.
     var forceDenseAids: Bool = false
+    /// Kiku raised card behind the current karaoke line.
+    var raisedCard: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
@@ -39,7 +41,7 @@ struct TranscriptLineView: View {
                                 showFurigana: showFurigana,
                                 showRomaji: showRomaji,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                                    withAnimation(Motion.popupSpring) {
                                         lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
                                     }
                                 }
@@ -49,12 +51,22 @@ struct TranscriptLineView: View {
                 }
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
-                        .font(forceDenseAids ? .subheadline : .body)
+                        .font(forceDenseAids || raisedCard ? .subheadline : .body)
                         .foregroundStyle(Color.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .opacity(isActive ? 1 : 0.4)
+            .padding(raisedCard ? Spacing.m : 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                if raisedCard {
+                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        .fill(Color.transcriptCard)
+                        .shadow(color: Color.activeLineGlow, radius: 16, y: 4)
+                }
+            }
+            .opacity(isActive ? 1 : 0.45)
+            .animation(.easeOut(duration: 0.2), value: isActive)
         }
     }
 

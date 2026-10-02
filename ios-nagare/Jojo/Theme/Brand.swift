@@ -1,13 +1,38 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Surfaces
 
-/// Jojo renders on two surfaces. `cream` is the brand default — the same warm paper the
-/// app icon sits on. `cinema` is reserved for screens where real video is playing, where
-/// anything but near-black would fight the footage.
+/// Jojo renders on three surfaces. `cream` is the brand default — the same warm paper the
+/// app icon sits on. `cinema` is reserved for screens where real video is playing. `night`
+/// is the App Store / onboarding mood: indigo sky, sakura pink accents, white type.
 nonisolated enum BrandSurface: Sendable {
     case cream
     case cinema
+    case night
+}
+
+/// Named night-sakura scene images used by onboarding backgrounds.
+nonisolated enum BrandScene: String, Sendable, CaseIterable {
+    case lanternNight = "SceneLanternNight"
+    case neonTokyo = "SceneNeonTokyo"
+    case templeDusk = "SceneTempleDusk"
+    case sakuraDay = "SceneSakuraDay"
+}
+
+/// Mascot pose image names. Default keeps the existing book-holding asset.
+nonisolated enum MascotPose: String, Sendable {
+    case book = "JojoMascot"
+    case peek = "JojoMascotPeek"
+    case phone = "JojoMascotPhone"
+    case wave = "JojoMascotWave"
+    case cheer = "JojoMascotCheer"
+
+    /// Falls back to the book pose when a generated asset is not yet in the catalog.
+    var resolvedName: String {
+        if UIImage(named: rawValue) != nil { return rawValue }
+        return MascotPose.book.rawValue
+    }
 }
 
 nonisolated struct BrandSurfaceKey: EnvironmentKey {
@@ -41,20 +66,55 @@ struct BrandPalette {
                 subtle: Color.white.opacity(0.6),
                 faint: Color.white.opacity(0.38)
             )
+        case .night:
+            BrandPalette(
+                title: .white,
+                subtle: Color.white.opacity(0.72),
+                faint: Color.sakuraPink.opacity(0.7)
+            )
         }
     }
 }
 
 // MARK: - Backgrounds
 
-/// The onboarding canvas: warm cream paper, a low sun glow, drifting blossom and
-/// seigaiha hills along the bottom. Every question screen sits on this so the
-/// branding never resets between steps.
+/// The onboarding canvas. Pass a `scene` for the night-sakura App Store look; omit it
+/// for the classic cream paper with seigaiha hills.
 struct JojoBrandBackground: View {
     var showsHills: Bool = true
     var showsPetals: Bool = true
+    /// When set, paints a night scene with scrim + lantern glow instead of cream paper.
+    var scene: BrandScene? = nil
+
+    @State private var kenBurns: Bool = false
+    @State private var lanternPulse: Bool = false
 
     var body: some View {
+        ZStack {
+            if let scene {
+                nightScene(scene)
+            } else {
+                creamScene
+            }
+            if showsPetals {
+                BrandPetalField(
+                    tint: scene == nil ? .jojoBlossom : .sakuraPink,
+                    density: scene == nil ? .sparse : .lush
+                )
+            }
+            if showsHills, scene == nil {
+                VStack {
+                    Spacer()
+                    SeigaihaHills()
+                        .frame(height: 120)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    private var creamScene: some View {
         ZStack {
             LinearGradient(
                 colors: [.jojoCream, .jojoCreamDeep],
@@ -73,19 +133,56 @@ struct JojoBrandBackground: View {
                 startRadius: 8,
                 endRadius: 320
             )
-            if showsPetals {
-                BrandPetalField()
+        }
+    }
+
+    private func nightScene(_ scene: BrandScene) -> some View {
+        GeometryReader { proxy in
+            ZStack {
+                LinearGradient(
+                    colors: [.nightIndigo, .nightViolet, .nightPlum],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                if UIImage(named: scene.rawValue) != nil {
+                    Image(scene.rawValue)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .scaleEffect(kenBurns ? 1.08 : 1.0)
+                        .animation(.easeInOut(duration: 14).repeatForever(autoreverses: true), value: kenBurns)
+                        .clipped()
+                }
+                // Legibility scrim — keep faces and type readable.
+                LinearGradient(
+                    colors: [
+                        Color.nightIndigo.opacity(0.55),
+                        Color.nightIndigo.opacity(0.25),
+                        Color.nightIndigo.opacity(0.75)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                RadialGradient(
+                    colors: [Color.lanternAmber.opacity(lanternPulse ? 0.28 : 0.14), .clear],
+                    center: .init(x: 0.82, y: 0.18),
+                    startRadius: 10,
+                    endRadius: 380
+                )
+                RadialGradient(
+                    colors: [Color.sakuraPink.opacity(0.16), .clear],
+                    center: .init(x: 0.12, y: 0.78),
+                    startRadius: 8,
+                    endRadius: 280
+                )
             }
-            if showsHills {
-                VStack {
-                    Spacer()
-                    SeigaihaHills()
-                        .frame(height: 120)
+            .onAppear {
+                kenBurns = true
+                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+                    lanternPulse = true
                 }
             }
         }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
     }
 }
 
@@ -201,9 +298,17 @@ struct Blossom: View {
     }
 }
 
-/// Petals drifting down the cream canvas. Deliberately sparse and slow — ambient, not confetti.
+nonisolated enum PetalDensity: Sendable {
+    case sparse, lush
+}
+
+/// Petals drifting down the canvas. Sparse on cream; lush (larger, pinker) on night scenes.
 struct BrandPetalField: View {
-    private struct Petal {
+    var tint: Color = .jojoBlossom
+    var density: PetalDensity = .sparse
+
+    private struct Petal: Identifiable {
+        let id: Int
         let x: CGFloat
         let size: CGFloat
         let duration: Double
@@ -213,23 +318,41 @@ struct BrandPetalField: View {
 
     @State private var fall: Bool = false
 
-    private let petals: [Petal] = [
-        Petal(x: 0.08, size: 15, duration: 17, delay: 0, spin: 140),
-        Petal(x: 0.24, size: 10, duration: 22, delay: 3.5, spin: -110),
-        Petal(x: 0.47, size: 13, duration: 19, delay: 7, spin: 170),
-        Petal(x: 0.68, size: 9, duration: 25, delay: 1.5, spin: -150),
-        Petal(x: 0.86, size: 14, duration: 20, delay: 9, spin: 120),
-        Petal(x: 0.95, size: 8, duration: 27, delay: 5, spin: -90)
-    ]
+    private var petals: [Petal] {
+        switch density {
+        case .sparse:
+            [
+                Petal(id: 0, x: 0.08, size: 15, duration: 17, delay: 0, spin: 140),
+                Petal(id: 1, x: 0.24, size: 10, duration: 22, delay: 3.5, spin: -110),
+                Petal(id: 2, x: 0.47, size: 13, duration: 19, delay: 7, spin: 170),
+                Petal(id: 3, x: 0.68, size: 9, duration: 25, delay: 1.5, spin: -150),
+                Petal(id: 4, x: 0.86, size: 14, duration: 20, delay: 9, spin: 120),
+                Petal(id: 5, x: 0.95, size: 8, duration: 27, delay: 5, spin: -90)
+            ]
+        case .lush:
+            [
+                Petal(id: 0, x: 0.05, size: 18, duration: 14, delay: 0, spin: 160),
+                Petal(id: 1, x: 0.16, size: 12, duration: 18, delay: 1.2, spin: -130),
+                Petal(id: 2, x: 0.28, size: 16, duration: 15, delay: 3.0, spin: 190),
+                Petal(id: 3, x: 0.42, size: 11, duration: 20, delay: 0.6, spin: -100),
+                Petal(id: 4, x: 0.55, size: 19, duration: 13, delay: 4.5, spin: 140),
+                Petal(id: 5, x: 0.68, size: 13, duration: 17, delay: 2.1, spin: -170),
+                Petal(id: 6, x: 0.80, size: 15, duration: 16, delay: 5.5, spin: 110),
+                Petal(id: 7, x: 0.92, size: 10, duration: 21, delay: 1.8, spin: -145),
+                Petal(id: 8, x: 0.35, size: 9, duration: 23, delay: 7.0, spin: 95),
+                Petal(id: 9, x: 0.74, size: 17, duration: 14.5, delay: 8.2, spin: -155)
+            ]
+        }
+    }
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .top) {
-                ForEach(Array(petals.enumerated()), id: \.offset) { _, petal in
-                    Blossom(size: petal.size, color: Color.jojoBlossom.opacity(0.5))
+                ForEach(petals) { petal in
+                    Blossom(size: petal.size, color: tint.opacity(density == .lush ? 0.7 : 0.5))
                         .rotationEffect(.degrees(fall ? petal.spin : 0))
                         .offset(
-                            x: proxy.size.width * petal.x + (fall ? 26 : -26),
+                            x: proxy.size.width * petal.x + (fall ? 32 : -24),
                             y: fall ? proxy.size.height + 40 : -40
                         )
                         .animation(
@@ -253,11 +376,12 @@ struct JojoMascot: View {
     var height: CGFloat = 220
     /// Slow breathing bob. Off for static illustrations.
     var floats: Bool = true
+    var pose: MascotPose = .book
 
     @State private var up: Bool = false
 
     var body: some View {
-        Image("JojoMascot")
+        Image(pose.resolvedName)
             .resizable()
             .scaledToFit()
             .frame(height: height)
@@ -329,23 +453,27 @@ struct MascotCoach: View {
     let message: String
     var avatarSize: CGFloat = 52
 
+    @Environment(\.brandSurface) private var surface
+
+    private var isNight: Bool { surface == .night || surface == .cinema }
+
     var body: some View {
         HStack(alignment: .center, spacing: Spacing.m) {
             JojoMascotAvatar(size: avatarSize)
             Text(message)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color.jojoInk)
+                .foregroundStyle(isNight ? Color.white : Color.jojoInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.m)
                 .padding(.vertical, Spacing.s + 2)
                 .background {
                     SpeechBubble()
-                        .fill(Color.jojoPaper)
-                        .shadow(color: Color.jojoVermilion.opacity(0.08), radius: 10, y: 4)
+                        .fill(isNight ? Color.white.opacity(0.12) : Color.jojoPaper)
+                        .shadow(color: Color.jojoVermilion.opacity(isNight ? 0 : 0.08), radius: 10, y: 4)
                 }
                 .overlay {
-                    SpeechBubble().stroke(Color.jojoPaperStroke, lineWidth: 1)
+                    SpeechBubble().stroke(isNight ? Color.white.opacity(0.14) : Color.jojoPaperStroke, lineWidth: 1)
                 }
         }
         .accessibilityElement(children: .combine)

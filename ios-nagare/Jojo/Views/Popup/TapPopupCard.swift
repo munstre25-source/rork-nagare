@@ -15,21 +15,30 @@ struct TapPopupCard: View {
         if let selection = lookup.selection, let explanation = lookup.explanation {
             VStack(alignment: .leading, spacing: compact ? Spacing.s : Spacing.m) {
                 header(selection: selection, explanation: explanation)
-                WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: true)
-                if !compact { tabRow }
+                HStack(spacing: Spacing.s) {
+                    WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: true)
+                    Spacer(minLength: 0)
+                    Button {
+                        SpeechService.shared.speak(selection.token.surface)
+                    } label: {
+                        Image(systemName: "speaker.wave.2")
+                            .font(compact ? .body : .title3)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
+                    }
+                    .accessibilityLabel("Play pronunciation")
+                }
+                tabRow
                 Group {
-                    if compact {
-                        dictionaryTab(explanation, limit: 1)
-                    } else {
-                        switch lookup.tab {
-                        case .dictionary: dictionaryTab(explanation, limit: showAllDefinitions ? 99 : 2)
-                        case .flashcard: flashcardTab(selection: selection, explanation: explanation)
-                        case .examples: examplesTab
-                        }
+                    switch lookup.tab {
+                    case .dictionary: dictionaryTab(explanation, limit: compact ? 1 : (showAllDefinitions ? 99 : 2))
+                    case .flashcard: flashcardTab(selection: selection, explanation: explanation)
+                    case .examples: examplesTab
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(.opacity)
+                pageDots
             }
             .padding(compact ? Spacing.m : Spacing.l)
             .background(
@@ -50,32 +59,42 @@ struct TapPopupCard: View {
                     badgeBump = false
                 }
             }
+            .gesture(
+                DragGesture(minimumDistance: 24)
+                    .onEnded { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        let tabs = PopupTab.allCases
+                        guard let idx = tabs.firstIndex(of: lookup.tab) else { return }
+                        if value.translation.width < -40, idx + 1 < tabs.count {
+                            Haptics.selection()
+                            withAnimation(.snappy) {
+                                lookup.tab = tabs[idx + 1]
+                                if tabs[idx + 1] == .examples { lookup.loadContextIfNeeded(app: app) }
+                            }
+                        } else if value.translation.width > 40, idx > 0 {
+                            Haptics.selection()
+                            withAnimation(.snappy) { lookup.tab = tabs[idx - 1] }
+                        }
+                    }
+            )
         }
     }
 
     private func header(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
         HStack(alignment: .top, spacing: Spacing.m) {
             VStack(alignment: .leading, spacing: 4) {
-                if app.profile.showFurigana, !explanation.readings.isEmpty {
-                    Text(explanation.readings.joined(separator: ", "))
-                        .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-                HStack(spacing: Spacing.m) {
+                HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
                     Text(explanation.word)
                         .font(JojoFont.jp(compact ? 28 : 38, bold: true, relativeTo: .largeTitle))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                    Button {
-                        SpeechService.shared.speak(selection.token.surface)
-                    } label: {
-                        Image(systemName: "speaker.wave.2")
-                            .font(compact ? .body : .title3)
+                    if app.profile.showFurigana, !explanation.readings.isEmpty {
+                        Text(explanation.readings.joined(separator: ", "))
+                            .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
                             .foregroundStyle(.white.opacity(0.85))
-                            .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
+                            .lineLimit(1)
                     }
-                    .accessibilityLabel("Play pronunciation")
                 }
                 if app.profile.showRomaji, !explanation.romaji.isEmpty {
                     Text(explanation.romaji)
@@ -112,9 +131,9 @@ struct TapPopupCard: View {
                     if tab == .examples { lookup.loadContextIfNeeded(app: app) }
                 } label: {
                     Image(systemName: tab.symbol)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: compact ? 15 : 17, weight: .semibold))
                         .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : .white.opacity(0.55))
-                        .frame(width: 52, height: 44)
+                        .frame(width: compact ? 44 : 52, height: 40)
                         .background(
                             lookup.tab == tab ? Color.jojoOrange.opacity(0.14) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -128,6 +147,19 @@ struct TapPopupCard: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1).offset(y: 4)
         }
+    }
+
+    private var pageDots: some View {
+        HStack(spacing: 5) {
+            ForEach(PopupTab.allCases, id: \.self) { tab in
+                Circle()
+                    .fill(lookup.tab == tab ? Color.jojoOrange : Color.white.opacity(0.3))
+                    .frame(width: 6, height: 6)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+        .accessibilityHidden(true)
     }
 
     private func dictionaryTab(_ explanation: WordExplanation, limit: Int = 2) -> some View {
@@ -151,16 +183,6 @@ struct TapPopupCard: View {
                         }
                     }
                     Spacer()
-                    if defs.count > 1 {
-                        HStack(spacing: 5) {
-                            ForEach(0..<min(defs.count, 5), id: \.self) { i in
-                                Circle()
-                                    .fill(i < visible.count ? Color.jojoOrange : Color.white.opacity(0.3))
-                                    .frame(width: 6, height: 6)
-                            }
-                        }
-                        .accessibilityHidden(true)
-                    }
                 }
                 if let note = explanation.formalityNote {
                     Label(note.capitalized + " register", systemImage: "quote.bubble")

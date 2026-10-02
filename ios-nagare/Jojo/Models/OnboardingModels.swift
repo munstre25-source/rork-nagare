@@ -204,6 +204,6 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         }
     }
 
-    /// Cream everywhere — the live-clip demo beat is gone.
-    var surface: BrandSurface { .cream }
+    /// Night-sakura for the whole funnel — cream remains available for other surfaces.
+    var surface: BrandSurface { .night }
 }

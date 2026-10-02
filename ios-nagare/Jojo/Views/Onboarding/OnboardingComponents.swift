@@ -5,11 +5,13 @@ struct JojoLogo: View {
     var drawProgress: CGFloat = 1
     var size: CGFloat = 1
     var showsMascot: Bool = true
+    var pose: MascotPose = .book
+    var light: Bool = false
 
     var body: some View {
         VStack(spacing: 12 * size) {
             if showsMascot {
-                JojoMascot(height: 200 * size)
+                JojoMascot(height: 200 * size, pose: pose)
             }
             JojoWordmark(size: 46 * size)
             FlowStroke()
@@ -21,7 +23,7 @@ struct JojoLogo: View {
                 .frame(width: 150 * size, height: 22 * size)
             Text("日本語、流れるように")
                 .font(JojoFont.jp(13 * size, relativeTo: .caption))
-                .foregroundStyle(Color.jojoInkSoft)
+                .foregroundStyle(light ? Color.white.opacity(0.7) : Color.jojoInkSoft)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Jojo")
@@ -41,20 +43,35 @@ struct FlowStroke: Shape {
     }
 }
 
-/// Large title + subtitle used on every question screen.
+/// Hand-drawn underline swash for accent words in onboarding headlines.
+struct AccentUnderline: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let y = rect.midY
+        path.move(to: CGPoint(x: 0, y: y + 2))
+        path.addCurve(
+            to: CGPoint(x: rect.width, y: y - 1),
+            control1: CGPoint(x: rect.width * 0.3, y: y + 6),
+            control2: CGPoint(x: rect.width * 0.7, y: y - 5)
+        )
+        return path
+    }
+}
+
+/// Large title + subtitle used on every question screen. Optional `accent` word paints pink with a swash.
 struct OnboardingTitle: View {
     let title: String
     var subtitle: String?
+    /// Substring of `title` to paint in sakura pink with an animated underline.
+    var accent: String? = nil
 
     @Environment(\.brandSurface) private var surface
+    @State private var underlineProgress: CGFloat = 0
 
     var body: some View {
         let palette = BrandPalette.resolve(surface)
         VStack(alignment: .leading, spacing: Spacing.s) {
-            Text(title)
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                .foregroundStyle(palette.title)
-                .fixedSize(horizontal: false, vertical: true)
+            titleText(palette: palette)
             if let subtitle {
                 Text(subtitle)
                     .font(.body)
@@ -63,6 +80,52 @@ struct OnboardingTitle: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.55).delay(0.15)) { underlineProgress = 1 }
+        }
+        .onChange(of: title) { _, _ in
+            underlineProgress = 0
+            withAnimation(.easeOut(duration: 0.55).delay(0.1)) { underlineProgress = 1 }
+        }
+    }
+
+    @ViewBuilder
+    private func titleText(palette: BrandPalette) -> some View {
+        if let accent, !accent.isEmpty, let range = title.range(of: accent) {
+            let before = String(title[..<range.lowerBound])
+            let mid = String(title[range])
+            let after = String(title[range.upperBound...])
+            (
+                Text(before)
+                    .foregroundStyle(palette.title)
+                + Text(mid)
+                    .foregroundStyle(Color.sakuraPink)
+                + Text(after)
+                    .foregroundStyle(palette.title)
+            )
+            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+            .fixedSize(horizontal: false, vertical: true)
+            .overlay(alignment: .bottomLeading) {
+                // Approximate underline under the accent word by measuring relative position.
+                GeometryReader { geo in
+                    let full = CGFloat(title.count)
+                    let start = CGFloat(title.distance(from: title.startIndex, to: range.lowerBound)) / max(full, 1)
+                    let width = CGFloat(accent.count) / max(full, 1)
+                    AccentUnderline()
+                        .trim(from: 0, to: underlineProgress)
+                        .stroke(Color.sakuraPink, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                        .frame(width: geo.size.width * width * 1.05, height: 10)
+                        .offset(x: geo.size.width * start * 0.92, y: 4)
+                }
+                .frame(height: 12)
+                .allowsHitTesting(false)
+            }
+        } else {
+            Text(title)
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(palette.title)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 
@@ -132,39 +195,43 @@ struct StaticSentence: View {
     }
 }
 
-/// Selectable large card for single/multi-select questions.
+/// Selectable large card for single/multi-select questions. Frosted on night, paper on cream.
 struct OptionCard: View {
     let title: String
     var subtitle: String?
     var symbol: String?
     let isSelected: Bool
 
+    @Environment(\.brandSurface) private var surface
+
+    private var isNight: Bool { surface == .night || surface == .cinema }
+
     var body: some View {
         HStack(spacing: Spacing.m) {
             if let symbol {
                 Image(systemName: symbol)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(isSelected ? .white : Color.jojoVermilion)
+                    .foregroundStyle(isSelected ? .white : (isNight ? Color.sakuraPink : Color.jojoVermilion))
                     .frame(width: 44, height: 44)
                     .background(
-                        isSelected ? Color.white.opacity(0.22) : Color.jojoOrange.opacity(0.1),
+                        isSelected ? Color.white.opacity(0.22) : (isNight ? Color.white.opacity(0.1) : Color.jojoOrange.opacity(0.1)),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(isSelected ? .white : Color.jojoInk)
+                    .foregroundStyle(isSelected ? .white : (isNight ? .white : Color.jojoInk))
                 if let subtitle {
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.jojoInkSoft)
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.85) : (isNight ? Color.white.opacity(0.65) : Color.jojoInkSoft))
                 }
             }
             Spacer(minLength: 0)
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(isSelected ? .white : Color.jojoInkFaint.opacity(0.5))
+                .foregroundStyle(isSelected ? .white : (isNight ? Color.white.opacity(0.35) : Color.jojoInkFaint.opacity(0.5)))
         }
         .padding(Spacing.l)
         .frame(minHeight: 72)
@@ -173,14 +240,20 @@ struct OptionCard: View {
                 .fill(
                     isSelected
                     ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    : AnyShapeStyle(Color.jojoPaper)
+                    : AnyShapeStyle(isNight ? Color.white.opacity(0.1) : Color.jojoPaper)
                 )
+                .background {
+                    if isNight, !isSelected {
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    }
+                }
         }
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
+                .strokeBorder(isSelected ? .clear : (isNight ? Color.white.opacity(0.12) : Color.jojoPaperStroke), lineWidth: 1)
         )
-        .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : 0.06), radius: isSelected ? 14 : 10, y: 5)
+        .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : (isNight ? 0 : 0.06)), radius: isSelected ? 14 : 10, y: 5)
         .contentShape(Rectangle())
         .animation(.snappy, value: isSelected)
         .accessibilityElement(children: .combine)

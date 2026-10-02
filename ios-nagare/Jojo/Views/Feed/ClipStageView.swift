@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition: channel → centered video → transcript.
-/// Immersive feed matches Kiku: video sits in the vertical middle of the page so the next swipe replaces that center.
+/// Reusable clip composition: channel → video → action row → transcript window.
+/// Immersive feed matches Kiku: video near the top, multi-line karaoke filling the lower half.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -12,7 +12,7 @@ struct ClipStageView: View {
     var showsChannelRow: Bool = true
     var channelTrailing: AnyView?
     var showsRail: Bool = true
-    /// Feed page: title-forward chrome, current-line karaoke, quieter chrome, centered stage.
+    /// Feed page: title-forward chrome, karaoke window, quieter chrome.
     var immersiveFeed: Bool = false
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
@@ -30,7 +30,6 @@ struct ClipStageView: View {
     }
 
     private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 9 : videoAspect }
-    private var resolvedOnlyCurrent: Bool { immersiveFeed ? true : onlyCurrentLine }
 
     var body: some View {
         let player = coordinator.player(for: clip)
@@ -45,19 +44,14 @@ struct ClipStageView: View {
                 .padding(.vertical, immersiveFeed ? 4 : 10)
             }
 
-            if immersiveFeed {
-                // Kiku: black above the stage so the clip sits in the middle of the page.
-                Spacer(minLength: 0)
-            }
-
             ClipVideoView(
                 clip: clip,
                 player: player,
-                showsRail: showsRail,
+                showsRail: immersiveFeed ? false : showsRail,
                 compactChrome: immersiveFeed,
                 onActivate: onActivate,
                 onFullscreen: onFullscreen,
-                onInfo: onInfo,
+                onInfo: immersiveFeed ? nil : onInfo,
                 onShadowing: immersiveFeed ? nil : onShadowing
             )
             .aspectRatio(resolvedAspect, contentMode: .fit)
@@ -65,23 +59,28 @@ struct ClipStageView: View {
             .overlay { popupLayer }
             .zIndex(1)
 
+            if immersiveFeed {
+                ClipActionRow(
+                    clip: clip,
+                    player: player,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing
+                )
+            }
+
             TranscriptSection(
                 clip: clip,
                 player: player,
-                onlyCurrentLine: resolvedOnlyCurrent,
+                onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
                 pulseTokenIndex: pulseTokenIndex,
                 isPulsing: isPulsing,
                 tooltip: tooltip,
-                forceDenseAids: false
+                forceDenseAids: immersiveFeed,
+                windowMode: immersiveFeed
             )
-            .fixedSize(horizontal: false, vertical: true)
-
-            if immersiveFeed {
-                // Matching spacer below so the stage is vertically centered.
-                Spacer(minLength: 0)
-            }
+            .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: immersiveFeed ? .center : .top)
+        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: immersiveFeed ? .top : .top)
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
@@ -97,13 +96,12 @@ struct ClipStageView: View {
         if isPopupHere {
             GeometryReader { geo in
                 ZStack {
-                    Color.black.opacity(0.28)
+                    Color.black.opacity(0.18)
                         .contentShape(Rectangle())
                         .onTapGesture { dismiss() }
                     TapPopupCard(compact: true)
                         .frame(maxWidth: min(340, geo.size.width - 28))
-                        // Keep most of the video visible around the card — Kiku-sized, not full-bleed.
-                        .frame(maxHeight: geo.size.height * 0.62, alignment: .top)
+                        .frame(maxHeight: geo.size.height * 0.72, alignment: .top)
                         .clipped()
                         .offset(y: max(0, dragOffset))
                         .gesture(
@@ -120,16 +118,101 @@ struct ClipStageView: View {
                 .frame(width: geo.size.width, height: geo.size.height)
             }
             .transition(.asymmetric(
-                insertion: .scale(scale: 0.92).combined(with: .opacity),
+                insertion: .scale(scale: 0.94).combined(with: .opacity).combined(with: .offset(y: 16)),
                 removal: .opacity
             ))
         }
     }
 
     private func dismiss() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+        withAnimation(Motion.popupSpring) {
             lookup.dismiss()
         }
+    }
+}
+
+/// Speed / bookmark / replay-line / info row under the video (Kiku action chrome).
+struct ClipActionRow: View {
+    let clip: Clip
+    let player: (any ClipPlayer)?
+    var onInfo: (() -> Void)?
+    var onShadowing: (() -> Void)?
+
+    @Environment(AppModel.self) private var app
+    @Environment(PlaybackCoordinator.self) private var coordinator
+
+    private var rateLabel: String {
+        switch coordinator.preferredRate {
+        case 0.75: "0.75x"
+        case 0.5: "0.5x"
+        default: "1x"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: Spacing.s) {
+            Button {
+                Haptics.selection()
+                coordinator.cycleRate()
+            } label: {
+                Text(rateLabel)
+                    .font(.footnote.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 36)
+                    .background(Color.fieldFill, in: Capsule())
+                    .frame(minHeight: 44)
+            }
+            .accessibilityLabel("Playback speed \(rateLabel)")
+
+            Button {
+                Haptics.light()
+                withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
+            } label: {
+                Image(systemName: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(app.isFavorite(clip.id) ? Color.jojoOrange : .secondary)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
+
+            Button {
+                Haptics.selection()
+                if player == nil { coordinator.activate(clip) }
+                player?.toggleLoopCurrentLine()
+            } label: {
+                Image(systemName: "repeat")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(player?.loopRange != nil ? Color.jojoOrange : .secondary)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
+
+            if let onShadowing {
+                Button(action: onShadowing) {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Shadowing practice")
+            }
+
+            Spacer(minLength: 0)
+
+            if let onInfo {
+                Button(action: onInfo) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Clip info")
+            }
+        }
+        .padding(.horizontal, Spacing.l)
+        .padding(.vertical, 4)
     }
 }
 
@@ -142,6 +225,8 @@ struct TranscriptSection: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var forceDenseAids: Bool = false
+    /// Kiku window: previous + current + following lines, no nested scroll.
+    var windowMode: Bool = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -152,7 +237,8 @@ struct TranscriptSection: View {
             isPulsing: isPulsing,
             tooltip: tooltip,
             onlyCurrentLine: onlyCurrentLine,
-            forceDenseAids: forceDenseAids
+            forceDenseAids: forceDenseAids,
+            windowMode: windowMode
         )
     }
 }

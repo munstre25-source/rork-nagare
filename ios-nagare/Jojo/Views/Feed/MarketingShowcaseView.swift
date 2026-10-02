@@ -1,25 +1,82 @@
+#if DEBUG
 import SwiftUI
 import SwiftData
 
-/// Full-screen scripted product showcase for screen-recording a Jojo marketing clip.
-/// Silent arc (add captions in edit): anime feed → tap → scroll to Minecraft → flashcard.
+/// Which silent marketing walkthrough to screen-record.
+nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
+    case forYou
+    case exploreVocab
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .forYou: "Video 1 · For You"
+        case .exploreVocab: "Video 2 · Explore & Vocab"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .forYou:
+            "Immersion feed → tap a word → swipe to the next clip → flashcard"
+        case .exploreVocab:
+            "Explore library → Vocab deck → tap-to-reveal flashcards"
+        }
+    }
+
+    var beats: [String] {
+        switch self {
+        case .forYou:
+            [
+                "For You opens on an anime clip",
+                "Tap a word — dictionary popup springs in",
+                "Swipe up to the next clip",
+                "Flashcard: tap to reveal → Good"
+            ]
+        case .exploreVocab:
+            [
+                "Explore grid with filters and posters",
+                "Open a clip in the immersive player",
+                "Jump to Vocab — saved words from immersion",
+                "Review: tap-to-reveal flashcards"
+            ]
+        }
+    }
+}
+
+/// Full-screen scripted product showcase for screen-recording Jojo marketing clips.
+/// DEBUG builds only — never shown in App Store / production UI.
+/// Two clean arcs matching Kiku-style ads: For You immersion, and Explore → Vocab → cards.
 struct MarketingShowcaseView: View {
+    var initialScript: MarketingScript = .forYou
+    /// When true, skips the picker and starts the countdown immediately (launch play buttons).
+    var autoBegin: Bool = false
+
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
 
     @State private var phase: Phase = .prep
+    @State private var selectedScript: MarketingScript = .forYou
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var feedClips: [Clip] = []
     @State private var currentId: String?
+    @State private var stage: Stage = .feed
     @State private var showFlashcard: Bool = false
+    @State private var flashRevealed: Bool = false
     @State private var flashWord: SavedWord?
+    @State private var flashIndex: Int = 0
+    @State private var flashWords: [SavedWord] = []
     @State private var scriptTask: Task<Void, Never>?
     @State private var countdown: Int?
+    @State private var exploreHighlight: String?
+    @State private var vocabHighlight: String?
+    @State private var tabHighlight: AppTab = .feed
+    @State private var didAutoBegin: Bool = false
 
-    private enum Phase {
-        case prep, running, done
-    }
+    private enum Phase { case prep, running, done }
+    private enum Stage { case feed, explore, immersive, vocab, flashcard }
 
     var body: some View {
         ZStack {
@@ -37,13 +94,25 @@ struct MarketingShowcaseView: View {
         .environment(lookup)
         .environment(\.colorScheme, .dark)
         .statusBarHidden(phase == .running)
+        .onAppear {
+            selectedScript = initialScript
+            if autoBegin, !didAutoBegin {
+                didAutoBegin = true
+                // Let the cover present, then start.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(350))
+                    beginShowcase(initialScript)
+                }
+            }
+        }
         .onDisappear {
             scriptTask?.cancel()
             coordinator.stop()
             lookup.dismiss()
         }
         .onChange(of: currentId) { _, newId in
-            guard phase == .running, !showFlashcard,
+            guard phase == .running, stage == .feed || stage == .immersive,
+                  !showFlashcard,
                   let newId, let clip = feedClips.first(where: { $0.id == newId }) else { return }
             coordinator.activate(clip, startLine: 0, loopLine: true)
         }
@@ -58,34 +127,72 @@ struct MarketingShowcaseView: View {
                     .foregroundStyle(.white.opacity(0.7))
                 Spacer()
             }
-            Spacer()
+            Spacer(minLength: 0)
             Image(systemName: "record.circle")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.jojoOrange)
-            Text("Marketing demo script")
+            Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("Start a screen recording, then tap Begin. Silent walkthrough — anime clip, word tap, scroll to Minecraft, then a flashcard. Add your own captions in edit.")
+            Text("DEBUG only · never ships to App Store. Two clean Kiku-style walkthroughs. Start a screen recording, pick a video, then tap Begin. Silent — add captions in edit.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, Spacing.l)
+                .padding(.horizontal, Spacing.s)
+
+            VStack(spacing: Spacing.m) {
+                ForEach(MarketingScript.allCases) { script in
+                    Button {
+                        Haptics.selection()
+                        selectedScript = script
+                    } label: {
+                        VStack(alignment: .leading, spacing: Spacing.s) {
+                            HStack {
+                                Text(script.title)
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                Image(systemName: selectedScript == script ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(selectedScript == script ? Color.jojoOrange : .white.opacity(0.35))
+                            }
+                            Text(script.subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(Spacing.l)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            selectedScript == script ? Color.jojoOrange.opacity(0.16) : Color.white.opacity(0.06),
+                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                .strokeBorder(selectedScript == script ? Color.jojoOrange.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.l)
+
             VStack(alignment: .leading, spacing: 8) {
-                scriptBeatRow("1", "Anime clip plays in For You")
-                scriptBeatRow("2", "Word lookup pops open")
-                scriptBeatRow("3", "Feed scrolls to Minecraft")
-                scriptBeatRow("4", "Flashcard with context clip")
+                ForEach(Array(selectedScript.beats.enumerated()), id: \.offset) { i, beat in
+                    scriptBeatRow("\(i + 1)", beat)
+                }
             }
             .padding(Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .padding(.horizontal, Spacing.l)
-            Spacer()
+            .animation(.snappy, value: selectedScript)
+
+            Spacer(minLength: 0)
             Button {
                 Haptics.medium()
-                beginShowcase()
+                beginShowcase(selectedScript)
             } label: {
-                Label("Begin showcase", systemImage: "play.fill")
+                Label("Begin \(selectedScript == .forYou ? "Video 1" : "Video 2")", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
@@ -111,18 +218,35 @@ struct MarketingShowcaseView: View {
     // MARK: Running stage
 
     private var showcaseStage: some View {
-        ZStack {
-            if showFlashcard, let flashWord {
-                flashcardBeat(flashWord)
-                    .transition(.asymmetric(
-                        insertion: .modifier(
-                            active: CardFlip(angle: -92),
-                            identity: CardFlip(angle: 0)
-                        ).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-            } else {
-                feedPager
+        ZStack(alignment: .bottom) {
+            Group {
+                switch stage {
+                case .feed:
+                    feedChrome
+                case .explore:
+                    exploreChrome
+                case .immersive:
+                    immersiveChrome
+                case .vocab:
+                    vocabChrome
+                case .flashcard:
+                    if let flashWord {
+                        flashcardBeat(flashWord)
+                            .transition(.asymmetric(
+                                insertion: .modifier(active: CardFlip(angle: -92), identity: CardFlip(angle: 0)).combined(with: .opacity),
+                                removal: .opacity
+                            ))
+                    } else {
+                        Color.bgPlayer
+                    }
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: stage)
+
+            if stage != .flashcard && stage != .immersive {
+                showcaseTabBar
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.bottom, 10)
             }
 
             if let countdown {
@@ -136,19 +260,66 @@ struct MarketingShowcaseView: View {
         .allowsHitTesting(false)
     }
 
-    private var feedPager: some View {
+    private var showcaseTabBar: some View {
+        HStack(spacing: 0) {
+            showcaseTab(.feed, title: "Feed", systemImage: "play.circle.fill")
+            showcaseTab(.vocab, title: "Vocab", systemImage: "book.fill", badge: max(flashWords.count, 3))
+            showcaseTab(.profile, title: "Profile", systemImage: "person.fill")
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+    }
+
+    private func showcaseTab(_ tab: AppTab, title: String, systemImage: String, badge: Int = 0) -> some View {
+        VStack(spacing: 2) {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 20, weight: .semibold))
+                    .frame(width: 44, height: 28)
+                if badge > 0, tab == .vocab {
+                    Text("\(badge)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .frame(minWidth: 16, minHeight: 16)
+                        .background(Color.jojoOrange, in: Capsule())
+                        .offset(x: 10, y: -6)
+                }
+            }
+            Text(title).font(.caption2.weight(.semibold))
+        }
+        .foregroundStyle(tabHighlight == tab ? Color.jojoOrange : Color.white.opacity(0.45))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: For You chrome
+
+    private var feedChrome: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("For You")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                Spacer()
+            DailyGoalBar()
+                .padding(.top, 4)
+                .environment(\.colorScheme, .dark)
+            HStack(spacing: Spacing.m) {
+                VStack(spacing: 4) {
+                    Text("For You")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Capsule().fill(Color.jojoOrange).frame(width: 28, height: 2)
+                }
                 Text("Explore")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.35))
+                Spacer()
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.white.opacity(0.5))
+                    .frame(width: 40, height: 40)
             }
             .padding(.horizontal, Spacing.l)
-            .padding(.vertical, 8)
+            .padding(.bottom, 2)
 
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0) {
@@ -167,76 +338,322 @@ struct MarketingShowcaseView: View {
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: $currentId)
             .scrollDisabled(true)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 72)
+            }
+        }
+        .background(Color.canvas.ignoresSafeArea())
+    }
+
+    // MARK: Explore chrome
+
+    private var exploreChrome: some View {
+        VStack(spacing: 0) {
+            DailyGoalBar()
+                .padding(.top, 4)
+                .environment(\.colorScheme, .dark)
+            HStack(spacing: Spacing.m) {
+                Text("For You")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.35))
+                VStack(spacing: 4) {
+                    Text("Explore")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Capsule().fill(Color.jojoOrange).frame(width: 28, height: 2)
+                }
+                Spacer()
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.white.opacity(0.5))
+                    .frame(width: 40, height: 40)
+            }
+            .padding(.horizontal, Spacing.l)
+            .padding(.bottom, 2)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.l) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Spacing.s) {
+                            FilterChip(title: "Saved", systemImage: "bookmark", isSelected: false, dark: true)
+                            FilterChip(title: "Difficulty", systemImage: "chart.bar.fill", isSelected: false, dark: true)
+                            FilterChip(title: "Anime", systemImage: "sparkles", isSelected: true, dark: true)
+                            FilterChip(title: "Source type", systemImage: "play.tv.fill", isSelected: false, dark: true)
+                        }
+                    }
+                    .contentMargins(.horizontal, Spacing.l, for: .scrollContent)
+
+                    LazyVStack(spacing: Spacing.l) {
+                        ForEach(feedClips) { clip in
+                            showcaseExploreCard(clip)
+                                .scaleEffect(exploreHighlight == clip.id ? 1.02 : 1)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                        .strokeBorder(exploreHighlight == clip.id ? Color.jojoOrange : .clear, lineWidth: 2.5)
+                                )
+                                .animation(.snappy, value: exploreHighlight)
+                        }
+                    }
+                    .padding(.horizontal, Spacing.l)
+                }
+                .padding(.vertical, Spacing.m)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 72)
+            }
+        }
+        .background(Color.canvas.ignoresSafeArea())
+    }
+
+    private func showcaseExploreCard(_ clip: Clip) -> some View {
+        Color.bgElevatedDark
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
+            .overlay(alignment: .topLeading) {
+                Text(clip.difficulty)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.jojoOrange.opacity(0.9), in: Capsule())
+                    .padding(Spacing.s)
+            }
+            .overlay(alignment: .topTrailing) {
+                Text(formatClock(clip.durationSec))
+                    .font(.caption.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.black.opacity(0.5), in: Capsule())
+                    .padding(Spacing.s)
+            }
+            .overlay(alignment: .bottom) {
+                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 88)
+                    .overlay(alignment: .bottomLeading) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let line = clip.lines.first {
+                                Text(line.text)
+                                    .font(JojoFont.jp(17, bold: true, relativeTo: .headline))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                            }
+                            Text(clip.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .lineLimit(1)
+                        }
+                        .padding(Spacing.m)
+                    }
+            }
+            .clipShape(.rect(cornerRadius: Radius.card, style: .continuous))
+    }
+
+    // MARK: Immersive chrome
+
+    private var immersiveChrome: some View {
+        Group {
+            if let clip = feedClips.first(where: { $0.id == currentId }) ?? feedClips.first {
+                VStack(spacing: 0) {
+                    HStack(spacing: Spacing.m) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(Color.white.opacity(0.12), in: Circle())
+                        ChannelAvatar(clip: clip, size: 36)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
+                            Text(clip.channelName).font(.caption).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+                        }
+                        Spacer()
+                        Image(systemName: "flag").foregroundStyle(.white.opacity(0.7)).frame(width: 40, height: 40)
+                    }
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.vertical, Spacing.s)
+
+                    ClipStageView(
+                        clip: clip,
+                        immersiveFeed: true,
+                        showsChannelRow: false,
+                        onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                    )
+                }
+                .background(Color.bgPlayer.ignoresSafeArea())
+            }
         }
     }
 
-    private func flashcardBeat(_ word: SavedWord) -> some View {
+    // MARK: Vocab chrome
+
+    private var vocabChrome: some View {
         VStack(spacing: 0) {
             HStack {
+                Text("Vocab")
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Image(systemName: "text.magnifyingglass")
+                    .foregroundStyle(Color.jojoOrange)
+                    .frame(width: 44, height: 44)
+            }
+            .padding(.horizontal, Spacing.l)
+            .padding(.top, Spacing.s)
+
+            Picker("", selection: .constant(VocabSection.all)) {
+                Text("Review").tag(VocabSection.review)
+                Text("All Words").tag(VocabSection.all)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, Spacing.l)
+            .padding(.vertical, Spacing.s)
+
+            ScrollView {
+                VStack(spacing: Spacing.s) {
+                    let words = flashWords.isEmpty ? demoVocabFallback() : flashWords
+                    ForEach(words.prefix(6), id: \.key) { word in
+                        HStack(spacing: Spacing.m) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(word.surface)
+                                    .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
+                                    .foregroundStyle(.white)
+                                Text(word.readings.joined(separator: " · "))
+                                    .font(JojoFont.jp(13, relativeTo: .caption))
+                                    .foregroundStyle(.white.opacity(0.55))
+                                if let def = word.definitions.first {
+                                    Text(def)
+                                        .font(.caption)
+                                        .foregroundStyle(.white.opacity(0.7))
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                            if let jlpt = word.jlpt {
+                                PillView(text: jlpt, style: .jlpt)
+                            }
+                        }
+                        .padding(Spacing.m)
+                        .background(
+                            Color.bgElevatedDark,
+                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                .strokeBorder(vocabHighlight == word.key ? Color.jojoOrange : Color.white.opacity(0.06), lineWidth: vocabHighlight == word.key ? 2 : 1)
+                        )
+                        .scaleEffect(vocabHighlight == word.key ? 1.02 : 1)
+                        .animation(.snappy, value: vocabHighlight)
+                        .padding(.horizontal, Spacing.l)
+                    }
+                }
+                .padding(.vertical, Spacing.s)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 72)
+            }
+        }
+        .background(Color.canvas.ignoresSafeArea())
+    }
+
+    // MARK: Flashcard
+
+    private func flashcardBeat(_ word: SavedWord) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Spacing.m) {
                 Image(systemName: "xmark")
                     .foregroundStyle(.white.opacity(0.5))
                     .frame(width: 44, height: 44)
                 GeometryReader { proxy in
-                    Capsule().fill(Color.jojoOrange)
-                        .frame(width: proxy.size.width * 0.18, height: 6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Capsule().fill(Color.white.opacity(0.12)))
+                    let progress = flashWords.isEmpty ? 0.2 : Double(flashIndex + 1) / Double(max(flashWords.count, 1))
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.12))
+                        Capsule().fill(Color.jojoOrange)
+                            .frame(width: proxy.size.width * progress)
+                    }
                 }
                 .frame(height: 6)
-                Text("1/6")
+                Text("\(flashIndex + 1)/\(max(flashWords.count, 1))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.6))
             }
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.s)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
-                    WordHeaderCard(
-                        surface: word.surface,
-                        readings: word.readings,
-                        romaji: word.romaji,
-                        pos: word.pos,
-                        conjugationClass: word.conjugationClass,
-                        jlpt: word.jlpt,
-                        showFurigana: true,
-                        showRomaji: true
-                    )
-                    .environment(\.colorScheme, .dark)
+            Spacer(minLength: Spacing.l)
 
-                    Text("Definitions")
-                        .font(.headline)
-                        .foregroundStyle(.white.opacity(0.55))
-                    ForEach(Array(word.definitions.prefix(2).enumerated()), id: \.offset) { i, def in
-                        DefinitionRow(number: i + 1, tag: word.pos, text: def, dark: true)
+            ZStack {
+                if !flashRevealed {
+                    VStack(spacing: Spacing.l) {
+                        Text(word.surface)
+                            .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
+                            .foregroundStyle(.white)
+                        Text("Tap to reveal")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.45))
                     }
-                    if !word.contextSentence.isEmpty {
-                        Text("Context")
-                            .font(.headline)
-                            .foregroundStyle(.white.opacity(0.55))
-                        HighlightedSentence(
-                            sentence: word.contextSentence,
-                            target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                            size: 19,
-                            baseColor: .white
-                        )
-                        .padding(Spacing.l)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                        if let clip = app.clip(id: word.contextClipId) {
-                            ClipThumbnailButton(clip: clip, emphasizesPlay: true) {}
-                                .disabled(true)
+                    .frame(maxWidth: .infinity, minHeight: 300)
+                    .padding(Spacing.l)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1.5)
+                    )
+                    .padding(.horizontal, Spacing.l)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: Spacing.l) {
+                            WordHeaderCard(
+                                surface: word.surface,
+                                readings: word.readings,
+                                romaji: word.romaji,
+                                pos: word.pos,
+                                conjugationClass: word.conjugationClass,
+                                jlpt: word.jlpt,
+                                showFurigana: true,
+                                showRomaji: true
+                            )
+                            .environment(\.colorScheme, .dark)
+
+                            Text("Definitions")
+                                .font(.headline)
+                                .foregroundStyle(.white.opacity(0.55))
+                            ForEach(Array(word.definitions.prefix(2).enumerated()), id: \.offset) { i, def in
+                                DefinitionRow(number: i + 1, tag: word.pos, text: def, dark: true)
+                            }
+                            if !word.contextSentence.isEmpty {
+                                Text("Context")
+                                    .font(.headline)
+                                    .foregroundStyle(.white.opacity(0.55))
+                                HighlightedSentence(
+                                    sentence: word.contextSentence,
+                                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
+                                    size: 19,
+                                    baseColor: .white
+                                )
+                                .padding(Spacing.l)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                                if let clip = app.clip(id: word.contextClipId) {
+                                    ClipThumbnailButton(clip: clip, emphasizesPlay: true) {}
+                                        .disabled(true)
+                                }
+                            }
                         }
+                        .padding(Spacing.l)
                     }
                 }
-                .padding(Spacing.l)
             }
+            .animation(Motion.cardFlip, value: flashRevealed)
 
-            HStack(spacing: Spacing.m) {
-                answerChip(title: "Again", subtitle: "<1m", color: .againBackground, fg: .againText)
-                answerChip(title: "Good", subtitle: "<10m", color: .goodBackground, fg: .goodText)
+            if flashRevealed {
+                HStack(spacing: Spacing.m) {
+                    answerChip(title: "Again", subtitle: "<1m", color: .againBackground, fg: .againText)
+                    answerChip(title: "Good", subtitle: "<10m", color: .goodBackground, fg: .goodText)
+                }
+                .padding(Spacing.l)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else {
+                Color.clear.frame(height: 88)
             }
-            .padding(Spacing.l)
         }
         .background(Color.bgPlayer.ignoresSafeArea())
     }
@@ -268,23 +685,30 @@ struct MarketingShowcaseView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.xl)
             Spacer()
-            Button("Run again") {
+            Button("Record the other video") {
+                selectedScript = selectedScript == .forYou ? .exploreVocab : .forYou
                 phase = .prep
                 resetShowcaseState()
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
+            Button("Run again") {
+                phase = .prep
+                resetShowcaseState()
+            }
+            .font(.headline)
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(minHeight: 48)
             Button("Done") { dismiss() }
                 .font(.headline)
-                .foregroundStyle(.white.opacity(0.8))
-                .frame(minHeight: 48)
+                .foregroundStyle(.white.opacity(0.6))
+                .frame(minHeight: 44)
                 .padding(.bottom, Spacing.xl)
         }
     }
 
-    // MARK: Script
+    // MARK: Scripts
 
-    /// Anime first, then Minecraft — both local demo clips when available.
     private func demoFeedClips() -> [Clip] {
         let preferredIds = ["hoshizora-academy-07", "boss-rush-live-09"]
         var ordered: [Clip] = []
@@ -302,11 +726,24 @@ struct MarketingShowcaseView: View {
         if ordered.isEmpty, let fallback = app.recommendedClip(preferShort: true) ?? app.clips.first {
             ordered = [fallback]
         }
+        // Pad explore grid with a couple more for Video 2.
+        if ordered.count < 4 {
+            for clip in app.clips where !ordered.contains(where: { $0.id == clip.id }) {
+                ordered.append(clip)
+                if ordered.count >= 4 { break }
+            }
+        }
         return ordered
     }
 
-    private func beginShowcase() {
+    private func demoVocabFallback() -> [SavedWord] {
+        let descriptor = FetchDescriptor<SavedWord>(sortBy: [SortDescriptor(\.addedAt, order: .reverse)])
+        return (try? app.context.fetch(descriptor))?.prefix(6).map { $0 } ?? []
+    }
+
+    private func beginShowcase(_ script: MarketingScript) {
         lookup.offlineOnly = true
+        lookup.previewOnly = true
         let clips = demoFeedClips()
         feedClips = clips
         guard let first = clips.first else {
@@ -314,74 +751,174 @@ struct MarketingShowcaseView: View {
             return
         }
         currentId = first.id
+        flashWords = demoVocabFallback()
         app.markVocabSaveCoachSeen()
+        stage = script == .forYou ? .feed : .explore
+        tabHighlight = .feed
         phase = .running
         track("marketing_showcase_started", props: [
+            "script": script.rawValue,
             "clips": clips.map(\.id).joined(separator: ","),
         ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            for n in [3, 2, 1] {
-                withAnimation(.snappy) { countdown = n }
-                Haptics.selection()
-                try? await Task.sleep(for: .milliseconds(700))
-                guard !Task.isCancelled else { return }
-            }
-            withAnimation { countdown = nil }
-
-            // Beat 1 — anime (or first) plays
-            coordinator.activate(first, startLine: 0, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(2800))
+            await runCountdown()
             guard !Task.isCancelled else { return }
-
-            // Beat 2 — tap a word on the first clip
-            var savedFromTap: SavedWord?
-            if let line = first.lines.first,
-               let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
-                ?? line.tokens.firstIndex(where: \.tappable) {
-                let token = line.tokens[idx]
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: first, app: app)
-                }
-                try? await Task.sleep(for: .milliseconds(2800))
-                guard !Task.isCancelled else { return }
-                let key = AppModel.wordKey(for: token)
-                savedFromTap = (try? app.context.fetch(
-                    FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
-                ))?.first
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                    lookup.dismiss()
-                }
-                try? await Task.sleep(for: .milliseconds(450))
-                guard !Task.isCancelled else { return }
+            switch script {
+            case .forYou:
+                await runForYouScript(clips: clips, first: first)
+            case .exploreVocab:
+                await runExploreVocabScript(clips: clips, first: first)
             }
-
-            // Beat 3 — scroll to Minecraft (second clip), like a real For You swipe
-            if let second = clips.dropFirst().first {
-                withAnimation(.easeInOut(duration: 0.55)) {
-                    currentId = second.id
-                }
-                // onChange activates playback; give the page settle + watch time
-                try? await Task.sleep(for: .milliseconds(700))
-                guard !Task.isCancelled else { return }
-                coordinator.activate(second, startLine: 0, loopLine: true)
-                try? await Task.sleep(for: .milliseconds(3200))
-                guard !Task.isCancelled else { return }
-            }
-
-            // Beat 4 — flashcard from the tapped word (real poster if bundled)
-            if let word = savedFromTap {
-                flashWord = word
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
-                    showFlashcard = true
-                }
-                try? await Task.sleep(for: .milliseconds(3400))
-            }
-
             guard !Task.isCancelled else { return }
             coordinator.stop()
             withAnimation(.easeInOut(duration: 0.35)) { phase = .done }
-            track("marketing_showcase_finished")
+            track("marketing_showcase_finished", props: ["script": script.rawValue])
+        }
+    }
+
+    private func runCountdown() async {
+        for n in [3, 2, 1] {
+            withAnimation(.snappy) { countdown = n }
+            Haptics.selection()
+            try? await Task.sleep(for: .milliseconds(700))
+            if Task.isCancelled { return }
+        }
+        withAnimation { countdown = nil }
+    }
+
+    /// Video 1: For You immersion → tap → swipe → flashcard reveal.
+    private func runForYouScript(clips: [Clip], first: Clip) async {
+        tabHighlight = .feed
+        stage = .feed
+        coordinator.activate(first, startLine: 0, loopLine: true)
+        try? await Task.sleep(for: .milliseconds(3000))
+        guard !Task.isCancelled else { return }
+
+        // Tap a word
+        var savedFromTap: SavedWord?
+        if let line = first.lines.first,
+           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
+            ?? line.tokens.firstIndex(where: \.tappable) {
+            let token = line.tokens[idx]
+            // Persist for a real flashcard on the back face.
+            lookup.previewOnly = false
+            withAnimation(Motion.popupSpring) {
+                lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: first, app: app)
+            }
+            try? await Task.sleep(for: .milliseconds(2800))
+            guard !Task.isCancelled else { return }
+            let key = AppModel.wordKey(for: token)
+            savedFromTap = (try? app.context.fetch(
+                FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
+            ))?.first
+            withAnimation(Motion.popupSpring) { lookup.dismiss() }
+            lookup.previewOnly = true
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+        }
+
+        // Swipe to next clip
+        if let second = clips.dropFirst().first {
+            withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+            coordinator.activate(second, startLine: 0, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(2800))
+            guard !Task.isCancelled else { return }
+        }
+
+        // Flashcard ending
+        let word = savedFromTap ?? flashWords.first
+        await playFlashcardSequence(startingWith: word, count: 2)
+    }
+
+    /// Video 2: Explore → immersive clip → Vocab → flashcards.
+    private func runExploreVocabScript(clips: [Clip], first: Clip) async {
+        tabHighlight = .feed
+        withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
+        try? await Task.sleep(for: .milliseconds(2200))
+        guard !Task.isCancelled else { return }
+
+        // Highlight a card, then open immersive
+        let pick = clips.first ?? first
+        withAnimation(.snappy) { exploreHighlight = pick.id }
+        try? await Task.sleep(for: .milliseconds(900))
+        guard !Task.isCancelled else { return }
+
+        currentId = pick.id
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .immersive
+            exploreHighlight = nil
+        }
+        coordinator.activate(pick, startLine: 0, loopLine: true)
+        try? await Task.sleep(for: .milliseconds(2200))
+        guard !Task.isCancelled else { return }
+
+        // Quick word tap in immersive
+        if let line = pick.lines.first,
+           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
+            ?? line.tokens.firstIndex(where: \.tappable) {
+            let token = line.tokens[idx]
+            lookup.previewOnly = false
+            withAnimation(Motion.popupSpring) {
+                lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: pick, app: app)
+            }
+            try? await Task.sleep(for: .milliseconds(2000))
+            guard !Task.isCancelled else { return }
+            withAnimation(Motion.popupSpring) { lookup.dismiss() }
+            lookup.previewOnly = true
+            try? await Task.sleep(for: .milliseconds(400))
+        }
+
+        coordinator.pause()
+        flashWords = demoVocabFallback()
+
+        // Vocab tab
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .vocab
+            tabHighlight = .vocab
+        }
+        try? await Task.sleep(for: .milliseconds(1600))
+        guard !Task.isCancelled else { return }
+
+        if let highlight = flashWords.first?.key {
+            withAnimation(.snappy) { vocabHighlight = highlight }
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+        }
+
+        await playFlashcardSequence(startingWith: flashWords.first, count: 3)
+    }
+
+    private func playFlashcardSequence(startingWith first: SavedWord?, count: Int) async {
+        var queue = flashWords
+        if let first, !queue.contains(where: { $0.key == first.key }) {
+            queue.insert(first, at: 0)
+        }
+        if queue.isEmpty, let first { queue = [first] }
+        guard !queue.isEmpty else { return }
+
+        flashWords = queue
+        for (i, word) in queue.prefix(count).enumerated() {
+            flashIndex = i
+            flashWord = word
+            flashRevealed = false
+            withAnimation(Motion.cardFlip) {
+                stage = .flashcard
+                showFlashcard = true
+                tabHighlight = .vocab
+            }
+            try? await Task.sleep(for: .milliseconds(1400))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(Motion.cardFlip) { flashRevealed = true }
+            try? await Task.sleep(for: .milliseconds(2200))
+            guard !Task.isCancelled else { return }
+
+            // Brief Good pulse feel — advance
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
         }
     }
 
@@ -390,10 +927,17 @@ struct MarketingShowcaseView: View {
         coordinator.stop()
         lookup.dismiss()
         showFlashcard = false
+        flashRevealed = false
         flashWord = nil
+        flashIndex = 0
+        flashWords = []
         countdown = nil
         feedClips = []
         currentId = nil
+        stage = .feed
+        exploreHighlight = nil
+        vocabHighlight = nil
+        tabHighlight = .feed
     }
 }
 
@@ -410,3 +954,4 @@ private struct CardFlip: ViewModifier {
             )
     }
 }
+#endif

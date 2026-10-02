@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Browsable clip library with Difficulty / Topic / Source filters. Cards show a paused poster
-/// with two play buttons: full clip, and loop the first line.
+/// with play + loop-line chips. Opening a card launches the immersive player.
 struct ExploreView: View {
     let onPlay: (Clip, Int?) -> Void
 
@@ -10,6 +10,7 @@ struct ExploreView: View {
     @State private var topic: ClipCategory?
     @State private var source: SourceType?
     @State private var favoritesOnly: Bool = false
+    @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
         app.clips.filter { clip in
@@ -41,9 +42,15 @@ struct ExploreView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: Spacing.l)], spacing: Spacing.l) {
-                        ForEach(filtered) { clip in
+                    LazyVStack(spacing: Spacing.l) {
+                        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, clip in
                             ExploreClipCard(clip: clip, onPlay: onPlay)
+                                .opacity(appeared ? 1 : 0)
+                                .offset(y: appeared ? 0 : 16)
+                                .animation(
+                                    Motion.lineAdvance.delay(Double(min(index, 8)) * 0.045),
+                                    value: appeared
+                                )
                         }
                     }
                     .padding(.horizontal, Spacing.l)
@@ -52,6 +59,9 @@ struct ExploreView: View {
             .padding(.vertical, Spacing.m)
         }
         .scrollIndicators(.hidden)
+        .onAppear {
+            withAnimation { appeared = true }
+        }
     }
 
     private var filters: some View {
@@ -114,70 +124,83 @@ private struct ExploreClipCard: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
-            Color.bgElevatedDark
-                .aspectRatio(16 / 9, contentMode: .fit)
-                .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
-                .overlay(alignment: .bottomLeading) {
-                    if let line = clip.lines.first {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(line.text)
-                                .font(JojoFont.jp(17, bold: true, relativeTo: .headline))
-                                .foregroundStyle(.white)
+        Color.bgElevatedDark
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
+            .overlay(alignment: .topLeading) {
+                Text(clip.difficulty)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.jojoOrange.opacity(0.9), in: Capsule())
+                    .padding(Spacing.s)
+            }
+            .overlay(alignment: .topTrailing) {
+                Text(formatClock(clip.durationSec))
+                    .font(.caption.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.black.opacity(0.5), in: Capsule())
+                    .padding(Spacing.s)
+            }
+            .overlay(alignment: .bottom) {
+                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 96)
+                    .overlay(alignment: .bottomLeading) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let line = clip.lines.first {
+                                Text(line.text)
+                                    .font(JojoFont.jp(17, bold: true, relativeTo: .headline))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                            }
+                            Text(clip.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.8))
                                 .lineLimit(1)
-                            Text(line.translation)
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.75))
-                                .lineLimit(1)
+                            HStack(spacing: Spacing.s) {
+                                Button {
+                                    Haptics.light()
+                                    onPlay(clip, nil)
+                                } label: {
+                                    Label("Play", systemImage: "play.fill")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 12)
+                                        .frame(minHeight: 32)
+                                        .background(Color.jojoOrange, in: Capsule())
+                                }
+                                Button {
+                                    Haptics.light()
+                                    onPlay(clip, 0)
+                                } label: {
+                                    Label("Loop line", systemImage: "repeat")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 12)
+                                        .frame(minHeight: 32)
+                                        .background(.white.opacity(0.18), in: Capsule())
+                                }
+                            }
                         }
                         .padding(Spacing.m)
                     }
-                }
-                .overlay(alignment: .topTrailing) {
-                    Text(formatClock(clip.durationSec))
-                        .font(.caption.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.black.opacity(0.5), in: Capsule())
-                        .padding(Spacing.s)
-                }
-                .clipShape(.rect(cornerRadius: Radius.card, style: .continuous))
-            HStack(spacing: Spacing.m) {
-                ChannelAvatar(clip: clip, size: 34)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
-                    Text("\(clip.channelName) · \(clip.difficulty)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                }
-                Spacer(minLength: 0)
             }
-            HStack(spacing: Spacing.s) {
-                Button {
-                    Haptics.light()
-                    onPlay(clip, nil)
-                } label: {
-                    Label("Play clip", systemImage: "play.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(Color.jojoOrange, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                Button {
-                    Haptics.light()
-                    onPlay(clip, 0)
-                } label: {
-                    Label("Loop line", systemImage: "repeat")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
+            .clipShape(.rect(cornerRadius: Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .strokeBorder(Color.cardStroke.opacity(0.5), lineWidth: 1)
+            )
+            .contentShape(.rect)
+            .onTapGesture {
+                Haptics.light()
+                onPlay(clip, nil)
             }
-            .buttonStyle(PressableStyle())
-        }
-        .padding(Spacing.m)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.cardStroke, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(clip.title) by \(clip.channelName)")
+            .accessibilityAddTraits(.isButton)
     }
 }

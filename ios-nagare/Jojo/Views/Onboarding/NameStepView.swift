@@ -73,7 +73,7 @@ struct NameStepView: View {
                 Blossom(size: 16)
                 Text("よろしくね、\(trimmed)!")
                     .font(JojoFont.jp(18, bold: true, relativeTo: .title3))
-                    .foregroundStyle(Color.jojoVermilion)
+                    .foregroundStyle(Color.sakuraPink)
             }
             .transition(.opacity.combined(with: .move(edge: .leading)))
         }

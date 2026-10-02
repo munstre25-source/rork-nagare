@@ -40,11 +40,15 @@ extension Color {
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let hairlineDark = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
-    /// App page background — same family as Vocab / Profile so every tab matches.
-    static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0A0A0A")
+    /// App page background — faint violet tint in dark mode for the night-sakura mood.
+    static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0B0816")
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
     static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
+    /// Active karaoke line card (Kiku-style raised surface).
+    static let transcriptCard = Color(hex: "#1A1A1C")
+    /// Soft violet glow behind the active transcript line.
+    static let activeLineGlow = Color(hex: "#4A1D6B").opacity(0.35)
 
     // MARK: Accent
     static let jojoOrange = Color(hex: "#FF6B00")
@@ -68,10 +72,22 @@ extension Color {
     static let jojoBlossom = Color(hex: "#F3A8B4")
     static let jojoGold = Color(hex: "#F5C542")
 
-    // MARK: Word states
+    // MARK: Night-sakura (App Store design mood)
+    static let nightIndigo = Color(hex: "#140C2E")
+    static let nightViolet = Color(hex: "#2A1452")
+    static let nightPlum = Color(hex: "#4A1D6B")
+    static let sakuraPink = Color(hex: "#FF5FA2")
+    static let neonMagenta = Color(hex: "#FF2E93")
+    static let lanternAmber = Color(hex: "#FFB347")
+
+    // MARK: Word states / POS underlines
     static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")
     static let spokenGreen = Color.adaptive(light: "#15803D", dark: "#34C759")
     static let lookedUpOrange = Color(hex: "#FF8A3D")
+    /// Content words (noun, verb, adjective) — Kiku blue underline.
+    static let posContentBlue = Color.adaptive(light: "#2563EB", dark: "#3B82F6")
+    /// Function words (particle, auxiliary, copula) — Kiku orange underline.
+    static let posParticleOrange = Color(hex: "#FF8A1F")
 
     // MARK: SRS
     static let againBackground = Color(hex: "#FFD9DE")
@@ -91,6 +107,15 @@ extension Color {
         .adaptive(light: "#F1F1F4", dark: "#23252B"),
         .adaptive(light: "#F7EDF6", dark: "#2A2230")
     ]
+}
+
+/// Shared animation curves so feed, popup and tabs feel like one product.
+enum Motion {
+    static let lineAdvance = Animation.spring(response: 0.42, dampingFraction: 0.86)
+    static let popupSpring = Animation.spring(response: 0.38, dampingFraction: 0.78)
+    static let tabSlide = Animation.spring(response: 0.36, dampingFraction: 0.82)
+    static let cardFlip = Animation.spring(response: 0.45, dampingFraction: 0.86)
+    static let tapBounce = Animation.spring(response: 0.28, dampingFraction: 0.55)
 }
 
 /// Spacing scale.
@@ -115,5 +140,18 @@ enum Radius {
 enum JojoFont {
     static func jp(_ size: CGFloat, bold: Bool = false, relativeTo style: Font.TextStyle = .body) -> Font {
         .custom(FontRegistry.fontName(bold: bold), size: size, relativeTo: style)
+    }
+}
+
+extension Token {
+    /// Kiku-style underline: blue for content words, orange for particles / auxiliaries / copula.
+    var underlineColor: Color {
+        let key = pos.lowercased()
+        switch key {
+        case "particle", "auxiliary", "copula", "suffix":
+            return .posParticleOrange
+        default:
+            return .posContentBlue
+        }
     }
 }

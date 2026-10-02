@@ -20,6 +20,7 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
+    @Namespace private var tabNamespace
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
 
@@ -112,27 +113,43 @@ struct FeedView: View {
 
     private var header: some View {
         HStack(spacing: Spacing.s) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.m) {
-                    ForEach(FeedTab.allCases, id: \.self) { item in
-                        Button {
-                            Haptics.selection()
-                            withAnimation(.snappy) { tab = item }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(item.rawValue)
-                                    .font(.subheadline.weight(tab == item ? .semibold : .regular))
-                                    .foregroundStyle(tab == item ? Color.primary : Color.secondary)
+            HStack(spacing: Spacing.m) {
+                ForEach(FeedTab.allCases, id: \.self) { item in
+                    Button {
+                        Haptics.selection()
+                        withAnimation(Motion.tabSlide) { tab = item }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(item.rawValue)
+                                .font(.subheadline.weight(tab == item ? .semibold : .regular))
+                                .foregroundStyle(tab == item ? Color.primary : Color.secondary)
+                            ZStack {
                                 Capsule()
-                                    .fill(tab == item ? Color.jojoOrange : .clear)
+                                    .fill(Color.clear)
                                     .frame(width: 28, height: 2)
+                                if tab == item {
+                                    Capsule()
+                                        .fill(Color.jojoOrange)
+                                        .frame(width: 28, height: 2)
+                                        .matchedGeometryEffect(id: "feedTabUnderline", in: tabNamespace)
+                                }
                             }
-                            .frame(minHeight: 40)
                         }
-                        .accessibilityAddTraits(tab == item ? .isSelected : [])
+                        .frame(minHeight: 40)
                     }
+                    .accessibilityAddTraits(tab == item ? .isSelected : [])
                 }
             }
+            Spacer(minLength: 0)
+            Button {
+                reportClip = clips.first(where: { $0.id == currentId })
+            } label: {
+                Image(systemName: "flag")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, height: 40)
+            }
+            .accessibilityLabel("Report clip")
             Button {
                 showSearch = true
             } label: {

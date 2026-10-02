@@ -17,13 +17,22 @@ struct TokenView: View {
     var showRomaji: Bool = true
     let onTap: () -> Void
 
+    @Environment(\.spokenTokenNamespace) private var spokenNamespace
     @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 11
     @ScaledMetric(relativeTo: .title2) private var wordSize: CGFloat = 24
     @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 11
+    @State private var tapBounce: Bool = false
 
     var body: some View {
         if token.tappable {
-            Button(action: onTap) { content }
+            Button {
+                withAnimation(Motion.tapBounce) { tapBounce = true }
+                onTap()
+                Task {
+                    try? await Task.sleep(for: .milliseconds(180))
+                    withAnimation(Motion.tapBounce) { tapBounce = false }
+                }
+            } label: { content }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel(accessibilityText)
                 .accessibilityHint("Explains the word and adds it to your flashcards")
@@ -50,6 +59,7 @@ struct TokenView: View {
                 .padding(.horizontal, token.tappable ? 6 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
+                .overlay { spokenOutline }
                 .overlay(alignment: .bottom) { underline }
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
@@ -61,7 +71,7 @@ struct TokenView: View {
         }
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
-        .scaleEffect(pulse ? 1.08 : 1)
+        .scaleEffect(pulse || tapBounce ? 1.08 : 1)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -83,7 +93,6 @@ struct TokenView: View {
     private var wordBackground: some View {
         switch state {
         case .selected:
-            // Outline so the word stays readable (always-visible reading aids).
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(Color.jojoOrange, lineWidth: 2.5)
                 .background(
@@ -92,12 +101,27 @@ struct TokenView: View {
                 )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.spokenGreen, lineWidth: 2)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.spokenGreen.opacity(0.12)))
+                .fill(Color.spokenGreen.opacity(0.12))
         case .normal:
-            if highlight {
+            if isLookedUp {
+                // Saved / looked-up words get an orange fill like Kiku's 石炭.
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.jojoOrange.opacity(0.22))
+            } else if highlight {
                 RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.jojoOrange.opacity(0.28))
             }
+        }
+    }
+
+    @ViewBuilder
+    private var spokenOutline: some View {
+        if state == .spoken, let ns = spokenNamespace {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.spokenGreen, lineWidth: 2)
+                .matchedGeometryEffect(id: "spokenOutline", in: ns)
+        } else if state == .spoken {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.spokenGreen, lineWidth: 2)
         }
     }
 
@@ -105,7 +129,7 @@ struct TokenView: View {
     private var underline: some View {
         if token.tappable, state != .selected {
             Capsule()
-                .fill(isLookedUp ? Color.lookedUpOrange : Color.tappableBlue)
+                .fill(isLookedUp ? Color.lookedUpOrange : token.underlineColor)
                 .frame(height: 3)
                 .padding(.horizontal, 4)
                 .offset(y: 3)

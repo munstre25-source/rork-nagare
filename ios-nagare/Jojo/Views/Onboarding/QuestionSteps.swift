@@ -69,13 +69,13 @@ struct TasteSwipeStepView: View {
             ZStack {
                 if index >= tastes.count {
                     VStack(spacing: Spacing.m) {
-                        JojoMascot(height: 150)
+                        JojoMascot(height: 150, pose: .wave)
                         Text("Your feed is tuned.")
                             .font(.system(.title2, design: .rounded, weight: .bold))
-                            .foregroundStyle(Color.jojoInk)
+                            .foregroundStyle(Color.white)
                         Text(liked.isEmpty ? "We'll start with a bit of everything." : "Starting with \(liked.compactMap { Taste(rawValue: $0)?.title }.prefix(2).joined(separator: " & ")).")
                             .font(.subheadline)
-                            .foregroundStyle(Color.jojoInkSoft)
+                            .foregroundStyle(Color.white.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
                     .transition(.scale.combined(with: .opacity))

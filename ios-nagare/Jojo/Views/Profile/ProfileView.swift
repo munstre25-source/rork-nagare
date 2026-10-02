@@ -15,7 +15,9 @@ struct ProfileView: View {
     @State private var restoreMessage: String?
     @State private var confirmReset: Bool = false
     @State private var confirmDeleteAccount: Bool = false
-    @State private var showMarketingShowcase: Bool = false
+    #if DEBUG
+    @State private var marketingScript: MarketingScript?
+    #endif
     var onGiveFeedback: (() -> Void)? = nil
 
     private var known: Int { words.filter { $0.state == .known }.count }
@@ -87,9 +89,11 @@ struct ProfileView: View {
             .navigationTitle("Profile")
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
-        .fullScreenCover(isPresented: $showMarketingShowcase) {
-            MarketingShowcaseView()
+        #if DEBUG
+        .fullScreenCover(item: $marketingScript) { script in
+            MarketingShowcaseView(initialScript: script, autoBegin: false)
         }
+        #endif
         .sheet(isPresented: $showGoalPicker) { DailyGoalSheet() }
         .manageSubscriptionsSheet(isPresented: $showManageSubs)
         .sheet(isPresented: $showCustomerCenter) { JojoCustomerCenter() }
@@ -251,11 +255,17 @@ struct ProfileView: View {
                            ))
             Divider().padding(.leading, 52)
 
-            settingsHeader("Creator")
-            SettingsRow(symbol: "record.circle", title: "Record marketing demo") {
-                showMarketingShowcase = true
+            #if DEBUG
+            settingsHeader("Debug · Marketing")
+            SettingsRow(symbol: "play.circle", title: "Play For You demo") {
+                marketingScript = .forYou
             }
             Divider().padding(.leading, 52)
+            SettingsRow(symbol: "play.circle", title: "Play Explore & Vocab demo") {
+                marketingScript = .exploreVocab
+            }
+            Divider().padding(.leading, 52)
+            #endif
 
             if let onGiveFeedback {
                 SettingsRow(symbol: "bubble.left.and.bubble.right", title: "Give feedback") {

@@ -13,12 +13,12 @@ struct RootView: View {
             } else if !app.purchases.isSubscribed {
                 // Returning user whose subscription lapsed: hard paywall, no tabs.
                 ZStack {
-                    JojoBrandBackground()
+                    JojoBrandBackground(scene: .lanternNight, showsHills: false)
                     PaywallView(allowsDebugBypass: true) {}
                         .frame(maxWidth: 560)
                 }
-                .environment(\.brandSurface, .cream)
-                .environment(\.colorScheme, .light)
+                .environment(\.brandSurface, .night)
+                .environment(\.colorScheme, .dark)
                 .transition(.opacity)
             } else {
                 MainTabView()
@@ -57,27 +57,25 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView(selection: $tab) {
-            FeedView(isActiveTab: tab == .feed)
-                .tabItem {
-                    Label("Feed", systemImage: tab == .feed ? "play.circle.fill" : "play.circle")
-                }
-                .tag(AppTab.feed)
-            VocabView()
-                .tabItem {
-                    Label("Vocab", systemImage: tab == .vocab ? "book.fill" : "book")
-                }
-                .badge(vocabBadge)
-                .tag(AppTab.vocab)
-            ProfileView(onGiveFeedback: { showManualFeedback = true })
-                .tabItem {
-                    Label("Profile", systemImage: tab == .profile ? "person.fill" : "person")
-                }
-                .tag(AppTab.profile)
+        ZStack(alignment: .bottom) {
+            TabView(selection: $tab) {
+                FeedView(isActiveTab: tab == .feed)
+                    .tag(AppTab.feed)
+                VocabView()
+                    .tag(AppTab.vocab)
+                ProfileView(onGiveFeedback: { showManualFeedback = true })
+                    .tag(AppTab.profile)
+            }
+            .toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 64)
+            }
+
+            FloatingTabBar(selection: $tab, vocabBadge: vocabBadge)
+                .padding(.horizontal, Spacing.l)
+                .padding(.bottom, 8)
         }
-        .tint(Color.jojoVermilion)
-        .toolbarBackground(Color.canvas, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
+        .tint(Color.jojoOrange)
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }
@@ -106,12 +104,9 @@ struct MainTabView: View {
             }
         }
         .onAppear {
-            let badge = UITabBarItem.appearance()
-            badge.badgeColor = UIColor(hex: "#FF6B00")
             if app.pendingDeepLink == .review { tab = .vocab }
             if app.pendingDeepLink == .feed { tab = .feed }
             if app.noteMainAppOpenAndShouldAskFeedback() {
-                // Let them land in the feed first — don't slap the sheet on over the first clip.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
                     showFeedbackPrompt = true
                 }
@@ -131,5 +126,59 @@ struct MainTabView: View {
         .sheet(isPresented: $showCancellationSurvey) {
             CancellationSurveySheet { showCancellationSurvey = false }
         }
+    }
+}
+
+/// Floating capsule tab bar matching Kiku's chrome.
+struct FloatingTabBar: View {
+    @Binding var selection: AppTab
+    var vocabBadge: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            tabButton(.feed, title: "Feed", systemImage: selection == .feed ? "play.circle.fill" : "play.circle")
+            tabButton(.vocab, title: "Vocab", systemImage: selection == .vocab ? "book.fill" : "book", badge: vocabBadge)
+            tabButton(.profile, title: "Profile", systemImage: selection == .profile ? "person.fill" : "person")
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+        .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func tabButton(_ tab: AppTab, title: String, systemImage: String, badge: Int = 0) -> some View {
+        Button {
+            Haptics.selection()
+            withAnimation(Motion.tabSlide) { selection = tab }
+        } label: {
+            VStack(spacing: 2) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(width: 44, height: 28)
+                    if badge > 0 {
+                        Text(badge > 99 ? "99+" : "\(badge)")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .frame(minWidth: 16, minHeight: 16)
+                            .background(Color.jojoOrange, in: Capsule())
+                            .offset(x: 10, y: -6)
+                            .contentTransition(.numericText())
+                    }
+                }
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(selection == tab ? Color.jojoOrange : Color.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel(title)
+        .accessibilityValue(badge > 0 ? "\(badge) new" : "")
+        .accessibilityAddTraits(selection == tab ? .isSelected : [])
     }
 }

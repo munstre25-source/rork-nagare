@@ -38,8 +38,8 @@ struct OnboardingFlowView: View {
             }
         }
         .environment(\.brandSurface, activeSurface)
-        .environment(\.colorScheme, activeSurface == .cinema ? .dark : .light)
-        .animation(.easeInOut(duration: 0.35), value: activeSurface == .cinema)
+        .environment(\.colorScheme, activeSurface == .cream ? .light : .dark)
+        .animation(.easeInOut(duration: 0.35), value: activeSurface)
         .onAppear {
             guard !didLoad else { return }
             didLoad = true
@@ -57,11 +57,25 @@ struct OnboardingFlowView: View {
         }
     }
 
-    /// Cream brand canvas for every onboarding step.
     private var activeSurface: BrandSurface { step.surface }
 
     private var background: some View {
-        JojoBrandBackground(showsHills: !showSplash, showsPetals: true)
+        JojoBrandBackground(
+            showsHills: false,
+            showsPetals: true,
+            scene: sceneForStep
+        )
+        .animation(.easeInOut(duration: 0.45), value: sceneForStep)
+    }
+
+    private var sceneForStep: BrandScene {
+        switch step {
+        case .splash, .valueCaptions: .lanternNight
+        case .valueTap: .neonTokyo
+        case .valueFlashcards: .templeDusk
+        case .welcome, .paywall: .sakuraDay
+        default: .lanternNight
+        }
     }
 
     /// Value-prop pages share one carousel identity so they swipe instead of transitioning.
@@ -74,7 +88,7 @@ struct OnboardingFlowView: View {
 
     @ViewBuilder
     private var header: some View {
-        let onCream = activeSurface == .cream
+        let onNight = activeSurface != .cream
         HStack(spacing: Spacing.m) {
             if step.allowsBack, step != .valueTap, step != .valueFlashcards {
                 Button {
@@ -82,11 +96,11 @@ struct OnboardingFlowView: View {
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(onCream ? Color.jojoInk : .white)
+                        .foregroundStyle(onNight ? .white : Color.jojoInk)
                         .frame(width: 44, height: 44)
-                        .background(onCream ? Color.jojoPaper : Color.white.opacity(0.08), in: Circle())
+                        .background(onNight ? Color.white.opacity(0.12) : Color.jojoPaper, in: Circle())
                         .overlay {
-                            if onCream {
+                            if !onNight {
                                 Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
                             }
                         }
@@ -98,9 +112,9 @@ struct OnboardingFlowView: View {
             if step.showsProgress, let index = progressSteps.firstIndex(of: step) {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(onCream ? Color.jojoInk.opacity(0.08) : Color.white.opacity(0.12))
+                        Capsule().fill(onNight ? Color.white.opacity(0.14) : Color.jojoInk.opacity(0.08))
                         Capsule()
-                            .fill(LinearGradient(colors: [Color.jojoOrangeLight, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing))
+                            .fill(LinearGradient(colors: [Color.sakuraPink, Color.jojoOrange, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing))
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
                             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
                     }
@@ -180,57 +194,98 @@ struct OnboardingFlowView: View {
     }
 }
 
-/// Splash: Jojo rises onto the cream paper, the brush stroke draws itself, then actions appear.
+/// Splash: night lantern scene, peeking panda, wordmark brush stroke, then actions.
 struct SplashView: View {
     let onFinish: () -> Void
     @State private var progress: CGFloat = 0
     @State private var appeared: Bool = false
+    @State private var peekIn: Bool = false
     @State private var showActions: Bool = false
-    @State private var showMarketingShowcase: Bool = false
+    #if DEBUG
+    @State private var marketingScript: MarketingScript?
+    #endif
 
     var body: some View {
-        VStack(spacing: Spacing.l) {
-            Spacer(minLength: 0)
-            JojoLogo(drawProgress: progress)
-                .scaleEffect(appeared ? 1 : 0.92)
-                .opacity(appeared ? 1 : 0)
-            Spacer(minLength: 0)
-            if showActions {
-                VStack(spacing: Spacing.m) {
-                    Button {
-                        Haptics.medium()
-                        onFinish()
-                    } label: {
-                        Text("Get started")
-                            .font(.headline.weight(.bold))
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: Spacing.l) {
+                Spacer(minLength: 0)
+                JojoLogo(drawProgress: progress, showsMascot: false, light: true)
+                    .scaleEffect(appeared ? 1 : 0.92)
+                    .opacity(appeared ? 1 : 0)
+                Spacer(minLength: 0)
+                if showActions {
+                    VStack(spacing: Spacing.m) {
+                        Button {
+                            Haptics.medium()
+                            onFinish()
+                        } label: {
+                            Text("Get started")
+                                .font(.headline.weight(.bold))
+                                .frame(maxWidth: .infinity, minHeight: 52)
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
 
-                    Button {
-                        Haptics.selection()
-                        showMarketingShowcase = true
-                    } label: {
-                        Label("Play marketing demo", systemImage: "record.circle")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.jojoInk.opacity(0.72))
-                            .frame(minHeight: 44)
+                        #if DEBUG
+                        debugMarketingButtons
+                        #endif
                     }
-                    .accessibilityHint("Opens the silent marketing walkthrough without finishing onboarding")
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.bottom, Spacing.xl)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .padding(.horizontal, Spacing.l)
-                .padding(.bottom, Spacing.xl)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+
+            JojoMascot(height: 220, pose: .peek)
+                .offset(x: peekIn ? 28 : 160, y: peekIn ? 20 : 60)
+                .opacity(peekIn ? 1 : 0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
-        .fullScreenCover(isPresented: $showMarketingShowcase) {
-            MarketingShowcaseView()
+        #if DEBUG
+        .fullScreenCover(item: $marketingScript) { script in
+            MarketingShowcaseView(initialScript: script, autoBegin: true)
         }
+        #endif
         .task {
             withAnimation(.easeOut(duration: 0.35)) { appeared = true }
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.78).delay(0.15)) { peekIn = true }
             withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { progress = 1 }
             try? await Task.sleep(for: .milliseconds(950))
             withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) { showActions = true }
         }
     }
+
+    #if DEBUG
+    private var debugMarketingButtons: some View {
+        VStack(spacing: Spacing.s) {
+            Text("DEBUG · Marketing walkthroughs")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color.sakuraPink.opacity(0.9))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                Haptics.selection()
+                marketingScript = .forYou
+            } label: {
+                Label("Play For You demo", systemImage: "play.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .accessibilityHint("Silent walkthrough: feed, word tap, swipe, flashcard")
+            Button {
+                Haptics.selection()
+                marketingScript = .exploreVocab
+            } label: {
+                Label("Play Explore & Vocab demo", systemImage: "play.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .accessibilityHint("Silent walkthrough: explore, vocab, flashcards")
+        }
+        .padding(.top, Spacing.s)
+    }
+    #endif
 }
