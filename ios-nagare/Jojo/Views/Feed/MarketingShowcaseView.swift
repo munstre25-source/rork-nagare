@@ -476,8 +476,8 @@ struct MarketingShowcaseView: View {
 
                     ClipStageView(
                         clip: clip,
-                        immersiveFeed: true,
                         showsChannelRow: false,
+                        immersiveFeed: true,
                         onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                     )
                 }

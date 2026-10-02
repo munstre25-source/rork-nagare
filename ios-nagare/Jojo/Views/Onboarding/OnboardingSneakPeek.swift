@@ -146,10 +146,10 @@ struct OnboardingSneakPeek: View {
                 ForEach(feedClips) { clip in
                     ClipStageView(
                         clip: clip,
-                        immersiveFeed: true,
                         pulseTokenIndex: clip.id == currentId ? pulseToken : nil,
                         isPulsing: clip.id == currentId && isPulsing,
                         showsChannelRow: true,
+                        immersiveFeed: true,
                         onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                     )
                     .containerRelativeFrame(.vertical)
