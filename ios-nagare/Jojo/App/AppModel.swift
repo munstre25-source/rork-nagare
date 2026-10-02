@@ -187,9 +187,12 @@ final class AppModel {
             if liked.contains(clip.categoryKind) { s += 3 }
             if disliked.contains(clip.categoryKind) { s -= 3 }
             s -= Double(abs(clip.difficultyKind.rank - level)) * 1.5
-            // Prefer real YouTube footage over simulated posters for feed authenticity.
+            // Prefer bundled MP4s (reliable in Simulator) over YouTube / posters.
             if clip.hasLocalVideo { s += 10 }
             else if clip.hasRealVideo { s += 8 }
+            // Stable demo order when local anime + gaming clips are bundled for recording.
+            if clip.id == "hoshizora-academy-07" { s += 2 }
+            if clip.id == "boss-rush-live-09" { s += 1 }
             s += Double(abs(clip.id.utf8.reduce(7) { ($0 &* 31 &+ Int($1)) % 997 })) / 997.0
             return s
         }
