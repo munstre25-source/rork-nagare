@@ -180,21 +180,57 @@ struct OnboardingFlowView: View {
     }
 }
 
-/// Splash: Jojo rises onto the cream paper, the brush stroke draws itself, then it dissolves.
+/// Splash: Jojo rises onto the cream paper, the brush stroke draws itself, then actions appear.
 struct SplashView: View {
     let onFinish: () -> Void
     @State private var progress: CGFloat = 0
     @State private var appeared: Bool = false
+    @State private var showActions: Bool = false
+    @State private var showMarketingShowcase: Bool = false
 
     var body: some View {
-        JojoLogo(drawProgress: progress)
-            .scaleEffect(appeared ? 1 : 0.92)
-            .opacity(appeared ? 1 : 0)
-            .task {
-                withAnimation(.easeOut(duration: 0.35)) { appeared = true }
-                withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { progress = 1 }
-                try? await Task.sleep(for: .milliseconds(1250))
-                onFinish()
+        VStack(spacing: Spacing.l) {
+            Spacer(minLength: 0)
+            JojoLogo(drawProgress: progress)
+                .scaleEffect(appeared ? 1 : 0.92)
+                .opacity(appeared ? 1 : 0)
+            Spacer(minLength: 0)
+            if showActions {
+                VStack(spacing: Spacing.m) {
+                    Button {
+                        Haptics.medium()
+                        onFinish()
+                    } label: {
+                        Text("Get started")
+                            .font(.headline.weight(.bold))
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Button {
+                        Haptics.selection()
+                        showMarketingShowcase = true
+                    } label: {
+                        Label("Play marketing demo", systemImage: "record.circle")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.jojoInk.opacity(0.72))
+                            .frame(minHeight: 44)
+                    }
+                    .accessibilityHint("Opens the silent marketing walkthrough without finishing onboarding")
+                }
+                .padding(.horizontal, Spacing.l)
+                .padding(.bottom, Spacing.xl)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+        .fullScreenCover(isPresented: $showMarketingShowcase) {
+            MarketingShowcaseView()
+        }
+        .task {
+            withAnimation(.easeOut(duration: 0.35)) { appeared = true }
+            withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { progress = 1 }
+            try? await Task.sleep(for: .milliseconds(950))
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) { showActions = true }
+        }
     }
 }

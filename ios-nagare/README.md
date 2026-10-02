@@ -14,7 +14,8 @@ synchronized target folder), then fill in:
 Any value still starting with `YOUR_` is treated as not configured, and the app runs fully offline.
 
 ## Record a marketing video (screen recording)
-In the app: **Profile → Record marketing demo**.
+From a fresh install / reset: **Splash → Play marketing demo**.
+Or in the app: **Profile → Record marketing demo**.
 
 1. Start iOS / Simulator screen recording (Control Center or Simulator → File → Record Screen).
 2. Tap **Begin showcase** (3-2-1 countdown).
