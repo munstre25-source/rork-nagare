@@ -12,6 +12,8 @@ struct ClipVideoView: View {
     let player: (any ClipPlayer)?
     var showsControls: Bool = true
     var showsRail: Bool = true
+    /// Feed mode: scrubber + time + speed only; thin rail and tiny source mark.
+    var compactChrome: Bool = false
     var onActivate: () -> Void = {}
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
@@ -146,32 +148,14 @@ struct ClipVideoView: View {
 
     private var sourceBadge: some View {
         Group {
-            if clip.hasLocalVideo {
-                HStack(spacing: 6) {
-                    Image(systemName: "film.fill")
-                        .foregroundStyle(Color.jojoOrange)
-                    Text("Local")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.black.opacity(0.4), in: Capsule())
-                .padding(Spacing.m)
-                .accessibilityLabel("Source: Local video")
-            } else if clip.hasRealVideo {
-                HStack(spacing: 6) {
-                    Image(systemName: "play.rectangle.fill")
-                        .foregroundStyle(Color(hex: "#FF0033"))
-                    Text("YouTube")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.black.opacity(0.4), in: Capsule())
-                .padding(Spacing.m)
-                .accessibilityLabel("Source: YouTube")
+            if clip.hasLocalVideo || clip.hasRealVideo {
+                Image(systemName: clip.hasLocalVideo ? "film.fill" : "play.rectangle.fill")
+                    .font(.system(size: compactChrome ? 11 : 12, weight: .bold))
+                    .foregroundStyle(clip.hasLocalVideo ? Color.jojoOrange : Color(hex: "#FF0033"))
+                    .padding(compactChrome ? 6 : 8)
+                    .background(.black.opacity(0.45), in: Circle())
+                    .padding(Spacing.s)
+                    .accessibilityLabel(clip.hasLocalVideo ? "Source: Local video" : "Source: YouTube")
             }
         }
     }
@@ -192,57 +176,82 @@ struct ClipVideoView: View {
             if let onInfo {
                 RailButton(systemImage: "info.circle", label: "Clip info", action: onInfo)
             }
+            if !compactChrome, let onFullscreen {
+                RailButton(systemImage: "arrow.up.left.and.arrow.down.right", label: "Fullscreen", action: onFullscreen)
+            }
         }
         .padding(.trailing, Spacing.s)
-        .padding(.bottom, 40)
+        .padding(.bottom, compactChrome ? 28 : 40)
     }
 
     private var controls: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 2) {
-                ShareLink(item: shareText) {
-                    ControlIcon(systemImage: "square.and.arrow.up", tint: .white)
-                }
-                .accessibilityLabel("Share clip")
-                PlaybackClock(clip: clip, player: player)
-                Spacer(minLength: 0)
-                Button {
-                    Haptics.selection()
-                    coordinator.cycleRate()
-                } label: {
-                    Text(rateLabel)
-                        .font(.footnote.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .frame(minWidth: 44, minHeight: 30)
-                        .background(.white.opacity(0.16), in: Capsule())
-                        .frame(minHeight: 44)
-                }
-                .accessibilityLabel("Playback speed \(rateLabel)")
-                Button {
-                    Haptics.selection()
-                    if player == nil { onActivate() }
-                    player?.toggleLoopCurrentLine()
-                } label: {
-                    ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .jojoOrange : .white)
-                }
-                .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
-                if let onFullscreen {
-                    Button(action: onFullscreen) {
-                        ControlIcon(systemImage: "arrow.up.left.and.arrow.down.right", tint: .white)
+            if compactChrome {
+                HStack(spacing: Spacing.s) {
+                    PlaybackClock(clip: clip, player: player)
+                    Spacer(minLength: 0)
+                    Button {
+                        Haptics.selection()
+                        coordinator.cycleRate()
+                    } label: {
+                        Text(rateLabel)
+                            .font(.footnote.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .frame(minWidth: 44, minHeight: 30)
+                            .background(.white.opacity(0.16), in: Capsule())
+                            .frame(minHeight: 44)
                     }
-                    .accessibilityLabel("Fullscreen")
+                    .accessibilityLabel("Playback speed \(rateLabel)")
                 }
-                Button {
-                    Haptics.selection()
-                    coordinator.toggleMute()
-                } label: {
-                    ControlIcon(systemImage: coordinator.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", tint: .white)
+                .padding(.horizontal, Spacing.s)
+            } else {
+                HStack(spacing: 2) {
+                    ShareLink(item: shareText) {
+                        ControlIcon(systemImage: "square.and.arrow.up", tint: .white)
+                    }
+                    .accessibilityLabel("Share clip")
+                    PlaybackClock(clip: clip, player: player)
+                    Spacer(minLength: 0)
+                    Button {
+                        Haptics.selection()
+                        coordinator.cycleRate()
+                    } label: {
+                        Text(rateLabel)
+                            .font(.footnote.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .frame(minWidth: 44, minHeight: 30)
+                            .background(.white.opacity(0.16), in: Capsule())
+                            .frame(minHeight: 44)
+                    }
+                    .accessibilityLabel("Playback speed \(rateLabel)")
+                    Button {
+                        Haptics.selection()
+                        if player == nil { onActivate() }
+                        player?.toggleLoopCurrentLine()
+                    } label: {
+                        ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .jojoOrange : .white)
+                    }
+                    .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
+                    if let onFullscreen {
+                        Button(action: onFullscreen) {
+                            ControlIcon(systemImage: "arrow.up.left.and.arrow.down.right", tint: .white)
+                        }
+                        .accessibilityLabel("Fullscreen")
+                    }
+                    Button {
+                        Haptics.selection()
+                        coordinator.toggleMute()
+                    } label: {
+                        ControlIcon(systemImage: coordinator.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill", tint: .white)
+                    }
+                    .accessibilityLabel(coordinator.isMuted ? "Unmute" : "Mute")
                 }
-                .accessibilityLabel(coordinator.isMuted ? "Unmute" : "Mute")
+                .padding(.horizontal, Spacing.s)
             }
-            .padding(.horizontal, Spacing.s)
             Scrubber(clip: clip, player: player)
         }
         .background(

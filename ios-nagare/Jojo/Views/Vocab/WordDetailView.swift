@@ -149,22 +149,34 @@ struct WordHeaderCard: View {
 /// Playable clip thumbnail.
 struct ClipThumbnailButton: View {
     let clip: Clip
+    var emphasizesPlay: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Color.bgElevatedDark
-                .aspectRatio(16 / 8, contentMode: .fit)
+                .aspectRatio(emphasizesPlay ? 16 / 9 : 16 / 8, contentMode: .fit)
                 .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
                 .overlay {
                     Image(systemName: "play.fill")
-                        .font(.title2)
+                        .font(emphasizesPlay ? .title : .title2)
                         .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
-                        .background(.black.opacity(0.4), in: Circle())
+                        .frame(width: emphasizesPlay ? 68 : 60, height: emphasizesPlay ? 68 : 60)
+                        .background(.black.opacity(0.45), in: Circle())
+                        .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
                 }
                 .overlay(alignment: .bottomLeading) {
-                    Text(clip.channelName).font(.subheadline.weight(.semibold)).foregroundStyle(.white).padding(Spacing.m)
+                    VStack(alignment: .leading, spacing: 2) {
+                        if emphasizesPlay {
+                            Text("Watch in context")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.white.opacity(0.85))
+                        }
+                        Text(clip.channelName)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(Spacing.m)
                 }
                 .overlay(alignment: .bottomTrailing) {
                     Text(formatClock(clip.durationSec))

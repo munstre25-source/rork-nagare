@@ -70,7 +70,7 @@ final class UserProfile {
     var appearanceMode: String = AppearanceMode.system.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
-    var showRomaji: Bool = true
+    var showRomaji: Bool = false
     var dictionaryMode: String = DictionaryMode.english.rawValue
     var hideDailyGoalBar: Bool = false
     /// When true, For You only surfaces clips at the user's level or one step harder.
@@ -82,6 +82,8 @@ final class UserProfile {
     var firstTappedWordKey: String = ""
     /// They rated a card by hand during onboarding, so the review UI is already familiar.
     var didTryFlashcard: Bool = false
+    /// One-shot coach after the first word tap that explains flashcards.
+    var didShowVocabSaveCoach: Bool = false
 
     /// Onboarding: Instagram / TikTok / App Store / etc.
     var acquisitionSource: String = ""

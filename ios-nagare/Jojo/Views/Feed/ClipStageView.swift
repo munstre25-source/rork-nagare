@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition used by the Feed, the clip player screen and the onboarding demo:
-/// channel row → video → live transcript, with the tap-to-understand popup floating above the transcript.
+/// Reusable clip composition: channel row → video → live transcript,
+/// with the tap-to-understand popup floating above the transcript.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -12,7 +12,7 @@ struct ClipStageView: View {
     var showsChannelRow: Bool = true
     var channelTrailing: AnyView?
     var showsRail: Bool = true
-    /// TikTok-style feed page: title-forward chrome, dense karaoke, next-clip peek.
+    /// Feed page: title-forward chrome, current-line karaoke, quieter chrome.
     var immersiveFeed: Bool = false
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
@@ -22,7 +22,9 @@ struct ClipStageView: View {
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
+    @Environment(AppModel.self) private var app
     @State private var dragOffset: CGFloat = 0
+    @State private var showVocabCoach: Bool = false
 
     private var isPopupHere: Bool {
         lookup.selection?.clip.id == clip.id
@@ -38,6 +40,7 @@ struct ClipStageView: View {
                 ChannelRow(
                     clip: clip,
                     trailing: channelTrailing,
+                    showsFollow: !immersiveFeed,
                     emphasizesTitle: immersiveFeed
                 )
                 .padding(.vertical, immersiveFeed ? 6 : 10)
@@ -47,10 +50,11 @@ struct ClipStageView: View {
                 clip: clip,
                 player: player,
                 showsRail: showsRail,
+                compactChrome: immersiveFeed,
                 onActivate: onActivate,
                 onFullscreen: onFullscreen,
                 onInfo: onInfo,
-                onShadowing: onShadowing
+                onShadowing: immersiveFeed ? nil : onShadowing
             )
             .aspectRatio(resolvedAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
@@ -65,29 +69,50 @@ struct ClipStageView: View {
                 pulseTokenIndex: pulseTokenIndex,
                 isPulsing: isPulsing,
                 tooltip: tooltip,
-                forceDenseAids: immersiveFeed
+                forceDenseAids: false
             )
             .fixedSize(horizontal: false, vertical: true)
 
             if immersiveFeed {
                 Spacer(minLength: 0)
-                if let nextClip, !isPopupHere {
-                    NextClipPeek(clip: nextClip)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .allowsHitTesting(false)
-                } else {
-                    Color.clear.frame(height: 8)
-                }
+                Color.clear.frame(height: 8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
+        .overlay(alignment: .top) {
+            if immersiveFeed, showVocabCoach {
+                Text("Saved to Vocab — review anytime from the Vocab tab")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+        }
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
                 coordinator.pauseForPopup()
+                maybeShowVocabCoach()
             } else {
                 coordinator.resumeAfterPopupIfNeeded()
             }
+        }
+    }
+
+    private func maybeShowVocabCoach() {
+        guard immersiveFeed, !app.profile.didShowVocabSaveCoach, lookup.occurrenceCount == 1 else { return }
+        app.markVocabSaveCoachSeen()
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showVocabCoach = true }
+        Task {
+            try? await Task.sleep(for: .seconds(3.2))
+            withAnimation(.easeOut(duration: 0.25)) { showVocabCoach = false }
         }
     }
 

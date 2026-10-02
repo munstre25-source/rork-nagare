@@ -48,6 +48,13 @@ struct MainTabView: View {
     @State private var showFeedbackPrompt = false
     @State private var showManualFeedback = false
     @State private var showCancellationSurvey = false
+    /// New flashcards saved since last Vocab visit (0 = show total word count instead).
+    @State private var newVocabSinceVisit: Int = 0
+
+    private var vocabBadge: Int {
+        if tab == .vocab { return 0 }
+        return newVocabSinceVisit > 0 ? newVocabSinceVisit : words.count
+    }
 
     var body: some View {
         TabView(selection: $tab) {
@@ -60,7 +67,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Vocab", systemImage: tab == .vocab ? "book.fill" : "book")
                 }
-                .badge(words.count)
+                .badge(vocabBadge)
                 .tag(AppTab.vocab)
             ProfileView(onGiveFeedback: { showManualFeedback = true })
                 .tabItem {
@@ -72,6 +79,12 @@ struct MainTabView: View {
         .toolbarBackground(Color.canvas, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .preferredColorScheme(app.profile.appearance.colorScheme)
+        .onChange(of: app.vocabBadgePulse) { _, _ in
+            if tab != .vocab { newVocabSinceVisit += 1 }
+        }
+        .onChange(of: tab) { _, newTab in
+            if newTab == .vocab { newVocabSinceVisit = 0 }
+        }
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil { tab = .feed }
         }

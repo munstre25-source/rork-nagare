@@ -81,6 +81,11 @@ struct TapPopupCard: View {
                         .font(JojoFont.jp(13, relativeTo: .footnote))
                         .foregroundStyle(.white.opacity(0.5))
                 }
+                Label("In Vocab", systemImage: "bookmark.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.jojoOrange)
+                    .padding(.top, 2)
+                    .accessibilityLabel("Saved to Vocab as a flashcard")
             }
             Spacer(minLength: 0)
             OccurrenceBadge(count: lookup.occurrenceCount, size: 38)

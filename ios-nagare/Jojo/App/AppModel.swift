@@ -36,6 +36,8 @@ final class AppModel {
     var pendingDeepLink: DeepLink?
     /// Bumps when follow list changes so the Following feed can refresh.
     private(set) var followRevision: Int = 0
+    /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.
+    private(set) var vocabBadgePulse: Int = 0
 
     @ObservationIgnored private let seedClips: [Clip]
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
@@ -299,14 +301,18 @@ final class AppModel {
     }
 
     /// Upserts a tapped word with its sentence + clip context and increments its encounter count.
+    /// Returns the new occurrence count. `occurrenceCount == 1` means this tap created the flashcard.
     @discardableResult
     func recordTap(token: Token, explanation: WordExplanation?, clip: Clip, lineIndex: Int, persist: Bool = true) -> Int {
         let key = Self.wordKey(for: token)
         let line = clip.lines[safe: lineIndex]
         let word: SavedWord
+        let isNew: Bool
         if let existing = fetchWord(key: key) {
             word = existing
+            isNew = false
         } else {
+            isNew = true
             let readings = token.baseForm != nil
                 ? [token.baseReading].compactMap { $0 }
                 : token.allReadings
@@ -336,8 +342,15 @@ final class AppModel {
             word.contextLineIndex = lineIndex
         }
         lookedUpKeys.insert(key)
+        if isNew { vocabBadgePulse += 1 }
         if persist { save() }
         return word.occurrenceCount
+    }
+
+    func markVocabSaveCoachSeen() {
+        guard !profile.didShowVocabSaveCoach else { return }
+        profile.didShowVocabSaveCoach = true
+        save()
     }
 
     /// Upgrades a saved word's definitions once a live explanation arrives.

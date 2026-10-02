@@ -128,14 +128,20 @@ struct ReviewSessionView: View {
             }
             if !word.contextSentence.isEmpty {
                 SectionTitle("Context")
-                HighlightedSentence(sentence: word.contextSentence, target: word.contextSurface.isEmpty ? word.surface : word.contextSurface, size: 19)
-                    .padding(Spacing.l)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
-                if let clip = app.clip(id: word.contextClipId) {
-                    ClipThumbnailButton(clip: clip) { playing = clip }
+                VStack(alignment: .leading, spacing: Spacing.m) {
+                    HighlightedSentence(
+                        sentence: word.contextSentence,
+                        target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
+                        size: 19
+                    )
+                    if let clip = app.clip(id: word.contextClipId) {
+                        ClipThumbnailButton(clip: clip, emphasizesPlay: true) { playing = clip }
+                    }
                 }
+                .padding(Spacing.l)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
             }
         }
     }

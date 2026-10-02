@@ -92,8 +92,6 @@ struct ChannelRow: View {
     /// When true, lead with clip title + channel (TikTok-style feed chrome).
     var emphasizesTitle: Bool = false
 
-    @Environment(AppModel.self) private var app
-
     var body: some View {
         HStack(spacing: Spacing.m) {
             ChannelAvatar(clip: clip)
@@ -120,28 +118,38 @@ struct ChannelRow: View {
             }
             Spacer(minLength: 0)
             if showsFollow {
-                Button {
-                    Haptics.selection()
-                    withAnimation(.snappy) { _ = app.toggleFollow(channel: clip.channelName) }
-                } label: {
-                    Text(app.isFollowing(channel: clip.channelName) ? "Following" : "Follow")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(app.isFollowing(channel: clip.channelName) ? Color.secondary : Color.white)
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 32)
-                        .background(
-                            app.isFollowing(channel: clip.channelName)
-                                ? Color.fieldFill
-                                : Color.jojoOrange,
-                            in: Capsule()
-                        )
-                }
-                .accessibilityLabel(app.isFollowing(channel: clip.channelName) ? "Unfollow \(clip.channelName)" : "Follow \(clip.channelName)")
+                FollowChannelButton(channelName: clip.channelName)
             }
             trailing
         }
         .padding(.horizontal, Spacing.l)
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// Follow / Following capsule used in channel rows and clip info.
+struct FollowChannelButton: View {
+    let channelName: String
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        Button {
+            Haptics.selection()
+            withAnimation(.snappy) { _ = app.toggleFollow(channel: channelName) }
+        } label: {
+            Text(app.isFollowing(channel: channelName) ? "Following" : "Follow")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(app.isFollowing(channel: channelName) ? Color.secondary : Color.white)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 32)
+                .background(
+                    app.isFollowing(channel: channelName)
+                        ? Color.fieldFill
+                        : Color.jojoOrange,
+                    in: Capsule()
+                )
+        }
+        .accessibilityLabel(app.isFollowing(channel: channelName) ? "Unfollow \(channelName)" : "Follow \(channelName)")
     }
 }
 

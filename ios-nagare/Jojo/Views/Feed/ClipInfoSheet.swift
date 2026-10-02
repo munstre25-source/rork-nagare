@@ -3,6 +3,8 @@ import SwiftUI
 /// Source & attribution sheet for a clip.
 struct ClipInfoSheet: View {
     let clip: Clip
+    var onShadowing: (() -> Void)?
+    var onFullscreen: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var reported: Bool = false
@@ -19,6 +21,27 @@ struct ClipInfoSheet: View {
                         }
                     }
                     .padding(.vertical, 4)
+                    FollowChannelButton(channelName: clip.channelName)
+                }
+                if onShadowing != nil || onFullscreen != nil {
+                    Section("Practice") {
+                        if let onShadowing {
+                            Button {
+                                dismiss()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onShadowing() }
+                            } label: {
+                                Label("Shadowing practice", systemImage: "mic.fill")
+                            }
+                        }
+                        if let onFullscreen {
+                            Button {
+                                dismiss()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onFullscreen() }
+                            } label: {
+                                Label("Watch fullscreen", systemImage: "arrow.up.left.and.arrow.down.right")
+                            }
+                        }
+                    }
                 }
                 Section("Details") {
                     LabeledContent("Category", value: clip.categoryKind.displayName)
@@ -41,10 +64,6 @@ struct ClipInfoSheet: View {
                 } header: {
                     Text("Source")
                 } footer: {
-                    // External platforms (Crunchyroll, Netflix, etc.) own their streams and
-                    // closed captions. Jojo only embeds YouTube (or similar) URLs the creators
-                    // already published, and draws its own learner transcript — never scraped
-                    // licensed captions or re-hosted video. Keep this note if sources change.
                     Text("Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
                 }
                 Section {

@@ -86,7 +86,18 @@ struct FeedView: View {
             if tab == .following { reloadClips(for: .following) }
         }
         .sheet(item: $infoClip) { clip in
-            ClipInfoSheet(clip: clip)
+            ClipInfoSheet(
+                clip: clip,
+                onShadowing: {
+                    coordinator.pause()
+                    shadowingClip = clip
+                },
+                onFullscreen: {
+                    coordinator.pause()
+                    pendingLoopLine = nil
+                    fullscreenClip = clip
+                }
+            )
         }
         .sheet(item: $reportClip) { clip in
             ClipInfoSheet(clip: clip)
@@ -104,23 +115,23 @@ struct FeedView: View {
     }
 
     private var header: some View {
-        HStack(spacing: Spacing.m) {
+        HStack(spacing: Spacing.s) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.l) {
+                HStack(spacing: Spacing.m) {
                     ForEach(FeedTab.allCases, id: \.self) { item in
                         Button {
                             Haptics.selection()
                             withAnimation(.snappy) { tab = item }
                         } label: {
-                            VStack(spacing: 6) {
+                            VStack(spacing: 4) {
                                 Text(item.rawValue)
-                                    .font(.title3.weight(tab == item ? .semibold : .regular))
+                                    .font(.subheadline.weight(tab == item ? .semibold : .regular))
                                     .foregroundStyle(tab == item ? Color.primary : Color.secondary)
                                 Capsule()
                                     .fill(tab == item ? Color.jojoOrange : .clear)
-                                    .frame(width: 44, height: 3)
+                                    .frame(width: 28, height: 2)
                             }
-                            .frame(minHeight: 44)
+                            .frame(minHeight: 40)
                         }
                         .accessibilityAddTraits(tab == item ? .isSelected : [])
                     }
@@ -129,17 +140,15 @@ struct FeedView: View {
             Button {
                 showSearch = true
             } label: {
-                ControlIcon(systemImage: "magnifyingglass")
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, height: 40)
             }
             .accessibilityLabel("Search clips")
-            Button {
-                reportClip = clips.first { $0.id == currentId }
-            } label: {
-                ControlIcon(systemImage: "flag")
-            }
-            .accessibilityLabel("Report or view source")
         }
         .padding(.horizontal, Spacing.l)
+        .padding(.bottom, 2)
     }
 
     private var feedPager: some View {
@@ -153,7 +162,6 @@ struct FeedView: View {
                             ClipStageView(
                                 clip: clip,
                                 immersiveFeed: true,
-                                nextClip: clips.indices.contains(index + 1) ? clips[index + 1] : nil,
                                 onActivate: { coordinator.activate(clip) },
                                 onFullscreen: {
                                     coordinator.pause()
@@ -187,7 +195,7 @@ struct FeedView: View {
             Text("Follow channels you like")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.primary)
-            Text("Tap Follow on any clip in For You, then come back here for a tighter feed.")
+            Text("Open any clip’s info to Follow a channel, then come back here for a tighter feed.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
