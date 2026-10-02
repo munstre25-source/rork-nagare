@@ -52,7 +52,7 @@ struct TranscriptLineView: View {
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
                         .font(forceDenseAids || raisedCard ? .subheadline : .body)
-                        .foregroundStyle(Color.secondary)
+                        .foregroundStyle(Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -62,7 +62,7 @@ struct TranscriptLineView: View {
                 if raisedCard {
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         .fill(Color.transcriptCard)
-                        .shadow(color: Color.activeLineGlow, radius: 16, y: 4)
+                        .shadow(color: Color.activeLineGlow, radius: 10, y: 2)
                 }
             }
             .opacity(isActive ? 1 : 0.45)

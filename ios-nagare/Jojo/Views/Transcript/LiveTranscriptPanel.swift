@@ -23,7 +23,7 @@ struct LiveTranscriptPanel: View {
                 windowStack
                     .padding(.horizontal, Spacing.l)
                     .padding(.top, tooltip == nil ? Spacing.s : 40)
-                    .padding(.bottom, Spacing.m)
+                    .padding(.bottom, Spacing.xl)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else if onlyCurrentLine {
                 lineStack

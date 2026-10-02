@@ -47,7 +47,7 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.secondary)
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.textTertiary)
                     .lineLimit(1)
                     .fixedSize()
             }
@@ -55,7 +55,8 @@ struct TokenView: View {
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
                 .foregroundStyle(state == .selected ? Color.jojoOrange : Color.primary)
                 .lineLimit(1)
-                .fixedSize()
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, token.tappable ? 6 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
@@ -64,7 +65,7 @@ struct TokenView: View {
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.secondary)
+                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.textTertiary)
                     .lineLimit(1)
                     .fixedSize()
             }

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Steps 1-3: value-prop carousel. Page one is a live sneak peek of a real feed clip;
-/// page two teaches the tap gesture; page three shows auto flashcards.
+/// Steps 1-3: value-prop carousel. Page one is a static feed preview (no live clip —
+/// real video starts after the paywall); page two teaches the tap gesture; page three shows auto flashcards.
 struct ValuePropCarousel: View {
     @Binding var step: OnboardingStep
     let onContinue: () -> Void
@@ -19,8 +19,7 @@ struct ValuePropCarousel: View {
                     accent: "doomscrolling",
                     subtitle: "Real clips from anime, streams, cafés and street interviews — in your feed."
                 ) {
-                    OnboardingSneakPeek(isActive: step == .valueCaptions)
-                        .frame(height: 420)
+                    feedPreviewPoster
                 }
                 .tag(OnboardingStep.valueCaptions)
 
@@ -76,6 +75,46 @@ struct ValuePropCarousel: View {
         }
     }
 
+    /// Static phone-frame poster — no interactive / looping clip before paywall.
+    private var feedPreviewPoster: some View {
+        let clip = app.clip(id: "hoshizora-academy-07") ?? app.clips.first
+        return VStack(spacing: Spacing.m) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.black.opacity(0.55))
+                if let clip {
+                    GradientPoster(clip: clip)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .padding(10)
+                    VStack(spacing: Spacing.s) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.white.opacity(0.92))
+                        Text(clip.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .padding(.horizontal, Spacing.l)
+                    }
+                }
+            }
+            .frame(height: 280)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            Text("Clips unlock after your free trial starts.")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Color.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Feed preview. Clips unlock after your free trial starts.")
+    }
+
     private func page<Content: View>(
         title: String,
         accent: String?,
@@ -91,6 +130,7 @@ struct ValuePropCarousel: View {
             }
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.l)
+            .padding(.bottom, Spacing.m)
         }
         .scrollIndicators(.hidden)
     }

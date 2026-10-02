@@ -40,26 +40,26 @@ extension Color {
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let hairlineDark = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
-    /// App page background — faint violet tint in dark mode for the night-sakura mood.
+    /// App page background — cream in light; deep night (icon sky) in dark.
     static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0B0816")
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
     static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
     /// Active karaoke line card (Kiku-style raised surface).
-    static let transcriptCard = Color(hex: "#1A1A1C")
-    /// Soft violet glow behind the active transcript line.
-    static let activeLineGlow = Color(hex: "#4A1D6B").opacity(0.35)
+    static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#1A1A1C")
+    /// Soft sakura-night lift behind the active line — no orange bloom.
+    static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
 
-    // MARK: Accent
+    // MARK: Accent (book / CTA from the app icon — not the atmosphere)
     static let jojoOrange = Color(hex: "#FF6B00")
-    static let jojoOrangeSoft = Color(hex: "#FF6B00").opacity(0.16)
+    static let jojoOrangeSoft = Color(hex: "#FF6B00").opacity(0.14)
 
-    // MARK: Brand (sampled from the app icon: orange ground, cream paper, sumi ink)
+    // MARK: Brand (app icon: sakura-night sky, cream paper accents, orange book / CTA)
     /// The deep vermilion of the hachimaki dot, the book and the rising sun.
     static let jojoVermilion = Color(hex: "#F0400F")
-    /// Lighter end of the orange ramp, used for gradients and hills.
+    /// Lighter end of the orange ramp (book / CTA), used for gradients and hills.
     static let jojoOrangeLight = Color(hex: "#FFA23D")
-    /// Primary brand surface — identical to the mascot artwork's background.
+    /// Cream paper surfaces in light mode.
     static let jojoCream = Color(hex: "#FFF6EE")
     /// One step warmer than `jojoCream`, for layered washes.
     static let jojoCreamDeep = Color(hex: "#FDEBDA")
@@ -72,13 +72,18 @@ extension Color {
     static let jojoBlossom = Color(hex: "#F3A8B4")
     static let jojoGold = Color(hex: "#F5C542")
 
-    // MARK: Night-sakura (App Store design mood)
+    // MARK: Night-sakura (matches the iOS app icon atmosphere)
     static let nightIndigo = Color(hex: "#140C2E")
     static let nightViolet = Color(hex: "#2A1452")
     static let nightPlum = Color(hex: "#4A1D6B")
     static let sakuraPink = Color(hex: "#FF5FA2")
     static let neonMagenta = Color(hex: "#FF2E93")
     static let lanternAmber = Color(hex: "#FFB347")
+
+    // MARK: Readable secondary (light theme was washing out on cream/white)
+    /// Furigana / romaji / English under karaoke — stronger than system `.secondary`.
+    static let textSecondary = Color.adaptive(light: "#4A4A4A", dark: "#AEAEB2")
+    static let textTertiary = Color.adaptive(light: "#6B6B6B", dark: "#8E8E93")
 
     // MARK: Word states / POS underlines
     static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")

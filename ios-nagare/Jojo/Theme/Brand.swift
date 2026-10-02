@@ -3,9 +3,9 @@ import UIKit
 
 // MARK: - Surfaces
 
-/// Jojo renders on three surfaces. `cream` is the brand default — the same warm paper the
-/// app icon sits on. `cinema` is reserved for screens where real video is playing. `night`
-/// is the App Store / onboarding mood: indigo sky, sakura pink accents, white type.
+/// Jojo renders on three surfaces. `cream` is the light-mode paper default.
+/// `cinema` is reserved for screens where real video is playing. `night`
+/// matches the iOS app icon: indigo / sakura sky, white type, orange book accents.
 nonisolated enum BrandSurface: Sendable {
     case cream
     case cinema
@@ -69,8 +69,8 @@ struct BrandPalette {
         case .night:
             BrandPalette(
                 title: .white,
-                subtle: Color.white.opacity(0.72),
-                faint: Color.sakuraPink.opacity(0.7)
+                subtle: Color.white.opacity(0.82),
+                faint: Color.white.opacity(0.62)
             )
         }
     }
@@ -87,7 +87,6 @@ struct JojoBrandBackground: View {
     var showsPetals: Bool = true
 
     @State private var kenBurns: Bool = false
-    @State private var lanternPulse: Bool = false
 
     var body: some View {
         ZStack {
@@ -153,24 +152,24 @@ struct JojoBrandBackground: View {
                         .animation(.easeInOut(duration: 14).repeatForever(autoreverses: true), value: kenBurns)
                         .clipped()
                 }
-                // Legibility scrim — keep faces and type readable.
+                // Stronger scrim so night-onboarding copy stays readable over the icon sky.
                 LinearGradient(
                     colors: [
-                        Color.nightIndigo.opacity(0.55),
-                        Color.nightIndigo.opacity(0.25),
-                        Color.nightIndigo.opacity(0.75)
+                        Color.nightIndigo.opacity(0.72),
+                        Color.nightIndigo.opacity(0.42),
+                        Color.nightIndigo.opacity(0.82)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 RadialGradient(
-                    colors: [Color.lanternAmber.opacity(lanternPulse ? 0.28 : 0.14), .clear],
+                    colors: [Color.sakuraPink.opacity(0.12), .clear],
                     center: .init(x: 0.82, y: 0.18),
                     startRadius: 10,
                     endRadius: 380
                 )
                 RadialGradient(
-                    colors: [Color.sakuraPink.opacity(0.16), .clear],
+                    colors: [Color.nightViolet.opacity(0.18), .clear],
                     center: .init(x: 0.12, y: 0.78),
                     startRadius: 8,
                     endRadius: 280
@@ -178,9 +177,6 @@ struct JojoBrandBackground: View {
             }
             .onAppear {
                 kenBurns = true
-                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                    lanternPulse = true
-                }
             }
         }
     }
@@ -470,7 +466,7 @@ struct MascotCoach: View {
                 .background {
                     SpeechBubble()
                         .fill(isNight ? Color.white.opacity(0.12) : Color.jojoPaper)
-                        .shadow(color: Color.jojoVermilion.opacity(isNight ? 0 : 0.08), radius: 10, y: 4)
+                        .shadow(color: Color.black.opacity(isNight ? 0 : 0.06), radius: 8, y: 3)
                 }
                 .overlay {
                     SpeechBubble().stroke(isNight ? Color.white.opacity(0.14) : Color.jojoPaperStroke, lineWidth: 1)
@@ -509,7 +505,7 @@ extension View {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
             )
-            .shadow(color: Color.jojoVermilion.opacity(0.07), radius: 14, y: 6)
+            .shadow(color: Color.black.opacity(0.08), radius: 12, y: 4)
     }
 }
 

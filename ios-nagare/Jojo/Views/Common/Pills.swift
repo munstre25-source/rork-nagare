@@ -96,7 +96,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                     )
                     .opacity(isEnabled ? 1 : 0.32)
             }
-            .shadow(color: Color.jojoVermilion.opacity(isEnabled ? 0.3 : 0), radius: 14, y: 6)
+            .shadow(color: Color.black.opacity(isEnabled ? 0.22 : 0), radius: 10, y: 4)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }

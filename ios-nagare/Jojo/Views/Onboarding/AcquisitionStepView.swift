@@ -35,12 +35,12 @@ struct AcquisitionStepView: View {
                         TextField("Optional: where?", text: $otherDetail)
                             .textInputAutocapitalization(.sentences)
                             .tint(Color.jojoOrange)
-                            .foregroundStyle(Color.jojoInk)
+                            .foregroundStyle(Color.primary)
                             .padding(Spacing.m)
-                            .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                    .strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
+                                    .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
                             )
                     }
                 }

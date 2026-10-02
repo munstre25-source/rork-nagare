@@ -7,6 +7,7 @@ struct AppReviewStepView: View {
     let onContinue: () -> Void
 
     @Environment(AppModel.self) private var app
+    @Environment(\.brandSurface) private var surface
     @Environment(\.requestReview) private var requestReview
     @State private var appeared = false
     @State private var starsLit = 0
@@ -14,6 +15,9 @@ struct AppReviewStepView: View {
     /// sheet lands here, not on the next (acquisition) step. Apple's dialog is async
     /// and may take a second or two to appear; navigating away races it.
     @State private var didAskReview = false
+
+    private var palette: BrandPalette { BrandPalette.resolve(surface) }
+    private var isNight: Bool { surface == .night || surface == .cinema }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,11 +29,12 @@ struct AppReviewStepView: View {
                     VStack(spacing: Spacing.s) {
                         Text(headline)
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.jojoInk)
+                            .foregroundStyle(palette.title)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text("Help us grow with a quick rating.\nJojo loves your feedback!")
                             .font(.body)
-                            .foregroundStyle(Color.jojoInkSoft)
+                            .foregroundStyle(palette.subtle)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -41,7 +46,7 @@ struct AppReviewStepView: View {
                         .padding(.top, Spacing.s)
                         .opacity(appeared ? 1 : 0)
 
-                    JojoMascot(height: 300)
+                    JojoMascot(height: 280)
                         .scaleEffect(appeared ? 1 : 0.94)
                         .opacity(appeared ? 1 : 0)
                         .accessibilityLabel("Jojo the panda, learning Japanese with you")
@@ -66,7 +71,9 @@ struct AppReviewStepView: View {
             .padding(.bottom, Spacing.l)
             .background(
                 LinearGradient(
-                    colors: [Color.jojoCreamDeep.opacity(0), Color.jojoCreamDeep],
+                    colors: isNight
+                        ? [Color.nightIndigo.opacity(0), Color.nightIndigo.opacity(0.92)]
+                        : [Color.jojoCreamDeep.opacity(0), Color.jojoCreamDeep],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -96,7 +103,7 @@ struct AppReviewStepView: View {
                 ForEach(0..<5, id: \.self) { index in
                     Image(systemName: "star.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(index < starsLit ? Color.jojoGold : Color(hex: "#E5E0D8"))
+                        .foregroundStyle(index < starsLit ? Color.jojoGold : Color.white.opacity(isNight ? 0.28 : 0.35))
                         .scaleEffect(index < starsLit ? 1 : 0.86)
                         .animation(.spring(response: 0.35, dampingFraction: 0.65).delay(Double(index) * 0.05), value: starsLit)
                 }

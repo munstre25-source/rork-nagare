@@ -328,6 +328,11 @@ struct NotificationStepView: View {
 struct TrialTimelineStepView: View {
     let onContinue: () -> Void
 
+    @Environment(\.brandSurface) private var surface
+
+    private var palette: BrandPalette { BrandPalette.resolve(surface) }
+    private var isNight: Bool { surface == .night || surface == .cinema }
+
     var body: some View {
         VStack(spacing: Spacing.l) {
             ScrollView {
@@ -341,7 +346,10 @@ struct TrialTimelineStepView: View {
                     VStack(alignment: .leading, spacing: Spacing.m) {
                         ForEach(["Unlimited clips", "Tap-to-understand on every word", "Automatic flashcards", "Full progress tracking"], id: \.self) { item in
                             Label {
-                                Text(item).font(.body.weight(.medium)).foregroundStyle(Color.jojoInk)
+                                Text(item)
+                                    .font(.body.weight(.medium))
+                                    .foregroundStyle(Color.jojoInk)
+                                    .fixedSize(horizontal: false, vertical: true)
                             } icon: {
                                 Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.goodBackground)
                             }
@@ -352,6 +360,7 @@ struct TrialTimelineStepView: View {
                 }
                 .padding(.horizontal, Spacing.l)
                 .padding(.top, Spacing.l)
+                .padding(.bottom, Spacing.m)
             }
             Button("Continue") { onContinue() }
                 .buttonStyle(PrimaryButtonStyle())
@@ -365,32 +374,38 @@ struct TrialTimelineStepView: View {
             VStack(spacing: 0) {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(isFirst ? Color.white : Color.jojoVermilion)
+                    .foregroundStyle(isFirst ? Color.white : (isNight ? Color.sakuraPink : Color.jojoVermilion))
                     .frame(width: 44, height: 44)
                     .background {
                         Circle().fill(
                             isFirst
                             ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .top, endPoint: .bottom))
-                            : AnyShapeStyle(Color.jojoPaper)
+                            : AnyShapeStyle(isNight ? Color.white.opacity(0.14) : Color.jojoPaper)
                         )
                     }
                     .overlay {
-                        if !isFirst { Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1) }
+                        if !isFirst {
+                            Circle().strokeBorder(isNight ? Color.white.opacity(0.2) : Color.jojoPaperStroke, lineWidth: 1)
+                        }
                     }
                 if !isLast {
                     Rectangle()
                         .fill(LinearGradient(colors: [Color.jojoOrange, Color.jojoOrange.opacity(0.18)], startPoint: .top, endPoint: .bottom))
-                        .frame(width: 3, height: 44)
+                        .frame(width: 3, height: 52)
                 }
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline).foregroundStyle(Color.jojoInk)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(palette.title)
                 Text(detail)
                     .font(.subheadline)
-                    .foregroundStyle(Color.jojoInkSoft)
+                    .foregroundStyle(palette.subtle)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 10)
+            .padding(.bottom, isLast ? 0 : Spacing.m)
         }
         .accessibilityElement(children: .combine)
     }
