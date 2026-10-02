@@ -31,7 +31,7 @@ struct TapPopupCard: View {
                 tabRow
                 Group {
                     switch lookup.tab {
-                    case .dictionary: dictionaryTab(explanation, limit: compact ? 1 : (showAllDefinitions ? 99 : 2))
+                    case .dictionary: dictionaryTab(explanation, limit: compact ? 2 : (showAllDefinitions ? 99 : 2))
                     case .flashcard: flashcardTab(selection: selection, explanation: explanation)
                     case .examples: examplesTab
                     }
@@ -39,6 +39,11 @@ struct TapPopupCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(.opacity)
                 pageDots
+                Capsule()
+                    .fill(Color.white.opacity(0.35))
+                    .frame(width: 36, height: 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 2)
             }
             .padding(compact ? Spacing.m : Spacing.l)
             .background(

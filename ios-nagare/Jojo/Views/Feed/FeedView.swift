@@ -170,6 +170,7 @@ struct FeedView: View {
                 ForEach(Array(clips.enumerated()), id: \.element.id) { _, clip in
                     ClipStageView(
                         clip: clip,
+                        showsChannelRow: false,
                         immersiveFeed: true,
                         onActivate: { coordinator.activate(clip) },
                         onFullscreen: {
@@ -184,6 +185,7 @@ struct FeedView: View {
                         }
                     )
                     .containerRelativeFrame(.vertical)
+                    .clipped()
                     .id(clip.id)
                 }
             }

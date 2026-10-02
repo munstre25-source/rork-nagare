@@ -11,7 +11,7 @@ struct LiveTranscriptPanel: View {
     var onlyCurrentLine: Bool = false
     /// Feed immersive mode: always show furigana + romaji + JP/EN.
     var forceDenseAids: Bool = false
-    /// Kiku window: previous + current + up to 3 following lines, no nested ScrollView.
+    /// Kiku window: current + next line, no nested ScrollView.
     var windowMode: Bool = false
 
     @Environment(WordLookupController.self) private var lookup
@@ -100,12 +100,11 @@ struct LiveTranscriptPanel: View {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
     }
 
-    /// Previous (if any) + current + up to 3 following lines.
+    /// Current + next line (matches Kiku For You settled page).
     private var windowLines: [Int] {
         guard !clip.lines.isEmpty else { return [] }
-        let start = max(0, currentLine - 1)
-        let end = min(clip.lines.count - 1, currentLine + 3)
-        return Array(start...end)
+        let end = min(clip.lines.count - 1, currentLine + 1)
+        return Array(currentLine...end)
     }
 }
 

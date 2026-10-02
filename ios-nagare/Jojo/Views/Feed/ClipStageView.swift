@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition: channel → video → action row → transcript window.
-/// Immersive feed matches Kiku: video near the top, multi-line karaoke filling the lower half.
+/// Reusable clip composition: channel → video → karaoke (Kiku For You page).
+/// Immersive feed: video on top, current+next karaoke below, dictionary card centered over the stage.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -29,58 +29,56 @@ struct ClipStageView: View {
         lookup.selection?.clip.id == clip.id
     }
 
-    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 9 : videoAspect }
+    /// Keep video short enough that karaoke + floating tab bar fit on one page (Kiku ~16:10).
+    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 10 : videoAspect }
 
     var body: some View {
         let player = coordinator.player(for: clip)
-        VStack(spacing: 0) {
-            if showsChannelRow {
-                ChannelRow(
-                    clip: clip,
-                    trailing: channelTrailing,
-                    showsFollow: !immersiveFeed,
-                    emphasizesTitle: immersiveFeed
-                )
-                .padding(.vertical, immersiveFeed ? 4 : 10)
-            }
+        ZStack {
+            VStack(spacing: 0) {
+                if showsChannelRow {
+                    ChannelRow(
+                        clip: clip,
+                        trailing: channelTrailing,
+                        showsFollow: !immersiveFeed,
+                        emphasizesTitle: immersiveFeed
+                    )
+                    .padding(.vertical, immersiveFeed ? 4 : 10)
+                }
 
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsRail: immersiveFeed ? false : showsRail,
-                compactChrome: immersiveFeed,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                onInfo: immersiveFeed ? nil : onInfo,
-                onShadowing: immersiveFeed ? nil : onShadowing
-            )
-            .aspectRatio(resolvedAspect, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .overlay { popupLayer }
-            .zIndex(1)
-
-            if immersiveFeed {
-                ClipActionRow(
+                ClipVideoView(
                     clip: clip,
                     player: player,
+                    showsRail: showsRail,
+                    compactChrome: immersiveFeed,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
                     onInfo: onInfo,
                     onShadowing: onShadowing
                 )
-            }
+                .aspectRatio(resolvedAspect, contentMode: .fit)
+                .frame(maxWidth: .infinity)
 
-            TranscriptSection(
-                clip: clip,
-                player: player,
-                onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
-                pulseTokenIndex: pulseTokenIndex,
-                isPulsing: isPulsing,
-                tooltip: tooltip,
-                forceDenseAids: immersiveFeed,
-                windowMode: immersiveFeed
-            )
+                TranscriptSection(
+                    clip: clip,
+                    player: player,
+                    onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
+                    pulseTokenIndex: pulseTokenIndex,
+                    isPulsing: isPulsing,
+                    tooltip: tooltip,
+                    forceDenseAids: immersiveFeed,
+                    windowMode: immersiveFeed
+                )
+                .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
+            }
             .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
+
+            if isPopupHere {
+                popupLayer
+                    .zIndex(2)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: immersiveFeed ? .top : .top)
+        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
@@ -93,35 +91,31 @@ struct ClipStageView: View {
 
     @ViewBuilder
     private var popupLayer: some View {
-        if isPopupHere {
-            GeometryReader { geo in
-                ZStack {
-                    Color.black.opacity(0.18)
-                        .contentShape(Rectangle())
-                        .onTapGesture { dismiss() }
-                    TapPopupCard(compact: true)
-                        .frame(maxWidth: min(340, geo.size.width - 28))
-                        .frame(maxHeight: geo.size.height * 0.72, alignment: .top)
-                        .clipped()
-                        .offset(y: max(0, dragOffset))
-                        .gesture(
-                            DragGesture(minimumDistance: 12)
-                                .onChanged { value in dragOffset = value.translation.height }
-                                .onEnded { value in
-                                    if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                        dismiss()
-                                    }
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+        GeometryReader { geo in
+            ZStack {
+                Color.black.opacity(0.18)
+                    .contentShape(Rectangle())
+                    .onTapGesture { dismiss() }
+                TapPopupCard(compact: true)
+                    .frame(maxWidth: min(340, geo.size.width - 28))
+                    .offset(y: max(0, dragOffset))
+                    .gesture(
+                        DragGesture(minimumDistance: 12)
+                            .onChanged { value in dragOffset = value.translation.height }
+                            .onEnded { value in
+                                if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
+                                    dismiss()
                                 }
-                        )
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                            }
+                    )
             }
-            .transition(.asymmetric(
-                insertion: .scale(scale: 0.94).combined(with: .opacity).combined(with: .offset(y: 16)),
-                removal: .opacity
-            ))
+            .frame(width: geo.size.width, height: geo.size.height)
         }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.94).combined(with: .opacity).combined(with: .offset(y: 16)),
+            removal: .opacity
+        ))
     }
 
     private func dismiss() {
@@ -225,7 +219,7 @@ struct TranscriptSection: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var forceDenseAids: Bool = false
-    /// Kiku window: previous + current + following lines, no nested scroll.
+    /// Kiku window: current + next line, no nested scroll.
     var windowMode: Bool = false
 
     var body: some View {

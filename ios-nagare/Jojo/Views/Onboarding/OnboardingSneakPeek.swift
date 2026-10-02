@@ -148,11 +148,12 @@ struct OnboardingSneakPeek: View {
                         clip: clip,
                         pulseTokenIndex: clip.id == currentId ? pulseToken : nil,
                         isPulsing: clip.id == currentId && isPulsing,
-                        showsChannelRow: true,
+                        showsChannelRow: false,
                         immersiveFeed: true,
                         onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                     )
                     .containerRelativeFrame(.vertical)
+                    .clipped()
                     .id(clip.id)
                 }
             }

@@ -328,10 +328,12 @@ struct MarketingShowcaseView: View {
                     ForEach(feedClips) { clip in
                         ClipStageView(
                             clip: clip,
+                            showsChannelRow: false,
                             immersiveFeed: true,
                             onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                         )
                         .containerRelativeFrame(.vertical)
+                        .clipped()
                         .id(clip.id)
                     }
                 }
