@@ -5,8 +5,6 @@ struct OnboardingFlowView: View {
     @Environment(AppModel.self) private var app
     @State private var step: OnboardingStep = .splash
     @State private var showSplash: Bool = true
-    @State private var showDemoGate: Bool = false
-    @State private var showDemoPlayer: Bool = false
     @State private var isForward: Bool = true
     @State private var didLoad: Bool = false
 
@@ -19,33 +17,12 @@ struct OnboardingFlowView: View {
                 SplashView {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         showSplash = false
-                        if shouldOfferLaunchDemo {
-                            showDemoGate = true
-                        } else if step == .splash {
+                        if step == .splash {
                             go(to: .valueCaptions)
                         }
                     }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
-            } else if showDemoPlayer {
-                AppMarketingDemoView {
-                    finishLaunchDemo()
-                }
-                .transition(.opacity)
-            } else if showDemoGate {
-                LaunchDemoGateView(
-                    onPlay: {
-                        withAnimation(.easeInOut(duration: 0.35)) {
-                            showDemoGate = false
-                            showDemoPlayer = true
-                        }
-                    },
-                    onSkip: {
-                        track("launch_demo_skip")
-                        finishLaunchDemo()
-                    }
-                )
-                .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
                     header
@@ -69,10 +46,9 @@ struct OnboardingFlowView: View {
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
             if step == .demo { step = .flashcardTry }
             if step == .welcome, !app.purchases.isSubscribed { step = .paywall }
-            // Resume mid-funnel: skip splash + demo gate.
+            // Resume mid-funnel: skip splash.
             if step != .splash {
                 showSplash = false
-                showDemoGate = false
             }
         }
         .onChange(of: step) { _, newStep in
@@ -81,32 +57,11 @@ struct OnboardingFlowView: View {
         }
     }
 
-    /// Cinema only while the launch marketing demo is playing.
-    private var activeSurface: BrandSurface {
-        if showDemoPlayer { return .cinema }
-        return step.surface
-    }
+    /// Cream brand canvas for every onboarding step.
+    private var activeSurface: BrandSurface { step.surface }
 
-    @ViewBuilder
     private var background: some View {
-        if activeSurface == .cinema {
-            OnboardingBackground()
-        } else {
-            JojoBrandBackground(showsHills: !showSplash, showsPetals: true)
-        }
-    }
-
-    private var shouldOfferLaunchDemo: Bool {
-        !app.profile.hasSeenLaunchDemo && (step == .splash || step == .valueCaptions)
-    }
-
-    private func finishLaunchDemo() {
-        app.markLaunchDemoSeen()
-        withAnimation(.easeInOut(duration: 0.4)) {
-            showDemoPlayer = false
-            showDemoGate = false
-            if step == .splash { go(to: .valueCaptions) }
-        }
+        JojoBrandBackground(showsHills: !showSplash, showsPetals: true)
     }
 
     /// Value-prop pages share one carousel identity so they swipe instead of transitioning.
