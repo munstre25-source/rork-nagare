@@ -59,7 +59,8 @@ struct ClipStageView: View {
             .aspectRatio(resolvedAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .layoutPriority(1)
-            .overlay(alignment: .bottom) { popupLayer }
+            // Kiku: dictionary card floats centered over the video, not pinned under it.
+            .overlay { popupLayer }
             .zIndex(1)
 
             TranscriptSection(
@@ -119,14 +120,15 @@ struct ClipStageView: View {
     @ViewBuilder
     private var popupLayer: some View {
         if isPopupHere {
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(0.35)
+            ZStack {
+                Color.black.opacity(0.32)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                 TapPopupCard()
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 420)
                     .padding(.horizontal, Spacing.m)
-                    .offset(y: 64 + max(0, dragOffset))
+                    .offset(y: max(0, dragOffset))
                     .gesture(
                         DragGesture(minimumDistance: 12)
                             .onChanged { value in dragOffset = value.translation.height }
@@ -139,8 +141,8 @@ struct ClipStageView: View {
                     )
             }
             .transition(.asymmetric(
-                insertion: .scale(scale: 0.92, anchor: .bottom).combined(with: .opacity).combined(with: .offset(y: 30)),
-                removal: .opacity.combined(with: .offset(y: 40))
+                insertion: .scale(scale: 0.94).combined(with: .opacity),
+                removal: .opacity
             ))
         }
     }

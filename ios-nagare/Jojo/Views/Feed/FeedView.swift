@@ -2,11 +2,10 @@ import SwiftUI
 
 nonisolated enum FeedTab: String, CaseIterable, Sendable {
     case forYou = "For You"
-    case following = "Following"
     case explore = "Explore"
 }
 
-/// The heart of the app: daily goal → For You / Following / Explore → vertically paged clips.
+/// The heart of the app: daily goal → For You / Explore → vertically paged clips.
 struct FeedView: View {
     @Environment(AppModel.self) private var app
     @State private var coordinator = PlaybackCoordinator()
@@ -82,9 +81,6 @@ struct FeedView: View {
             if newTab == .explore { coordinator.pause() } else { resumeIfPossible() }
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
-        .onChange(of: app.followRevision) { _, _ in
-            if tab == .following { reloadClips(for: .following) }
-        }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(
                 clip: clip,
@@ -152,67 +148,33 @@ struct FeedView: View {
     }
 
     private var feedPager: some View {
-        Group {
-            if tab == .following, clips.isEmpty {
-                followingEmpty
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(clips.enumerated()), id: \.element.id) { index, clip in
-                            ClipStageView(
-                                clip: clip,
-                                immersiveFeed: true,
-                                onActivate: { coordinator.activate(clip) },
-                                onFullscreen: {
-                                    coordinator.pause()
-                                    pendingLoopLine = nil
-                                    fullscreenClip = clip
-                                },
-                                onInfo: { infoClip = clip },
-                                onShadowing: {
-                                    coordinator.pause()
-                                    shadowingClip = clip
-                                }
-                            )
-                            .containerRelativeFrame(.vertical)
-                            .id(clip.id)
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(clips.enumerated()), id: \.element.id) { _, clip in
+                    ClipStageView(
+                        clip: clip,
+                        immersiveFeed: true,
+                        onActivate: { coordinator.activate(clip) },
+                        onFullscreen: {
+                            coordinator.pause()
+                            pendingLoopLine = nil
+                            fullscreenClip = clip
+                        },
+                        onInfo: { infoClip = clip },
+                        onShadowing: {
+                            coordinator.pause()
+                            shadowingClip = clip
                         }
-                    }
-                    .scrollTargetLayout()
+                    )
+                    .containerRelativeFrame(.vertical)
+                    .id(clip.id)
                 }
-                .scrollTargetBehavior(.paging)
-                .scrollPosition(id: $currentId)
-                .scrollDisabled(lookup.isPresented || quizClip != nil)
             }
+            .scrollTargetLayout()
         }
-    }
-
-    private var followingEmpty: some View {
-        VStack(spacing: Spacing.m) {
-            Image(systemName: "person.2.fill")
-                .font(.largeTitle)
-                .foregroundStyle(Color.jojoOrange)
-            Text("Follow channels you like")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.primary)
-            Text("Open any clip’s info to Follow a channel, then come back here for a tighter feed.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                withAnimation(.snappy) { tab = .forYou }
-            } label: {
-                Text("Browse For You")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 20)
-                    .frame(minHeight: 48)
-                    .background(Color.jojoOrange, in: Capsule())
-            }
-            .padding(.top, Spacing.s)
-        }
-        .padding(Spacing.xl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $currentId)
+        .scrollDisabled(lookup.isPresented || quizClip != nil)
     }
 
     private func setup() {
@@ -229,8 +191,6 @@ struct FeedView: View {
         switch tab {
         case .forYou:
             clips = app.forYouClips
-        case .following:
-            clips = app.followingClips
         case .explore:
             break
         }

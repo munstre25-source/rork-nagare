@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Full-screen scripted product showcase for screen-recording a Jojo marketing clip.
-/// Story arc mirrors common JP-learning short demos: scroll → tap word → flashcard.
+/// Silent arc (no caption overlays): scroll → tap word → flashcard. Add captions in edit.
 struct MarketingShowcaseView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +11,6 @@ struct MarketingShowcaseView: View {
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var clip: Clip?
-    @State private var callout: String?
     @State private var showFlashcard: Bool = false
     @State private var flashWord: SavedWord?
     @State private var scriptTask: Task<Void, Never>?
@@ -60,7 +59,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demo script")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("Start a screen recording on your device, then tap Begin. Jojo will autoplay a ~15s scroll → tap → flashcard sequence.")
+            Text("Start a screen recording on your device, then tap Begin. Jojo will autoplay a silent ~15s scroll → tap → flashcard sequence — add your own captions in edit.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -111,20 +110,6 @@ struct MarketingShowcaseView: View {
                     .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
             } else if let clip {
                 feedBeat(clip)
-            }
-
-            if let callout {
-                Text(callout)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 14)
-                    .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: .black.opacity(0.35), radius: 16, y: 8)
-                    .padding(.horizontal, Spacing.l)
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
-                    .allowsHitTesting(false)
             }
 
             if let countdown {
@@ -287,6 +272,8 @@ struct MarketingShowcaseView: View {
             phase = .done
             return
         }
+        // Avoid in-product coach banners during the silent marketing capture.
+        app.markVocabSaveCoachSeen()
         phase = .running
         track("marketing_showcase_started", props: ["clip": chosen.id])
         scriptTask?.cancel()
@@ -302,23 +289,11 @@ struct MarketingShowcaseView: View {
 
             coordinator.activate(chosen, startLine: 0, loopLine: true)
 
-            // Beat 1 — doomscroll / feed
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                callout = "Learn by doomscrolling instead 🥰"
-            }
-            try? await Task.sleep(for: .milliseconds(2800))
-            guard !Task.isCancelled else { return }
-            withAnimation { callout = nil }
-            try? await Task.sleep(for: .milliseconds(500))
+            // Beat 1 — feed + karaoke (no caption overlays)
+            try? await Task.sleep(for: .milliseconds(3200))
             guard !Task.isCancelled else { return }
 
             // Beat 2 — tap to look up
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                callout = "tap to look up words you don't know…"
-            }
-            try? await Task.sleep(for: .milliseconds(1200))
-            guard !Task.isCancelled else { return }
-
             if let line = chosen.lines.first,
                let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
                 ?? line.tokens.firstIndex(where: \.tappable) {
@@ -326,12 +301,10 @@ struct MarketingShowcaseView: View {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: chosen, app: app)
                 }
-                try? await Task.sleep(for: .milliseconds(900))
-                withAnimation { callout = nil }
-                try? await Task.sleep(for: .milliseconds(2200))
+                try? await Task.sleep(for: .milliseconds(3200))
                 guard !Task.isCancelled else { return }
 
-                // Beat 3 — flashcards created
+                // Beat 3 — flashcards
                 let key = AppModel.wordKey(for: token)
                 flashWord = (try? app.context.fetch(
                     FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
@@ -339,11 +312,8 @@ struct MarketingShowcaseView: View {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
                     lookup.dismiss()
                     showFlashcard = true
-                    callout = "and flashcards are created for you!"
                 }
-                try? await Task.sleep(for: .milliseconds(2800))
-                withAnimation { callout = nil }
-                try? await Task.sleep(for: .milliseconds(1800))
+                try? await Task.sleep(for: .milliseconds(3600))
             }
 
             guard !Task.isCancelled else { return }
@@ -357,7 +327,6 @@ struct MarketingShowcaseView: View {
         scriptTask?.cancel()
         coordinator.stop()
         lookup.dismiss()
-        callout = nil
         showFlashcard = false
         flashWord = nil
         countdown = nil
