@@ -100,7 +100,7 @@ struct LiveTranscriptPanel: View {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
     }
 
-    /// Current + next line (matches Kiku For You settled page).
+    /// Current + up to 1 following line (kiku demo2 settled For You).
     private var windowLines: [Int] {
         guard !clip.lines.isEmpty else { return [] }
         let end = min(clip.lines.count - 1, currentLine + 1)

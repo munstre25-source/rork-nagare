@@ -141,27 +141,30 @@ struct OnboardingSneakPeek: View {
     }
 
     private var feedPager: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(feedClips) { clip in
-                    ClipStageView(
-                        clip: clip,
-                        pulseTokenIndex: clip.id == currentId ? pulseToken : nil,
-                        isPulsing: clip.id == currentId && isPulsing,
-                        showsChannelRow: false,
-                        immersiveFeed: true,
-                        onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
-                    )
-                    .containerRelativeFrame(.vertical)
-                    .clipped()
-                    .id(clip.id)
+        GeometryReader { geo in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(feedClips) { clip in
+                        ClipStageView(
+                            clip: clip,
+                            pulseTokenIndex: clip.id == currentId ? pulseToken : nil,
+                            isPulsing: clip.id == currentId && isPulsing,
+                            showsChannelRow: false,
+                            immersiveFeed: true,
+                            onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                        )
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                        .clipped()
+                        .background(Color.bgPlayer)
+                        .id(clip.id)
+                    }
                 }
+                .scrollTargetLayout()
             }
-            .scrollTargetLayout()
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $currentId)
+            .scrollDisabled(true)
         }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $currentId)
-        .scrollDisabled(true)
         .background(Color.bgPlayer)
     }
 

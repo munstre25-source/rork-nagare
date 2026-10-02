@@ -52,6 +52,7 @@ struct FeedView: View {
                     .zIndex(2)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
@@ -165,35 +166,39 @@ struct FeedView: View {
     }
 
     private var feedPager: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(clips.enumerated()), id: \.element.id) { _, clip in
-                    ClipStageView(
-                        clip: clip,
-                        showsChannelRow: false,
-                        immersiveFeed: true,
-                        onActivate: { coordinator.activate(clip) },
-                        onFullscreen: {
-                            coordinator.pause()
-                            pendingLoopLine = nil
-                            fullscreenClip = clip
-                        },
-                        onInfo: { infoClip = clip },
-                        onShadowing: {
-                            coordinator.pause()
-                            shadowingClip = clip
-                        }
-                    )
-                    .containerRelativeFrame(.vertical)
-                    .clipped()
-                    .id(clip.id)
+        GeometryReader { geo in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(clips.enumerated()), id: \.element.id) { _, clip in
+                        ClipStageView(
+                            clip: clip,
+                            showsChannelRow: false,
+                            immersiveFeed: true,
+                            onActivate: { coordinator.activate(clip) },
+                            onFullscreen: {
+                                coordinator.pause()
+                                pendingLoopLine = nil
+                                fullscreenClip = clip
+                            },
+                            onInfo: { infoClip = clip },
+                            onShadowing: {
+                                coordinator.pause()
+                                shadowingClip = clip
+                            }
+                        )
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                        .clipped()
+                        .background(Color.bgPlayer)
+                        .id(clip.id)
+                    }
                 }
+                .scrollTargetLayout()
             }
-            .scrollTargetLayout()
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $currentId)
+            .scrollDisabled(lookup.isPresented || quizClip != nil)
         }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $currentId)
-        .scrollDisabled(lookup.isPresented || quizClip != nil)
+        .background(Color.bgPlayer)
     }
 
     private func setup() {

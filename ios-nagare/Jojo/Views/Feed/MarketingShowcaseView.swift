@@ -323,25 +323,28 @@ struct MarketingShowcaseView: View {
             .padding(.horizontal, Spacing.l)
             .padding(.bottom, 2)
 
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(feedClips) { clip in
-                        ClipStageView(
-                            clip: clip,
-                            showsChannelRow: false,
-                            immersiveFeed: true,
-                            onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
-                        )
-                        .containerRelativeFrame(.vertical)
-                        .clipped()
-                        .id(clip.id)
+            GeometryReader { geo in
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(feedClips) { clip in
+                            ClipStageView(
+                                clip: clip,
+                                showsChannelRow: false,
+                                immersiveFeed: true,
+                                onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                            )
+                            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                            .clipped()
+                            .background(Color.bgPlayer)
+                            .id(clip.id)
+                        }
                     }
+                    .scrollTargetLayout()
                 }
-                .scrollTargetLayout()
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $currentId)
+                .scrollDisabled(true)
             }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentId)
-            .scrollDisabled(true)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear.frame(height: 72)
             }

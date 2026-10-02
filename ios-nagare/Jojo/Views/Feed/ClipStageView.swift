@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition: channel → video → karaoke (Kiku For You page).
-/// Immersive feed: video on top, current+next karaoke below, dictionary card centered over the stage.
+/// Reusable clip composition matching kiku demo2 For You:
+/// video → action row → karaoke, dictionary card centered over the stage.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -12,7 +12,7 @@ struct ClipStageView: View {
     var showsChannelRow: Bool = true
     var channelTrailing: AnyView?
     var showsRail: Bool = true
-    /// Feed page: title-forward chrome, karaoke window, quieter chrome.
+    /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
@@ -29,56 +29,63 @@ struct ClipStageView: View {
         lookup.selection?.clip.id == clip.id
     }
 
-    /// Keep video short enough that karaoke + floating tab bar fit on one page (Kiku ~16:10).
+    /// Landscape player that leaves room for karaoke (kiku demo2).
     private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 10 : videoAspect }
 
     var body: some View {
         let player = coordinator.player(for: clip)
-        ZStack {
-            VStack(spacing: 0) {
-                if showsChannelRow {
-                    ChannelRow(
-                        clip: clip,
-                        trailing: channelTrailing,
-                        showsFollow: !immersiveFeed,
-                        emphasizesTitle: immersiveFeed
-                    )
-                    .padding(.vertical, immersiveFeed ? 4 : 10)
-                }
+        VStack(spacing: 0) {
+            if showsChannelRow {
+                ChannelRow(
+                    clip: clip,
+                    trailing: channelTrailing,
+                    showsFollow: !immersiveFeed,
+                    emphasizesTitle: immersiveFeed
+                )
+                .padding(.vertical, immersiveFeed ? 4 : 10)
+            }
 
-                ClipVideoView(
+            ClipVideoView(
+                clip: clip,
+                player: player,
+                showsControls: !immersiveFeed,
+                showsRail: immersiveFeed ? false : showsRail,
+                compactChrome: immersiveFeed,
+                onActivate: onActivate,
+                onFullscreen: onFullscreen,
+                onInfo: immersiveFeed ? nil : onInfo,
+                onShadowing: immersiveFeed ? nil : onShadowing
+            )
+            .aspectRatio(resolvedAspect, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+
+            if immersiveFeed {
+                ClipActionRow(
                     clip: clip,
                     player: player,
-                    showsRail: showsRail,
-                    compactChrome: immersiveFeed,
-                    onActivate: onActivate,
-                    onFullscreen: onFullscreen,
                     onInfo: onInfo,
                     onShadowing: onShadowing
                 )
-                .aspectRatio(resolvedAspect, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-
-                TranscriptSection(
-                    clip: clip,
-                    player: player,
-                    onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
-                    pulseTokenIndex: pulseTokenIndex,
-                    isPulsing: isPulsing,
-                    tooltip: tooltip,
-                    forceDenseAids: immersiveFeed,
-                    windowMode: immersiveFeed
-                )
-                .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
             }
+
+            TranscriptSection(
+                clip: clip,
+                player: player,
+                onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
+                pulseTokenIndex: pulseTokenIndex,
+                isPulsing: isPulsing,
+                tooltip: tooltip,
+                forceDenseAids: immersiveFeed,
+                windowMode: immersiveFeed
+            )
             .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-
-            if isPopupHere {
-                popupLayer
-                    .zIndex(2)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
+        .background(immersiveFeed ? Color.bgPlayer : Color.clear)
+        .overlay {
+            if isPopupHere { popupLayer }
+        }
+        .clipped()
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
@@ -89,29 +96,29 @@ struct ClipStageView: View {
         }
     }
 
-    @ViewBuilder
+    /// Centered mid-stage like kiku demo2 (~6s); never cropped to the video bounds.
     private var popupLayer: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.black.opacity(0.18)
-                    .contentShape(Rectangle())
-                    .onTapGesture { dismiss() }
-                TapPopupCard(compact: true)
-                    .frame(maxWidth: min(340, geo.size.width - 28))
-                    .offset(y: max(0, dragOffset))
-                    .gesture(
-                        DragGesture(minimumDistance: 12)
-                            .onChanged { value in dragOffset = value.translation.height }
-                            .onEnded { value in
-                                if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                    dismiss()
-                                }
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+        ZStack {
+            Color.black.opacity(0.18)
+                .contentShape(Rectangle())
+                .onTapGesture { dismiss() }
+            TapPopupCard(compact: true)
+                .padding(.horizontal, 14)
+                .frame(maxWidth: 340)
+                .fixedSize(horizontal: false, vertical: true)
+                .offset(y: max(0, dragOffset))
+                .gesture(
+                    DragGesture(minimumDistance: 12)
+                        .onChanged { value in dragOffset = value.translation.height }
+                        .onEnded { value in
+                            if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
+                                dismiss()
                             }
-                    )
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                        }
+                )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .transition(.asymmetric(
             insertion: .scale(scale: 0.94).combined(with: .opacity).combined(with: .offset(y: 16)),
             removal: .opacity
