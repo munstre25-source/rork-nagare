@@ -20,9 +20,10 @@ Or in the app: **Profile → Record marketing demo**.
 1. Start iOS / Simulator screen recording (Control Center or Simulator → File → Record Screen).
 2. Tap **Begin showcase** (3-2-1 countdown).
 3. Jojo autoplays a silent scripted arc (no caption overlays — add those in edit):
-   - Feed + karaoke
+   - Anime clip in For You + karaoke
    - Auto word tap + centered lookup card
-   - Flashcard with context
+   - Scroll down to the Minecraft clip (real feed swipe)
+   - Flashcard with context still / clip art
 4. Stop recording when **Showcase finished** appears. Trim the countdown if you want.
 
 ## Adding real clips / YouTube IDs

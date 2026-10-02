@@ -131,18 +131,19 @@ struct ClipVideoView: View {
     private var surface: some View {
         if let local = player as? LocalClipPlayer {
             ZStack {
-                GradientPoster(clip: clip, isAnimating: false)
+                ClipPosterView(clip: clip, showsSymbol: false)
                 LocalPlayerView(player: local)
-                    .opacity(local.isReady ? 1 : 0)
+                    // Keep a faint underlay until the first frame is ready so the surface never goes pure black.
+                    .opacity(local.isReady ? 1 : 0.02)
             }
         } else if let youtube = player as? YouTubeClipPlayer {
             ZStack {
-                GradientPoster(clip: clip, isAnimating: false)
+                ClipPosterView(clip: clip, showsSymbol: false)
                 YouTubePlayerView(player: youtube)
                     .opacity(youtube.isReady || youtube.embedFailed ? 1 : 0.01)
             }
         } else {
-            GradientPoster(clip: clip, isAnimating: player?.isPlaying == true)
+            ClipPosterView(clip: clip, isAnimating: player?.isPlaying == true)
         }
     }
 

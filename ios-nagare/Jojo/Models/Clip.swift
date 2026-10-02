@@ -149,10 +149,21 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     /// Bundled `Clips/{id}.mp4` (preferred in Simulator / Rork for reliable playback).
     var hasLocalVideo: Bool { Self.bundledVideoURL(for: id) != nil }
 
+    /// Bundled `Clips/{id}.jpg` poster still (flashcards / feed underlay).
+    var hasLocalPoster: Bool { Self.bundledPosterURL(for: id) != nil }
+
     /// Local file or YouTube — anything that isn't the simulated poster.
     var hasPlayableVideo: Bool { hasLocalVideo || hasRealVideo }
 
     static func bundledVideoURL(for clipId: String) -> URL? {
+        bundledResourceURL(for: clipId, extension: "mp4")
+    }
+
+    static func bundledPosterURL(for clipId: String) -> URL? {
+        bundledResourceURL(for: clipId, extension: "jpg")
+    }
+
+    private static func bundledResourceURL(for clipId: String, extension ext: String) -> URL? {
         let candidates: [(String?, String)] = [
             ("Clips", clipId),
             ("Resources/Clips", clipId),
@@ -160,11 +171,11 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
         ]
         for (subdir, name) in candidates {
             if let subdir,
-               let url = Bundle.main.url(forResource: name, withExtension: "mp4", subdirectory: subdir) {
+               let url = Bundle.main.url(forResource: name, withExtension: ext, subdirectory: subdir) {
                 return url
             }
             if subdir == nil,
-               let url = Bundle.main.url(forResource: name, withExtension: "mp4") {
+               let url = Bundle.main.url(forResource: name, withExtension: ext) {
                 return url
             }
         }

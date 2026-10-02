@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Full-screen scripted product showcase for screen-recording a Jojo marketing clip.
-/// Silent arc (no caption overlays): scroll → tap word → flashcard. Add captions in edit.
+/// Silent arc (add captions in edit): anime feed → tap → scroll to Minecraft → flashcard.
 struct MarketingShowcaseView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -10,7 +10,8 @@ struct MarketingShowcaseView: View {
     @State private var phase: Phase = .prep
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
-    @State private var clip: Clip?
+    @State private var feedClips: [Clip] = []
+    @State private var currentId: String?
     @State private var showFlashcard: Bool = false
     @State private var flashWord: SavedWord?
     @State private var scriptTask: Task<Void, Never>?
@@ -41,6 +42,11 @@ struct MarketingShowcaseView: View {
             coordinator.stop()
             lookup.dismiss()
         }
+        .onChange(of: currentId) { _, newId in
+            guard phase == .running, !showFlashcard,
+                  let newId, let clip = feedClips.first(where: { $0.id == newId }) else { return }
+            coordinator.activate(clip, startLine: 0, loopLine: true)
+        }
     }
 
     // MARK: Prep
@@ -59,15 +65,16 @@ struct MarketingShowcaseView: View {
             Text("Marketing demo script")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("Start a screen recording on your device, then tap Begin. Jojo will autoplay a silent ~15s scroll → tap → flashcard sequence — add your own captions in edit.")
+            Text("Start a screen recording, then tap Begin. Silent walkthrough — anime clip, word tap, scroll to Minecraft, then a flashcard. Add your own captions in edit.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.l)
             VStack(alignment: .leading, spacing: 8) {
-                scriptBeatRow("1", "Feed scrolls & karaoke plays")
+                scriptBeatRow("1", "Anime clip plays in For You")
                 scriptBeatRow("2", "Word lookup pops open")
-                scriptBeatRow("3", "Flashcard with context clip")
+                scriptBeatRow("3", "Feed scrolls to Minecraft")
+                scriptBeatRow("4", "Flashcard with context clip")
             }
             .padding(Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -108,8 +115,8 @@ struct MarketingShowcaseView: View {
             if showFlashcard, let flashWord {
                 flashcardBeat(flashWord)
                     .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-            } else if let clip {
-                feedBeat(clip)
+            } else {
+                feedPager
             }
 
             if let countdown {
@@ -123,26 +130,37 @@ struct MarketingShowcaseView: View {
         .allowsHitTesting(false)
     }
 
-    private func feedBeat(_ clip: Clip) -> some View {
+    private var feedPager: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("For You")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.white)
                 Spacer()
+                Text("Explore")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.35))
             }
             .padding(.horizontal, Spacing.l)
             .padding(.vertical, 8)
 
-            ClipStageView(
-                clip: clip,
-                videoAspect: 16 / 9,
-                onlyCurrentLine: true,
-                showsRail: true,
-                immersiveFeed: true,
-                onActivate: {}
-            )
-            .frame(maxHeight: .infinity)
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(feedClips) { clip in
+                        ClipStageView(
+                            clip: clip,
+                            immersiveFeed: true,
+                            onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                        )
+                        .containerRelativeFrame(.vertical)
+                        .id(clip.id)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $currentId)
+            .scrollDisabled(true)
         }
     }
 
@@ -200,7 +218,7 @@ struct MarketingShowcaseView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                         if let clip = app.clip(id: word.contextClipId) {
-                            ClipThumbnailButton(clip: clip) {}
+                            ClipThumbnailButton(clip: clip, emphasizesPlay: true) {}
                                 .disabled(true)
                         }
                     }
@@ -260,25 +278,43 @@ struct MarketingShowcaseView: View {
 
     // MARK: Script
 
+    /// Anime first, then Minecraft — both local demo clips when available.
+    private func demoFeedClips() -> [Clip] {
+        let preferredIds = ["hoshizora-academy-07", "boss-rush-live-09"]
+        var ordered: [Clip] = []
+        for id in preferredIds {
+            if let clip = app.clip(id: id), clip.hasLocalVideo || clip.hasPlayableVideo {
+                ordered.append(clip)
+            }
+        }
+        if ordered.count < 2 {
+            for clip in app.clips where clip.hasLocalVideo && !ordered.contains(where: { $0.id == clip.id }) {
+                ordered.append(clip)
+                if ordered.count >= 2 { break }
+            }
+        }
+        if ordered.isEmpty, let fallback = app.recommendedClip(preferShort: true) ?? app.clips.first {
+            ordered = [fallback]
+        }
+        return ordered
+    }
+
     private func beginShowcase() {
         lookup.offlineOnly = true
-        // Prefer bundled anime demo, then any local MP4, then the usual Day-1 pick.
-        let chosen = app.clip(id: "hoshizora-academy-07").flatMap { $0.hasLocalVideo ? $0 : nil }
-            ?? app.clips.first(where: \.hasLocalVideo)
-            ?? app.recommendedClip(preferShort: true)
-            ?? app.clips.first
-        clip = chosen
-        guard let chosen else {
+        let clips = demoFeedClips()
+        feedClips = clips
+        guard let first = clips.first else {
             phase = .done
             return
         }
-        // Avoid in-product coach banners during the silent marketing capture.
+        currentId = first.id
         app.markVocabSaveCoachSeen()
         phase = .running
-        track("marketing_showcase_started", props: ["clip": chosen.id])
+        track("marketing_showcase_started", props: [
+            "clips": clips.map(\.id).joined(separator: ","),
+        ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            // Countdown so you can start the OS screen recorder.
             for n in [3, 2, 1] {
                 withAnimation(.snappy) { countdown = n }
                 Haptics.selection()
@@ -287,33 +323,53 @@ struct MarketingShowcaseView: View {
             }
             withAnimation { countdown = nil }
 
-            coordinator.activate(chosen, startLine: 0, loopLine: true)
-
-            // Beat 1 — feed + karaoke (no caption overlays)
-            try? await Task.sleep(for: .milliseconds(3200))
+            // Beat 1 — anime (or first) plays
+            coordinator.activate(first, startLine: 0, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(2800))
             guard !Task.isCancelled else { return }
 
-            // Beat 2 — tap to look up
-            if let line = chosen.lines.first,
+            // Beat 2 — tap a word on the first clip
+            var savedFromTap: SavedWord?
+            if let line = first.lines.first,
                let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
                 ?? line.tokens.firstIndex(where: \.tappable) {
                 let token = line.tokens[idx]
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: chosen, app: app)
+                    lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: first, app: app)
                 }
-                try? await Task.sleep(for: .milliseconds(3200))
+                try? await Task.sleep(for: .milliseconds(2800))
                 guard !Task.isCancelled else { return }
-
-                // Beat 3 — flashcards
                 let key = AppModel.wordKey(for: token)
-                flashWord = (try? app.context.fetch(
+                savedFromTap = (try? app.context.fetch(
                     FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
                 ))?.first
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                     lookup.dismiss()
+                }
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
+            }
+
+            // Beat 3 — scroll to Minecraft (second clip), like a real For You swipe
+            if let second = clips.dropFirst().first {
+                withAnimation(.easeInOut(duration: 0.55)) {
+                    currentId = second.id
+                }
+                // onChange activates playback; give the page settle + watch time
+                try? await Task.sleep(for: .milliseconds(700))
+                guard !Task.isCancelled else { return }
+                coordinator.activate(second, startLine: 0, loopLine: true)
+                try? await Task.sleep(for: .milliseconds(3200))
+                guard !Task.isCancelled else { return }
+            }
+
+            // Beat 4 — flashcard from the tapped word (real poster if bundled)
+            if let word = savedFromTap {
+                flashWord = word
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
                     showFlashcard = true
                 }
-                try? await Task.sleep(for: .milliseconds(3600))
+                try? await Task.sleep(for: .milliseconds(3400))
             }
 
             guard !Task.isCancelled else { return }
@@ -330,6 +386,7 @@ struct MarketingShowcaseView: View {
         showFlashcard = false
         flashWord = nil
         countdown = nil
-        clip = nil
+        feedClips = []
+        currentId = nil
     }
 }

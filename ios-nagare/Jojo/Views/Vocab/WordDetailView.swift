@@ -146,7 +146,7 @@ struct WordHeaderCard: View {
     }
 }
 
-/// Playable clip thumbnail.
+/// Playable clip thumbnail — prefers a real still from the bundled clip, not an empty gradient.
 struct ClipThumbnailButton: View {
     let clip: Clip
     var emphasizesPlay: Bool = false
@@ -156,7 +156,7 @@ struct ClipThumbnailButton: View {
         Button(action: action) {
             Color.bgElevatedDark
                 .aspectRatio(emphasizesPlay ? 16 / 9 : 16 / 8, contentMode: .fit)
-                .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
+                .overlay { ClipPosterView(clip: clip, showsSymbol: false).allowsHitTesting(false) }
                 .overlay {
                     Image(systemName: "play.fill")
                         .font(emphasizesPlay ? .title : .title2)
