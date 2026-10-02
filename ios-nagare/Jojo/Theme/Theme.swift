@@ -47,18 +47,29 @@ extension Color {
     static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
     /// Active karaoke line card (Kiku-style raised surface).
     static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#1A1A1C")
-    /// Soft sakura-night lift behind the active line — no orange bloom.
+    /// Soft sakura-night lift behind the active line.
     static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
 
-    // MARK: Accent (book / CTA from the app icon — not the atmosphere)
-    static let jojoOrange = Color(hex: "#FF6B00")
-    static let jojoOrangeSoft = Color(hex: "#FF6B00").opacity(0.14)
+    // MARK: Brand accent — iOS app icon sakura (orange theme is retired)
+    static let sakuraPink = Color(hex: "#FF5FA2")
+    static let sakuraPinkLight = Color(hex: "#FF9FCB")
+    static let sakuraPinkDeep = Color(hex: "#D63384")
+    static let sakuraPinkSoft = Color(hex: "#FF5FA2").opacity(0.16)
 
-    // MARK: Brand (app icon: sakura-night sky, cream paper accents, orange book / CTA)
-    /// The deep vermilion of the hachimaki dot, the book and the rising sun.
-    static let jojoVermilion = Color(hex: "#F0400F")
-    /// Lighter end of the orange ramp (book / CTA), used for gradients and hills.
-    static let jojoOrangeLight = Color(hex: "#FFA23D")
+    /// Interactive chrome (tabs, toggles, selection, charts) — sakura, not orange.
+    static let brandAccent = sakuraPink
+    static let brandAccentSoft = sakuraPinkSoft
+    static let brandAccentLight = sakuraPinkLight
+    static let brandAccentDeep = sakuraPinkDeep
+
+    /// Legacy names kept so call sites compile; they now resolve to sakura accent.
+    static let jojoOrange = brandAccent
+    static let jojoOrangeSoft = brandAccentSoft
+    static let jojoOrangeLight = brandAccentLight
+    /// Was hinomaru red — now deep sakura so chrome never reintroduces orange/vermilion.
+    static let jojoVermilion = brandAccentDeep
+
+    // MARK: Brand surfaces (icon: sakura-night sky, cream paper)
     /// Cream paper surfaces in light mode.
     static let jojoCream = Color(hex: "#FFF6EE")
     /// One step warmer than `jojoCream`, for layered washes.
@@ -76,7 +87,6 @@ extension Color {
     static let nightIndigo = Color(hex: "#140C2E")
     static let nightViolet = Color(hex: "#2A1452")
     static let nightPlum = Color(hex: "#4A1D6B")
-    static let sakuraPink = Color(hex: "#FF5FA2")
     static let neonMagenta = Color(hex: "#FF2E93")
     static let lanternAmber = Color(hex: "#FFB347")
 
@@ -88,11 +98,11 @@ extension Color {
     // MARK: Word states / POS underlines
     static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")
     static let spokenGreen = Color.adaptive(light: "#15803D", dark: "#34C759")
-    static let lookedUpOrange = Color(hex: "#FF8A3D")
-    /// Content words (noun, verb, adjective) — Kiku blue underline.
+    static let lookedUpOrange = Color.sakuraPinkSoft
+    /// Content words (noun, verb, adjective) — blue underline.
     static let posContentBlue = Color.adaptive(light: "#2563EB", dark: "#3B82F6")
-    /// Function words (particle, auxiliary, copula) — Kiku orange underline.
-    static let posParticleOrange = Color(hex: "#FF8A1F")
+    /// Function words (particle, auxiliary, copula) — sakura underline (icon accent).
+    static let posParticleOrange = Color.sakuraPink
 
     // MARK: SRS
     static let againBackground = Color(hex: "#FFD9DE")

@@ -7,7 +7,7 @@ struct GradientPoster: View {
     var showsSymbol: Bool = true
 
     private var colors: [Color] {
-        let hexes = clip.thumbnailGradient.isEmpty ? ["#111111", "#333333", "#FF6B00"] : clip.thumbnailGradient
+        let hexes = clip.thumbnailGradient.isEmpty ? ["#111111", "#2A1452", "#FF5FA2"] : clip.thumbnailGradient
         return hexes.map { Color(hex: $0) }
     }
 

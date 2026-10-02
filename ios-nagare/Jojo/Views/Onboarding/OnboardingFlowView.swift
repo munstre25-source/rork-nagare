@@ -114,7 +114,7 @@ struct OnboardingFlowView: View {
                     ZStack(alignment: .leading) {
                         Capsule().fill(onNight ? Color.white.opacity(0.14) : Color.jojoInk.opacity(0.08))
                         Capsule()
-                            .fill(LinearGradient(colors: [Color.sakuraPink, Color.jojoOrange, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing))
+                            .fill(LinearGradient(colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep], startPoint: .leading, endPoint: .trailing))
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
                             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
                     }

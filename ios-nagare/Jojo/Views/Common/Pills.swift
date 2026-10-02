@@ -76,7 +76,7 @@ struct WordPills: View {
     }
 }
 
-/// Primary call-to-action: the app icon's orange ramp, with a press animation.
+/// Primary call-to-action: sakura ramp from the iOS app icon.
 struct PrimaryButtonStyle: ButtonStyle {
     var isEnabled: Bool = true
 
@@ -89,7 +89,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Color.jojoOrangeLight, Color.jojoOrange, Color.jojoVermilion],
+                            colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )

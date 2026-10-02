@@ -108,7 +108,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
             videoId: videoId ?? "PLACEHOLDER_remote",
             title: title,
             channelName: channelName ?? "Jojo",
-            channelAvatarColor: channelAvatarColor ?? "#FF6B00",
+            channelAvatarColor: channelAvatarColor ?? "#FF5FA2",
             category: category ?? ClipCategory.drama.rawValue,
             difficulty: difficulty ?? Difficulty.beginner.rawValue,
             durationSec: durationSec ?? (lines.last?.end ?? 20) + 1.5,

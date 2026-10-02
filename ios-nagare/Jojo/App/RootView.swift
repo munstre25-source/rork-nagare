@@ -75,7 +75,7 @@ struct MainTabView: View {
                 .padding(.horizontal, Spacing.l)
                 .padding(.bottom, 8)
         }
-        .tint(Color.jojoOrange)
+        .tint(Color.brandAccent)
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }

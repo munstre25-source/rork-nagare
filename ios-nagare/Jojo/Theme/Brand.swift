@@ -5,7 +5,7 @@ import UIKit
 
 /// Jojo renders on three surfaces. `cream` is the light-mode paper default.
 /// `cinema` is reserved for screens where real video is playing. `night`
-/// matches the iOS app icon: indigo / sakura sky, white type, orange book accents.
+/// matches the iOS app icon: indigo / sakura sky, white type, sakura accents.
 nonisolated enum BrandSurface: Sendable {
     case cream
     case cinema
@@ -121,13 +121,13 @@ struct JojoBrandBackground: View {
                 endPoint: .bottom
             )
             RadialGradient(
-                colors: [Color.jojoOrange.opacity(0.16), .clear],
+                colors: [Color.sakuraPink.opacity(0.14), .clear],
                 center: .init(x: 0.88, y: 0.04),
                 startRadius: 8,
                 endRadius: 420
             )
             RadialGradient(
-                colors: [Color.jojoBlossom.opacity(0.18), .clear],
+                colors: [Color.jojoBlossom.opacity(0.2), .clear],
                 center: .init(x: 0.02, y: 0.34),
                 startRadius: 8,
                 endRadius: 320
@@ -196,17 +196,17 @@ struct OnboardingBackground: View {
 
 // MARK: - Seigaiha hills
 
-/// Layered orange hills with a quiet seigaiha (wave) pattern — brand footer, not decoration noise.
+/// Layered sakura hills with a quiet seigaiha (wave) pattern — brand footer.
 struct SeigaihaHills: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             SeigaihaHillShape(phase: 0)
-                .fill(Color.jojoOrangeLight.opacity(0.5))
+                .fill(Color.sakuraPinkLight.opacity(0.45))
                 .frame(height: 104)
             SeigaihaHillShape(phase: 18)
                 .fill(
                     LinearGradient(
-                        colors: [Color.jojoOrange.opacity(0.92), Color.jojoVermilion.opacity(0.85)],
+                        colors: [Color.sakuraPink.opacity(0.92), Color.sakuraPinkDeep.opacity(0.88)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -404,7 +404,7 @@ struct JojoMascotAvatar: View {
                 if showsRing {
                     Circle().strokeBorder(
                         LinearGradient(
-                            colors: [Color.jojoOrangeLight, Color.jojoVermilion],
+                            colors: [Color.sakuraPinkLight, Color.sakuraPinkDeep],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -416,7 +416,7 @@ struct JojoMascotAvatar: View {
     }
 }
 
-/// The "Jojo" wordmark: heavy rounded type with the orange ramp and a hinomaru dot.
+/// The "Jojo" wordmark: heavy rounded type with the sakura ramp and a hinomaru-pink dot.
 struct JojoWordmark: View {
     var size: CGFloat = 42
 
@@ -426,13 +426,13 @@ struct JojoWordmark: View {
                 .font(.system(size: size, weight: .heavy, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [Color.jojoOrangeLight, Color.jojoOrange, Color.jojoVermilion],
+                        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.neonMagenta],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
             Circle()
-                .fill(Color.jojoVermilion)
+                .fill(Color.sakuraPinkDeep)
                 .frame(width: size * 0.19, height: size * 0.19)
                 .offset(y: size * 0.14)
         }

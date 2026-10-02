@@ -17,7 +17,7 @@ struct JojoLogo: View {
             FlowStroke()
                 .trim(from: 0, to: drawProgress)
                 .stroke(
-                    LinearGradient(colors: [Color.jojoOrangeLight, .jojoVermilion], startPoint: .leading, endPoint: .trailing),
+                    LinearGradient(colors: [Color.sakuraPinkLight, Color.sakuraPinkDeep], startPoint: .leading, endPoint: .trailing),
                     style: StrokeStyle(lineWidth: 6 * size, lineCap: .round, lineJoin: .round)
                 )
                 .frame(width: 150 * size, height: 22 * size)
