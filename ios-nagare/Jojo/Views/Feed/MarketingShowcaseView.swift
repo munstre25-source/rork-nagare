@@ -114,7 +114,13 @@ struct MarketingShowcaseView: View {
         ZStack {
             if showFlashcard, let flashWord {
                 flashcardBeat(flashWord)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+                    .transition(.asymmetric(
+                        insertion: .modifier(
+                            active: CardFlip(angle: -92),
+                            identity: CardFlip(angle: 0)
+                        ).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             } else {
                 feedPager
             }
@@ -388,5 +394,19 @@ struct MarketingShowcaseView: View {
         countdown = nil
         feedClips = []
         currentId = nil
+    }
+}
+
+/// Kiku-style revolving card entrance for the marketing flashcard beat.
+private struct CardFlip: ViewModifier {
+    var angle: Double
+
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(
+                .degrees(angle),
+                axis: (x: 0, y: 1, z: 0),
+                perspective: 0.65
+            )
     }
 }

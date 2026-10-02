@@ -39,9 +39,19 @@ struct ReviewSessionView: View {
                     card(for: word)
                         .padding(Spacing.l)
                         .id(word.key)
-                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                        .transition(.asymmetric(
+                            insertion: .modifier(
+                                active: ReviewCardFlip(angle: -88),
+                                identity: ReviewCardFlip(angle: 0)
+                            ).combined(with: .opacity),
+                            removal: .modifier(
+                                active: ReviewCardFlip(angle: 88),
+                                identity: ReviewCardFlip(angle: 0)
+                            ).combined(with: .opacity)
+                        ))
                 }
                 .scrollIndicators(.hidden)
+                .animation(.spring(response: 0.45, dampingFraction: 0.86), value: word.key)
                 answerButtons(for: word)
             } else {
                 Spacer()
@@ -180,6 +190,16 @@ struct ReviewSessionView: View {
                 track("review_completed", props: ["count": String(total), "good": String(goodCount)])
             }
         }
+    }
+}
+
+/// Revolving card motion between flashcards (Kiku-style).
+private struct ReviewCardFlip: ViewModifier {
+    var angle: Double
+
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
     }
 }
 

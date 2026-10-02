@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition: channel row → video → live transcript,
-/// with the tap-to-understand popup floating above the transcript.
+/// Reusable clip composition: channel → centered video → transcript.
+/// Immersive feed matches Kiku: video sits in the vertical middle of the page so the next swipe replaces that center.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -12,7 +12,7 @@ struct ClipStageView: View {
     var showsChannelRow: Bool = true
     var channelTrailing: AnyView?
     var showsRail: Bool = true
-    /// Feed page: title-forward chrome, current-line karaoke, quieter chrome.
+    /// Feed page: title-forward chrome, current-line karaoke, quieter chrome, centered stage.
     var immersiveFeed: Bool = false
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
@@ -24,7 +24,6 @@ struct ClipStageView: View {
     @Environment(WordLookupController.self) private var lookup
     @Environment(AppModel.self) private var app
     @State private var dragOffset: CGFloat = 0
-    @State private var showVocabCoach: Bool = false
 
     private var isPopupHere: Bool {
         lookup.selection?.clip.id == clip.id
@@ -43,7 +42,12 @@ struct ClipStageView: View {
                     showsFollow: !immersiveFeed,
                     emphasizesTitle: immersiveFeed
                 )
-                .padding(.vertical, immersiveFeed ? 6 : 10)
+                .padding(.vertical, immersiveFeed ? 4 : 10)
+            }
+
+            if immersiveFeed {
+                // Kiku: black above the stage so the clip sits in the middle of the page.
+                Spacer(minLength: 0)
             }
 
             ClipVideoView(
@@ -58,8 +62,6 @@ struct ClipStageView: View {
             )
             .aspectRatio(resolvedAspect, contentMode: .fit)
             .frame(maxWidth: .infinity)
-            .layoutPriority(1)
-            // Kiku: dictionary card floats centered over the video, not pinned under it.
             .overlay { popupLayer }
             .zIndex(1)
 
@@ -75,73 +77,50 @@ struct ClipStageView: View {
             .fixedSize(horizontal: false, vertical: true)
 
             if immersiveFeed {
+                // Matching spacer below so the stage is vertically centered.
                 Spacer(minLength: 0)
-                Color.clear.frame(height: 8)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .overlay(alignment: .top) {
-            if immersiveFeed, showVocabCoach {
-                Text("Saved to Vocab — review anytime from the Vocab tab")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-                    .padding(.horizontal, Spacing.l)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .allowsHitTesting(false)
-            }
-        }
+        .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: immersiveFeed ? .center : .top)
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
                 coordinator.pauseForPopup()
-                maybeShowVocabCoach()
             } else {
                 coordinator.resumeAfterPopupIfNeeded()
             }
         }
     }
 
-    private func maybeShowVocabCoach() {
-        guard immersiveFeed, !app.profile.didShowVocabSaveCoach, lookup.occurrenceCount == 1 else { return }
-        app.markVocabSaveCoachSeen()
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showVocabCoach = true }
-        Task {
-            try? await Task.sleep(for: .seconds(3.2))
-            withAnimation(.easeOut(duration: 0.25)) { showVocabCoach = false }
-        }
-    }
-
     @ViewBuilder
     private var popupLayer: some View {
         if isPopupHere {
-            ZStack {
-                Color.black.opacity(0.32)
-                    .contentShape(Rectangle())
-                    .onTapGesture { dismiss() }
-                TapPopupCard()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 420)
-                    .padding(.horizontal, Spacing.m)
-                    .offset(y: max(0, dragOffset))
-                    .gesture(
-                        DragGesture(minimumDistance: 12)
-                            .onChanged { value in dragOffset = value.translation.height }
-                            .onEnded { value in
-                                if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                    dismiss()
+            GeometryReader { geo in
+                ZStack {
+                    Color.black.opacity(0.28)
+                        .contentShape(Rectangle())
+                        .onTapGesture { dismiss() }
+                    TapPopupCard(compact: true)
+                        .frame(maxWidth: min(340, geo.size.width - 28))
+                        // Keep most of the video visible around the card — Kiku-sized, not full-bleed.
+                        .frame(maxHeight: geo.size.height * 0.62, alignment: .top)
+                        .clipped()
+                        .offset(y: max(0, dragOffset))
+                        .gesture(
+                            DragGesture(minimumDistance: 12)
+                                .onChanged { value in dragOffset = value.translation.height }
+                                .onEnded { value in
+                                    if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
+                                        dismiss()
+                                    }
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
                                 }
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
-                            }
-                    )
+                        )
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
             }
             .transition(.asymmetric(
-                insertion: .scale(scale: 0.94).combined(with: .opacity),
+                insertion: .scale(scale: 0.92).combined(with: .opacity),
                 removal: .opacity
             ))
         }

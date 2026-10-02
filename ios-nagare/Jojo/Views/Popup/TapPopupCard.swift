@@ -2,6 +2,8 @@ import SwiftUI
 
 /// The floating tap-to-understand card. Always dark (lives over the player/transcript).
 struct TapPopupCard: View {
+    /// Feed / Kiku-style: smaller card so the video stays visible around it.
+    var compact: Bool = false
     var onOpenClip: ((Clip, Int) -> Void)?
 
     @Environment(AppModel.self) private var app
@@ -11,21 +13,25 @@ struct TapPopupCard: View {
 
     var body: some View {
         if let selection = lookup.selection, let explanation = lookup.explanation {
-            VStack(alignment: .leading, spacing: Spacing.m) {
+            VStack(alignment: .leading, spacing: compact ? Spacing.s : Spacing.m) {
                 header(selection: selection, explanation: explanation)
                 WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: true)
-                tabRow
+                if !compact { tabRow }
                 Group {
-                    switch lookup.tab {
-                    case .dictionary: dictionaryTab(explanation)
-                    case .flashcard: flashcardTab(selection: selection, explanation: explanation)
-                    case .examples: examplesTab
+                    if compact {
+                        dictionaryTab(explanation, limit: 1)
+                    } else {
+                        switch lookup.tab {
+                        case .dictionary: dictionaryTab(explanation, limit: showAllDefinitions ? 99 : 2)
+                        case .flashcard: flashcardTab(selection: selection, explanation: explanation)
+                        case .examples: examplesTab
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(.opacity)
             }
-            .padding(Spacing.l)
+            .padding(compact ? Spacing.m : Spacing.l)
             .background(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .fill(Color(hex: "#1C1C1E"))
@@ -52,12 +58,12 @@ struct TapPopupCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 if app.profile.showFurigana, !explanation.readings.isEmpty {
                     Text(explanation.readings.joined(separator: ", "))
-                        .font(JojoFont.jp(15, relativeTo: .subheadline))
+                        .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
                         .foregroundStyle(.white.opacity(0.85))
                 }
                 HStack(spacing: Spacing.m) {
                     Text(explanation.word)
-                        .font(JojoFont.jp(38, bold: true, relativeTo: .largeTitle))
+                        .font(JojoFont.jp(compact ? 28 : 38, bold: true, relativeTo: .largeTitle))
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -65,9 +71,9 @@ struct TapPopupCard: View {
                         SpeechService.shared.speak(selection.token.surface)
                     } label: {
                         Image(systemName: "speaker.wave.2")
-                            .font(.title3)
+                            .font(compact ? .body : .title3)
                             .foregroundStyle(.white.opacity(0.85))
-                            .frame(width: 44, height: 44)
+                            .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
                     }
                     .accessibilityLabel("Play pronunciation")
                 }
@@ -76,19 +82,21 @@ struct TapPopupCard: View {
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.5))
                 }
-                if let base = selection.token.baseForm {
+                if !compact, let base = selection.token.baseForm {
                     Text("from \(base)")
                         .font(JojoFont.jp(13, relativeTo: .footnote))
                         .foregroundStyle(.white.opacity(0.5))
                 }
-                Label("In Vocab", systemImage: "bookmark.fill")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.jojoOrange)
-                    .padding(.top, 2)
-                    .accessibilityLabel("Saved to Vocab as a flashcard")
+                if !compact {
+                    Label("In Vocab", systemImage: "bookmark.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.jojoOrange)
+                        .padding(.top, 2)
+                        .accessibilityLabel("Saved to Vocab as a flashcard")
+                }
             }
             Spacer(minLength: 0)
-            OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
+            OccurrenceBadge(count: lookup.occurrenceCount, size: compact ? 30 : 38)
                 .scaleEffect(badgeBump ? 1.25 : 1)
                 .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
                 .animation(.snappy, value: lookup.occurrenceCount)
@@ -122,42 +130,45 @@ struct TapPopupCard: View {
         }
     }
 
-    private func dictionaryTab(_ explanation: WordExplanation) -> some View {
+    private func dictionaryTab(_ explanation: WordExplanation, limit: Int = 2) -> some View {
         let defs = explanation.displayDefinitions(mode: app.profile.dictionary)
-        let visible = showAllDefinitions ? defs : Array(defs.prefix(2))
+        let capped = Array(defs.prefix(max(1, limit)))
+        let visible = showAllDefinitions ? defs : capped
         return VStack(alignment: .leading, spacing: Spacing.s) {
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
                 DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: true)
             }
-            HStack {
-                if defs.count > 2, !showAllDefinitions {
-                    Button {
-                        withAnimation(.snappy) { showAllDefinitions = true }
-                    } label: {
-                        Label("\(defs.count - 2) more", systemImage: "plus")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.tappableBlue)
-                            .frame(minHeight: 44)
-                    }
-                }
-                Spacer()
-                if defs.count > 1 {
-                    HStack(spacing: 5) {
-                        ForEach(0..<min(defs.count, 5), id: \.self) { i in
-                            Circle()
-                                .fill(i < visible.count ? Color.jojoOrange : Color.white.opacity(0.3))
-                                .frame(width: 6, height: 6)
+            if !compact {
+                HStack {
+                    if defs.count > capped.count, !showAllDefinitions {
+                        Button {
+                            withAnimation(.snappy) { showAllDefinitions = true }
+                        } label: {
+                            Label("\(defs.count - capped.count) more", systemImage: "plus")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.tappableBlue)
+                                .frame(minHeight: 44)
                         }
                     }
-                    .accessibilityHidden(true)
+                    Spacer()
+                    if defs.count > 1 {
+                        HStack(spacing: 5) {
+                            ForEach(0..<min(defs.count, 5), id: \.self) { i in
+                                Circle()
+                                    .fill(i < visible.count ? Color.jojoOrange : Color.white.opacity(0.3))
+                                    .frame(width: 6, height: 6)
+                            }
+                        }
+                        .accessibilityHidden(true)
+                    }
                 }
+                if let note = explanation.formalityNote {
+                    Label(note.capitalized + " register", systemImage: "quote.bubble")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                relatedClipsRail(for: explanation.word)
             }
-            if let note = explanation.formalityNote {
-                Label(note.capitalized + " register", systemImage: "quote.bubble")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.55))
-            }
-            relatedClipsRail(for: explanation.word)
         }
     }
 
