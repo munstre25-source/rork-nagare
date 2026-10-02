@@ -81,10 +81,10 @@ struct BrandPalette {
 /// The onboarding canvas. Pass a `scene` for the night-sakura App Store look; omit it
 /// for the classic cream paper with seigaiha hills.
 struct JojoBrandBackground: View {
-    var showsHills: Bool = true
-    var showsPetals: Bool = true
     /// When set, paints a night scene with scrim + lantern glow instead of cream paper.
     var scene: BrandScene? = nil
+    var showsHills: Bool = true
+    var showsPetals: Bool = true
 
     @State private var kenBurns: Bool = false
     @State private var lanternPulse: Bool = false

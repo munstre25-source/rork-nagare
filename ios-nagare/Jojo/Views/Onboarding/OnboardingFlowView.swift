@@ -61,9 +61,9 @@ struct OnboardingFlowView: View {
 
     private var background: some View {
         JojoBrandBackground(
+            scene: sceneForStep,
             showsHills: false,
-            showsPetals: true,
-            scene: sceneForStep
+            showsPetals: true
         )
         .animation(.easeInOut(duration: 0.45), value: sceneForStep)
     }
