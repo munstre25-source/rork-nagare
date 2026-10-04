@@ -1,10 +1,11 @@
 # Jojo Insights
 
-## Live (recommended)
+## Live
 
-Hosted on SocialReportHQ behind HQ auth + `noindex`:
+This repo hosts the private dashboard for the Vercel project (`/hq` and `/hq/jojo-insights`).
+The public Jojo marketing pages stay on SocialReportHQ.
 
-**https://socialreporthq.com/hq/jojo-insights**
+The same dashboard also remains at **https://socialreporthq.com/hq/jojo-insights**.
 
 (Use your real site host if different.)
 
