@@ -19,9 +19,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .forYou:
-            "Immersion feed → tap a word → swipe to the next clip → flashcard"
+            "Two clips play in For You → tap a word → a flashcard is created → swipe → review"
         case .exploreVocab:
-            "Explore library → Vocab deck → tap-to-reveal flashcards"
+            "Explore paths → a clip plays → Vocab → flashcards flip"
         }
     }
 
@@ -29,17 +29,17 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .forYou:
             [
-                "For You opens on an anime clip",
-                "Tap a word — dictionary popup springs in",
-                "Swipe up to the next clip",
-                "Flashcard: tap to reveal → Good"
+                "For You plays the first clip",
+                "Tap a word — a flashcard is created",
+                "Swipe up — the second clip plays",
+                "Review that new card"
             ]
         case .exploreVocab:
             [
-                "Explore grid with filters and posters",
-                "Open a clip in the immersive player",
-                "Jump to Vocab — saved words from immersion",
-                "Review: tap-to-reveal flashcards"
+                "Explore’s learning paths",
+                "A clip plays in the feed layout",
+                "Vocab shows the words you saved",
+                "Flashcards flip, front to back"
             ]
         }
     }
@@ -74,6 +74,7 @@ struct MarketingShowcaseView: View {
     @State private var vocabHighlight: String?
     @State private var tabHighlight: AppTab = .feed
     @State private var didAutoBegin: Bool = false
+    @State private var bornCard: BornCardPayload?
 
     private enum Phase { case prep, running, done }
     private enum Stage { case feed, explore, immersive, vocab, analytics, flashcard }
@@ -92,7 +93,6 @@ struct MarketingShowcaseView: View {
         }
         .environment(coordinator)
         .environment(lookup)
-        .environment(\.colorScheme, .dark)
         .statusBarHidden(phase == .running)
         .onAppear {
             selectedScript = initialScript
@@ -134,7 +134,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only · never ships to App Store. Two clean Kiku-style walkthroughs. Start a screen recording, pick a video, then tap Begin.")
+            Text("DEBUG only. Two walkthroughs of the current app. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -218,19 +218,19 @@ struct MarketingShowcaseView: View {
     // MARK: Running stage
 
     private var showcaseStage: some View {
-        ZStack(alignment: .bottom) {
+        VStack(spacing: 0) {
             Group {
                 switch stage {
                 case .feed:
                     feedChrome
                 case .explore:
-                    exploreChrome
+                    ExploreHomeView(onOpenFeed: {})
                 case .immersive:
                     immersiveChrome
                 case .vocab:
-                    vocabChrome
+                    VocabView()
                 case .analytics:
-                    analyticsChrome
+                    ProfileView()
                 case .flashcard:
                     if let flashWord {
                         flashcardBeat(flashWord)
@@ -239,24 +239,29 @@ struct MarketingShowcaseView: View {
                                 removal: .opacity
                             ))
                     } else {
-                        Color.bgPlayer
+                        Color.canvas
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(.easeInOut(duration: 0.4), value: stage)
 
-            if stage != .flashcard && stage != .immersive {
+            if stage != .flashcard {
                 showcaseTabBar
-                    .padding(.horizontal, Spacing.l)
-                    .padding(.bottom, 10)
             }
-
+        }
+        .overlay {
             if let countdown {
                 Text("\(countdown)")
                     .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.designOrange)
                     .shadow(radius: 12)
                     .transition(.scale.combined(with: .opacity))
+            }
+            if let bornCard {
+                BornFlashcard(surface: bornCard.surface, romaji: bornCard.romaji, gloss: bornCard.gloss) {
+                    self.bornCard = nil
+                }
             }
         }
         .allowsHitTesting(false)
@@ -265,14 +270,14 @@ struct MarketingShowcaseView: View {
     private var showcaseTabBar: some View {
         HStack(spacing: 0) {
             showcaseTab(.feed, title: "Feed", systemImage: "play.circle.fill")
-            showcaseTab(.vocab, title: "Vocab", systemImage: "book.fill", badge: max(flashWords.count, 3))
+            showcaseTab(.vocab, title: "Vocab", systemImage: "book.fill", badge: max(flashWords.count, 1))
             showcaseTab(.profile, title: "Profile", systemImage: "person.fill")
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 
     private func showcaseTab(_ tab: AppTab, title: String, systemImage: String, badge: Int = 0) -> some View {
@@ -293,7 +298,7 @@ struct MarketingShowcaseView: View {
             }
             Text(title).font(.caption2.weight(.semibold))
         }
-        .foregroundStyle(tabHighlight == tab ? Color.jojoOrange : Color.white.opacity(0.45))
+        .foregroundStyle(tabHighlight == tab ? Color.designOrange : Color.secondary)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
     }
@@ -302,40 +307,41 @@ struct MarketingShowcaseView: View {
 
     private var feedChrome: some View {
         VStack(spacing: 0) {
-            DailyGoalBar()
-                .padding(.top, 4)
-                .environment(\.colorScheme, .dark)
-            HStack(spacing: Spacing.m) {
-                VStack(spacing: 4) {
-                    Text("For You")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                    Capsule().fill(Color.jojoOrange).frame(width: 28, height: 2)
-                }
-                Text("Explore")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.35))
-                Spacer()
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.white.opacity(0.5))
-                    .frame(width: 40, height: 40)
+            if !app.profile.hideDailyGoalBar {
+                DailyGoalBar()
+                    .padding(.top, 4)
             }
-            .padding(.horizontal, Spacing.l)
+            ZStack {
+                CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: {})
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    Image(systemName: "flag")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40, height: 40)
+                }
+            }
+            .padding(.horizontal, 8)
             .padding(.bottom, 2)
 
             GeometryReader { geo in
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 0) {
-                        ForEach(feedClips) { clip in
+                        ForEach(feedPair) { clip in
                             ClipStageView(
                                 clip: clip,
                                 showsChannelRow: false,
                                 immersiveFeed: true,
+                                videoExpanded: true,
+                                onToggleVideoSize: {},
                                 onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                             )
                             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                             .clipped()
-                            .background(Color.bgPlayer)
                             .id(clip.id)
                         }
                     }
@@ -345,315 +351,14 @@ struct MarketingShowcaseView: View {
                 .scrollPosition(id: $currentId)
                 .scrollDisabled(true)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 72)
-            }
         }
         .background(Color.canvas.ignoresSafeArea())
     }
 
-    // MARK: Explore chrome
-
-    private var exploreChrome: some View {
-        VStack(spacing: 0) {
-            DailyGoalBar()
-                .padding(.top, 4)
-                .environment(\.colorScheme, .dark)
-            HStack(spacing: Spacing.m) {
-                Text("For You")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.35))
-                VStack(spacing: 4) {
-                    Text("Explore")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                    Capsule().fill(Color.jojoOrange).frame(width: 28, height: 2)
-                }
-                Spacer()
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.white.opacity(0.5))
-                    .frame(width: 40, height: 40)
-            }
-            .padding(.horizontal, Spacing.l)
-            .padding(.bottom, 2)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Spacing.s) {
-                            FilterChip(title: "Saved", systemImage: "bookmark", isSelected: false, dark: true)
-                            FilterChip(title: "Difficulty", systemImage: "chart.bar.fill", isSelected: false, dark: true)
-                            FilterChip(title: "Anime", systemImage: "sparkles", isSelected: true, dark: true)
-                            FilterChip(title: "Source type", systemImage: "play.tv.fill", isSelected: false, dark: true)
-                        }
-                    }
-                    .contentMargins(.horizontal, Spacing.l, for: .scrollContent)
-
-                    LazyVStack(spacing: Spacing.l) {
-                        ForEach(feedClips) { clip in
-                            showcaseExploreCard(clip)
-                                .scaleEffect(exploreHighlight == clip.id ? 1.02 : 1)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                        .strokeBorder(exploreHighlight == clip.id ? Color.jojoOrange : .clear, lineWidth: 2.5)
-                                )
-                                .animation(.snappy, value: exploreHighlight)
-                        }
-                    }
-                    .padding(.horizontal, Spacing.l)
-                }
-                .padding(.vertical, Spacing.m)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 72)
-            }
-        }
-        .background(Color.canvas.ignoresSafeArea())
-    }
-
-    private func showcaseExploreCard(_ clip: Clip) -> some View {
-        Color.bgElevatedDark
-            .aspectRatio(16 / 9, contentMode: .fit)
-            .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
-            .overlay(alignment: .topLeading) {
-                Text(clip.difficulty)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.jojoOrange.opacity(0.9), in: Capsule())
-                    .padding(Spacing.s)
-            }
-            .overlay(alignment: .topTrailing) {
-                Text(formatClock(clip.durationSec))
-                    .font(.caption.weight(.bold))
-                    .monospacedDigit()
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.black.opacity(0.5), in: Capsule())
-                    .padding(Spacing.s)
-            }
-            .overlay(alignment: .bottom) {
-                LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 88)
-                    .overlay(alignment: .bottomLeading) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if let line = clip.lines.first {
-                                Text(line.text)
-                                    .font(JojoFont.jp(17, bold: true, relativeTo: .headline))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                            }
-                            Text(clip.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.8))
-                                .lineLimit(1)
-                        }
-                        .padding(Spacing.m)
-                    }
-            }
-            .clipShape(.rect(cornerRadius: Radius.card, style: .continuous))
-    }
-
-    // MARK: Immersive chrome
-
-    private var immersiveChrome: some View {
-        Group {
-            if let clip = feedClips.first(where: { $0.id == currentId }) ?? feedClips.first {
-                VStack(spacing: 0) {
-                    HStack(spacing: Spacing.m) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 40, height: 40)
-                            .background(Color.white.opacity(0.12), in: Circle())
-                        ChannelAvatar(clip: clip, size: 36)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
-                            Text(clip.channelName).font(.caption).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
-                        }
-                        Spacer()
-                        Image(systemName: "flag").foregroundStyle(.white.opacity(0.7)).frame(width: 40, height: 40)
-                    }
-                    .padding(.horizontal, Spacing.l)
-                    .padding(.vertical, Spacing.s)
-
-                    ClipStageView(
-                        clip: clip,
-                        showsChannelRow: false,
-                        immersiveFeed: true,
-                        onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
-                    )
-                }
-                .background(Color.bgPlayer.ignoresSafeArea())
-            }
-        }
-    }
-
-    // MARK: Vocab chrome
-
-    private var vocabChrome: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Vocab")
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundStyle(.white)
-                Spacer()
-                Image(systemName: "text.magnifyingglass")
-                    .foregroundStyle(Color.jojoOrange)
-                    .frame(width: 44, height: 44)
-            }
-            .padding(.horizontal, Spacing.l)
-            .padding(.top, Spacing.s)
-
-            Picker("", selection: .constant(VocabSection.learn)) {
-                Text("Learn").tag(VocabSection.learn)
-                Text("My Words").tag(VocabSection.mine)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, Spacing.l)
-            .padding(.vertical, Spacing.s)
-
-            ScrollView {
-                VStack(spacing: Spacing.s) {
-                    let words = flashWords.isEmpty ? demoVocabFallback() : flashWords
-                    ForEach(words.prefix(6), id: \.key) { word in
-                        HStack(spacing: Spacing.m) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(word.surface)
-                                    .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
-                                    .foregroundStyle(.white)
-                                Text(word.readings.joined(separator: " · "))
-                                    .font(JojoFont.jp(13, relativeTo: .caption))
-                                    .foregroundStyle(.white.opacity(0.55))
-                                if let def = word.definitions.first {
-                                    Text(def)
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.7))
-                                        .lineLimit(1)
-                                }
-                            }
-                            Spacer()
-                            if let jlpt = word.jlpt {
-                                PillView(text: jlpt, style: .jlpt)
-                            }
-                        }
-                        .padding(Spacing.m)
-                        .background(
-                            Color.bgElevatedDark,
-                            in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(vocabHighlight == word.key ? Color.jojoOrange : Color.white.opacity(0.06), lineWidth: vocabHighlight == word.key ? 2 : 1)
-                        )
-                        .scaleEffect(vocabHighlight == word.key ? 1.02 : 1)
-                        .animation(.snappy, value: vocabHighlight)
-                        .padding(.horizontal, Spacing.l)
-                    }
-                }
-                .padding(.vertical, Spacing.s)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 72)
-            }
-        }
-        .background(Color.canvas.ignoresSafeArea())
-    }
-
-    // MARK: Analytics chrome (Profile study stats)
-
-    private var analyticsChrome: some View {
-        VStack(spacing: Spacing.l) {
-            HStack {
-                Text("Profile")
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundStyle(.white)
-                Spacer()
-            }
-            .padding(.horizontal, Spacing.l)
-            .padding(.top, Spacing.s)
-
-            HStack(spacing: Spacing.m) {
-                showcaseStat(symbol: "flame.fill", tint: .jojoOrange, value: "\(max(app.currentStreak, 3))-day", caption: "streak")
-                showcaseStat(symbol: "clock", tint: .secondary, value: "12m", caption: "watched")
-            }
-            .padding(.horizontal, Spacing.l)
-
-            VStack(alignment: .leading, spacing: Spacing.m) {
-                Text("This week")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                HStack(alignment: .bottom, spacing: 10) {
-                    ForEach(0..<7, id: \.self) { day in
-                        let height: CGFloat = [28, 44, 36, 58, 48, 62, 40][day]
-                        VStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.jojoOrangeLight, Color.jojoOrange],
-                                        startPoint: .bottom,
-                                        endPoint: .top
-                                    )
-                                )
-                                .frame(height: height)
-                            Text(["M", "T", "W", "T", "F", "S", "S"][day])
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.45))
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(height: 90, alignment: .bottom)
-                .padding(Spacing.l)
-                .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            }
-            .padding(.horizontal, Spacing.l)
-
-            VStack(alignment: .leading, spacing: Spacing.s) {
-                Text("Mastery")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                HStack(spacing: Spacing.m) {
-                    masteryChip("New", "\(max(flashWords.count, 8))", .jojoOrange)
-                    masteryChip("Learning", "12", .sakuraPink)
-                    masteryChip("Known", "34", .spokenGreen)
-                }
-            }
-            .padding(.horizontal, Spacing.l)
-
-            Spacer(minLength: 0)
-        }
-        .background(Color.canvas.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Color.clear.frame(height: 72)
-        }
-    }
-
-    private func showcaseStat(symbol: String, tint: Color, value: String, caption: String) -> some View {
-        HStack(spacing: Spacing.m) {
-            Image(systemName: symbol)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(width: 36)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(value).font(.headline.weight(.bold)).foregroundStyle(.white)
-                Text(caption).font(.caption).foregroundStyle(.white.opacity(0.5))
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(Spacing.m)
-        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-    }
-
-    private func masteryChip(_ title: String, _ value: String, _ tint: Color) -> some View {
-        VStack(spacing: 4) {
-            Text(value).font(.title3.weight(.bold)).foregroundStyle(.white)
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(tint)
-        }
-        .frame(maxWidth: .infinity, minHeight: 64)
-        .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    /// The two bundled clips that actually play. Posters never lead the demo.
+    private var feedPair: [Clip] {
+        let local = feedClips.filter(\.hasLocalVideo)
+        return Array((local.count >= 2 ? local : feedClips).prefix(2))
     }
 
     // MARK: Flashcard
@@ -812,26 +517,11 @@ struct MarketingShowcaseView: View {
 
     private func demoFeedClips() -> [Clip] {
         let preferredIds = ["hoshizora-academy-07", "boss-rush-live-09"]
-        var ordered: [Clip] = []
-        for id in preferredIds {
-            if let clip = app.clip(id: id), clip.hasLocalVideo || clip.hasPlayableVideo {
-                ordered.append(clip)
-            }
-        }
+        var ordered: [Clip] = preferredIds.compactMap { app.clip(id: $0) }.filter(\.hasLocalVideo)
         if ordered.count < 2 {
             for clip in app.clips where clip.hasLocalVideo && !ordered.contains(where: { $0.id == clip.id }) {
                 ordered.append(clip)
                 if ordered.count >= 2 { break }
-            }
-        }
-        if ordered.isEmpty, let fallback = app.recommendedClip(preferShort: true) ?? app.clips.first {
-            ordered = [fallback]
-        }
-        // Pad explore grid with a couple more for Video 2.
-        if ordered.count < 4 {
-            for clip in app.clips where !ordered.contains(where: { $0.id == clip.id }) {
-                ordered.append(clip)
-                if ordered.count >= 4 { break }
             }
         }
         return ordered
@@ -906,7 +596,12 @@ struct MarketingShowcaseView: View {
             withAnimation(Motion.popupSpring) {
                 lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: first, app: app)
             }
-            try? await Task.sleep(for: .milliseconds(2800))
+            bornCard = BornCardPayload(
+                surface: token.surface,
+                romaji: token.romaji,
+                gloss: token.definitions.first ?? ""
+            )
+            try? await Task.sleep(for: .milliseconds(2200))
             guard !Task.isCancelled else { return }
             let key = AppModel.wordKey(for: token)
             savedFromTap = (try? app.context.fetch(
@@ -940,19 +635,25 @@ struct MarketingShowcaseView: View {
         try? await Task.sleep(for: .milliseconds(2200))
         guard !Task.isCancelled else { return }
 
-        let pick = clips.first ?? first
-        withAnimation(.snappy) { exploreHighlight = pick.id }
-        try? await Task.sleep(for: .milliseconds(900))
+        let pick = feedPair.first ?? first
+        withAnimation(.easeInOut(duration: 0.4)) { stage = .feed }
+        currentId = pick.id
+        coordinator.activate(pick, startLine: 0, loopLine: true)
+        try? await Task.sleep(for: .milliseconds(1800))
         guard !Task.isCancelled else { return }
 
-        currentId = pick.id
-        withAnimation(.easeInOut(duration: 0.4)) {
-            stage = .immersive
-            exploreHighlight = nil
+        if let second = feedPair.dropFirst().first {
+            withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            coordinator.activate(second, startLine: 0, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(1800))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.45)) { currentId = pick.id }
+            coordinator.activate(pick, startLine: 0, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
         }
-        coordinator.activate(pick, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(1600))
-        guard !Task.isCancelled else { return }
 
         if let line = pick.lines.first,
            let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
@@ -962,6 +663,11 @@ struct MarketingShowcaseView: View {
             withAnimation(Motion.popupSpring) {
                 lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: pick, app: app)
             }
+            bornCard = BornCardPayload(
+                surface: token.surface,
+                romaji: token.romaji,
+                gloss: token.definitions.first ?? ""
+            )
             try? await Task.sleep(for: .milliseconds(2000))
             guard !Task.isCancelled else { return }
             withAnimation(Motion.popupSpring) { lookup.dismiss() }
@@ -1034,6 +740,7 @@ struct MarketingShowcaseView: View {
         flashWord = nil
         flashIndex = 0
         flashWords = []
+        bornCard = nil
         countdown = nil
         feedClips = []
         currentId = nil
