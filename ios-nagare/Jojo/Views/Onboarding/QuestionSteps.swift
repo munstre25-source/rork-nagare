@@ -46,6 +46,7 @@ struct MotivationStepView: View {
         Haptics.light()
         app.profile.motivations = values
         app.save()
+        app.assignFirstClip()
         onContinue()
     }
 }
@@ -58,6 +59,7 @@ struct TasteSwipeStepView: View {
     @State private var liked: [String] = []
     @State private var disliked: [String] = []
     @State private var drag: CGSize = .zero
+    @State private var didRestore = false
 
     private let tastes = Taste.allCases
 
@@ -73,10 +75,11 @@ struct TasteSwipeStepView: View {
                         Text("Your feed is tuned.")
                             .font(.system(.title2, design: .rounded, weight: .bold))
                             .foregroundStyle(Color.white)
-                        Text(liked.isEmpty ? "We'll start with a bit of everything." : "Starting with \(liked.compactMap { Taste(rawValue: $0)?.title }.prefix(2).joined(separator: " & ")).")
+                        Text(summary)
                             .font(.subheadline)
                             .foregroundStyle(Color.white.opacity(0.7))
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .transition(.scale.combined(with: .opacity))
                 } else {
@@ -105,17 +108,55 @@ struct TasteSwipeStepView: View {
                 }
                 .padding(.bottom, Spacing.m)
             } else {
-                Button("Continue") {
-                    app.profile.tastesLiked = liked
-                    app.profile.tastesDisliked = disliked
-                    app.save()
-                    onContinue()
+                VStack(spacing: Spacing.m) {
+                    feedPreview
+                    Button("Continue") {
+                        persistTastes()
+                        onContinue()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    Button("Swipe again") { restart() }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.8))
+                        .frame(minHeight: 44)
                 }
-                .buttonStyle(PrimaryButtonStyle())
                 .padding(.horizontal, Spacing.l)
                 .padding(.bottom, Spacing.m)
             }
         }
+        .onAppear(perform: restore)
+    }
+
+    private var feedPreview: some View {
+        let clips = Array(app.forYouClips.prefix(3))
+        return VStack(alignment: .leading, spacing: 8) {
+            if clips.isEmpty {
+                Text("We'll keep looking for clips in this lane.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.white.opacity(0.7))
+            } else {
+                ForEach(clips) { clip in
+                    HStack(spacing: 10) {
+                        Image(systemName: clip.categoryKind.symbol)
+                            .foregroundStyle(Color.sakuraPinkLight)
+                            .frame(width: 28)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(clip.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Text(clip.categoryKind.displayName)
+                                .font(.caption)
+                                .foregroundStyle(Color.white.opacity(0.65))
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var swipeGesture: some Gesture {
@@ -144,10 +185,46 @@ struct TasteSwipeStepView: View {
         .accessibilityLabel(label)
     }
 
+    private var summary: String {
+        if !liked.isEmpty {
+            let names = liked.compactMap { Taste(rawValue: $0)?.title }.prefix(2).joined(separator: " & ")
+            return "Your feed opens on \(names)."
+        }
+        let fromWhy = app.profile.motivations.compactMap { Motivation(rawValue: $0)?.title }.prefix(2)
+        if !fromWhy.isEmpty {
+            return "You passed the cards, so your feed follows why you're here."
+        }
+        return "Tell me one thing you're into and the feed will follow it."
+    }
+
+    private func restore() {
+        guard !didRestore else { return }
+        didRestore = true
+        liked = app.profile.tastesLiked
+        disliked = app.profile.tastesDisliked
+        index = min(tastes.count, liked.count + disliked.count)
+    }
+
+    private func restart() {
+        liked = []
+        disliked = []
+        index = 0
+        drag = .zero
+        persistTastes()
+    }
+
+    private func persistTastes() {
+        app.profile.tastesLiked = liked
+        app.profile.tastesDisliked = disliked
+        app.save()
+        app.assignFirstClip()
+    }
+
     private func decide(like: Bool) {
         guard let taste = tastes[safe: index] else { return }
         like ? Haptics.medium() : Haptics.light()
         if like { liked.append(taste.rawValue) } else { disliked.append(taste.rawValue) }
+        persistTastes()
         track("onboarding_taste_swiped", props: ["taste": taste.rawValue, "liked": like ? "1" : "0"])
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             drag = CGSize(width: like ? 600 : -600, height: drag.height)
@@ -242,6 +319,7 @@ struct LevelStepView: View {
             selected = level
             app.profile.level = level.rawValue
             app.save()
+            app.assignFirstClip()
             track("onboarding_level_selected", props: ["level": level.rawValue])
             Task {
                 try? await Task.sleep(for: .milliseconds(350))

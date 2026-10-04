@@ -4,6 +4,7 @@ import Charts
 /// Social proof (sample content).
 struct SocialProofStepView: View {
     let onContinue: () -> Void
+    @Environment(AppModel.self) private var app
     @State private var page: Int = 0
 
     private let quotes: [(String, String, String)] = [
@@ -11,6 +12,18 @@ struct SocialProofStepView: View {
         ("It doesn't feel like studying. I scroll on the train and my deck just grows.", "Daniel, commuter", "tram.fill"),
         ("Talked to my grandma in Japanese for the first time in years.", "Kenji, heritage learner", "heart.fill")
     ]
+
+    /// Lead with the story that matches why they said they downloaded.
+    private var orderedQuotes: [(String, String, String)] {
+        let motives = Set(app.profile.motivations)
+        if motives.contains(Motivation.heritage.rawValue) {
+            return [quotes[2], quotes[0], quotes[1]]
+        }
+        if motives.contains(Motivation.fun.rawValue), !motives.contains(Motivation.anime.rawValue) {
+            return [quotes[1], quotes[0], quotes[2]]
+        }
+        return quotes
+    }
 
     var body: some View {
         VStack(spacing: Spacing.l) {
@@ -36,7 +49,7 @@ struct SocialProofStepView: View {
                     .accessibilityLabel("Rated 4.8 out of 5, 12,400 ratings")
 
                     TabView(selection: $page) {
-                        ForEach(Array(quotes.enumerated()), id: \.offset) { i, quote in
+                        ForEach(Array(orderedQuotes.enumerated()), id: \.offset) { i, quote in
                             VStack(alignment: .leading, spacing: Spacing.m) {
                                 Image(systemName: quote.2).font(.title2).foregroundStyle(Color.jojoVermilion)
                                 Text("“\(quote.0)”")
@@ -180,11 +193,29 @@ struct JourneyStepView: View {
         app.profile.firstName.isEmpty ? "Your Japanese journey" : "\(app.profile.firstName)'s Japanese journey"
     }
 
+    private var journeySubtitle: String {
+        let focus = profileFocus
+        if focus.isEmpty {
+            return "At \(app.profile.dailyGoalMinutes) minutes a day, here's where 30 days can take you."
+        }
+        return "At \(app.profile.dailyGoalMinutes) minutes a day in \(focus), here's where 30 days can take you."
+    }
+
+    private var profileFocus: String {
+        let liked = app.profile.tastesLiked.compactMap { Taste(rawValue: $0)?.title }
+        if !liked.isEmpty { return liked.prefix(2).joined(separator: " & ") }
+        let genres = app.profile.motivations
+            .compactMap { Motivation(rawValue: $0)?.categories.first?.displayName }
+        var seen: [String] = []
+        for genre in genres where !seen.contains(genre) { seen.append(genre) }
+        return seen.prefix(2).joined(separator: " & ")
+    }
+
     var body: some View {
         VStack(spacing: Spacing.l) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
-                    OnboardingTitle(title: title, subtitle: "At \(app.profile.dailyGoalMinutes) minutes a day, here's where 30 days can take you.")
+                    OnboardingTitle(title: title, subtitle: journeySubtitle)
                     VStack(alignment: .leading, spacing: Spacing.m) {
                         HStack(alignment: .firstTextBaseline) {
                             Text("~\(Int(points.last?.words ?? 0))")
@@ -431,9 +462,12 @@ struct WelcomeStepView: View {
                 .multilineTextAlignment(.center)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
-            Text("Your first clip is ready.")
+            Text(firstClipLine)
                 .font(.headline)
                 .foregroundStyle(Color.jojoInkSoft)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
                 .opacity(appeared ? 1 : 0)
             Spacer()
         }
@@ -441,13 +475,18 @@ struct WelcomeStepView: View {
         .task {
             Haptics.success()
             withAnimation(.spring(response: 0.7, dampingFraction: 0.72)) { appeared = true }
-            track("onboarding_welcome_view")
-            try? await Task.sleep(for: .milliseconds(1800))
+            track("onboarding_welcome_view", props: ["first_clip": app.profile.firstClipId ?? "none"])
+            try? await Task.sleep(for: .milliseconds(2400))
             onFinish()
         }
     }
 
     private var headline: String {
         app.profile.firstName.isEmpty ? "You're in. Let's go." : "You're in, \(app.profile.firstName). Let's go."
+    }
+
+    private var firstClipLine: String {
+        guard let clip = app.recommendedClip() else { return "Your first clip is ready." }
+        return "First up: \(clip.title)"
     }
 }

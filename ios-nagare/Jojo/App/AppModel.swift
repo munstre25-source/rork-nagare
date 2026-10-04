@@ -178,52 +178,100 @@ final class AppModel {
         }
     }
 
-    /// For You ordering: taste match + closeness to the user's level, with the Day-1 clip first.
-    /// When `gateContentByLevel` is on, only clips at the user's level or one step harder appear.
+    /// For You, ordered from this person's onboarding answers. The promised first clip stays
+    /// at the top until they've actually watched.
     var forYouClips: [Clip] {
-        let liked = Set(profile.tastesLiked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
-        let disliked = Set(profile.tastesDisliked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
-        let level = profile.readingLevel.difficulty.rank
-        let source = studyLibrary
-        let pool: [Clip]
-        if profile.gateContentByLevel {
-            pool = source.filter { $0.difficultyKind.rank <= level + 1 }
-        } else {
-            pool = source
-        }
-        func score(_ clip: Clip) -> Double {
-            var s = 0.0
-            if liked.contains(clip.categoryKind) { s += 3 }
-            if disliked.contains(clip.categoryKind) { s -= 3 }
-            s -= Double(abs(clip.difficultyKind.rank - level)) * 1.5
-            // Prefer bundled MP4s (reliable in Simulator) over YouTube / posters.
-            if clip.hasLocalVideo { s += 10 }
-            else if clip.hasRealVideo { s += 8 }
-            // Stable demo order when local anime + gaming clips are bundled for recording.
-            if clip.id == "hoshizora-academy-07" { s += 2 }
-            if clip.id == "boss-rush-live-09" { s += 1 }
-            s += Double(abs(clip.id.utf8.reduce(7) { ($0 &* 31 &+ Int($1)) % 997 })) / 997.0
-            return s
-        }
-        var ordered = pool.sorted { score($0) > score($1) }
-        if let first = profile.firstClipId, let index = ordered.firstIndex(where: { $0.id == first }) {
+        var ordered = rankedStudyClips()
+        if shouldPinFirstClip,
+           let first = profile.firstClipId,
+           let index = ordered.firstIndex(where: { $0.id == first }),
+           index > 0 {
             ordered.insert(ordered.remove(at: index), at: 0)
         }
-        // Always keep at least something playable.
         return ordered.isEmpty ? studyLibrary : ordered
     }
 
-    /// The best single clip for the user's answers (used for the demo and Day-1 clip).
+    /// Writes the current best clip onto the profile so a relaunch opens the same personal feed.
+    func assignFirstClip() {
+        let id = rankedStudyClips().first?.id
+        guard profile.firstClipId != id else { return }
+        profile.firstClipId = id
+        save()
+    }
+
+    /// The best single clip for the user's answers (demo card and Day-1 clip).
     func recommendedClip(preferShort: Bool = false) -> Clip? {
-        let candidates = forYouClips
+        let candidates = rankedStudyClips()
         if preferShort {
-            let short = candidates.prefix(4).filter { clip in
+            let short = candidates.prefix(8).filter { clip in
                 guard let line = clip.lines.first else { return false }
                 return line.end - line.start <= 6 && line.tokens.contains { $0.containsKanji && $0.tappable }
             }
-            return short.first ?? clip(id: "kissa-stories-01") ?? candidates.first
+            return short.first ?? candidates.first
         }
-        return candidates.first ?? clip(id: "kissa-stories-01")
+        return candidates.first
+    }
+
+    /// Liked swipes outrank motivations. A pass beats a motivation for that genre.
+    private func rankedStudyClips() -> [Clip] {
+        let liked = Set(profile.tastesLiked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
+        let disliked = Set(profile.tastesDisliked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
+        let motivated = Set(profile.motivations.compactMap(Motivation.init(rawValue:)).flatMap(\.categories))
+            .subtracting(disliked)
+        let wanted = liked.union(motivated)
+        let level = profile.readingLevel.difficulty.rank
+
+        let withoutPasses = studyLibrary.filter { !disliked.contains($0.categoryKind) }
+        let base = withoutPasses.isEmpty ? studyLibrary : withoutPasses
+        let inBand: [Clip]
+        if profile.gateContentByLevel {
+            let gated = base.filter { $0.difficultyKind.rank <= level + 1 }
+            inBand = gated.isEmpty ? base : gated
+        } else {
+            inBand = base
+        }
+        let matchedInBand = inBand.filter { wanted.contains($0.categoryKind) }
+        let matchedAnywhere = base.filter { wanted.contains($0.categoryKind) }
+        let preferred = matchedInBand.isEmpty ? matchedAnywhere : matchedInBand
+        var pool = preferred
+        for clip in inBand where !pool.contains(where: { $0.id == clip.id }) {
+            pool.append(clip)
+        }
+        if pool.isEmpty { pool = studyLibrary }
+
+        func score(_ clip: Clip) -> Double {
+            var s = 0.0
+            let category = clip.categoryKind
+            if disliked.contains(category) {
+                s -= 80
+            } else if liked.contains(category) {
+                s += 50
+            } else if motivated.contains(category) {
+                s += 28
+            } else if !wanted.isEmpty {
+                s -= 18
+            }
+            s -= Double(abs(clip.difficultyKind.rank - level)) * 8
+            if clip.hasVerifiedTranscript { s += 4 }
+            s += feedTieBreak(clip.id)
+            return s
+        }
+        return pool.sorted { score($0) > score($1) }
+    }
+
+    /// Keeps the clip we named during onboarding at the front of the first session.
+    private var shouldPinFirstClip: Bool {
+        guard profile.onboardingCompleted, profile.firstClipId != nil else { return false }
+        return totalWatchSeconds - profile.feedbackBaselineWatchSeconds < 30
+    }
+
+    /// Stable per-person shuffle that only breaks ties. Taste and level always win.
+    private func feedTieBreak(_ clipId: String) -> Double {
+        var hash = 17
+        let salt = profile.firstName.lowercased() + "|" + profile.motivations.sorted().joined(separator: ",")
+        for byte in salt.utf8 { hash = hash &* 31 &+ Int(byte) }
+        for byte in clipId.utf8 { hash = hash &* 31 &+ Int(byte) }
+        return Double(abs(hash % 1000)) / 2500.0
     }
 
     // MARK: Favorites
@@ -635,7 +683,7 @@ final class AppModel {
     }
 
     func completeOnboarding() {
-        profile.firstClipId = recommendedClip()?.id
+        assignFirstClip()
         seedDemoDataIfNeeded()
         profile.onboardingCompleted = true
         profile.onboardingCompletedAt = Date()

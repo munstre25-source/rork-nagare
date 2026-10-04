@@ -92,8 +92,8 @@ struct PaywallView: View {
                                 .tracking(2)
                                 .foregroundStyle(Color.jojoVermilion)
                         }
-                        OnboardingTitle(title: "Flow into Japanese, every day.",
-                                        subtitle: "Unlimited clips, tap-to-understand on every word and flashcards that build themselves.")
+                        OnboardingTitle(title: paywallTitle,
+                                        subtitle: paywallSubtitle)
                     }
                     planCard(.yearly,
                              title: "Yearly",
@@ -123,6 +123,17 @@ struct PaywallView: View {
             }
             footer
         }
+    }
+
+    private var paywallTitle: String {
+        app.profile.firstName.isEmpty ? "Your feed is ready." : "\(app.profile.firstName), your feed is ready."
+    }
+
+    private var paywallSubtitle: String {
+        if let clip = app.recommendedClip() {
+            return "It opens on \(clip.title). Unlimited clips, tap any word, and flashcards build themselves."
+        }
+        return "Unlimited clips, tap-to-understand on every word and flashcards that build themselves."
     }
 
     private var selectedPackage: Package? {

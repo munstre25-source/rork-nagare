@@ -21,6 +21,17 @@ nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
         case .fun: "face.smiling.inverse"
         }
     }
+
+    /// Genres this reason should pull forward when a swipe didn't pass them.
+    var categories: [ClipCategory] {
+        switch self {
+        case .anime: [.anime]
+        case .vtubers: [.vtuber, .gaming]
+        case .travel: [.variety, .interview]
+        case .heritage: [.drama, .interview]
+        case .fun: [.variety, .anime]
+        }
+    }
 }
 
 nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
