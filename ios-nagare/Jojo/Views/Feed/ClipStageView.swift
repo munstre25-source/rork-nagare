@@ -124,10 +124,8 @@ struct ClipStageView: View {
             }
 
             if usesFlexibleVideo {
-                ScrollView(.vertical, showsIndicators: false) {
-                    transcript(player: player)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                transcript(player: player)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else {
                 transcript(player: player)
                     .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)

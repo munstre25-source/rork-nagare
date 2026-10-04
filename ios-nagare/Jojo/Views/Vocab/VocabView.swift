@@ -111,10 +111,9 @@ struct VocabView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
-                .padding(.bottom, 96)
+                .padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
-            .tabBarAutoHide(tabBarHidden)
             .background(Color.canvas.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)

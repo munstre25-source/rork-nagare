@@ -47,6 +47,7 @@ final class YouTubeContainerView: UIView {
         guard window != nil, let webView, webView.superview !== self else { return }
         webView.removeFromSuperview()
         webView.frame = bounds
+        webView.isUserInteractionEnabled = false
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(webView)
     }

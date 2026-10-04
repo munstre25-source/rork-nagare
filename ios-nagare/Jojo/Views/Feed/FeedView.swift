@@ -165,7 +165,6 @@ struct FeedView: View {
                             shadowingClip = clip
                         }
                     )
-                    .padding(.bottom, tabBarHidden.wrappedValue ? 12 : 84)
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
                 }
@@ -175,9 +174,9 @@ struct FeedView: View {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentId)
         .scrollDisabled(lookup.isPresented || quizClip != nil)
+        .scrollIndicators(.hidden)
         .background(Color.canvas)
         .clipped()
-        .tabBarAutoHide(tabBarHidden)
     }
 
     private func setup() {

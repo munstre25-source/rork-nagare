@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 
 /// Routes to onboarding/paywall until onboarding is complete AND the entitlement is active.
 struct RootView: View {
@@ -40,57 +39,34 @@ nonisolated enum AppTab: Hashable, Sendable {
     case feed, vocab, explore, profile
 }
 
-/// Four tabs: Feed, Vocab, Explore, Profile.
+/// Feed, Vocab, and Profile sit in the bottom bar. Explore opens from the top switch.
 struct MainTabView: View {
     @Environment(AppModel.self) private var app
-    @Query private var words: [SavedWord]
     @State private var tab: AppTab = .feed
     @State private var showFeedbackPrompt = false
     @State private var showManualFeedback = false
     @State private var showCancellationSurvey = false
-    /// New flashcards saved since last Vocab visit (0 = show total word count instead).
+    /// New flashcards saved since the last visit to Vocab. The system badge shows only this count.
     @State private var newVocabSinceVisit: Int = 0
-    @State private var tabBarHidden = false
-
-    private var vocabBadge: Int {
-        if tab == .vocab { return 0 }
-        return newVocabSinceVisit > 0 ? newVocabSinceVisit : words.count
-    }
+    @State private var showingExplore = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $tab) {
-                FeedView(isActiveTab: tab == .feed, onOpenExplore: { tab = .explore }, tabBarHidden: $tabBarHidden)
-                    .tag(AppTab.feed)
-                VocabView(tabBarHidden: $tabBarHidden)
-                    .tag(AppTab.vocab)
-                ExploreHomeView(onOpenFeed: { tab = .feed }, tabBarHidden: $tabBarHidden)
-                    .tag(AppTab.explore)
-                ProfileView(onGiveFeedback: { showManualFeedback = true }, tabBarHidden: $tabBarHidden)
-                    .tag(AppTab.profile)
-            }
-            .toolbar(.hidden, for: .tabBar)
+        TabView(selection: $tab) {
+            FeedTab(
+                showingExplore: $showingExplore,
+                feedActive: tab == .feed
+            )
+            .tabItem { Label("Feed", systemImage: "play.circle") }
+            .tag(AppTab.feed)
 
-            if tabBarHidden {
-                Color.clear
-                    .frame(height: 44)
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-                            tabBarHidden = false
-                        }
-                    }
-                    .accessibilityLabel("Show tabs")
-            }
+            VocabView()
+                .tabItem { Label("Vocab", systemImage: "book") }
+                .tag(AppTab.vocab)
+                .badge(newVocabSinceVisit)
 
-            FloatingTabBar(selection: $tab, vocabBadge: vocabBadge)
-                .padding(.horizontal, Spacing.l)
-                .padding(.bottom, 8)
-                .offset(y: tabBarHidden ? 160 : 0)
-                .opacity(tabBarHidden ? 0 : 1)
-                .allowsHitTesting(!tabBarHidden)
-                .animation(.spring(response: 0.35, dampingFraction: 0.86), value: tabBarHidden)
+            ProfileView(onGiveFeedback: { showManualFeedback = true })
+                .tabItem { Label("Profile", systemImage: "person") }
+                .tag(AppTab.profile)
         }
         .tint(Color.designOrange)
         .preferredColorScheme(app.profile.appearance.colorScheme)
@@ -99,12 +75,13 @@ struct MainTabView: View {
         }
         .onChange(of: tab) { _, newTab in
             if newTab == .vocab { newVocabSinceVisit = 0 }
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-                tabBarHidden = false
-            }
+            if newTab != .feed { showingExplore = false }
         }
         .onChange(of: app.pendingFeedClipId) { _, id in
-            if id != nil { tab = .feed }
+            if id != nil {
+                showingExplore = false
+                tab = .feed
+            }
         }
         .onChange(of: app.pendingDeepLink) { _, link in
             switch link {
@@ -149,59 +126,24 @@ struct MainTabView: View {
     }
 }
 
-/// Floating capsule tab bar matching Kiku's chrome.
-struct FloatingTabBar: View {
-    @Binding var selection: AppTab
-    var vocabBadge: Int
+/// For You and Explore share the Feed tab, so the system tab bar stays on Feed, Vocab, and Profile.
+private struct FeedTab: View {
+    @Binding var showingExplore: Bool
+    var feedActive: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            tabButton(.feed, title: "Feed", systemImage: selection == .feed ? "house.fill" : "house")
-            tabButton(.vocab, title: "Vocab", systemImage: selection == .vocab ? "book.fill" : "book", badge: vocabBadge)
-            tabButton(.explore, title: "Explore", systemImage: selection == .explore ? "safari.fill" : "safari")
-            tabButton(.profile, title: "Profile", systemImage: selection == .profile ? "person.fill" : "person")
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-        .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
-        .accessibilityElement(children: .contain)
-    }
+        ZStack {
+            FeedView(
+                isActiveTab: feedActive && !showingExplore,
+                onOpenExplore: { showingExplore = true }
+            )
+            .opacity(showingExplore ? 0 : 1)
+            .allowsHitTesting(!showingExplore)
+            .accessibilityHidden(showingExplore)
 
-    private func tabButton(_ tab: AppTab, title: String, systemImage: String, badge: Int = 0) -> some View {
-        Button {
-            Haptics.selection()
-            withAnimation(Motion.tabSlide) { selection = tab }
-        } label: {
-            VStack(spacing: 2) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 20, weight: .semibold))
-                        .frame(width: 44, height: 28)
-                    if badge > 0 {
-                        Text(badge > 99 ? "99+" : "\(badge)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .frame(minWidth: 16, minHeight: 16)
-                            .background(Color.sakuraFill, in: Capsule())
-                            .offset(x: 10, y: -6)
-                            .contentTransition(.numericText())
-                    }
-                }
-                Text(title)
-                    .font(.caption2.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+            if showingExplore {
+                ExploreHomeView(onOpenFeed: { showingExplore = false })
             }
-            .foregroundStyle(selection == tab ? Color.designOrange : Color.secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .contentShape(Rectangle())
         }
-        .accessibilityLabel(title)
-        .accessibilityValue(badge > 0 ? "\(badge) new" : "")
-        .accessibilityAddTraits(selection == tab ? .isSelected : [])
     }
 }
