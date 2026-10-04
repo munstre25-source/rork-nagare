@@ -77,7 +77,7 @@ struct MarketingShowcaseView: View {
     @State private var bornCard: BornCardPayload?
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case feed, explore, immersive, vocab, analytics, flashcard }
+    private enum Stage { case feed, explore, vocab, analytics, flashcard }
 
     var body: some View {
         ZStack {
@@ -111,7 +111,7 @@ struct MarketingShowcaseView: View {
             lookup.dismiss()
         }
         .onChange(of: currentId) { _, newId in
-            guard phase == .running, stage == .feed || stage == .immersive,
+            guard phase == .running, stage == .feed,
                   !showFlashcard,
                   let newId, let clip = feedClips.first(where: { $0.id == newId }) else { return }
             coordinator.activate(clip, startLine: 0, loopLine: true)
@@ -225,8 +225,6 @@ struct MarketingShowcaseView: View {
                     feedChrome
                 case .explore:
                     ExploreHomeView(onOpenFeed: {})
-                case .immersive:
-                    immersiveChrome
                 case .vocab:
                     VocabView()
                 case .analytics:
