@@ -27,7 +27,7 @@ extension Color {
     }
 
     /// A color that resolves differently in light and dark mode.
-    static func adaptive(light: String, dark: String) -> Color {
+    nonisolated static func adaptive(light: String, dark: String) -> Color {
         Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light)
         })

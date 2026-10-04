@@ -51,7 +51,6 @@ struct ExploreHomeView: View {
             }
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
-                    .presentationDetents([.medium])
             }
         }
     }
@@ -423,31 +422,3 @@ private struct JLPTPathView: View {
     }
 }
 
-private struct DailyGoalSheet: View {
-    @Environment(AppModel.self) private var app
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Daily goal")
-                    .font(.title2.weight(.bold))
-                Spacer()
-                Button("Done") { dismiss() }
-                    .font(.body.weight(.semibold))
-            }
-            Text(app.isGoalReached ? "You hit today’s goal." : "\(app.minutesLeft) min left today")
-                .font(.title3.weight(.semibold))
-                .lineLimit(2)
-            ProgressView(value: app.goalProgress)
-                .tint(Color.designOrange)
-            Text("\(app.profile.dailyGoalMinutes) minutes keeps the streak alive.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer()
-        }
-        .padding(24)
-        .background(Color.canvas.ignoresSafeArea())
-    }
-}

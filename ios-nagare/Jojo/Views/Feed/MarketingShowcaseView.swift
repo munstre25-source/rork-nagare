@@ -507,9 +507,9 @@ struct MarketingShowcaseView: View {
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.s)
 
-            Picker("", selection: .constant(VocabSection.all)) {
-                Text("Review").tag(VocabSection.review)
-                Text("All Words").tag(VocabSection.all)
+            Picker("", selection: .constant(VocabSection.learn)) {
+                Text("Learn").tag(VocabSection.learn)
+                Text("My Words").tag(VocabSection.mine)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, Spacing.l)
