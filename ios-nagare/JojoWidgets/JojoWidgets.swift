@@ -70,7 +70,7 @@ struct JojoWidgetView: View {
     let entry: JojoWidgetEntry
 
     private var snapshot: WidgetSnapshot { entry.snapshot }
-    private let orange = Color(red: 1, green: 0.42, blue: 0)
+    private let sakura = Color(red: 1, green: 0.373, blue: 0.635)
 
     var body: some View {
         switch family {
@@ -92,7 +92,7 @@ struct JojoWidgetView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Image(systemName: snapshot.dueCount > 0 ? "rectangle.stack.fill" : "flame.fill")
-                        .foregroundStyle(orange)
+                        .foregroundStyle(sakura)
                     Spacer(minLength: 0)
                     Text("Jojo")
                         .font(.caption2.weight(.bold))
@@ -109,7 +109,7 @@ struct JojoWidgetView: View {
                     .foregroundStyle(.white.opacity(0.7))
                 Text(snapshot.goalCaption)
                     .font(.caption2)
-                    .foregroundStyle(snapshot.isGoalReached ? orange : .white.opacity(0.5))
+                    .foregroundStyle(snapshot.isGoalReached ? sakura : .white.opacity(0.5))
             }
             .padding(4)
         }
@@ -124,7 +124,7 @@ struct JojoWidgetView: View {
                             .font(.headline)
                             .foregroundStyle(.white)
                     } icon: {
-                        Image(systemName: "flame.fill").foregroundStyle(orange)
+                        Image(systemName: "flame.fill").foregroundStyle(sakura)
                     }
                     progressBar
                     Text(snapshot.goalCaption)
@@ -133,7 +133,7 @@ struct JojoWidgetView: View {
                     Spacer(minLength: 0)
                     HStack(spacing: 6) {
                         Image(systemName: "rectangle.stack.fill")
-                            .foregroundStyle(orange)
+                            .foregroundStyle(sakura)
                         Text(snapshot.dueCount > 0 ? "\(snapshot.dueCount) cards due" : "All caught up")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
@@ -157,7 +157,7 @@ struct JojoWidgetView: View {
                         }
                         Text(snapshot.dueCount > 0 ? "Review" : "Watch")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(orange)
+                            .foregroundStyle(sakura)
                     }
                     .frame(width: 110)
                     .padding(.vertical, 10)
@@ -174,7 +174,7 @@ struct JojoWidgetView: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.white.opacity(0.12))
                 Capsule()
-                    .fill(orange)
+                    .fill(sakura)
                     .frame(width: max(6, proxy.size.width * snapshot.goalProgress))
             }
         }

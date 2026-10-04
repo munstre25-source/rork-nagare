@@ -15,7 +15,7 @@ struct ExploreView: View {
     @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
-        app.clips.filter { clip in
+        app.studyLibrary.filter { clip in
             let categoryOK = lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)
             let difficultyOK = (lockedDifficulty ?? difficulty) == nil || clip.difficultyKind == (lockedDifficulty ?? difficulty)
             return categoryOK

@@ -69,9 +69,21 @@ extension Color {
     /// Was hinomaru red — now deep sakura so chrome never reintroduces orange/vermilion.
     static let jojoVermilion = brandAccentDeep
 
-    /// Main-app chrome from the Explore / Vocab / Search design.
-    static let designOrange = Color(hex: "#FF6B00")
-    static let designOrangeDeep = Color(hex: "#E85D00")
+    /// Main-app chrome. Same sakura as the icon and onboarding, so the accent never shifts after the first screen.
+    static let designOrange = sakuraPink
+    static let designOrangeDeep = sakuraPinkDeep
+
+    /// Premium sakura ramp from the icon blossoms: light petal, mid sakura, deep blossom.
+    static let sakuraFill = LinearGradient(
+        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    static let sakuraBar = LinearGradient(
+        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
 
     // MARK: Brand surfaces (icon: sakura-night sky, cream paper)
     /// Cream paper surfaces in light mode.

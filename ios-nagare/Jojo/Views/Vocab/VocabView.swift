@@ -67,6 +67,10 @@ struct VocabView: View {
 
     private var focusWord: SavedWord? { dueWords.first ?? words.first }
 
+    private var mostTapped: [SavedWord] {
+        Array(words.sorted { $0.occurrenceCount > $1.occurrenceCount }.prefix(8).filter { $0.occurrenceCount > 1 })
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -148,6 +152,34 @@ struct VocabView: View {
             } else {
                 emptyVocab
             }
+            if !mostTapped.isEmpty {
+                Text("Words you keep meeting")
+                    .font(.title3.weight(.bold))
+                VStack(spacing: 10) {
+                    ForEach(mostTapped) { word in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(word.surface)
+                                    .font(JojoFont.jp(20, bold: true, relativeTo: .title3))
+                                    .lineLimit(1)
+                                Text("\(word.occurrenceCount) taps · \(word.state.title)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 8)
+                            Button("Known") { app.paint(word, mark: .known) }
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(word.state == .known ? .white : Color.designOrange)
+                                .padding(.horizontal, 10)
+                                .frame(minHeight: 32)
+                                .background(word.state == .known ? Color.designOrange : Color.designOrange.opacity(0.12), in: Capsule())
+                        }
+                        .padding(12)
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                }
+            }
             if !filtered.isEmpty {
                 Text("All Vocabulary")
                     .font(.title3.weight(.bold))
@@ -216,7 +248,7 @@ struct VocabView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 40)
-                    .background(Color.designOrange, in: Capsule())
+                    .background(Color.sakuraFill, in: Capsule())
             }
             .disabled(words.isEmpty)
         }
@@ -462,7 +494,7 @@ struct NumberedVocabRow: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
-                .background(Color.designOrange, in: Circle())
+                .background(Color.sakuraFill, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(word.surface)
                     .font(JojoFont.jp(20, bold: true, relativeTo: .title3))

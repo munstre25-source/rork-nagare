@@ -35,6 +35,7 @@ struct TranscriptLineView: View {
                                 token: token,
                                 state: state(for: index),
                                 isLookedUp: app.isLookedUp(token),
+                                familiarity: app.wordState(for: token),
                                 highlight: highlightSurface.map { matches(token, $0) } ?? false,
                                 pulse: isPulsing && pulseTokenIndex == index,
                                 tooltip: pulseTokenIndex == index ? tooltip : nil,

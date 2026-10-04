@@ -145,80 +145,82 @@ struct ReviewSessionView: View {
     }
 
     private func frontFace(_ word: SavedWord) -> some View {
-        VStack(spacing: Spacing.l) {
-            Spacer(minLength: 40)
-            Text(word.surface)
-                .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
-                .foregroundStyle(.primary)
+        VStack(spacing: Spacing.m) {
+            Spacer(minLength: 24)
+            Text(word.contextSentence.isEmpty ? word.surface : word.contextSentence)
+                .font(JojoFont.jp(word.contextSentence.isEmpty ? 44 : 28, bold: true, relativeTo: .largeTitle))
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            Text("Tap to reveal")
+                .lineLimit(4)
+                .minimumScaleFactor(0.7)
+            Text("Tap to flip")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 40)
+                .foregroundStyle(.white.opacity(0.55))
+            Spacer(minLength: 24)
         }
-        .frame(maxWidth: .infinity, minHeight: 320)
+        .frame(maxWidth: .infinity, minHeight: 360)
         .padding(Spacing.l)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.18), lineWidth: 1.5)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
         )
     }
 
     private func backFace(_ word: SavedWord) -> some View {
         let defs = word.displayDefinitions(mode: app.profile.dictionary)
-        return VStack(alignment: .leading, spacing: Spacing.l) {
-            WordHeaderCard(
-                surface: word.surface,
-                readings: word.readings,
-                romaji: word.romaji,
-                pos: word.pos,
-                conjugationClass: word.conjugationClass,
-                jlpt: word.jlpt,
-                showFurigana: app.profile.showFurigana,
-                showRomaji: app.profile.showRomaji
-            )
-            SectionTitle("Definition")
-            VStack(spacing: Spacing.s) {
-                let visible = showAllDefs ? defs : Array(defs.prefix(2))
-                ForEach(Array(visible.enumerated()), id: \.offset) { index, def in
-                    DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def)
+        return VStack(alignment: .leading, spacing: Spacing.m) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(word.surface)
+                    .font(JojoFont.jp(36, bold: true, relativeTo: .largeTitle))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Button {
+                    SpeechService.shared.speak(word.contextSentence.isEmpty ? word.surface : word.contextSentence)
+                } label: {
+                    Image(systemName: "speaker.wave.2")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 36, height: 36)
                 }
-                if defs.count > 2, !showAllDefs {
-                    Button {
-                        withAnimation(.snappy) { showAllDefs = true }
-                    } label: {
-                        HStack {
-                            Label("\(defs.count - 2) more", systemImage: "plus")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.tappableBlue)
-                        .padding(Spacing.m)
-                        .frame(minHeight: 48)
-                        .background(Color.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                }
+                .accessibilityLabel("Play \(word.surface)")
+            }
+            if !word.romaji.isEmpty {
+                Text(word.romaji)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            if let gloss = defs.first {
+                Text(gloss)
+                    .font(.body)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             if !word.contextSentence.isEmpty {
-                SectionTitle("Context")
-                VStack(alignment: .leading, spacing: Spacing.m) {
-                    HighlightedSentence(
-                        sentence: word.contextSentence,
-                        target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                        size: 19
-                    )
-                    if let clip = app.clip(id: word.contextClipId) {
-                        ClipThumbnailButton(clip: clip, emphasizesPlay: true) { playing = clip }
-                    }
+                Text("Context")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.45))
+                HighlightedSentence(
+                    sentence: word.contextSentence,
+                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
+                    size: 18,
+                    baseColor: .white
+                )
+                if let clip = app.clip(id: word.contextClipId), let line = clip.lines[safe: word.contextLineIndex] {
+                    Text(line.translation)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                    ClipThumbnailButton(clip: clip, emphasizesPlay: true) { playing = clip }
                 }
-                .padding(Spacing.l)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
             }
         }
+        .padding(Spacing.l)
+        .frame(maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
+        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.white.opacity(0.12)))
     }
 
     private func answerButtons(for word: SavedWord) -> some View {

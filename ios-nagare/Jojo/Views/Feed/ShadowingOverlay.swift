@@ -9,6 +9,10 @@ struct ShadowingOverlay: View {
     @State private var lineIndex: Int = 0
     @State private var phase: Phase = .listen
     @State private var wasMuted: Bool = false
+    @State private var heard: String = ""
+    @State private var score: Int?
+    @State private var listenNote: String?
+    @State private var listening = false
 
     private enum Phase: String {
         case listen, practice, compare
@@ -116,21 +120,42 @@ struct ShadowingOverlay: View {
                 }
                 .buttonStyle(.bordered)
             case .practice:
-                Text("Speak now. Video is muted.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if listening {
+                    Text("Listening… say the line.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if let listenNote {
+                    Text(listenNote)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Button {
-                    enterCompare(line)
+                    Task { await capture(line) }
                 } label: {
-                    Label("I said it — compare", systemImage: "ear")
+                    Label(listening ? "Listening" : "Say the line", systemImage: "mic.fill")
                 }
                 .buttonStyle(PrimaryButtonStyle())
+                .disabled(listening)
             case .compare:
+                if let score {
+                    Text(score >= 70 ? "\(score)% — that landed." : "\(score)% — try the line once more.")
+                        .font(.headline)
+                        .foregroundStyle(score >= 70 ? Color.spokenGreen : Color.designOrange)
+                }
+                if !heard.isEmpty {
+                    Text(heard)
+                        .font(JojoFont.jp(18, relativeTo: .body))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Button {
                     SpeechService.shared.speak(line.text)
                     Haptics.selection()
                 } label: {
-                    Label("Hear model again", systemImage: "waveform")
+                    Label("Hear the line", systemImage: "waveform")
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 Button {
@@ -161,16 +186,31 @@ struct ShadowingOverlay: View {
 
     private func enterPractice() {
         phase = .practice
+        heard = ""
+        score = nil
+        listenNote = nil
         coordinator.pause()
         if !coordinator.isMuted { coordinator.toggleMute() }
         Haptics.medium()
+        guard let line = clip.lines[safe: lineIndex] else { return }
+        Task { await capture(line) }
     }
 
-    private func enterCompare(_ line: Line) {
-        phase = .compare
-        coordinator.pause()
-        SpeechService.shared.speak(line.text)
-        Haptics.success()
+    private func capture(_ line: Line) async {
+        guard !line.text.isEmpty else { return }
+        listening = true
+        listenNote = nil
+        let result = await SpeechPractice.listen()
+        listening = false
+        switch result {
+        case .heard(let text):
+            heard = text
+            score = SpeechPractice.score(heard: text, target: line.text)
+            phase = .compare
+            Haptics.success()
+        case .unavailable(let message):
+            listenNote = message
+        }
     }
 
     private func nextLine() {

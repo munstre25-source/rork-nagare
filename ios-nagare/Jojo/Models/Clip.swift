@@ -137,6 +137,9 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     var lines: [Line]
     var thumbnailGradient: [String]
 
+    /// Clips produced by the catalog pipeline. Their lines were taken from the video itself.
+    var hasVerifiedTranscript: Bool { id.hasPrefix("immersion-") }
+
     var categoryKind: ClipCategory { ClipCategory(rawValue: category) ?? .drama }
     var difficultyKind: Difficulty { Difficulty(rawValue: difficulty) ?? .beginner }
 

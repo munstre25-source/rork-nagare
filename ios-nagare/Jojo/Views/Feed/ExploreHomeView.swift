@@ -199,6 +199,8 @@ struct LearningPathScreen: View {
     var body: some View {
         Group {
             switch path {
+            case .jlpt:
+                JLPTPathView()
             case .grammar:
                 GrammarPathView()
             case .practice:
@@ -238,12 +240,12 @@ struct LearningPathScreen: View {
     private var practiceList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                Text("Listen, then say the line back. Jojo plays the model so you can compare.")
+                Text("Listen to a line, say it back, and Jojo scores how close you were.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                ForEach(app.clips) { clip in
+                ForEach(app.studyLibrary) { clip in
                     Button {
                         Haptics.light()
                         practiceClip = clip
@@ -278,74 +280,146 @@ struct LearningPathScreen: View {
 
 private struct GrammarPathView: View {
     @Environment(AppModel.self) private var app
+    @State private var playing: Clip?
 
-    private var entries: [DictionaryEntry] {
-        let grammar: Set<String> = ["particle", "auxiliary", "copula", "conjunction", "expression", "grammar", "suffix", "prefix"]
-        return app.lexicon.entries.values
-            .filter { grammar.contains($0.pos) }
-            .sorted { $0.surface < $1.surface }
+    private var moments: [(clip: Clip, line: Line, surface: String, gloss: String)] {
+        let grammar: Set<String> = ["particle", "auxiliary", "copula", "conjunction", "expression", "grammar"]
+        var rows: [(Clip, Line, String, String)] = []
+        for clip in app.studyLibrary {
+            for line in clip.lines {
+                guard let token = line.tokens.first(where: { grammar.contains($0.pos) && $0.tappable }) else { continue }
+                let gloss = token.definitions.first ?? ""
+                rows.append((clip, line, token.surface, gloss))
+                if rows.count == 24 { return rows }
+            }
+        }
+        return rows
     }
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                Text("Particles and patterns from the dictionary. Tap the speaker to hear one.")
+            LazyVStack(spacing: 12) {
+                Text("Grammar the way it shows up in a real line. Open the clip and hear it.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 12)
-                ForEach(Array(entries.enumerated()), id: \.element.surface) { index, entry in
-                    GrammarRow(index: index + 1, entry: entry)
-                    if index < entries.count - 1 {
-                        Divider().padding(.leading, 56)
+                ForEach(Array(moments.enumerated()), id: \.offset) { _, moment in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(moment.surface)
+                            .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
+                            .lineLimit(1)
+                        if !moment.gloss.isEmpty {
+                            Text(moment.gloss)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                        Text(moment.line.text)
+                            .font(JojoFont.jp(16, relativeTo: .body))
+                            .lineLimit(2)
+                        Text(moment.line.translation)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                        Button {
+                            SpeechService.shared.speak(moment.line.text)
+                        } label: {
+                            Label("Hear the line", systemImage: "speaker.wave.2")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.designOrange)
+                        Button {
+                            playing = moment.clip
+                        } label: {
+                            Label("Open the clip", systemImage: "play.fill")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.designOrange)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
                 }
             }
             .padding(20)
         }
+        .fullScreenCover(item: $playing) { clip in
+            ClipPlayerScreen(clip: clip)
+                .environment(app)
+        }
     }
 }
 
-private struct GrammarRow: View {
-    let index: Int
-    let entry: DictionaryEntry
+private struct JLPTPathView: View {
+    @Environment(AppModel.self) private var app
+    @State private var level = "N5"
+    @State private var playing: Clip?
+
+    private let levels = ["N5", "N4", "N3", "N2", "N1"]
+
+    private var clips: [Clip] {
+        app.studyLibrary.filter { clip in
+            clip.lines.contains { line in line.tokens.contains { $0.jlpt == level } }
+        }
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text("\(index)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(Color.designOrange, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.surface)
-                    .font(JojoFont.jp(20, bold: true, relativeTo: .title3))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text(entry.romaji)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Text(entry.definitions.prefix(2).joined(separator: "; "))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Clips whose words sit at this level.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(levels, id: \.self) { item in
+                            Button(item) { level = item }
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(level == item ? .white : .primary)
+                                .padding(.horizontal, 14)
+                                .frame(minHeight: 36)
+                                .background {
+                                    if level == item { Capsule().fill(Color.sakuraFill) }
+                                    else { Capsule().fill(Color.card) }
+                                }
+                        }
+                    }
+                }
+                ForEach(clips) { clip in
+                    Button {
+                        playing = clip
+                    } label: {
+                        HStack {
+                            Text(clip.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 8)
+                            Image(systemName: "play.fill")
+                                .foregroundStyle(Color.designOrange)
+                        }
+                        .padding(14)
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                if clips.isEmpty {
+                    Text("No \(level) lines in the library yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
-            Spacer(minLength: 8)
-            if let jlpt = entry.jlpt {
-                JLPTBadge(level: jlpt)
-            }
-            Button {
-                SpeechService.shared.speak(entry.surface)
-            } label: {
-                Image(systemName: "speaker.wave.2")
-                    .foregroundStyle(.primary)
-                    .frame(width: 40, height: 40)
-            }
-            .accessibilityLabel("Play \(entry.surface)")
+            .padding(20)
         }
-        .padding(.vertical, 8)
+        .fullScreenCover(item: $playing) { clip in
+            ClipPlayerScreen(clip: clip)
+                .environment(app)
+        }
     }
 }
 

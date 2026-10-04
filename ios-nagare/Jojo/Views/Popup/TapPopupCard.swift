@@ -29,6 +29,7 @@ struct TapPopupCard: View {
                     .accessibilityLabel("Play pronunciation")
                 }
                 tabRow
+                paintRow(selection: selection)
                 Group {
                     switch lookup.tab {
                     case .dictionary: dictionaryTab(explanation, limit: compact ? 2 : (showAllDefinitions ? 99 : 2))
@@ -125,6 +126,35 @@ struct TapPopupCard: View {
                 .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
                 .animation(.snappy, value: lookup.occurrenceCount)
         }
+    }
+
+    private func paintRow(selection: WordLookupController.Selection) -> some View {
+        let current = app.wordState(for: selection.token)
+        return HStack(spacing: 6) {
+            paintButton("Learning", mark: .learning, current: current, selection: selection)
+            paintButton("Familiar", mark: .familiar, current: current, selection: selection)
+            paintButton("Known", mark: .known, current: current, selection: selection)
+        }
+    }
+
+    private func paintButton(_ title: String, mark: SRSState, current: SRSState?, selection: WordLookupController.Selection) -> some View {
+        let selected = current == mark || (mark == .learning && current == .new)
+        return Button {
+            Haptics.selection()
+            app.paint(token: selection.token, explanation: lookup.explanation, clip: selection.clip, lineIndex: selection.lineIndex, mark: mark)
+        } label: {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(selected ? .white : .white.opacity(0.75))
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .background {
+                    if selected { Capsule().fill(Color.sakuraFill) }
+                    else { Capsule().fill(Color.white.opacity(0.08)) }
+                }
+        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var tabRow: some View {

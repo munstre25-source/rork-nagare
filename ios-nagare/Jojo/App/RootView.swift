@@ -185,7 +185,7 @@ struct FloatingTabBar: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .frame(minWidth: 16, minHeight: 16)
-                            .background(Color.designOrange, in: Capsule())
+                            .background(Color.sakuraFill, in: Capsule())
                             .offset(x: 10, y: -6)
                             .contentTransition(.numericText())
                     }

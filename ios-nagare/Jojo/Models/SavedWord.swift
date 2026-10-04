@@ -2,7 +2,16 @@ import Foundation
 import SwiftData
 
 nonisolated enum SRSState: String, Codable, Sendable, CaseIterable {
-    case new, learning, known
+    case new, learning, familiar, known
+
+    var title: String {
+        switch self {
+        case .new: "New"
+        case .learning: "Learning"
+        case .familiar: "Familiar"
+        case .known: "Known"
+        }
+    }
 }
 
 /// A word the user has tapped. CloudKit-compatible: every property has a default, no unique constraints.

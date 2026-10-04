@@ -10,6 +10,7 @@ struct TokenView: View {
     let token: Token
     let state: TokenVisualState
     let isLookedUp: Bool
+    var familiarity: SRSState? = nil
     var highlight: Bool = false
     var pulse: Bool = false
     var tooltip: String?
@@ -132,7 +133,7 @@ struct TokenView: View {
     private var underline: some View {
         if token.tappable, state != .selected {
             Capsule()
-                .fill(isLookedUp ? Color.lookedUpOrange : token.underlineColor)
+                .fill(underlineColor)
                 .frame(height: 3)
                 .padding(.horizontal, 4)
                 .offset(y: 3)
@@ -144,6 +145,16 @@ struct TokenView: View {
         if let reading = token.reading { parts.append(reading) }
         if let meaning = token.definitions.first { parts.append(meaning) }
         if isLookedUp { parts.append("looked up before") }
+        if familiarity == .known { parts.append("known") }
+        if familiarity == .familiar { parts.append("familiar") }
         return parts.joined(separator: ", ")
+    }
+
+    private var underlineColor: Color {
+        switch familiarity {
+        case .known: Color.spokenGreen
+        case .familiar: Color.designOrange
+        default: isLookedUp ? Color.lookedUpOrange : token.underlineColor
+        }
     }
 }

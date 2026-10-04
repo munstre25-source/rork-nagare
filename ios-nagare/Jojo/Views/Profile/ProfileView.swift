@@ -22,6 +22,7 @@ struct ProfileView: View {
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var known: Int { words.filter { $0.state == .known }.count }
+    private var familiar: Int { words.filter { $0.state == .familiar }.count }
     private var learning: Int { words.filter { $0.state == .learning }.count }
     private var newCount: Int { words.filter { $0.state == .new }.count }
 
@@ -44,24 +45,32 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.l) {
+                VStack(alignment: .leading, spacing: Spacing.l) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Profile")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Text("Keep going. A more fluent you is ahead.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     HStack(spacing: Spacing.m) {
                         JojoMascotAvatar(size: 48)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(greeting)
-                                .font(.system(.title3, design: .rounded, weight: .bold))
-                            Text("Keep going. A more fluent you is ahead.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(greeting)
+                            .font(.title3.weight(.bold))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     hero
                     HStack(spacing: Spacing.m) {
-                        StatTile(symbol: "flame.fill", tint: .jojoOrange, value: "\(app.currentStreak)-day", caption: "streak")
-                        StatTile(symbol: "clock", tint: .secondary, value: watchText, caption: "watched")
+                        StatTile(symbol: "flame.fill", tint: .designOrange, value: "\(app.currentStreak)-day", caption: "streak")
+                        StatTile(symbol: "clock", tint: .designOrangeDeep, value: watchText, caption: "watched")
                     }
                     weeklyChart
                     mastery
@@ -74,8 +83,15 @@ struct ProfileView: View {
                         reviewSession = ReviewSessionConfig(title: "Review", keys: keys)
                     } label: {
                         Label("Review 10 cards", systemImage: "play.fill")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 48)
+                            .background {
+                                Capsule().fill(Color.sakuraFill).opacity(words.isEmpty ? 0.4 : 1)
+                            }
                     }
-                    .buttonStyle(PrimaryButtonStyle())
+                    .buttonStyle(.plain)
                     .disabled(words.isEmpty)
                     settings
                     Text("Jojo 流れ · Scroll, Listen, Flow into Japanese.")
@@ -83,12 +99,15 @@ struct ProfileView: View {
                         .foregroundStyle(.tertiary)
                         .padding(.top, Spacing.s)
                 }
-                .padding(.horizontal, Spacing.l)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
                 .padding(.bottom, 96)
             }
+            .scrollIndicators(.hidden)
             .tabBarAutoHide(tabBarHidden)
             .background(Color.canvas.ignoresSafeArea())
-            .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
         #if DEBUG
@@ -137,12 +156,12 @@ struct ProfileView: View {
                 Text("Words you know").font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Text("\(level.jlpt) · \(level.label)")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.adaptive(light: "#15803D", dark: "#5EE39A"))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(Color.jlptPill.opacity(0.18), in: Capsule())
+            VStack(alignment: .trailing, spacing: 6) {
+                JLPTBadge(level: level.jlpt)
+                Text(level.label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(Spacing.l)
         .cardStyle()
@@ -161,10 +180,10 @@ struct ProfileView: View {
                     y: .value("Minutes", item.minutes),
                     width: .ratio(0.55)
                 )
-                .foregroundStyle(item.date == today ? Color.jojoOrange : Color.jojoOrange.opacity(0.55))
+                .foregroundStyle(item.date == today ? Color.designOrange : Color.designOrange.opacity(0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 RuleMark(y: .value("Goal", app.profile.dailyGoalMinutes))
-                    .foregroundStyle(Color.secondary.opacity(0.4))
+                    .foregroundStyle(Color.designOrange.opacity(0.35))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
             .chartXAxis {
@@ -184,18 +203,18 @@ struct ProfileView: View {
             Text("Mastery overview").font(.headline)
             GeometryReader { proxy in
                 HStack(spacing: 2) {
-                    Capsule().fill(Color.gray).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
-                    Capsule().fill(Color.jojoOrange).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
-                    Capsule().fill(Color.goodBackground)
+                    Capsule().fill(Color.gray.opacity(0.45)).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
+                    Capsule().fill(Color.designOrange.opacity(0.45)).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
+                    Capsule().fill(Color.designOrange).frame(width: proxy.size.width * CGFloat(familiar) / CGFloat(total))
+                    Capsule().fill(Color.spokenGreen)
                 }
             }
             .frame(height: 12)
             HStack {
-                MasteryStat(color: .gray, label: "New", value: newCount)
-                Divider().frame(height: 36)
-                MasteryStat(color: .jojoOrange, label: "Learning", value: learning)
-                Divider().frame(height: 36)
-                MasteryStat(color: .goodBackground, label: "Known", value: known)
+                MasteryStat(color: .gray.opacity(0.7), label: "New", value: newCount)
+                MasteryStat(color: Color.designOrange.opacity(0.45), label: "Learning", value: learning)
+                MasteryStat(color: .designOrange, label: "Familiar", value: familiar)
+                MasteryStat(color: .spokenGreen, label: "Known", value: known)
             }
         }
         .padding(Spacing.l)
@@ -280,12 +299,14 @@ struct ProfileView: View {
             SettingsRow(symbol: "target", title: "Daily goal", value: "\(app.profile.dailyGoalMinutes) min") { showGoalPicker = true }
             Divider().padding(.leading, 52)
             HStack(spacing: Spacing.m) {
-                Image(systemName: "bell").frame(width: 28)
+                Image(systemName: "bell")
+                    .foregroundStyle(Color.designOrangeDeep)
+                    .frame(width: 28)
                 Toggle("Study & review reminders", isOn: Binding(
                     get: { app.profile.remindersEnabled },
                     set: { value in Task { await app.setReminders(value) } }
                 ))
-                .tint(.jojoOrange)
+                .tint(Color.designOrange)
             }
             .padding(.horizontal, Spacing.l)
             .frame(minHeight: 54)
@@ -305,7 +326,7 @@ struct ProfileView: View {
                 }
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "trash", title: "Delete All Data", tint: .red) { confirmDeleteAccount = true }
+            SettingsRow(symbol: "trash", title: "Delete All Data", tint: .red, iconTint: .red) { confirmDeleteAccount = true }
             Divider().padding(.leading, 52)
 
             settingsHeader("Legal & support")
@@ -327,15 +348,15 @@ struct ProfileView: View {
                 }
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red) { confirmReset = true }
+            SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red, iconTint: .red) { confirmReset = true }
         }
         .cardStyle()
     }
 
     private func settingsHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
+            Text(title.uppercased())
+            .font(.caption.weight(.bold))
+            .foregroundStyle(Color.designOrange)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.m)
@@ -344,8 +365,10 @@ struct ProfileView: View {
 
     private func settingsToggle(symbol: String, title: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: Spacing.m) {
-            Image(systemName: symbol).frame(width: 28)
-            Toggle(title, isOn: isOn).tint(.jojoOrange)
+            Image(systemName: symbol)
+                .foregroundStyle(Color.designOrangeDeep)
+                .frame(width: 28)
+            Toggle(title, isOn: isOn).tint(Color.designOrange)
         }
         .padding(.horizontal, Spacing.l)
         .frame(minHeight: 54)
@@ -359,7 +382,9 @@ private struct SettingsRowLabel: View {
 
     var body: some View {
         HStack(spacing: Spacing.m) {
-            Image(systemName: symbol).frame(width: 28)
+            Image(systemName: symbol)
+                .foregroundStyle(Color.designOrangeDeep)
+                .frame(width: 28)
             Text(title).foregroundStyle(.primary)
             Spacer()
             if let value { Text(value).foregroundStyle(.secondary) }
@@ -402,7 +427,10 @@ private struct MasteryStat: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Circle().fill(color).frame(width: 8, height: 8)
-                Text(label).font(.subheadline)
+                Text(label)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             Text("\(value)").font(.title3.weight(.semibold)).monospacedDigit()
         }
@@ -416,12 +444,15 @@ private struct SettingsRow: View {
     let title: String
     var value: String?
     var tint: Color = .primary
+    var iconTint: Color = .designOrangeDeep
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: Spacing.m) {
-                Image(systemName: symbol).frame(width: 28)
+                Image(systemName: symbol)
+                    .foregroundStyle(iconTint)
+                    .frame(width: 28)
                 Text(title)
                 Spacer()
                 if let value { Text(value).foregroundStyle(.secondary) }
@@ -456,7 +487,7 @@ struct DailyGoalSheet: View {
                             }
                             Spacer()
                             if app.profile.dailyGoalMinutes == minutes {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.jojoOrange)
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.designOrange)
                             }
                         }
                     }

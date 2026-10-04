@@ -27,6 +27,8 @@ final class AppModel {
     private(set) var profile: UserProfile
     private(set) var clips: [Clip] = []
     private(set) var lookedUpKeys: Set<String> = []
+    /// Latest mark for each saved word, so the transcript can show known and familiar words without a fetch per token.
+    private(set) var wordStates: [String: SRSState] = [:]
     private(set) var watchLog: [String: Double] = [:]
     /// Increments when the daily goal is reached; the Feed observes it to play the trophy animation.
     private(set) var goalCelebrationCount: Int = 0
@@ -124,6 +126,12 @@ final class AppModel {
         clips = merged
     }
 
+    /// Learner-facing library. Verified clips win once any have synced; the bundled scripts stay as the offline fallback.
+    var studyLibrary: [Clip] {
+        let verified = clips.filter(\.hasVerifiedTranscript)
+        return verified.isEmpty ? clips : verified
+    }
+
     private func enrich(_ clip: Clip) -> Clip {
         var copy = clip
         copy.lines = clip.lines.map { line in
@@ -176,11 +184,12 @@ final class AppModel {
         let liked = Set(profile.tastesLiked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
         let disliked = Set(profile.tastesDisliked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
         let level = profile.readingLevel.difficulty.rank
+        let source = studyLibrary
         let pool: [Clip]
         if profile.gateContentByLevel {
-            pool = clips.filter { $0.difficultyKind.rank <= level + 1 }
+            pool = source.filter { $0.difficultyKind.rank <= level + 1 }
         } else {
-            pool = clips
+            pool = source
         }
         func score(_ clip: Clip) -> Double {
             var s = 0.0
@@ -201,7 +210,7 @@ final class AppModel {
             ordered.insert(ordered.remove(at: index), at: 0)
         }
         // Always keep at least something playable.
-        return ordered.isEmpty ? clips : ordered
+        return ordered.isEmpty ? studyLibrary : ordered
     }
 
     /// The best single clip for the user's answers (used for the demo and Day-1 clip).
@@ -290,6 +299,11 @@ final class AppModel {
     private func reloadLookedUpKeys() {
         let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
         lookedUpKeys = Set(words.map(\.key))
+        wordStates = Dictionary(words.map { ($0.key, $0.state) }, uniquingKeysWith: { _, latest in latest })
+    }
+
+    func wordState(for token: Token) -> SRSState? {
+        wordStates[Self.wordKey(for: token)]
     }
 
     private func fetchWord(key: String) -> SavedWord? {
@@ -345,9 +359,41 @@ final class AppModel {
             word.contextLineIndex = lineIndex
         }
         lookedUpKeys.insert(key)
+        wordStates[key] = word.state
         if isNew { vocabBadgePulse += 1 }
         if persist { save() }
         return word.occurrenceCount
+    }
+
+    /// Mark a word known, familiar, or still learning without leaving the clip.
+    func paint(token: Token, explanation: WordExplanation?, clip: Clip, lineIndex: Int, mark: SRSState) {
+        _ = recordTap(token: token, explanation: explanation, clip: clip, lineIndex: lineIndex, persist: false)
+        guard let word = fetchWord(key: Self.wordKey(for: token)) else { return }
+        apply(mark, to: word)
+    }
+
+    func paint(_ word: SavedWord, mark: SRSState) {
+        apply(mark, to: word)
+    }
+
+    private func apply(_ mark: SRSState, to word: SavedWord) {
+        switch mark {
+        case .known:
+            word.state = .known
+            word.intervalStepIndex = SRS.maxStep
+            word.dueAt = Date().addingTimeInterval(365 * 86_400)
+        case .familiar:
+            word.state = .familiar
+            word.intervalStepIndex = 2
+            word.dueAt = Date().addingTimeInterval(7 * 86_400)
+        case .learning, .new:
+            word.state = .learning
+            word.intervalStepIndex = 0
+            word.dueAt = Date()
+        }
+        word.lastReviewedAt = Date()
+        wordStates[word.key] = word.state
+        save()
     }
 
     func markVocabSaveCoachSeen() {
@@ -395,13 +441,14 @@ final class AppModel {
             let interval = SRS.goodInterval(fromStep: word.intervalStepIndex)
             word.intervalStepIndex = min(word.intervalStepIndex + 1, SRS.maxStep)
             word.dueAt = Date().addingTimeInterval(interval)
-            word.state = interval >= SRS.knownThreshold ? .known : .learning
+            word.state = interval >= SRS.knownThreshold ? .known : (word.state == .familiar ? .familiar : .learning)
         } else {
             word.intervalStepIndex = 0
             word.dueAt = Date().addingTimeInterval(SRS.againInterval)
             word.state = .learning
         }
         word.lastReviewedAt = Date()
+        wordStates[word.key] = word.state
         save()
         refreshAllReminders()
     }
@@ -759,6 +806,7 @@ final class AppModel {
 
         watchLog = [:]
         lookedUpKeys = []
+        wordStates = [:]
         pendingFeedClipId = nil
         pendingDeepLink = nil
         goalCelebrationCount = 0

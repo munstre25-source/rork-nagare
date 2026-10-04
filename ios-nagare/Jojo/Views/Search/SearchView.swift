@@ -223,7 +223,7 @@ struct SearchView: View {
     }
 
     private var sentenceHits: [SearchHit] {
-        SearchMatcher.search(query, in: app.clips)
+        SearchMatcher.search(query, in: app.studyLibrary)
     }
 
     private var collectedWords: [WordSearchHit] {
@@ -248,7 +248,7 @@ struct SearchView: View {
             ))
         }
 
-        for clip in app.clips {
+        for clip in app.studyLibrary {
             for line in clip.lines {
                 for token in line.tokens where token.tappable && SearchMatcher.tokenMatches(token, query: q) {
                     add(WordSearchHit(

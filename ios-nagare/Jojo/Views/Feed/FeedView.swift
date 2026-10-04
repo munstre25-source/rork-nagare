@@ -15,6 +15,7 @@ struct FeedView: View {
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
     @State private var videoExpanded: Bool = true
+    @State private var bornCard: BornCardPayload?
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -40,6 +41,14 @@ struct FeedView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
+            .overlay {
+                if let bornCard {
+                    BornFlashcard(surface: bornCard.surface, romaji: bornCard.romaji, gloss: bornCard.gloss) {
+                        self.bornCard = nil
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+            }
         }
         .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
@@ -64,6 +73,15 @@ struct FeedView: View {
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
+        .onChange(of: lookup.tapPulse) { _, _ in
+            guard lookup.occurrenceCount == 1, let selection = lookup.selection else { return }
+            let gloss = lookup.explanation?.definitions.first ?? selection.token.definitions.first ?? ""
+            bornCard = BornCardPayload(
+                surface: selection.token.surface,
+                romaji: lookup.explanation?.romaji ?? selection.token.romaji,
+                gloss: gloss
+            )
+        }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(
                 clip: clip,

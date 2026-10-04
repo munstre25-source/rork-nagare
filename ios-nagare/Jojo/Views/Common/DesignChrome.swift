@@ -26,7 +26,7 @@ struct CenteredModeSwitch: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Capsule()
-                    .fill(selected ? Color.designOrange : Color.clear)
+                    .fill(selected ? AnyShapeStyle(Color.sakuraFill) : AnyShapeStyle(Color.clear))
                     .frame(width: 28, height: 2)
             }
             .frame(minHeight: 40)
@@ -59,7 +59,7 @@ extension View {
     }
 }
 
-/// Orange / cream pill used on Explore, Vocab, and Search.
+/// Sakura / cream pill used on Explore, Vocab, and Search.
 struct OrangePillBar<Item: Hashable>: View {
     let items: [Item]
     @Binding var selection: Item
@@ -80,7 +80,9 @@ struct OrangePillBar<Item: Hashable>: View {
                         .minimumScaleFactor(0.65)
                         .padding(.horizontal, 8)
                         .frame(maxWidth: .infinity, minHeight: 36)
-                        .background(selected ? Color.designOrange : Color.clear, in: Capsule())
+                        .background {
+                            if selected { Capsule().fill(Color.sakuraFill) }
+                        }
                 }
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
