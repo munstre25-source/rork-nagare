@@ -1,169 +1,374 @@
 import SwiftUI
 
-/// Search & Listen: find clips containing a word (kanji, kana or romaji). Matches are highlighted in
-/// place and tappable, opening the same tap-to-understand popup.
+nonisolated enum SearchScope: String, CaseIterable, Hashable, Sendable {
+    case all = "All"
+    case words = "Words"
+    case sentences = "Sentences"
+    case grammar = "Grammar"
+}
+
+struct WordSearchHit: Identifiable, Hashable, Sendable {
+    var surface: String
+    var reading: String
+    var romaji: String
+    var gloss: String
+    var jlpt: String?
+    var pos: String
+    var id: String { "\(surface)|\(reading)|\(pos)" }
+}
+
+/// Search words, sentences, and grammar. Opened from Explore, and as a sheet from the feed.
 struct SearchView: View {
     var initialQuery: String = ""
+    var embedded: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var query: String = ""
-    @State private var lookup = WordLookupController()
+    @State private var scope: SearchScope = .all
+    @State private var showAllWords = false
+    @State private var showAllSentences = false
     @State private var playing: SearchHit?
     @FocusState private var isFocused: Bool
 
-    private var hits: [SearchHit] { SearchMatcher.search(query, in: app.clips) }
-
-    private let suggestions = ["天気", "たべる", "oishii", "大丈夫", "ことば", "ganbaru", "猫", "すごい"]
+    private let suggestions = ["好き", "天気", "たべる", "大丈夫", "ことば", "猫"]
+    private let grammarPOS: Set<String> = ["particle", "auxiliary", "copula", "conjunction", "expression", "grammar", "suffix", "prefix"]
 
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Spacing.l) {
-                        searchField
-                        if query.trimmingCharacters(in: .whitespaces).isEmpty {
-                            suggestionsView
-                        } else if hits.isEmpty {
-                            VStack(spacing: Spacing.s) {
-                                Image(systemName: "text.magnifyingglass").font(.largeTitle).foregroundStyle(.tertiary)
-                                Text("No clips say “\(query)” yet").font(.headline).foregroundStyle(.primary)
-                                Text("Try kana, kanji or romaji, e.g. たべ, 食べ or tabe.")
-                                    .font(.subheadline).foregroundStyle(.secondary)
+        Group {
+            if embedded {
+                page.navigationBarTitleDisplayMode(.inline)
+            } else {
+                NavigationStack {
+                    page
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { dismiss() }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 50)
-                        } else {
-                            Text("\(hits.count) \(hits.count == 1 ? "moment" : "moments") in \(Set(hits.map(\.clip.id)).count) clips")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, Spacing.l)
-                            LazyVStack(spacing: Spacing.m) {
-                                ForEach(hits) { hit in
-                                    SearchHitCard(hit: hit, query: query) { playing = hit }
-                                }
-                            }
-                            .padding(.horizontal, Spacing.l)
                         }
-                    }
-                    .padding(.vertical, Spacing.m)
-                    .padding(.bottom, lookup.isPresented ? 360 : 0)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                if lookup.isPresented {
-                    Color.primary.opacity(0.35)
-                        .ignoresSafeArea()
-                        .onTapGesture { withAnimation(.snappy) { lookup.dismiss() } }
-                        .transition(.opacity)
-                    TapPopupCard()
-                        .padding(.horizontal, Spacing.m)
-                        .padding(.bottom, Spacing.m)
-                        .gesture(DragGesture(minimumDistance: 12).onEnded { value in
-                            if value.translation.height > 60 { withAnimation(.snappy) { lookup.dismiss() } }
-                        })
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .background(Color.canvas.ignoresSafeArea())
-            .navigationTitle("Search & Listen")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .toolbarBackground(Color.canvas, for: .navigationBar)
         }
-        .environment(lookup)
         .onAppear {
             if query.isEmpty { query = initialQuery }
-            isFocused = initialQuery.isEmpty
+            isFocused = initialQuery.isEmpty && !embedded
         }
-        .onChange(of: query) { _, _ in lookup.dismiss() }
+        .onChange(of: query) { _, _ in
+            showAllWords = false
+            showAllSentences = false
+        }
         .fullScreenCover(item: $playing) { hit in
             ClipPlayerScreen(clip: hit.clip, startLine: hit.lineIndex, loopLine: true)
                 .environment(app)
         }
     }
 
-    private var searchField: some View {
-        HStack(spacing: Spacing.s) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField("Search kanji, kana or romaji", text: $query)
-                .focused($isFocused)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .foregroundStyle(.primary)
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("Clear search")
+    private var page: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Search.")
+                    .font(.system(size: 34, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text("Find any word, fast.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                DesignSearchField(text: $query, placeholder: "Search kanji, kana or romaji", focused: $isFocused)
+                OrangePillBar(items: SearchScope.allCases, selection: $scope, title: \.rawValue)
+                results
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 28)
         }
-        .padding(.leading, Spacing.m)
-        .frame(minHeight: 48)
-        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.horizontal, Spacing.l)
+        .scrollDismissesKeyboard(.interactively)
+        .scrollIndicators(.hidden)
+        .background(Color.canvas.ignoresSafeArea())
     }
 
-    private var suggestionsView: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
-            Text("Try searching").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Spacing.s)], alignment: .leading, spacing: Spacing.s) {
-                ForEach(suggestions, id: \.self) { s in
-                    Button {
-                        Haptics.selection()
-                        query = s
-                    } label: {
-                        Text(s)
-                            .font(JojoFont.jp(16, relativeTo: .body))
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(Color.fieldFill, in: Capsule())
+    @ViewBuilder
+    private var results: some View {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            suggestionsView
+        } else if visibleWords.isEmpty && visibleSentences.isEmpty && grammarHits.isEmpty {
+            Text("No matches for “\(trimmed)” yet.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+        } else {
+            if scope == .all || scope == .words, !wordHits.isEmpty {
+                resultSection(
+                    title: "Words (\(wordHits.count))",
+                    expanded: showAllWords,
+                    canExpand: wordHits.count > 4,
+                    expandTitle: "See all words"
+                ) {
+                    showAllWords.toggle()
+                } content: {
+                    ForEach(visibleWords) { hit in
+                        DictionaryResultRow(hit: hit)
+                    }
+                }
+            }
+            if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
+                resultSection(
+                    title: "Sentences (\(sentenceHits.count))",
+                    expanded: showAllSentences,
+                    canExpand: sentenceHits.count > 3,
+                    expandTitle: "See all sentences"
+                ) {
+                    showAllSentences.toggle()
+                } content: {
+                    ForEach(visibleSentences) { hit in
+                        Button {
+                            Haptics.light()
+                            playing = hit
+                        } label: {
+                            SentenceResultRow(hit: hit)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            if scope == .all || scope == .grammar, !grammarHits.isEmpty {
+                resultSection(
+                    title: "Grammar (\(grammarHits.count))",
+                    expanded: true,
+                    canExpand: false,
+                    expandTitle: ""
+                ) {} content: {
+                    ForEach(grammarHits.prefix(scope == .grammar ? 40 : 6)) { hit in
+                        DictionaryResultRow(hit: hit)
                     }
                 }
             }
         }
-        .padding(.horizontal, Spacing.l)
+    }
+
+    private var visibleWords: [WordSearchHit] {
+        showAllWords || scope == .words ? wordHits : Array(wordHits.prefix(4))
+    }
+
+    private var visibleSentences: [SearchHit] {
+        showAllSentences || scope == .sentences ? sentenceHits : Array(sentenceHits.prefix(3))
+    }
+
+    private var suggestionsView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Try searching")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(suggestions, id: \.self) { suggestion in
+                    Button {
+                        Haptics.selection()
+                        query = suggestion
+                    } label: {
+                        Text(suggestion)
+                            .font(JojoFont.jp(16, relativeTo: .body))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .background(Color.card, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color.cardStroke))
+                    }
+                }
+            }
+        }
+    }
+
+    private func resultSection<Content: View>(
+        title: String,
+        expanded: Bool,
+        canExpand: Bool,
+        expandTitle: String,
+        toggle: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .lineLimit(1)
+            VStack(spacing: 0) {
+                content()
+            }
+            if canExpand && !expanded {
+                Button(action: toggle) {
+                    HStack(spacing: 4) {
+                        Text(expandTitle)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.bold))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.designOrange)
+                    .frame(minHeight: 36)
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private var wordHits: [WordSearchHit] {
+        collectedWords.filter { !grammarPOS.contains($0.pos) }
+    }
+
+    private var grammarHits: [WordSearchHit] {
+        collectedWords.filter { grammarPOS.contains($0.pos) }
+    }
+
+    private var sentenceHits: [SearchHit] {
+        SearchMatcher.search(query, in: app.clips)
+    }
+
+    private var collectedWords: [WordSearchHit] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return [] }
+        var seen = Set<String>()
+        var hits: [WordSearchHit] = []
+
+        func add(_ hit: WordSearchHit) {
+            guard seen.insert(hit.id).inserted else { return }
+            hits.append(hit)
+        }
+
+        for entry in app.lexicon.entries.values where matches(surface: entry.surface, reading: entry.readings.first ?? "", romaji: entry.romaji, gloss: entry.definitions.first ?? "") {
+            add(WordSearchHit(
+                surface: entry.surface,
+                reading: entry.readings.first ?? "",
+                romaji: entry.romaji,
+                gloss: entry.definitions.prefix(2).joined(separator: "; "),
+                jlpt: entry.jlpt,
+                pos: entry.pos
+            ))
+        }
+
+        for clip in app.clips {
+            for line in clip.lines {
+                for token in line.tokens where token.tappable && SearchMatcher.tokenMatches(token, query: q) {
+                    add(WordSearchHit(
+                        surface: token.surface,
+                        reading: token.reading ?? token.baseReading ?? "",
+                        romaji: token.romaji,
+                        gloss: token.definitions.first ?? "",
+                        jlpt: token.jlpt,
+                        pos: token.pos
+                    ))
+                }
+            }
+        }
+
+        return hits.sorted { lhs, rhs in
+            if lhs.surface.count != rhs.surface.count { return lhs.surface.count < rhs.surface.count }
+            return lhs.surface < rhs.surface
+        }
+    }
+
+    private func matches(surface: String, reading: String, romaji: String, gloss: String) -> Bool {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return false }
+        if surface.contains(q) || gloss.localizedStandardContains(q) { return true }
+        let hq = JapaneseText.hiragana(q)
+        if JapaneseText.hiragana(surface).contains(hq) || JapaneseText.hiragana(reading).contains(hq) { return true }
+        let nq = JapaneseText.normalizedRomaji(q)
+        if nq.count >= 2, JapaneseText.normalizedRomaji(romaji).contains(nq) { return true }
+        return false
     }
 }
 
-private struct SearchHitCard: View {
-    let hit: SearchHit
-    let query: String
-    let onPlay: () -> Void
+private struct DictionaryResultRow: View {
+    let hit: WordSearchHit
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
-            HStack(spacing: Spacing.m) {
-                Color.fieldFill
-                    .frame(width: 84, height: 52)
-                    .overlay { GradientPoster(clip: hit.clip, showsSymbol: false).allowsHitTesting(false) }
-                    .overlay { Image(systemName: "play.fill").foregroundStyle(.white) }
-                    .clipShape(.rect(cornerRadius: 10, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(hit.clip.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
-                    Text("\(hit.clip.channelName) · \(formatClock(hit.clip.lines[safe: hit.lineIndex]?.start ?? 0))")
-                        .font(.caption).foregroundStyle(.secondary)
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(hit.surface)
+                    .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if !hit.romaji.isEmpty {
+                    Text(hit.romaji)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                Spacer(minLength: 0)
-                Button(action: onPlay) {
-                    Image(systemName: "headphones")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.jojoOrange)
-                        .frame(width: 44, height: 44)
-                        .background(Color.jojoOrange.opacity(0.15), in: Circle())
+                if !hit.gloss.isEmpty {
+                    Text(hit.gloss)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .accessibilityLabel("Listen in context")
             }
-            TranscriptLineView(clip: hit.clip, lineIndex: hit.lineIndex, spokenTokenIndex: nil, highlightSurface: query)
+            Spacer(minLength: 8)
+            Button {
+                SpeechService.shared.speak(hit.surface)
+            } label: {
+                Image(systemName: "speaker.wave.2")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Play \(hit.surface)")
+            if let jlpt = hit.jlpt {
+                JLPTBadge(level: jlpt)
+            }
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.tertiary)
         }
-        .padding(Spacing.m)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke, lineWidth: 1))
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct SentenceResultRow: View {
+    let hit: SearchHit
+
+    private var line: Line? { hit.clip.lines[safe: hit.lineIndex] }
+
+    private var level: String? {
+        if let tokenLevel = line?.tokens.compactMap(\.jlpt).first { return tokenLevel }
+        switch hit.clip.difficultyKind {
+        case .beginner: return "N5"
+        case .intermediate: return "N4"
+        case .advanced: return "N3"
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(line?.text ?? hit.clip.title)
+                    .font(JojoFont.jp(17, bold: true, relativeTo: .body))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let translation = line?.translation, !translation.isEmpty {
+                    Text(translation)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            VStack(alignment: .trailing, spacing: 8) {
+                if let level {
+                    JLPTBadge(level: level)
+                }
+                Image(systemName: "speaker.wave.2")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -47,16 +47,15 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.textTertiary)
+                    .foregroundStyle(state == .selected ? Color.designOrange : Color.textTertiary)
                     .lineLimit(1)
-                    .fixedSize()
+                    .minimumScaleFactor(0.6)
             }
             Text(token.surface)
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(state == .selected ? Color.jojoOrange : Color.primary)
+                .foregroundStyle(state == .selected ? Color.designOrange : Color.primary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .fixedSize(horizontal: true, vertical: false)
+                .minimumScaleFactor(0.55)
                 .padding(.horizontal, token.tappable ? 6 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
@@ -65,9 +64,9 @@ struct TokenView: View {
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected ? Color.jojoOrange : Color.textTertiary)
+                    .foregroundStyle(state == .selected ? Color.designOrange : Color.textTertiary)
                     .lineLimit(1)
-                    .fixedSize()
+                    .minimumScaleFactor(0.6)
             }
         }
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
@@ -78,11 +77,14 @@ struct TokenView: View {
                 Text(tooltip)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.black)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
+                    .frame(maxWidth: 220)
                     .background(.white, in: Capsule())
                     .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
-                    .fixedSize()
                     .offset(y: -42)
                     .allowsHitTesting(false)
             }
@@ -95,10 +97,10 @@ struct TokenView: View {
         switch state {
         case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.jojoOrange, lineWidth: 2.5)
+                .strokeBorder(Color.designOrange, lineWidth: 2.5)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.jojoOrange.opacity(0.18))
+                        .fill(Color.designOrange.opacity(0.18))
                 )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -107,9 +109,9 @@ struct TokenView: View {
             if isLookedUp {
                 // Saved / looked-up words get an orange fill like Kiku's 石炭.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.jojoOrange.opacity(0.22))
+                    .fill(Color.designOrange.opacity(0.22))
             } else if highlight {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.jojoOrange.opacity(0.28))
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.designOrange.opacity(0.28))
             }
         }
     }

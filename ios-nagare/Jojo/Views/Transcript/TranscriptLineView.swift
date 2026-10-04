@@ -53,6 +53,10 @@ struct TranscriptLineView: View {
                     Text(line.translation)
                         .font(forceDenseAids || raisedCard ? .subheadline : .body)
                         .foregroundStyle(Color.textSecondary)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.85)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

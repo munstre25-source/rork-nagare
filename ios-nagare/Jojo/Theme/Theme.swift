@@ -69,6 +69,10 @@ extension Color {
     /// Was hinomaru red — now deep sakura so chrome never reintroduces orange/vermilion.
     static let jojoVermilion = brandAccentDeep
 
+    /// Main-app chrome from the Explore / Vocab / Search design.
+    static let designOrange = Color(hex: "#FF6B00")
+    static let designOrangeDeep = Color(hex: "#E85D00")
+
     // MARK: Brand surfaces (icon: sakura-night sky, cream paper)
     /// Cream paper surfaces in light mode.
     static let jojoCream = Color(hex: "#FFF6EE")

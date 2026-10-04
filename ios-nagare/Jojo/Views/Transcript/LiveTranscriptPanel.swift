@@ -21,10 +21,11 @@ struct LiveTranscriptPanel: View {
         Group {
             if windowMode {
                 windowStack
-                    .padding(.horizontal, Spacing.l)
+                    .padding(.horizontal, 20)
                     .padding(.top, tooltip == nil ? Spacing.s : 40)
                     .padding(.bottom, Spacing.xl)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .clipped()
             } else if onlyCurrentLine {
                 lineStack
                     .padding(.horizontal, Spacing.l)
@@ -50,7 +51,7 @@ struct LiveTranscriptPanel: View {
                 }
             }
         }
-        .background(Color.bgSurfaceDark)
+        .background(windowMode ? Color.clear : Color.bgSurfaceDark)
         .environment(\.spokenTokenNamespace, spokenNamespace)
     }
 

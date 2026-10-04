@@ -12,13 +12,14 @@ struct DailyGoalBar: View {
                 .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(.primary.opacity(0.9))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .contentTransition(.numericText())
-                .fixedSize()
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.1))
                     Capsule()
-                        .fill(LinearGradient(colors: [Color.sakuraPinkLight, Color.sakuraPink], startPoint: .leading, endPoint: .trailing))
+                        .fill(LinearGradient(colors: [Color(hex: "#FFB067"), Color.designOrange], startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(8, proxy.size.width * app.goalProgress))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: app.goalProgress)
                 }

@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Browsable clip library with Difficulty / Topic / Source filters. Cards show a paused poster
-/// with play + loop-line chips. Opening a card launches the immersive player.
+/// Browsable clip library. Category lanes can lock topic or difficulty; the home grid uses the filters.
 struct ExploreView: View {
+    var lockedCategories: Set<ClipCategory> = []
+    var lockedDifficulty: Difficulty? = nil
+    var favoritesOnlyStart: Bool = false
     let onPlay: (Clip, Int?) -> Void
 
     @Environment(AppModel.self) private var app
@@ -14,7 +16,10 @@ struct ExploreView: View {
 
     private var filtered: [Clip] {
         app.clips.filter { clip in
-            (difficulty == nil || clip.difficultyKind == difficulty)
+            let categoryOK = lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)
+            let difficultyOK = (lockedDifficulty ?? difficulty) == nil || clip.difficultyKind == (lockedDifficulty ?? difficulty)
+            return categoryOK
+                && difficultyOK
                 && (topic == nil || clip.categoryKind == topic)
                 && (source == nil || clip.categoryKind.sourceType == source)
                 && (!favoritesOnly || app.isFavorite(clip.id))
@@ -60,6 +65,8 @@ struct ExploreView: View {
         }
         .scrollIndicators(.hidden)
         .onAppear {
+            if favoritesOnlyStart { favoritesOnly = true }
+            if let lockedDifficulty { difficulty = lockedDifficulty }
             withAnimation { appeared = true }
         }
     }
@@ -73,21 +80,27 @@ struct ExploreView: View {
                 } label: {
                     FilterChip(title: "Saved", systemImage: favoritesOnly ? "bookmark.fill" : "bookmark", isSelected: favoritesOnly)
                 }
-                Menu {
-                    Button("Any difficulty") { difficulty = nil }
-                    ForEach(Difficulty.allCases) { d in
-                        Button(d.rawValue) { difficulty = d }
+                if lockedDifficulty == nil {
+                    Menu {
+                        Button("Any difficulty") { difficulty = nil }
+                        ForEach(Difficulty.allCases) { d in
+                            Button(d.rawValue) { difficulty = d }
+                        }
+                    } label: {
+                        FilterChip(title: difficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: difficulty != nil)
                     }
-                } label: {
-                    FilterChip(title: difficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: difficulty != nil)
+                } else {
+                    FilterChip(title: lockedDifficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: true)
                 }
-                Menu {
-                    Button("Any topic") { topic = nil }
-                    ForEach(ClipCategory.allCases) { c in
-                        Button { topic = c } label: { Label(c.displayName, systemImage: c.symbol) }
+                if lockedCategories.isEmpty {
+                    Menu {
+                        Button("Any topic") { topic = nil }
+                        ForEach(ClipCategory.allCases) { c in
+                            Button { topic = c } label: { Label(c.displayName, systemImage: c.symbol) }
+                        }
+                    } label: {
+                        FilterChip(title: topic?.displayName ?? "Topic", systemImage: "square.grid.2x2.fill", isSelected: topic != nil)
                     }
-                } label: {
-                    FilterChip(title: topic?.displayName ?? "Topic", systemImage: "square.grid.2x2.fill", isSelected: topic != nil)
                 }
                 Menu {
                     Button("Any source") { source = nil }
@@ -156,11 +169,13 @@ private struct ExploreClipCard: View {
                                     .font(JojoFont.jp(17, bold: true, relativeTo: .headline))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                             }
                             Text(clip.title)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white.opacity(0.8))
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                             HStack(spacing: Spacing.s) {
                                 Button {
                                     Haptics.light()

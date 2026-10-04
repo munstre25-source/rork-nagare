@@ -19,6 +19,7 @@ struct ProfileView: View {
     @State private var marketingScript: MarketingScript?
     #endif
     var onGiveFeedback: (() -> Void)? = nil
+    var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var known: Int { words.filter { $0.state == .known }.count }
     private var learning: Int { words.filter { $0.state == .learning }.count }
@@ -83,8 +84,9 @@ struct ProfileView: View {
                         .padding(.top, Spacing.s)
                 }
                 .padding(.horizontal, Spacing.l)
-                .padding(.bottom, Spacing.xl)
+                .padding(.bottom, 96)
             }
+            .tabBarAutoHide(tabBarHidden)
             .background(Color.canvas.ignoresSafeArea())
             .navigationTitle("Profile")
         }

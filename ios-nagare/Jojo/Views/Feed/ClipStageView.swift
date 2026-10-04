@@ -14,6 +14,9 @@ struct ClipStageView: View {
     var showsRail: Bool = true
     /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
+    /// When true, the video takes the upper half of the page. When false, it shrinks so the transcript leads.
+    var videoExpanded: Bool = true
+    var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
     var onFullscreen: (() -> Void)?
@@ -32,56 +35,21 @@ struct ClipStageView: View {
     /// Landscape player that leaves room for karaoke (kiku demo2).
     private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 10 : videoAspect }
 
+    /// Feed pages pass a resize control. Fullscreen and previews keep the fixed aspect.
+    private var usesFlexibleVideo: Bool { immersiveFeed && onToggleVideoSize != nil }
+
     var body: some View {
-        let player = coordinator.player(for: clip)
-        VStack(spacing: 0) {
-            if showsChannelRow {
-                ChannelRow(
-                    clip: clip,
-                    trailing: channelTrailing,
-                    showsFollow: !immersiveFeed,
-                    emphasizesTitle: immersiveFeed
-                )
-                .padding(.vertical, immersiveFeed ? 4 : 10)
+        Group {
+            if usesFlexibleVideo {
+                GeometryReader { geo in
+                    stage(videoHeight: videoHeight(in: geo.size))
+                }
+            } else {
+                stage(videoHeight: nil)
             }
-
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsControls: !immersiveFeed,
-                showsRail: immersiveFeed ? false : showsRail,
-                compactChrome: immersiveFeed,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                onInfo: immersiveFeed ? nil : onInfo,
-                onShadowing: immersiveFeed ? nil : onShadowing
-            )
-            .aspectRatio(resolvedAspect, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-
-            if immersiveFeed {
-                ClipActionRow(
-                    clip: clip,
-                    player: player,
-                    onInfo: onInfo,
-                    onShadowing: onShadowing
-                )
-            }
-
-            TranscriptSection(
-                clip: clip,
-                player: player,
-                onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
-                pulseTokenIndex: pulseTokenIndex,
-                isPulsing: isPulsing,
-                tooltip: tooltip,
-                forceDenseAids: immersiveFeed,
-                windowMode: immersiveFeed
-            )
-            .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .background(immersiveFeed ? Color.bgPlayer : Color.clear)
+        .background(usesFlexibleVideo ? Color.canvas : (immersiveFeed ? Color.bgPlayer : Color.clear))
         .overlay {
             if isPopupHere { popupLayer }
         }
@@ -94,6 +62,90 @@ struct ClipStageView: View {
                 coordinator.resumeAfterPopupIfNeeded()
             }
         }
+    }
+
+    private func videoHeight(in size: CGSize) -> CGFloat {
+        let natural = size.width * 10 / 16
+        let expanded = videoExpanded && !isPopupHere
+        if expanded {
+            return min(natural, max(180, size.height * 0.52))
+        }
+        return min(natural * 0.62, max(132, size.height * 0.30))
+    }
+
+    @ViewBuilder
+    private func stage(videoHeight: CGFloat?) -> some View {
+        let player = coordinator.player(for: clip)
+        VStack(spacing: 0) {
+            if showsChannelRow {
+                ChannelRow(
+                    clip: clip,
+                    trailing: channelTrailing,
+                    showsFollow: !immersiveFeed,
+                    emphasizesTitle: immersiveFeed
+                )
+                .padding(.vertical, immersiveFeed ? 4 : 10)
+            }
+
+            ZStack(alignment: .bottomTrailing) {
+                ClipVideoView(
+                    clip: clip,
+                    player: player,
+                    showsControls: !immersiveFeed,
+                    showsRail: immersiveFeed ? false : showsRail,
+                    compactChrome: immersiveFeed,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
+                    onInfo: immersiveFeed ? nil : onInfo,
+                    onShadowing: immersiveFeed ? nil : onShadowing
+                )
+                .modifier(ClipVideoFrame(height: videoHeight, aspect: resolvedAspect))
+
+                if let onToggleVideoSize, !isPopupHere {
+                    Button(action: onToggleVideoSize) {
+                        Image(systemName: videoExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(.black.opacity(0.55), in: Circle())
+                    }
+                    .padding(10)
+                    .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
+                }
+            }
+
+            if immersiveFeed {
+                ClipActionRow(
+                    clip: clip,
+                    player: player,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing
+                )
+            }
+
+            if usesFlexibleVideo {
+                ScrollView(.vertical, showsIndicators: false) {
+                    transcript(player: player)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            } else {
+                transcript(player: player)
+                    .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
+            }
+        }
+    }
+
+    private func transcript(player: (any ClipPlayer)?) -> some View {
+        TranscriptSection(
+            clip: clip,
+            player: player,
+            onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
+            pulseTokenIndex: pulseTokenIndex,
+            isPulsing: isPulsing,
+            tooltip: tooltip,
+            forceDenseAids: immersiveFeed,
+            windowMode: immersiveFeed
+        )
     }
 
     /// Centered mid-stage like kiku demo2 (~6s); never cropped to the video bounds.
@@ -128,6 +180,26 @@ struct ClipStageView: View {
     private func dismiss() {
         withAnimation(Motion.popupSpring) {
             lookup.dismiss()
+        }
+    }
+}
+
+/// Fixed aspect, or an explicit height when the feed video is minimized or maximized.
+private struct ClipVideoFrame: ViewModifier {
+    var height: CGFloat?
+    var aspect: CGFloat
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let height {
+            content
+                .frame(maxWidth: .infinity)
+                .frame(height: height)
+                .clipped()
+        } else {
+            content
+                .aspectRatio(aspect, contentMode: .fit)
+                .frame(maxWidth: .infinity)
         }
     }
 }
@@ -173,7 +245,7 @@ struct ClipActionRow: View {
             } label: {
                 Image(systemName: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(app.isFavorite(clip.id) ? Color.jojoOrange : .secondary)
+                    .foregroundStyle(app.isFavorite(clip.id) ? Color.designOrange : .secondary)
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
@@ -185,7 +257,7 @@ struct ClipActionRow: View {
             } label: {
                 Image(systemName: "repeat")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(player?.loopRange != nil ? Color.jojoOrange : .secondary)
+                    .foregroundStyle(player?.loopRange != nil ? Color.designOrange : .secondary)
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")

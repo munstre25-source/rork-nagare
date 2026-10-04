@@ -37,10 +37,10 @@ struct RootView: View {
 }
 
 nonisolated enum AppTab: Hashable, Sendable {
-    case feed, vocab, profile
+    case feed, vocab, explore, profile
 }
 
-/// Exactly three tabs: Feed, Vocab (badge = saved words), Profile.
+/// Four tabs: Feed, Vocab, Explore, Profile.
 struct MainTabView: View {
     @Environment(AppModel.self) private var app
     @Query private var words: [SavedWord]
@@ -50,6 +50,7 @@ struct MainTabView: View {
     @State private var showCancellationSurvey = false
     /// New flashcards saved since last Vocab visit (0 = show total word count instead).
     @State private var newVocabSinceVisit: Int = 0
+    @State private var tabBarHidden = false
 
     private var vocabBadge: Int {
         if tab == .vocab { return 0 }
@@ -59,29 +60,48 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $tab) {
-                FeedView(isActiveTab: tab == .feed)
+                FeedView(isActiveTab: tab == .feed, onOpenExplore: { tab = .explore }, tabBarHidden: $tabBarHidden)
                     .tag(AppTab.feed)
-                VocabView()
+                VocabView(tabBarHidden: $tabBarHidden)
                     .tag(AppTab.vocab)
-                ProfileView(onGiveFeedback: { showManualFeedback = true })
+                ExploreHomeView(onOpenFeed: { tab = .feed }, tabBarHidden: $tabBarHidden)
+                    .tag(AppTab.explore)
+                ProfileView(onGiveFeedback: { showManualFeedback = true }, tabBarHidden: $tabBarHidden)
                     .tag(AppTab.profile)
             }
             .toolbar(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 64)
+
+            if tabBarHidden {
+                Color.clear
+                    .frame(height: 44)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
+                            tabBarHidden = false
+                        }
+                    }
+                    .accessibilityLabel("Show tabs")
             }
 
             FloatingTabBar(selection: $tab, vocabBadge: vocabBadge)
                 .padding(.horizontal, Spacing.l)
                 .padding(.bottom, 8)
+                .offset(y: tabBarHidden ? 160 : 0)
+                .opacity(tabBarHidden ? 0 : 1)
+                .allowsHitTesting(!tabBarHidden)
+                .animation(.spring(response: 0.35, dampingFraction: 0.86), value: tabBarHidden)
         }
-        .tint(Color.brandAccent)
+        .tint(Color.designOrange)
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }
         }
         .onChange(of: tab) { _, newTab in
             if newTab == .vocab { newVocabSinceVisit = 0 }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
+                tabBarHidden = false
+            }
         }
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil { tab = .feed }
@@ -136,8 +156,9 @@ struct FloatingTabBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            tabButton(.feed, title: "Feed", systemImage: selection == .feed ? "play.circle.fill" : "play.circle")
+            tabButton(.feed, title: "Feed", systemImage: selection == .feed ? "house.fill" : "house")
             tabButton(.vocab, title: "Vocab", systemImage: selection == .vocab ? "book.fill" : "book", badge: vocabBadge)
+            tabButton(.explore, title: "Explore", systemImage: selection == .explore ? "safari.fill" : "safari")
             tabButton(.profile, title: "Profile", systemImage: selection == .profile ? "person.fill" : "person")
         }
         .padding(.horizontal, 6)
@@ -164,15 +185,17 @@ struct FloatingTabBar: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .frame(minWidth: 16, minHeight: 16)
-                            .background(Color.jojoOrange, in: Capsule())
+                            .background(Color.designOrange, in: Capsule())
                             .offset(x: 10, y: -6)
                             .contentTransition(.numericText())
                     }
                 }
                 Text(title)
                     .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .foregroundStyle(selection == tab ? Color.jojoOrange : Color.secondary)
+            .foregroundStyle(selection == tab ? Color.designOrange : Color.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
             .contentShape(Rectangle())
