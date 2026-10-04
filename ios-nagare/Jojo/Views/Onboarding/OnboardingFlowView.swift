@@ -125,8 +125,20 @@ struct OnboardingFlowView: View {
             } else {
                 Spacer()
             }
+            #if DEBUG
+            Button("Skip") {
+                Haptics.medium()
+                app.purchases.activateDebugBypass()
+                app.completeOnboarding()
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(onNight ? Color.sakuraPinkLight : Color.sakuraPink)
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityLabel("Skip onboarding")
+            #else
             JojoMascotAvatar(size: 36)
                 .opacity(step.showsProgress ? 1 : 0)
+            #endif
         }
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
@@ -197,6 +209,7 @@ struct OnboardingFlowView: View {
 /// Splash: night lantern scene, peeking panda, wordmark brush stroke, then actions.
 struct SplashView: View {
     let onFinish: () -> Void
+    @Environment(AppModel.self) private var app
     @State private var progress: CGFloat = 0
     @State private var appeared: Bool = false
     @State private var peekIn: Bool = false
@@ -258,10 +271,22 @@ struct SplashView: View {
     #if DEBUG
     private var debugMarketingButtons: some View {
         VStack(spacing: Spacing.s) {
-            Text("DEBUG · Marketing walkthroughs")
+            Text("DEBUG")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(Color.sakuraPink.opacity(0.9))
                 .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                Haptics.medium()
+                app.purchases.activateDebugBypass()
+                app.completeOnboarding()
+            } label: {
+                Label("Skip onboarding", systemImage: "forward.end.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .accessibilityHint("Opens the feed without finishing onboarding")
             Button {
                 Haptics.selection()
                 marketingScript = .forYou
