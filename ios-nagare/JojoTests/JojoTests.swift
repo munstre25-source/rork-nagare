@@ -15,6 +15,23 @@ struct JojoTests {
         #expect(SavedWord.makeKey(surface: "は", reading: "") == "は|")
     }
 
+    @Test func feedMirrorsTheClipsTheyStayWith() throws {
+        let app = try makeApp()
+        let drama = app.forYouClips.filter { $0.category == "drama" }
+        let other = app.forYouClips.first { $0.category != "drama" }
+        try #require(drama.count >= 2)
+        try #require(other != nil)
+        app.noteClipWatched(drama[0])
+        app.noteClipSkipped(other!)
+        let upcoming = app.forYouClips.filter { $0.id != drama[0].id && $0.id != other!.id }
+        #expect(upcoming.first?.category == "drama")
+        let skippedIndex = app.forYouClips.firstIndex { $0.id == other!.id }
+        let mirroredIndex = app.forYouClips.firstIndex { $0.id == drama[1].id }
+        if let skippedIndex, let mirroredIndex {
+            #expect(mirroredIndex < skippedIndex)
+        }
+    }
+
     @Test func rankedFeedIsNonEmpty() throws {
         let clips = ContentLibrary.loadSeedClips()
         try #require(!clips.isEmpty)

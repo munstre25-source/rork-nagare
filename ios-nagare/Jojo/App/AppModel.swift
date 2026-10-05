@@ -34,6 +34,8 @@ final class AppModel {
     private(set) var watchLog: [String: Double] = [:]
     /// Increments when the daily goal is reached; the Feed observes it to play the trophy animation.
     private(set) var goalCelebrationCount: Int = 0
+    /// Increments when a watch, skip, save, or favorite should reshape the upcoming feed.
+    private(set) var tasteRevision: Int = 0
     /// Clip to open in the feed on next appearance (e.g. from Review / Search).
     var pendingFeedClipId: String?
     /// Deep link destination from widgets / URLs (`jojo://review`, `jojo://feed`).
@@ -268,7 +270,8 @@ final class AppModel {
         }
     }
 
-    /// For You, ordered from this person's onboarding answers. The promised first clip stays
+    /// For You. Onboarding is the cold start. After that, the next clips cluster around
+    /// what this person finished, saved, favorited, or skipped. The promised first clip stays
     /// at the top until they've actually watched.
     var forYouClips: [Clip] {
         var ordered = rankedStudyClips()
@@ -321,7 +324,10 @@ final class AppModel {
             profile.tastesDisliked.joined(separator: ","),
             profile.motivations.joined(separator: ","),
             profile.firstName,
-            profile.finishedClipIds.joined(separator: ",")
+            profile.finishedClipIds.joined(separator: ","),
+            profile.favoriteClipIds.joined(separator: ","),
+            profile.followedChannelNames.joined(separator: ","),
+            profile.tasteTrace.joined(separator: ";")
         ].joined(separator: "|")
     }
 
@@ -351,19 +357,29 @@ final class AppModel {
         }
         if pool.isEmpty { pool = studyLibrary }
 
+        let mirror = tasteMirror()
+        let prior = mirror.positives == 0 ? 1.0 : max(0.3, 1 - Double(mirror.positives) * 0.15)
+        let targetLevel = mirroredLevel(fallback: level, mass: mirror.difficultyMass)
+
         func score(_ clip: Clip) -> Double {
             var s = 0.0
             let category = clip.categoryKind
             if disliked.contains(category) {
                 s -= 80
             } else if liked.contains(category) {
-                s += 50
+                s += 50 * prior
             } else if motivated.contains(category) {
-                s += 28
+                s += 28 * prior
             } else if !wanted.isEmpty {
-                s -= 18
+                s -= 18 * prior
             }
-            s -= Double(abs(clip.difficultyKind.rank - level)) * 8
+            s += mirror.category[clip.category] ?? 0
+            s += mirror.channel[clip.channelName] ?? 0
+            s += mirror.clip[clip.id] ?? 0
+            if clip.category == mirror.lastPositiveCategory { s += 16 }
+            if profile.followedChannelNames.contains(clip.channelName) { s += 22 }
+            if profile.favoriteClipIds.contains(clip.id) { s += 28 }
+            s -= abs(Double(clip.difficultyKind.rank) - targetLevel) * 8
             if clip.hasVerifiedTranscript { s += 4 }
             if let seen = profile.finishedClipIds.firstIndex(of: clip.id) {
                 s -= 400 + Double(seen)
@@ -371,7 +387,84 @@ final class AppModel {
             s += feedTieBreak(clip.id)
             return s
         }
-        return pool.sorted { score($0) > score($1) }
+        return spreadSimilar(pool.sorted { score($0) > score($1) })
+    }
+
+    /// Recent behavior. Newer marks count more, so the feed follows what they just did.
+    private struct TasteMirror {
+        var category: [String: Double] = [:]
+        var channel: [String: Double] = [:]
+        var clip: [String: Double] = [:]
+        var difficultyMass: [Int: Double] = [:]
+        var lastPositiveCategory: String?
+        var positives = 0
+    }
+
+    private func tasteMirror() -> TasteMirror {
+        var mirror = TasteMirror()
+        let rows = profile.tasteTrace
+        let count = rows.count
+        let kindWeight = ["watch": 6.0, "love": 9.0, "save": 3.5, "skip": -7.0]
+        for (index, row) in rows.enumerated() {
+            let parts = row.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
+            guard parts.count == 4, let weight = kindWeight[parts[0]] else { continue }
+            let recency = count <= 1 ? 1.0 : 0.35 + 0.65 * (Double(index) / Double(count - 1))
+            let amount = weight * recency
+            mirror.category[parts[1], default: 0] += amount
+            mirror.channel[parts[2], default: 0] += amount * 0.85
+            mirror.clip[parts[3], default: 0] += amount
+            if amount > 0 {
+                mirror.positives += 1
+                mirror.lastPositiveCategory = parts[1]
+                if let watched = clip(id: parts[3]) {
+                    mirror.difficultyMass[watched.difficultyKind.rank, default: 0] += amount
+                }
+            }
+        }
+        return mirror
+    }
+
+    private func mirroredLevel(fallback: Int, mass: [Int: Double]) -> Double {
+        let total = mass.values.reduce(0, +)
+        guard total > 0 else { return Double(fallback) }
+        let watched = mass.reduce(0) { $0 + Double($1.key) * $1.value } / total
+        let pull = min(total / 12, 1)
+        return Double(fallback) * (1 - pull) + watched * pull
+    }
+
+    /// Keeps a run of the same kind from becoming the whole feed. The neighborhood stays, then it breathes.
+    private func spreadSimilar(_ ranked: [Clip]) -> [Clip] {
+        var rest = ranked
+        var out: [Clip] = []
+        while !rest.isEmpty {
+            if out.count >= 2,
+               let previous = out.last?.category,
+               out[out.count - 2].category == previous,
+               let other = rest.firstIndex(where: { $0.category != previous }) {
+                out.append(rest.remove(at: other))
+            } else {
+                out.append(rest.removeFirst())
+            }
+        }
+        return out
+    }
+
+    /// A clip they stayed with, saved from, favorited, or swiped past.
+    func noteClipWatched(_ clip: Clip) { rememberTaste("watch", clip: clip) }
+    func noteClipSkipped(_ clip: Clip) { rememberTaste("skip", clip: clip) }
+
+    private func rememberTaste(_ kind: String, clip: Clip) {
+        if kind == "save" {
+            let prefix = "save\u{1f}"
+            let suffix = "\u{1f}\(clip.id)"
+            if profile.tasteTrace.contains(where: { $0.hasPrefix(prefix) && $0.hasSuffix(suffix) }) { return }
+        }
+        var rows = profile.tasteTrace
+        rows.append([kind, clip.category, clip.channelName, clip.id].joined(separator: "\u{1f}"))
+        if rows.count > 40 { rows.removeFirst(rows.count - 40) }
+        profile.tasteTrace = rows
+        tasteRevision += 1
+        save()
     }
 
     /// Keeps the clip we named during onboarding at the front of the first session.
@@ -403,6 +496,11 @@ final class AppModel {
             profile.favoriteClipIds.append(clipId)
         }
         save()
+        if isFavorite(clipId), let clip = clip(id: clipId) {
+            rememberTaste("love", clip: clip)
+        } else {
+            tasteRevision += 1
+        }
         return isFavorite(clipId)
     }
 
@@ -420,6 +518,7 @@ final class AppModel {
             profile.followedChannelNames.append(channel)
         }
         followRevision += 1
+        tasteRevision += 1
         save()
         track("channel_follow_toggled", props: ["channel": channel, "on": String(isFollowing(channel: channel))])
         return isFollowing(channel: channel)
@@ -443,6 +542,7 @@ final class AppModel {
             count += 1
         }
         if count > 0 {
+            rememberTaste("save", clip: clip)
             save()
             track("line_saved", props: ["clip": clip.id, "line": String(lineIndex), "words": String(count)])
         }
@@ -524,7 +624,10 @@ final class AppModel {
         lookedUpKeys.insert(key)
         wordStates[key] = word.state
         if isNew { vocabBadgePulse += 1 }
-        if persist { save() }
+        if persist {
+            rememberTaste("save", clip: clip)
+            save()
+        }
         return word.occurrenceCount
     }
 
@@ -703,9 +806,13 @@ final class AppModel {
         var ids = profile.finishedClipIds
         ids.removeAll { $0 == id }
         ids.append(id)
-        guard ids != profile.finishedClipIds else { return }
-        profile.finishedClipIds = ids
-        save()
+        let changed = ids != profile.finishedClipIds
+        if changed { profile.finishedClipIds = ids }
+        if let clip = clip(id: id) {
+            rememberTaste("watch", clip: clip)
+        } else if changed {
+            save()
+        }
     }
 
     func addWatch(seconds: Double) {
@@ -1110,6 +1217,7 @@ final class AppModel {
         ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }
         watchLog = [:]
         profile.favoriteClipIds = []
+        profile.tasteTrace = []
         profile.lastGoalCelebratedDay = ""
         profile.didSeedDemoData = false
         save()

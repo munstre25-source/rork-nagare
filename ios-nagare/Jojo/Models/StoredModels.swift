@@ -62,6 +62,8 @@ final class UserProfile {
     var favoriteClipIds: [String] = []
     /// Clip ids the learner has played through. For You keeps these behind clips they have not finished.
     var finishedClipIds: [String] = []
+    /// Recent watch, skip, save, and favorite marks. For You clusters the next clips around these.
+    var tasteTrace: [String] = []
     /// Channel names the user follows (For You / Following split).
     var followedChannelNames: [String] = []
     var lastGoalCelebratedDay: String = ""

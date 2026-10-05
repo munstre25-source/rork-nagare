@@ -93,6 +93,7 @@ struct FeedView: View {
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
         .onChange(of: app.catalogGeneration) { _, _ in absorbNewClips() }
+        .onChange(of: app.tasteRevision) { _, _ in mirrorUpcoming() }
         .onChange(of: lookup.isPresented) { _, presented in
             if presented { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
@@ -202,7 +203,13 @@ struct FeedView: View {
                         },
                         watchChromeHidden: !watchChromeVisible,
                         onRevealWatchChrome: { revealWatchChrome() },
-                        onSkip: { advance() }
+                        onSkip: {
+                            if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
+                                app.noteClipSkipped(clip)
+                            }
+                            mirrorUpcoming()
+                            advance()
+                        }
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
@@ -237,6 +244,19 @@ struct FeedView: View {
         } else {
             clips.append(contentsOf: newcomers)
         }
+        mirrorUpcoming()
+    }
+
+    /// The clip on screen stays. Everything after it is reordered around what they just watched.
+    private func mirrorUpcoming() {
+        let ranked = app.forYouClips
+        guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else {
+            clips = ranked
+            currentId = clips.first?.id
+            return
+        }
+        let kept = Set(clips.prefix(index + 1).map(\.id))
+        clips = Array(clips.prefix(index + 1)) + ranked.filter { !kept.contains($0.id) }
     }
 
     private func reloadClips() {
@@ -253,6 +273,7 @@ struct FeedView: View {
     /// End of clip → remember it, then a micro-quiz, then advance.
     private func handleClipFinished() {
         if let id = currentId { app.markClipFinished(id) }
+        mirrorUpcoming()
         guard quizClip == nil,
               let id = currentId,
               let clip = clips.first(where: { $0.id == id }),
