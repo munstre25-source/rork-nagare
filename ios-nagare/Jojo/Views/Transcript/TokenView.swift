@@ -146,7 +146,7 @@ struct TokenView: View {
 
     private var japaneseColor: Color {
         switch state {
-        case .selected, .spoken: LearningInk.spoken
+        case .selected, .spoken: return LearningInk.spoken
         case .normal:
             if familiarity == .known { return LearningInk.known }
             return LearningInk.japanese
@@ -165,9 +165,9 @@ struct TokenView: View {
 
     private var underlineColor: Color {
         switch familiarity {
-        case .known: LearningInk.known
-        case .familiar: LearningInk.familiar
-        default: isLookedUp ? LearningInk.familiar : token.underlineColor
+        case .known: return LearningInk.known
+        case .familiar: return LearningInk.familiar
+        default: return isLookedUp ? LearningInk.familiar : token.underlineColor
         }
     }
 }
