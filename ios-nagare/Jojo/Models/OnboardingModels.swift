@@ -161,15 +161,18 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     /// Hands-on flashcard rating before the App Store ask.
     case flashcardTry = 18
 
-    /// Presentation order. `demo` (raw 7) is retired but kept on the enum so mid-funnel
-    /// resumes still decode; anyone parked there is remapped to `flashcardTry`.
+    /// Presentation order. `trialTimeline` stays on the enum so a saved step still decodes.
+    /// The live feed demo comes just before the review ask, once the person has scrolled and tapped a word.
     static let flow: [OnboardingStep] = [
         .splash,
         .valueCaptions, .valueTap, .valueFlashcards,
-        .name, .motivation, .taste, .level,
         .flashcardTry,
-        .socialProof, .dailyGoal, .journey, .notifications,
-        .trialTimeline, .appReview, .acquisition,
+        .name, .acquisition,
+        .motivation, .taste, .level,
+        .socialProof,
+        .dailyGoal, .journey, .notifications,
+        .demo,
+        .appReview,
         .paywall, .welcome
     ]
 
@@ -203,7 +206,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
 
     var allowsBack: Bool {
         switch self {
-        case .splash, .valueCaptions, .welcome: false
+        case .splash, .valueCaptions, .paywall, .welcome: false
         default: true
         }
     }

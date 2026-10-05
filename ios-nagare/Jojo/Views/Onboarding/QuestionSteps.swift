@@ -138,7 +138,7 @@ struct TasteSwipeStepView: View {
                 ForEach(clips) { clip in
                     HStack(spacing: 10) {
                         Image(systemName: clip.categoryKind.symbol)
-                            .foregroundStyle(Color.sakuraPinkLight)
+                            .foregroundStyle(Color.sakuraPink)
                             .frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(clip.title)
@@ -179,7 +179,7 @@ struct TasteSwipeStepView: View {
                 .frame(width: 68, height: 68)
                 .background(Color.jojoPaper, in: Circle())
                 .overlay(Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1))
-                .shadow(color: Color.jojoVermilion.opacity(0.1), radius: 12, y: 5)
+                .shadow(color: Color.black.opacity(0.1), radius: 12, y: 5)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(label)
@@ -263,7 +263,7 @@ private struct TasteCard: View {
         }
         .frame(maxWidth: 380, maxHeight: 440)
         .clipShape(.rect(cornerRadius: 28, style: .continuous))
-        .shadow(color: Color.jojoVermilion.opacity(0.18), radius: 22, y: 12)
+        .shadow(color: Color.black.opacity(0.16), radius: 22, y: 12)
         .accessibilityElement(children: .combine)
     }
 
@@ -355,7 +355,7 @@ struct LevelStepView: View {
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
             )
-            .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : 0.06), radius: 14, y: 6)
+            .shadow(color: Color.black.opacity(isSelected ? 0.18 : 0.06), radius: 14, y: 6)
             .animation(.snappy, value: isSelected)
         }
         .buttonStyle(PressableStyle())

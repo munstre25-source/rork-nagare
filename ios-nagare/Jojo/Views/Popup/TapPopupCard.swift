@@ -167,10 +167,10 @@ struct TapPopupCard: View {
                 } label: {
                     Image(systemName: tab.symbol)
                         .font(.system(size: compact ? 15 : 17, weight: .semibold))
-                        .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : .white.opacity(0.55))
+                        .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : .white.opacity(0.82))
                         .frame(width: compact ? 44 : 52, height: 40)
                         .background(
-                            lookup.tab == tab ? Color.jojoOrange.opacity(0.14) : Color.clear,
+                            lookup.tab == tab ? Color.sakuraPinkSoft : Color.clear,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
                 }

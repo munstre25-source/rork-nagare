@@ -53,13 +53,13 @@ struct ImmersivePlayerScreen: View {
                 coordinator.stop()
                 dismiss()
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(Color.white.opacity(0.12), in: Circle())
             }
-            .accessibilityLabel("Close")
+            .accessibilityLabel("Back")
             ChannelAvatar(clip: clip, size: 36)
             VStack(alignment: .leading, spacing: 1) {
                 Text(clip.title)

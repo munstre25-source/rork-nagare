@@ -88,7 +88,7 @@ struct ProfileView: View {
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 48)
                             .background {
-                                Capsule().fill(Color.sakuraFill).opacity(words.isEmpty ? 0.4 : 1)
+                                Capsule().fill(words.isEmpty ? Color(hex: "#5C3A68") : Color.sakuraButton)
                             }
                     }
                     .buttonStyle(.plain)
@@ -179,10 +179,10 @@ struct ProfileView: View {
                     y: .value("Minutes", item.minutes),
                     width: .ratio(0.55)
                 )
-                .foregroundStyle(item.date == today ? Color.designOrange : Color.designOrange.opacity(0.4))
+                .foregroundStyle(item.date == today ? Color.sakuraPink : Color.sakuraPinkSoft)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 RuleMark(y: .value("Goal", app.profile.dailyGoalMinutes))
-                    .foregroundStyle(Color.designOrange.opacity(0.35))
+                    .foregroundStyle(Color.sakuraPinkSoft)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
             .chartXAxis {
@@ -203,7 +203,7 @@ struct ProfileView: View {
             GeometryReader { proxy in
                 HStack(spacing: 2) {
                     Capsule().fill(Color.gray.opacity(0.45)).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
-                    Capsule().fill(Color.designOrange.opacity(0.45)).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
+                    Capsule().fill(Color.sakuraPinkSoft).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
                     Capsule().fill(Color.designOrange).frame(width: proxy.size.width * CGFloat(familiar) / CGFloat(total))
                     Capsule().fill(Color.spokenGreen)
                 }
@@ -211,7 +211,7 @@ struct ProfileView: View {
             .frame(height: 12)
             HStack {
                 MasteryStat(color: .gray.opacity(0.7), label: "New", value: newCount)
-                MasteryStat(color: Color.designOrange.opacity(0.45), label: "Learning", value: learning)
+                MasteryStat(color: Color.sakuraPinkSoft, label: "Learning", value: learning)
                 MasteryStat(color: .designOrange, label: "Familiar", value: familiar)
                 MasteryStat(color: .spokenGreen, label: "Known", value: known)
             }

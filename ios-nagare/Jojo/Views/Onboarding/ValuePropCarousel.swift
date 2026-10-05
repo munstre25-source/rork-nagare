@@ -104,7 +104,7 @@ struct ValuePropCarousel: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
             )
-            Text("Clips unlock after your free trial starts.")
+            Text("Clips unlock when you start Jojo Pro.")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(Color.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -112,7 +112,7 @@ struct ValuePropCarousel: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Feed preview. Clips unlock after your free trial starts.")
+        .accessibilityLabel("Feed preview. Clips unlock when you start Jojo Pro.")
     }
 
     private func page<Content: View>(

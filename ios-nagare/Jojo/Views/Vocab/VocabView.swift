@@ -225,7 +225,7 @@ struct VocabView: View {
                                 .foregroundStyle(word.state == .known ? .white : Color.designOrange)
                                 .padding(.horizontal, 10)
                                 .frame(minHeight: 32)
-                                .background(word.state == .known ? Color.designOrange : Color.designOrange.opacity(0.12), in: Capsule())
+                                .background(word.state == .known ? Color.sakuraButton : Color.sakuraPinkSoft, in: Capsule())
                         }
                         .padding(12)
                         .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -306,10 +306,10 @@ struct VocabView: View {
         }
         .padding(16)
         .background(
-            LinearGradient(colors: [Color.designOrange.opacity(0.16), Color.card], startPoint: .topLeading, endPoint: .bottomTrailing),
+            LinearGradient(colors: [Color.sakuraPinkSoft, Color.card], startPoint: .topLeading, endPoint: .bottomTrailing),
             in: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.designOrange.opacity(0.18)))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.sakuraPink))
     }
 
     private var myWordsSection: some View {

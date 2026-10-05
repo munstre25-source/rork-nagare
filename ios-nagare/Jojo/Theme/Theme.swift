@@ -52,11 +52,16 @@ extension Color {
     /// Soft sakura-night lift behind the active line.
     static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
 
-    // MARK: Brand accent — iOS app icon sakura (orange theme is retired)
-    static let sakuraPink = Color(hex: "#FF5FA2")
-    static let sakuraPinkLight = Color(hex: "#FF9FCB")
-    static let sakuraPinkDeep = Color(hex: "#D63384")
-    static let sakuraPinkSoft = Color(hex: "#FF5FA2").opacity(0.16)
+    // MARK: Brand accent
+    /// Plum sakura marks. Deep on cream, light wisteria on black so underlines and icons stay readable.
+    static let sakuraPink = Color.adaptive(light: "#7A4684", dark: "#E8D0F2")
+    /// Same mark color. Fills that carry white type use `sakuraButton` instead.
+    static let sakuraPinkDeep = sakuraPink
+    /// Wisteria petal. Pale on cream, a solid mid plum on black so white type still reads.
+    static let sakuraPinkLight = Color.adaptive(light: "#E3D2E8", dark: "#6B4580")
+    static let sakuraPinkSoft = sakuraPinkLight
+    /// Button and badge fills. Deep plum in both appearances so the white label stays clear.
+    static let sakuraButton = Color(hex: "#7A4684")
 
     /// Interactive chrome (tabs, toggles, selection, charts) — sakura, not orange.
     static let brandAccent = sakuraPink
@@ -75,14 +80,14 @@ extension Color {
     static let designOrange = sakuraPink
     static let designOrangeDeep = sakuraPinkDeep
 
-    /// Premium sakura ramp from the icon blossoms: light petal, mid sakura, deep blossom.
+    /// Solid plum fill for controls with white type.
     static let sakuraFill = LinearGradient(
-        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
+        colors: [Color.sakuraButton, Color.sakuraButton],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     static let sakuraBar = LinearGradient(
-        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
+        colors: [Color.sakuraButton, Color.sakuraButton],
         startPoint: .leading,
         endPoint: .trailing
     )
@@ -98,14 +103,14 @@ extension Color {
     /// Card fill / hairline on the cream surface.
     static let jojoPaper = Color(hex: "#FFFFFF")
     static let jojoPaperStroke = Color(hex: "#F2E2D1")
-    static let jojoBlossom = Color(hex: "#F3A8B4")
+    static let jojoBlossom = Color(hex: "#E3D2E8")
     static let jojoGold = Color(hex: "#F5C542")
 
     // MARK: Night-sakura (matches the iOS app icon atmosphere)
     static let nightIndigo = Color(hex: "#140C2E")
     static let nightViolet = Color(hex: "#2A1452")
     static let nightPlum = Color(hex: "#4A1D6B")
-    static let neonMagenta = Color(hex: "#FF2E93")
+    static let neonMagenta = Color.adaptive(light: "#7A4684", dark: "#E8D0F2")
     static let lanternAmber = Color(hex: "#FFB347")
 
     // MARK: Readable secondary (light theme was washing out on cream/white)

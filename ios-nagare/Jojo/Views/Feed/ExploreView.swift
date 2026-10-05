@@ -152,7 +152,7 @@ private struct ExploreClipCard: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.jojoOrange.opacity(0.9), in: Capsule())
+                    .background(Color.sakuraButton, in: Capsule())
                     .padding(Spacing.s)
             }
             .overlay(alignment: .topTrailing) {
@@ -192,7 +192,7 @@ private struct ExploreClipCard: View {
                                         .foregroundStyle(.white)
                                         .padding(.horizontal, 12)
                                         .frame(minHeight: 32)
-                                        .background(Color.jojoOrange, in: Capsule())
+                                        .background(Color.sakuraButton, in: Capsule())
                                 }
                                 Button {
                                     Haptics.light()

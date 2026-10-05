@@ -12,8 +12,8 @@ struct RootView: View {
             } else if !app.purchases.isSubscribed {
                 // Returning user whose subscription lapsed: hard paywall, no tabs.
                 ZStack {
-                    JojoBrandBackground(scene: .lanternNight, showsHills: false)
-                    PaywallView(allowsDebugBypass: true) {}
+                    JojoBrandBackground(scene: .templeDusk, showsHills: false)
+                    PaywallView(allowsDebugBypass: false) {}
                         .frame(maxWidth: 560)
                 }
                 .environment(\.brandSurface, .night)
@@ -61,20 +61,27 @@ struct MainTabView: View {
                 showingExplore: $showingExplore,
                 feedActive: tab == .feed
             )
+            .toolbar(.hidden, for: .tabBar)
+            .background(SystemTabBarHider())
             .tabItem { Label("Feed", systemImage: "play.circle") }
             .tag(AppTab.feed)
 
             VocabView()
+                .toolbar(.hidden, for: .tabBar)
+                .background(SystemTabBarHider())
                 .tabItem { Label("Vocab", systemImage: "book") }
                 .tag(AppTab.vocab)
                 .badge(newVocabSinceVisit)
 
             ProfileView(onGiveFeedback: { showManualFeedback = true })
+                .toolbar(.hidden, for: .tabBar)
+                .background(SystemTabBarHider())
                 .tabItem { Label("Profile", systemImage: "person") }
                 .tag(AppTab.profile)
         }
         .tint(Color.designOrange)
         .toolbar(.hidden, for: .tabBar)
+        .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !app.hidesMainTabBar {
                 KikuTabBar(selection: $tab, vocabBadge: newVocabSinceVisit)
@@ -147,6 +154,29 @@ struct MainTabView: View {
     }
 }
 
+/// The system tab bar stays in the hierarchy even when SwiftUI asks it to hide, which
+/// paints a second set of labels under the custom capsule. This forces it off.
+private struct SystemTabBarHider: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Controller { Controller() }
+    func updateUIViewController(_ controller: Controller, context: Context) { controller.hide() }
+
+    final class Controller: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            hide()
+        }
+
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            hide()
+        }
+
+        func hide() {
+            tabBarController?.tabBar.isHidden = true
+        }
+    }
+}
+
 /// For You and Explore share the Feed tab. The floating capsule is the only bottom chrome.
 private struct FeedTab: View {
     @Binding var showingExplore: Bool
@@ -212,7 +242,7 @@ struct KikuTabBar: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 4)
                             .frame(minWidth: 16, minHeight: 16)
-                            .background(Color.designOrange, in: Capsule())
+                            .background(Color.sakuraButton, in: Capsule())
                             .offset(x: 8, y: -6)
                     }
                 }
@@ -220,7 +250,7 @@ struct KikuTabBar: View {
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
             }
-            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.45))
+            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.78))
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }

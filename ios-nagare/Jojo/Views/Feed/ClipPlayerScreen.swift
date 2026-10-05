@@ -94,15 +94,15 @@ struct ClipQueueScreen: View {
             Button {
                 dismiss()
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(.black.opacity(0.45), in: Circle())
             }
             .padding(.leading, Spacing.m)
             .padding(.top, Spacing.s)
-            .accessibilityLabel("Close")
+            .accessibilityLabel("Back")
         }
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)

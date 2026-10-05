@@ -1,8 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Phone-framed live demo of the real feed during onboarding. Muted by default,
-/// non-interactive so it cannot pollute the learner's vocab deck.
+/// Phone-framed still of the feed. Clips do not play here; playback starts only after the paywall.
 struct OnboardingSneakPeek: View {
     var isActive: Bool = true
 
@@ -14,7 +13,6 @@ struct OnboardingSneakPeek: View {
     @State private var showFlashcard: Bool = false
     @State private var flashSurface: String = "嘘"
     @State private var caption: String = "Watch real Japanese"
-    @State private var scriptTask: Task<Void, Never>?
     @State private var unmuted: Bool = false
     @State private var showMockPopup: Bool = false
     @State private var pulseToken: Int? = nil
@@ -64,32 +62,10 @@ struct OnboardingSneakPeek: View {
         .onAppear {
             lookup.offlineOnly = true
             lookup.previewOnly = true
-            if !coordinator.isMuted {
-                coordinator.toggleMute()
-            }
             prepareClips()
-            if isActive { startLoop() }
-        }
-        .onChange(of: isActive) { _, active in
-            if active {
-                startLoop()
-            } else {
-                scriptTask?.cancel()
-                coordinator.pause()
-                showMockPopup = false
-                showFlashcard = false
-                isPulsing = false
-                pulseToken = nil
-            }
         }
         .onDisappear {
-            scriptTask?.cancel()
             coordinator.stop()
-        }
-        .onChange(of: currentId) { _, newId in
-            guard !showFlashcard,
-                  let newId, let clip = feedClips.first(where: { $0.id == newId }) else { return }
-            coordinator.activate(clip, startLine: 0, loopLine: true)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Sneak peek of the Jojo feed")
@@ -151,7 +127,7 @@ struct OnboardingSneakPeek: View {
                             isPulsing: clip.id == currentId && isPulsing,
                             showsChannelRow: false,
                             immersiveFeed: true,
-                            onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                            onActivate: {}
                         )
                         .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                         .clipped()
@@ -206,62 +182,6 @@ struct OnboardingSneakPeek: View {
         }
         feedClips = ordered
         currentId = ordered.first?.id
-    }
-
-    private func startLoop() {
-        scriptTask?.cancel()
-        guard let first = feedClips.first else { return }
-        scriptTask = Task { @MainActor in
-            while !Task.isCancelled {
-                // Beat 1 — play
-                showFlashcard = false
-                showMockPopup = false
-                isPulsing = false
-                pulseToken = nil
-                caption = "Watch real Japanese"
-                currentId = first.id
-                coordinator.activate(first, startLine: 0, loopLine: true)
-                try? await Task.sleep(for: .milliseconds(2600))
-                guard !Task.isCancelled else { return }
-
-                // Beat 2 — visual word tap (no vocab write)
-                caption = "Tap any word"
-                if let line = first.lines.first {
-                    let idx = line.tokens.firstIndex(where: { $0.surface.contains("嘘") })
-                        ?? line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
-                        ?? line.tokens.firstIndex(where: \.tappable)
-                    if let idx {
-                        let token = line.tokens[idx]
-                        flashSurface = token.surface
-                        pulseToken = idx
-                        isPulsing = true
-                        withAnimation(Motion.popupSpring) { showMockPopup = true }
-                        try? await Task.sleep(for: .milliseconds(2400))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(Motion.popupSpring) { showMockPopup = false }
-                        isPulsing = false
-                        pulseToken = nil
-                        try? await Task.sleep(for: .milliseconds(400))
-                    }
-                }
-
-                // Beat 3 — swipe to second clip
-                if let second = feedClips.dropFirst().first {
-                    caption = "Keep scrolling"
-                    withAnimation(.easeInOut(duration: 0.5)) { currentId = second.id }
-                    try? await Task.sleep(for: .milliseconds(2800))
-                    guard !Task.isCancelled else { return }
-                }
-
-                // Beat 4 — flashcard
-                caption = "Flashcards build themselves"
-                withAnimation(Motion.cardFlip) { showFlashcard = true }
-                try? await Task.sleep(for: .milliseconds(2600))
-                guard !Task.isCancelled else { return }
-                withAnimation { showFlashcard = false }
-                try? await Task.sleep(for: .milliseconds(400))
-            }
-        }
     }
 }
 

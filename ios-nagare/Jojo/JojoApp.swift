@@ -18,6 +18,7 @@ struct JojoApp: App {
 
     init() {
         FontRegistry.registerFonts()
+        UITabBar.appearance().isHidden = true
         let schema = Schema([SavedWord.self, CachedExplanation.self, UserProfile.self, RemoteClip.self, CustomDeck.self])
         // CloudKit-compatible models, but sync is intentionally disabled in this version.
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)

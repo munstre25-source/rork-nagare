@@ -19,9 +19,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .forYou:
-            "Two clips play in For You. The channel sits above the video, a known word is boxed in green, and the English line stays bright. Controls fade, then a touch brings them back."
+            "Two clips play on the black For You page. Plum underlines stay bright, a known word is boxed in green, and the English line is white."
         case .exploreVocab:
-            "Explore opens Listening, two clips play on black, then Vocab shows how many words you know and the flashcards."
+            "Explore opens Listening, two clips play on black with the same plum transcript, then Vocab and the flashcards."
         }
     }
 
@@ -29,10 +29,10 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .forYou:
             [
-                "Channel name above the clip, English under the words",
+                "Channel name above the clip, plum underlines, white English",
                 "A word you know is boxed in green",
                 "Controls fade, then a touch brings them back",
-                "Tap a new word — it becomes a card",
+                "Tap a new word — the dictionary card opens",
                 "Swipe to the second clip",
                 "The review card shows the definition in full"
             ]
@@ -40,7 +40,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             [
                 "Explore’s learning paths",
                 "Open Listening",
-                "Two clips play on black — swipe down to the next",
+                "Two clips play on black — plum transcript, swipe to the next",
                 "Vocab opens with how many words you know",
                 "Flashcards show the definition, the sentence, and the clip"
             ]
@@ -99,7 +99,7 @@ struct MarketingShowcaseView: View {
         }
         .environment(coordinator)
         .environment(lookup)
-        .statusBarHidden(phase == .running)
+        .preferredColorScheme(.dark)
         .onAppear {
             selectedScript = initialScript
             if autoBegin, !didAutoBegin {
@@ -169,12 +169,12 @@ struct MarketingShowcaseView: View {
                         .padding(Spacing.l)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
-                            selectedScript == script ? Color.jojoOrange.opacity(0.16) : Color.white.opacity(0.06),
+                            selectedScript == script ? Color.sakuraPinkSoft : Color.white.opacity(0.06),
                             in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(selectedScript == script ? Color.jojoOrange.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1.5)
+                                .strokeBorder(selectedScript == script ? Color.sakuraPink : Color.white.opacity(0.08), lineWidth: 1.5)
                         )
                     }
                     .buttonStyle(.plain)
@@ -351,7 +351,7 @@ struct MarketingShowcaseView: View {
         VStack(spacing: 0) {
             HStack(spacing: Spacing.m) {
                 Image(systemName: "xmark")
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(0.85))
                     .frame(width: 44, height: 44)
                 GeometryReader { proxy in
                     let progress = flashWords.isEmpty ? 0.2 : Double(flashIndex + 1) / Double(max(flashWords.count, 1))
@@ -528,7 +528,7 @@ struct MarketingShowcaseView: View {
         stage = .feed
         let known = markDemoKnown(on: first)
         coordinator.activate(first, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(1600))
+        try? await Task.sleep(for: .milliseconds(2400))
         guard !Task.isCancelled else { return }
         await fadeDemoChrome()
         try? await Task.sleep(for: .milliseconds(1400))
@@ -551,7 +551,7 @@ struct MarketingShowcaseView: View {
                     romaji: token.romaji,
                     gloss: token.definitions.first ?? ""
                 )
-                try? await Task.sleep(for: .milliseconds(2200))
+                try? await Task.sleep(for: .milliseconds(3000))
                 guard !Task.isCancelled else { return }
                 let key = AppModel.wordKey(for: token)
                 savedFromTap = (try? app.context.fetch(
@@ -589,11 +589,11 @@ struct MarketingShowcaseView: View {
         explorePath = nil
         _ = markDemoKnown(on: feedPair.first ?? first)
         withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
-        try? await Task.sleep(for: .milliseconds(1600))
+        try? await Task.sleep(for: .milliseconds(2200))
         guard !Task.isCancelled else { return }
 
         withAnimation(.easeInOut(duration: 0.45)) { explorePath = .listening }
-        try? await Task.sleep(for: .milliseconds(1800))
+        try? await Task.sleep(for: .milliseconds(2200))
         guard !Task.isCancelled else { return }
 
         let source = feedPair.isEmpty ? clips : feedPair
@@ -621,7 +621,7 @@ struct MarketingShowcaseView: View {
                 romaji: token.romaji,
                 gloss: token.definitions.first ?? ""
             )
-            try? await Task.sleep(for: .milliseconds(1800))
+            try? await Task.sleep(for: .milliseconds(3000))
             guard !Task.isCancelled else { return }
             withAnimation(Motion.popupSpring) { lookup.dismiss() }
             bornCard = nil

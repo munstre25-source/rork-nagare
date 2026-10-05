@@ -25,7 +25,9 @@ struct OnboardingFlowView: View {
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
             } else {
                 VStack(spacing: 0) {
-                    header
+                    if step != .demo, step != .paywall {
+                        header
+                    }
                     content
                         .id(contentId)
                         .transition(.asymmetric(
@@ -44,7 +46,7 @@ struct OnboardingFlowView: View {
             guard !didLoad else { return }
             didLoad = true
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
-            if step == .demo { step = .flashcardTry }
+            if step == .trialTimeline { step = .demo }
             if step == .welcome, !app.purchases.isSubscribed { step = .paywall }
             // Resume mid-funnel: skip splash.
             if step != .splash {
@@ -73,7 +75,8 @@ struct OnboardingFlowView: View {
         case .splash, .valueCaptions: .lanternNight
         case .valueTap: .neonTokyo
         case .valueFlashcards: .templeDusk
-        case .welcome, .paywall: .sakuraDay
+        case .paywall: .templeDusk
+        case .welcome: .sakuraDay
         default: .lanternNight
         }
     }
@@ -114,7 +117,7 @@ struct OnboardingFlowView: View {
                     ZStack(alignment: .leading) {
                         Capsule().fill(onNight ? Color.white.opacity(0.14) : Color.jojoInk.opacity(0.08))
                         Capsule()
-                            .fill(LinearGradient(colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep], startPoint: .leading, endPoint: .trailing))
+                            .fill(Color.sakuraPink)
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
                             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
                     }
@@ -125,20 +128,8 @@ struct OnboardingFlowView: View {
             } else {
                 Spacer()
             }
-            #if DEBUG
-            Button("Skip") {
-                Haptics.medium()
-                app.purchases.activateDebugBypass()
-                app.completeOnboarding()
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(onNight ? Color.sakuraPinkLight : Color.sakuraPink)
-            .frame(minWidth: 44, minHeight: 44)
-            .accessibilityLabel("Skip onboarding")
-            #else
             JojoMascotAvatar(size: 36)
                 .opacity(step.showsProgress ? 1 : 0)
-            #endif
         }
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
@@ -161,7 +152,9 @@ struct OnboardingFlowView: View {
             TasteSwipeStepView { next() }
         case .level:
             LevelStepView { next() }
-        case .demo, .flashcardTry:
+        case .demo:
+            OnboardingFeedDemoView(onContinue: { next() }, onBack: { back() })
+        case .flashcardTry:
             FlashcardTryStepView { next() }
         case .socialProof:
             SocialProofStepView { next() }
@@ -178,7 +171,7 @@ struct OnboardingFlowView: View {
         case .acquisition:
             AcquisitionStepView { next() }
         case .paywall:
-            PaywallView(allowsDebugBypass: true) {
+            PaywallView(allowsDebugBypass: false) {
                 go(to: .welcome)
             }
         case .welcome:
@@ -273,20 +266,8 @@ struct SplashView: View {
         VStack(spacing: Spacing.s) {
             Text("DEBUG")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(Color.sakuraPink.opacity(0.9))
+                .foregroundStyle(Color.sakuraPink)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Button {
-                Haptics.medium()
-                app.purchases.activateDebugBypass()
-                app.completeOnboarding()
-            } label: {
-                Label("Skip onboarding", systemImage: "forward.end.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .accessibilityHint("Opens the feed without finishing onboarding")
             Button {
                 Haptics.selection()
                 marketingScript = .forYou

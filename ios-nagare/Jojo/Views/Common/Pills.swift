@@ -47,7 +47,7 @@ struct OccurrenceBadge: View {
             .foregroundStyle(.white)
             .contentTransition(.numericText(value: Double(count)))
             .frame(width: size, height: size)
-            .background(Color.jojoOrange, in: Circle())
+            .background(Color.sakuraButton, in: Circle())
             .accessibilityLabel("Encountered \(count) times")
     }
 }
@@ -87,14 +87,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 56)
             .background {
                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.sakuraPinkDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .opacity(isEnabled ? 1 : 0.32)
+                    .fill(isEnabled ? Color.sakuraButton : Color(hex: "#5C3A68"))
             }
             .shadow(color: Color.black.opacity(isEnabled ? 0.22 : 0), radius: 10, y: 4)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)

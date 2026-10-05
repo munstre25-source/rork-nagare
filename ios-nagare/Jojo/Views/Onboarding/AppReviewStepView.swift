@@ -1,8 +1,8 @@
 import SwiftUI
 import StoreKit
 
-/// Dedicated App Store review ask. It lands after the learner has tapped a word in a real
-/// clip and rated a real flashcard, so the question follows an earned moment.
+/// App Store review ask. Shown right after the live feed demo, once the learner
+/// has scrolled a clip and opened the dictionary card.
 struct AppReviewStepView: View {
     let onContinue: () -> Void
 

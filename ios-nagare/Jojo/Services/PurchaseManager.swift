@@ -8,8 +8,6 @@ nonisolated enum StoreConstants {
     static let offeringId = "default"
     static let monthlyProductId = "monthly"
     static let yearlyProductId = "yearly"
-    static let fallbackMonthlyPrice = "$9.99"
-    static let fallbackYearlyPrice = "$59.99"
     static let termsURL = URL(string: "https://socialreporthq.com/jojo/terms")
     static let privacyURL = URL(string: "https://socialreporthq.com/jojo/privacy")
     static let supportURL = URL(string: "https://socialreporthq.com/jojo/support")
@@ -313,44 +311,42 @@ final class PurchaseManager {
 
     // MARK: Display helpers
 
-    func priceText(_ package: Package?, fallback: String) -> String {
-        package?.storeProduct.localizedPriceString ?? fallback
+    func priceText(_ package: Package?) -> String? {
+        package?.storeProduct.localizedPriceString
     }
 
-    /// e.g. "3-day free trial", read from the product's introductory discount.
-    /// Monthly has no free trial — only yearly.
-    func trialText(_ package: Package?) -> String {
-        guard let package else { return "" }
-        let productId = package.storeProduct.productIdentifier
-        if productId == StoreConstants.monthlyProductId { return "" }
-        guard isTrialEligible else { return "" }
-        guard let discount = package.storeProduct.introductoryDiscount else {
-            if productId == StoreConstants.yearlyProductId || productId.contains("year") {
-                return "3-day free trial"
-            }
-            return ""
-        }
-        guard discount.paymentMode == .freeTrial else { return "" }
-        let period = discount.subscriptionPeriod
+    /// Billing period taken from the StoreKit product, e.g. "year" or "month".
+    func periodSuffix(_ package: Package?) -> String? {
+        guard let period = package?.storeProduct.subscriptionPeriod else { return nil }
+        let value = period.value
         switch period.unit {
-        case .day: return "\(period.value)-day free trial"
-        case .week: return period.value == 1 ? "7-day free trial" : "\(period.value)-week free trial"
-        case .month: return "\(period.value)-month free trial"
-        case .year: return "\(period.value)-year free trial"
+        case .day: return value == 1 ? "day" : "\(value) days"
+        case .week: return value == 1 ? "week" : "\(value) weeks"
+        case .month: return value == 1 ? "month" : "\(value) months"
+        case .year: return value == 1 ? "year" : "\(value) years"
+        @unknown default: return nil
+        }
+    }
+
+    /// Free-trial copy from the product's introductory offer. Empty when StoreKit has no free trial.
+    func trialText(_ package: Package?) -> String {
+        guard let package, isTrialEligible else { return "" }
+        guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else { return "" }
+        let period = discount.subscriptionPeriod
+        let value = period.value
+        switch period.unit {
+        case .day: return "\(value)-day free trial"
+        case .week: return value == 1 ? "1-week free trial" : "\(value)-week free trial"
+        case .month: return value == 1 ? "1-month free trial" : "\(value)-month free trial"
+        case .year: return value == 1 ? "1-year free trial" : "\(value)-year free trial"
         @unknown default: return "Free trial"
         }
     }
 
-    /// Trial length in days for reminders / copy. Nil when no free trial applies (e.g. monthly).
+    /// Trial length in days, from the introductory offer. Nil when that offer is not a free trial.
     func trialLengthDays(_ package: Package?) -> Int? {
-        guard let package else { return nil }
-        let productId = package.storeProduct.productIdentifier
-        if productId == StoreConstants.monthlyProductId { return nil }
-        guard isTrialEligible else { return nil }
-        guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else {
-            if productId == StoreConstants.yearlyProductId || productId.contains("year") { return 3 }
-            return nil
-        }
+        guard let package, isTrialEligible else { return nil }
+        guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else { return nil }
         let period = discount.subscriptionPeriod
         switch period.unit {
         case .day: return period.value
@@ -361,15 +357,42 @@ final class PurchaseManager {
         }
     }
 
-    /// Monthly-equivalent price for the yearly plan, e.g. "$5.00/mo".
-    func yearlyPerMonthText() -> String {
-        guard let product = yearly?.storeProduct else { return "$5.00/mo" }
-        let perMonth = product.price / 12
+    /// Price of a plan spread across a month, using the product's own price and subscription period.
+    func perMonthText(_ package: Package?) -> String? {
+        guard let product = package?.storeProduct,
+              let months = Self.monthCount(product.subscriptionPeriod),
+              months > 0 else { return nil }
+        let perMonth = product.price / months
         let formatter = product.priceFormatter ?? {
             let f = NumberFormatter()
             f.numberStyle = .currency
             return f
         }()
-        return (formatter.string(from: perMonth as NSDecimalNumber) ?? "") + "/mo"
+        return formatter.string(from: perMonth as NSDecimalNumber)
+    }
+
+    /// How much cheaper the yearly plan is per month than the monthly plan, from the loaded products.
+    func yearlySavingsPercent() -> Int? {
+        guard let yearly = yearly?.storeProduct, let monthly = monthly?.storeProduct,
+              let yearlyMonths = Self.monthCount(yearly.subscriptionPeriod),
+              let monthlyMonths = Self.monthCount(monthly.subscriptionPeriod),
+              yearlyMonths > 0, monthlyMonths > 0 else { return nil }
+        let yearlyRate = yearly.price / yearlyMonths
+        let monthlyRate = monthly.price / monthlyMonths
+        guard monthlyRate > 0, yearlyRate < monthlyRate else { return nil }
+        let saved = (monthlyRate - yearlyRate) / monthlyRate * 100
+        let percent = NSDecimalNumber(decimal: saved).intValue
+        return percent > 0 ? percent : nil
+    }
+
+    private static func monthCount(_ period: SubscriptionPeriod?) -> Decimal? {
+        guard let period else { return nil }
+        switch period.unit {
+        case .day: return Decimal(period.value) / 30
+        case .week: return Decimal(period.value) * 12 / 52
+        case .month: return Decimal(period.value)
+        case .year: return Decimal(period.value) * 12
+        @unknown default: return nil
+        }
     }
 }

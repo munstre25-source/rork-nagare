@@ -29,25 +29,7 @@ struct SocialProofStepView: View {
         VStack(spacing: Spacing.l) {
             ScrollView {
                 VStack(spacing: Spacing.xl) {
-                    OnboardingTitle(title: "Learners are flowing.", subtitle: "Real Japanese, a few minutes at a time.")
-                    VStack(spacing: Spacing.s) {
-                        HStack(spacing: 4) {
-                            ForEach(0..<5, id: \.self) { _ in
-                                Image(systemName: "star.fill").foregroundStyle(Color.jojoGold)
-                            }
-                        }
-                        .font(.title2)
-                        Text("4.8")
-                            .font(.system(size: 54, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.jojoInk)
-                        Text("12,400+ ratings")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.jojoInkSoft)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Rated 4.8 out of 5, 12,400 ratings")
-
+                    OnboardingTitle(title: "A few minutes, most days.", subtitle: "This is the habit Jojo is built for.")
                     TabView(selection: $page) {
                         ForEach(Array(orderedQuotes.enumerated()), id: \.offset) { i, quote in
                             VStack(alignment: .leading, spacing: Spacing.m) {
@@ -69,7 +51,7 @@ struct SocialProofStepView: View {
                     }
                     .tabViewStyle(.page(indexDisplayMode: .always))
                     .frame(height: 260)
-                    Text("Sample reviews for preview purposes.")
+                    Text("Examples of the habit.")
                         .font(.caption)
                         .foregroundStyle(Color.jojoInkFaint)
                 }
@@ -144,7 +126,7 @@ struct DailyGoalStepView: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(
-                            isSelected ? Color.white.opacity(0.22) : Color.jojoOrange.opacity(0.12),
+                            isSelected ? Color.white.opacity(0.22) : Color.sakuraPinkSoft,
                             in: Capsule()
                         )
                 }
@@ -163,7 +145,7 @@ struct DailyGoalStepView: View {
                 RoundedRectangle(cornerRadius: 40, style: .continuous)
                     .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
             )
-            .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : 0.06), radius: 12, y: 5)
+            .shadow(color: Color.black.opacity(isSelected ? 0.18 : 0.06), radius: 12, y: 5)
             .animation(.snappy, value: isSelected)
         }
         .buttonStyle(PressableStyle())
@@ -227,7 +209,7 @@ struct JourneyStepView: View {
                         }
                         Chart(points) { p in
                             AreaMark(x: .value("Day", p.day), y: .value("Words", reveal ? p.words : 0))
-                                .foregroundStyle(LinearGradient(colors: [Color.jojoOrange.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom))
+                                .foregroundStyle(Color.sakuraPinkSoft)
                                 .interpolationMethod(.catmullRom)
                             LineMark(x: .value("Day", p.day), y: .value("Words", reveal ? p.words : 0))
                                 .foregroundStyle(Color.jojoVermilion)
@@ -250,10 +232,10 @@ struct JourneyStepView: View {
                             .foregroundStyle(Color.jojoVermilion)
                             .symbolEffect(.pulse, options: .repeating)
                         VStack(alignment: .leading) {
-                            Text("Day 1 streak starts today")
+                            Text("Your streak starts with the first clip")
                                 .font(.headline)
                                 .foregroundStyle(Color.jojoInk)
-                            Text("Watch one clip to light it up.")
+                            Text("One clip is enough to light it up.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.jojoInkSoft)
                         }
@@ -276,7 +258,7 @@ struct JourneyStepView: View {
         HStack(spacing: 3) {
             ForEach(0..<30, id: \.self) { d in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(d == 0 ? Color.jojoVermilion : Color.jojoOrange.opacity(reveal ? 0.1 + Double(d) / 50 : 0.1))
+                    .fill(d == 0 ? Color.sakuraPink : Color.sakuraPinkSoft)
                     .frame(height: 16)
             }
         }
@@ -298,7 +280,10 @@ struct NotificationStepView: View {
                 .foregroundStyle(Color.jojoVermilion, Color.jojoOrangeLight)
                 .rotationEffect(.degrees(bell ? 12 : -12))
                 .animation(.easeInOut(duration: 0.18).repeatCount(5, autoreverses: true), value: bell)
-            OnboardingTitle(title: "Protect your streak with a daily nudge?", subtitle: "One gentle reminder in the evening. Never spammy.")
+            OnboardingTitle(
+                title: "Want a reminder for those \(app.profile.dailyGoalMinutes) minutes?",
+                subtitle: "One gentle nudge in the evening. Never spammy."
+            )
             notificationPreview
             Spacer()
             Button("Turn on reminders") {
@@ -311,6 +296,16 @@ struct NotificationStepView: View {
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
+            Button("Not now") {
+                Haptics.selection()
+                app.profile.notificationsAsked = true
+                app.save()
+                track("onboarding_notifications_answer", props: ["granted": "0"])
+                onContinue()
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.white.opacity(0.8))
+            .frame(minHeight: 44)
         }
         .padding(.horizontal, Spacing.l)
         .padding(.bottom, Spacing.m)
@@ -421,7 +416,7 @@ struct TrialTimelineStepView: View {
                     }
                 if !isLast {
                     Rectangle()
-                        .fill(LinearGradient(colors: [Color.jojoOrange, Color.jojoOrange.opacity(0.18)], startPoint: .top, endPoint: .bottom))
+                        .fill(Color.sakuraPink)
                         .frame(width: 3, height: 52)
                 }
             }

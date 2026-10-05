@@ -97,7 +97,7 @@ struct JojoBrandBackground: View {
             }
             if showsPetals {
                 BrandPetalField(
-                    tint: scene == nil ? .jojoBlossom : .sakuraPink,
+                    tint: .sakuraPinkSoft,
                     density: scene == nil ? .sparse : .lush
                 )
             }
@@ -121,13 +121,13 @@ struct JojoBrandBackground: View {
                 endPoint: .bottom
             )
             RadialGradient(
-                colors: [Color.sakuraPink.opacity(0.14), .clear],
+                colors: [Color.sakuraPinkSoft, .clear],
                 center: .init(x: 0.88, y: 0.04),
                 startRadius: 8,
                 endRadius: 420
             )
             RadialGradient(
-                colors: [Color.jojoBlossom.opacity(0.2), .clear],
+                colors: [Color.sakuraPinkSoft, .clear],
                 center: .init(x: 0.02, y: 0.34),
                 startRadius: 8,
                 endRadius: 320
@@ -163,7 +163,7 @@ struct JojoBrandBackground: View {
                     endPoint: .bottom
                 )
                 RadialGradient(
-                    colors: [Color.sakuraPink.opacity(0.12), .clear],
+                    colors: [Color.sakuraPinkSoft, .clear],
                     center: .init(x: 0.82, y: 0.18),
                     startRadius: 10,
                     endRadius: 380
@@ -187,7 +187,7 @@ struct OnboardingBackground: View {
     var body: some View {
         ZStack {
             Color.bgPlayer
-            RadialGradient(colors: [Color.jojoOrange.opacity(0.22), .clear], center: .init(x: 0.85, y: -0.05), startRadius: 10, endRadius: 420)
+            RadialGradient(colors: [Color.sakuraPinkSoft, .clear], center: .init(x: 0.85, y: -0.05), startRadius: 10, endRadius: 420)
             RadialGradient(colors: [Color(hex: "#3B82F6").opacity(0.08), .clear], center: .init(x: 0.0, y: 1.0), startRadius: 10, endRadius: 380)
         }
         .ignoresSafeArea()
@@ -201,16 +201,10 @@ struct SeigaihaHills: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             SeigaihaHillShape(phase: 0)
-                .fill(Color.sakuraPinkLight.opacity(0.45))
+                .fill(Color.sakuraPinkSoft)
                 .frame(height: 104)
             SeigaihaHillShape(phase: 18)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.sakuraPink.opacity(0.92), Color.sakuraPinkDeep.opacity(0.88)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+                .fill(Color.sakuraPink)
                 .frame(height: 80)
             SeigaihaPattern()
                 .stroke(Color.white.opacity(0.18), lineWidth: 1.2)
@@ -402,14 +396,7 @@ struct JojoMascotAvatar: View {
             .clipShape(Circle())
             .overlay {
                 if showsRing {
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [Color.sakuraPinkLight, Color.sakuraPinkDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: max(2, size * 0.05)
-                    )
+                    Circle().strokeBorder(Color.sakuraPink, lineWidth: max(2, size * 0.05))
                 }
             }
             .accessibilityLabel("Jojo")
@@ -424,13 +411,7 @@ struct JojoWordmark: View {
         HStack(alignment: .top, spacing: size * 0.05) {
             Text("Jojo")
                 .font(.system(size: size, weight: .heavy, design: .rounded))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.sakuraPinkLight, Color.sakuraPink, Color.neonMagenta],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .foregroundStyle(Color.sakuraPink)
             Circle()
                 .fill(Color.sakuraPinkDeep)
                 .frame(width: size * 0.19, height: size * 0.19)

@@ -101,7 +101,7 @@ struct TokenView: View {
                 .strokeBorder(Color.designOrange, lineWidth: 2.5)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.designOrange.opacity(0.18))
+                        .fill(Color.sakuraPinkSoft)
                 )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -113,9 +113,9 @@ struct TokenView: View {
             } else if isLookedUp {
                 // Saved / looked-up words get an orange fill like Kiku's 石炭.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.designOrange.opacity(0.22))
+                    .fill(Color.sakuraPinkSoft)
             } else if highlight {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.designOrange.opacity(0.28))
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.sakuraPinkSoft)
             }
         }
     }

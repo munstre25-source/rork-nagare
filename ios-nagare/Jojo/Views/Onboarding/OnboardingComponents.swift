@@ -17,7 +17,7 @@ struct JojoLogo: View {
             FlowStroke()
                 .trim(from: 0, to: drawProgress)
                 .stroke(
-                    LinearGradient(colors: [Color.sakuraPinkLight, Color.sakuraPinkDeep], startPoint: .leading, endPoint: .trailing),
+                    Color.sakuraPink,
                     style: StrokeStyle(lineWidth: 6 * size, lineCap: .round, lineJoin: .round)
                 )
                 .frame(width: 150 * size, height: 22 * size)
@@ -173,7 +173,7 @@ struct StaticSentence: View {
                 .background {
                     switch word.state {
                     case .selected:
-                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.jojoOrange)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.sakuraButton)
                     case .spoken:
                         RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.spokenGreen, lineWidth: 2)
                     case .normal:
@@ -214,7 +214,7 @@ struct OptionCard: View {
                     .foregroundStyle(isSelected ? .white : (isNight ? Color.sakuraPink : Color.jojoVermilion))
                     .frame(width: 44, height: 44)
                     .background(
-                        isSelected ? Color.white.opacity(0.22) : (isNight ? Color.white.opacity(0.1) : Color.jojoOrange.opacity(0.1)),
+                        isSelected ? Color.white.opacity(0.22) : (isNight ? Color.white.opacity(0.1) : Color.sakuraPinkSoft),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
             }
@@ -253,7 +253,7 @@ struct OptionCard: View {
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .strokeBorder(isSelected ? .clear : (isNight ? Color.white.opacity(0.12) : Color.jojoPaperStroke), lineWidth: 1)
         )
-        .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.22 : (isNight ? 0 : 0.06)), radius: isSelected ? 14 : 10, y: 5)
+        .shadow(color: Color.black.opacity(isSelected ? 0.18 : (isNight ? 0 : 0.06)), radius: isSelected ? 14 : 10, y: 5)
         .contentShape(Rectangle())
         .animation(.snappy, value: isSelected)
         .accessibilityElement(children: .combine)

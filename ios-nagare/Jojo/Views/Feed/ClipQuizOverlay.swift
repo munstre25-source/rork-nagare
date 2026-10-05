@@ -222,7 +222,7 @@ struct ClipQuizOverlay: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .foregroundStyle(.white)
-                    .background(Color.jojoOrange, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .padding(.top, Spacing.s)
         }

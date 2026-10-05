@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Hands-on flashcard: flip a real card and rate it with Again / Good so the learner
-/// has used the review loop before we ask for an App Store rating.
+/// Hands-on flashcard: flip a sample card and rate it, so the review buttons are familiar
+/// before the feed unlocks. No clip plays on this screen.
 struct FlashcardTryStepView: View {
     let onContinue: () -> Void
 
@@ -26,15 +26,15 @@ struct FlashcardTryStepView: View {
                     MascotCoach(message: coachMessage)
                     if answeredGood == nil {
                         OnboardingTitle(
-                            title: revealed ? "Now be honest with me." : "Your first flashcard.",
+                            title: revealed ? "Now be honest with me." : "Try one card.",
                             subtitle: revealed
                             ? "Tap how it went. Jojo schedules the next showing for you."
-                            : "Flip it, then rate it — same buttons you'll use every day."
+                            : "Same card you'll get after you tap a word in a clip. Flip it, then rate it."
                         )
                     } else {
                         OnboardingTitle(
                             title: "That's the review loop.",
-                            subtitle: "Tap words while you watch, then rate them here. Your deck builds itself."
+                            subtitle: "After you start, tap a word while you watch and it comes back as a card like this."
                         )
                     }
                     if let card {
@@ -61,7 +61,7 @@ struct FlashcardTryStepView: View {
 
     private var coachMessage: String {
         if answeredGood == nil {
-            return "This is your deck now, \(app.displayName). One card, zero setup."
+            return "One practice card, \(app.displayName), so the buttons feel familiar."
         }
         return answeredGood == true
         ? "Nice. I'll bring it back later, when you're about to forget it."
@@ -127,7 +127,7 @@ struct FlashcardTryStepView: View {
             }
             if !word.contextSentence.isEmpty {
                 Divider().overlay(Color.jojoPaperStroke)
-                Text("From a real clip")
+                Text("The sentence it came from")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.jojoInkFaint)
                 HighlightedSentence(

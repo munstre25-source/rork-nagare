@@ -11,7 +11,6 @@ struct PaywallView: View {
     let onSubscribed: () -> Void
 
     @Environment(AppModel.self) private var app
-    @Environment(\.openURL) private var openURL
     @State private var plan: PlanChoice = .yearly
     @State private var errorMessage: String?
     @State private var didTrackView: Bool = false
@@ -19,121 +18,148 @@ struct PaywallView: View {
     private var purchases: PurchaseManager { app.purchases }
 
     var body: some View {
-        Group {
-            if let offering = purchases.offering, offering.hasPaywall {
-                RemotePaywallView(offering: offering, onSubscribed: onSubscribed) { message in
-                    withAnimation { errorMessage = message }
-                }
-                .overlay(alignment: .top) { remoteBanner }
-            } else {
-                nativePaywall
+        nativePaywall
+            .onAppear {
+                guard !didTrackView else { return }
+                didTrackView = true
+                track("onboarding_paywall_view", props: [
+                    "offering_loaded": purchases.offering == nil ? "0" : "1",
+                    "remote": "0"
+                ])
+                if purchases.offering == nil { Task { await purchases.loadOffering() } }
+                if purchases.isSubscribed { onSubscribed() }
             }
-        }
-        .onAppear {
-            guard !didTrackView else { return }
-            didTrackView = true
-            track("onboarding_paywall_view", props: [
-                "offering_loaded": purchases.offering == nil ? "0" : "1",
-                "remote": purchases.hasRemotePaywall ? "1" : "0"
-            ])
-            if purchases.offering == nil { Task { await purchases.loadOffering() } }
-            if purchases.isSubscribed { onSubscribed() }
-        }
-        .onChange(of: purchases.isSubscribed) { _, subscribed in
-            if subscribed { onSubscribed() }
-        }
-    }
-
-    @ViewBuilder
-    private var remoteBanner: some View {
-        VStack(spacing: Spacing.s) {
-            if let errorMessage {
-                Button {
-                    withAnimation { self.errorMessage = nil }
-                } label: {
-                    Text(errorMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.jojoInk)
-                        .padding(Spacing.m)
-                        .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
+            .onChange(of: purchases.isSubscribed) { _, subscribed in
+                if subscribed { onSubscribed() }
             }
-            #if DEBUG
-            if allowsDebugBypass, DebugFlags.allowPaywallBypass {
-                Button("DEBUG: Skip paywall") {
-                    purchases.activateDebugBypass()
-                    onSubscribed()
-                }
-                .font(.caption.monospaced())
-                .foregroundStyle(.yellow)
-                .padding(.horizontal, Spacing.m)
-                .frame(minHeight: 44)
-                .background(.black.opacity(0.6), in: Capsule())
-            }
-            #endif
-        }
-        .padding(.top, Spacing.s)
     }
 
     private var nativePaywall: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
-                    VStack(alignment: .leading, spacing: Spacing.s) {
-                        HStack(spacing: Spacing.s) {
-                            JojoMascotAvatar(size: 40)
-                            Text("JOJO PRO")
-                                .font(.system(size: 14, weight: .heavy, design: .rounded))
-                                .tracking(2)
-                                .foregroundStyle(Color.jojoVermilion)
-                        }
-                        OnboardingTitle(title: paywallTitle,
-                                        subtitle: paywallSubtitle)
-                    }
-                    planCard(.yearly,
-                             title: "Yearly",
-                             price: purchases.priceText(purchases.yearly, fallback: StoreConstants.fallbackYearlyPrice) + " / year",
-                             detail: purchases.yearlyPerMonthText(),
-                             badge: "Save 50%",
-                             package: purchases.yearly)
-                    planCard(.monthly,
-                             title: "Monthly",
-                             price: purchases.priceText(purchases.monthly, fallback: StoreConstants.fallbackMonthlyPrice) + " / month",
-                             detail: "Billed monthly",
-                             badge: nil,
-                             package: purchases.monthly)
+        ZStack {
+            paywallBackdrop
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    wordmark
+                    headline
+                    benefitRow
+                    yearlyCard
+                    monthlyCard
                     if let errorMessage {
-                        HStack(alignment: .top, spacing: Spacing.s) {
-                            Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(Color.jojoVermilion)
-                            Text(errorMessage).font(.subheadline).foregroundStyle(Color.jojoInk)
-                        }
-                        .padding(Spacing.m)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.jojoOrange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .transition(.opacity)
+                        Text(errorMessage)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(Spacing.m)
+                            .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
+                    purchaseButton
+                    Text(trialCaption)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                    trustRow
+                    flourish
+                    legalRow
+                    Text(subscriptionDisclosure)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, Spacing.l)
-                .padding(.top, Spacing.l)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-            footer
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var paywallBackdrop: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "#3A1458"), Color(hex: "#6B2A78"), Color(hex: "#140818")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            if UIImage(named: BrandScene.templeDusk.rawValue) != nil {
+                Image(BrandScene.templeDusk.rawValue)
+                    .resizable()
+                    .scaledToFill()
+            }
+            LinearGradient(
+                colors: [Color.black.opacity(0.18), Color.black.opacity(0.08), Color.black.opacity(0.62)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    private var wordmark: some View {
+        HStack(spacing: 8) {
+            JojoMascotAvatar(size: 42, showsRing: true)
+            Text("JOJO")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color.sakuraPink)
+            Text("PRO")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+            Text("🌸")
+                .font(.system(size: 16))
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Jojo Pro")
+    }
+
+    private var headline: some View {
+        let name = app.profile.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lead = name.isEmpty ? "Your feed is ready" : "\(name), your feed is ready"
+        return VStack(alignment: .leading, spacing: 10) {
+            (
+                Text("\(lead)\n")
+                    .foregroundStyle(.white)
+                + Text("Tap any word.")
+                    .foregroundStyle(Color.sakuraPink)
+            )
+            .font(.system(size: 34, weight: .bold, design: .rounded))
+            .lineSpacing(1)
+            Text("Scroll real Japanese. The dictionary opens on the word you tap, and that word becomes a flashcard.")
+                .font(.body)
+                .foregroundStyle(.white.opacity(0.88))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var paywallTitle: String {
-        app.profile.firstName.isEmpty ? "Your feed is ready." : "\(app.profile.firstName), your feed is ready."
+    private var benefitRow: some View {
+        HStack(alignment: .top, spacing: 8) {
+            benefit("play.rectangle.fill", "Clips at your level", "The feed follows what you picked")
+            benefit("text.magnifyingglass", "Tap any word", "Reading and meaning, in the sentence")
+            benefit("rectangle.on.rectangle.angled", "Cards from the clip", "Review the line you just heard")
+            benefit("iphone", "iPhone and iPad", "One Jojo Pro subscription")
+        }
     }
 
-    private var paywallSubtitle: String {
-        if let clip = app.recommendedClip() {
-            return "It opens on \(clip.title). Unlimited clips, tap any word, and flashcards build themselves."
+    private func benefit(_ symbol: String, _ title: String, _ detail: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.sakuraPink)
+                .frame(width: 46, height: 46)
+                .background(Color.sakuraPinkSoft, in: Circle())
+                .overlay(Circle().strokeBorder(Color.sakuraPink, lineWidth: 1.5))
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.62))
+                .multilineTextAlignment(.center)
         }
-        return "Unlimited clips, tap-to-understand on every word and flashcards that build themselves."
+        .frame(maxWidth: .infinity)
     }
 
     private var selectedPackage: Package? {
@@ -147,114 +173,245 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
-    /// Yearly is the trial plan; Monthly is pay-now. Drive the CTA from the selection itself
-    /// so it stays correct even when RevenueCat hasn't returned intro-offer metadata yet.
+    /// The button promises a trial only when the selected StoreKit product includes one.
     private var primaryCTATitle: String {
-        plan == .yearly ? "Start Free Trial" : "Continue"
+        selectedPackageHasTrial ? "Start Free Trial" : "Subscribe"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
     private var subscriptionDisclosure: String {
-        let price = purchases.priceText(
-            selectedPackage,
-            fallback: plan == .yearly ? StoreConstants.fallbackYearlyPrice : StoreConstants.fallbackMonthlyPrice
-        )
-        let period = plan == .yearly ? "year" : "month"
-        if selectedPackageHasTrial, !trialLine.isEmpty {
-            return "\(trialLine), then \(price)/\(period) for Jojo Pro. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        let renew = "Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        guard let price = purchases.priceText(selectedPackage),
+              let period = purchases.periodSuffix(selectedPackage) else {
+            return "Plans load from the App Store. \(renew)"
         }
-        return "\(price)/\(period) for Jojo Pro. No free trial on Monthly. Payment is charged to your Apple ID. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        if selectedPackageHasTrial, !trialLine.isEmpty {
+            return "\(trialLine), then \(price)/\(period) for Jojo Pro. \(renew)"
+        }
+        return "\(price)/\(period) for Jojo Pro. \(renew)"
     }
 
-    private func planCard(_ choice: PlanChoice, title: String, price: String, detail: String, badge: String?, package: Package?) -> some View {
-        let isSelected = plan == choice
-        return Button {
+    private var yearlyPrice: String? { purchases.priceText(purchases.yearly) }
+    private var monthlyPrice: String? { purchases.priceText(purchases.monthly) }
+    private var plansReady: Bool { yearlyPrice != nil && monthlyPrice != nil }
+
+    private var perMonthLine: String? {
+        guard let amount = purchases.perMonthText(purchases.yearly) else { return nil }
+        return "Only \(amount)/month"
+    }
+
+    private var saveBadge: String? {
+        guard let percent = purchases.yearlySavingsPercent() else { return nil }
+        return "Save \(percent)%"
+    }
+
+    private var yearlyCard: some View {
+        planButton(.yearly) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center) {
+                    Image(systemName: plan == .yearly ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(plan == .yearly ? Color.white : Color.sakuraPinkSoft)
+                    Text("Yearly")
+                        .font(.system(.title3, design: .rounded, weight: .bold))
+                    Spacer(minLength: 8)
+                    if let saveBadge {
+                        Text(saveBadge)
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(Color.sakuraPink)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.white, in: Capsule())
+                    }
+                }
+                if let yearlyPrice, let period = purchases.periodSuffix(purchases.yearly) {
+                    Text("\(yearlyPrice) / \(period)")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
+                } else {
+                    ProgressView().tint(.white)
+                }
+                if let perMonthLine {
+                    Text(perMonthLine)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white)
+                }
+                HStack(spacing: 0) {
+                    planMeta("play.rectangle.fill", "Whole feed")
+                    planMeta("text.magnifyingglass", "Every word")
+                    planMeta("clock", "Cancel anytime")
+                }
+                .padding(.top, 4)
+            }
+            .padding(16)
+            .padding(.top, 8)
+            .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(alignment: .topTrailing) {
+                Label("Most Popular", systemImage: "crown.fill")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Color.sakuraPink)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white, in: Capsule())
+                    .offset(y: -12)
+                    .padding(.trailing, 14)
+            }
+        }
+        .padding(.top, 10)
+    }
+
+    private var monthlyCard: some View {
+        planButton(.monthly) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: plan == .monthly ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(plan == .monthly ? Color.sakuraPink : Color.sakuraPinkSoft)
+                    Text("Monthly")
+                        .font(.system(.title3, design: .rounded, weight: .bold))
+                }
+                if let monthlyPrice, let period = purchases.periodSuffix(purchases.monthly) {
+                    Text("\(monthlyPrice) / \(period)")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
+                } else {
+                    ProgressView().tint(.white)
+                }
+                Text("Same feed, billed each month")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+                HStack(spacing: 16) {
+                    Label("Whole feed", systemImage: "checkmark")
+                    Label("Cancel anytime", systemImage: "checkmark")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.top, 2)
+            }
+            .padding(16)
+            .background(Color.black.opacity(0.38), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(plan == .monthly ? Color.sakuraPink : Color.white.opacity(0.16), lineWidth: plan == .monthly ? 2 : 1)
+            )
+        }
+    }
+
+    private func planButton<Label: View>(_ choice: PlanChoice, @ViewBuilder label: () -> Label) -> some View {
+        Button {
             Haptics.selection()
             withAnimation(.snappy) { plan = choice }
         } label: {
-            VStack(alignment: .leading, spacing: Spacing.s) {
-                HStack {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundStyle(isSelected ? Color.jojoOrange : Color.jojoInkFaint.opacity(0.6))
-                    Text(title)
-                        .font(.system(.title3, design: .rounded, weight: .bold))
-                        .foregroundStyle(Color.jojoInk)
-                    Spacer()
-                    if let badge {
-                        Text(badge).font(.caption.weight(.heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(
-                                LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .leading, endPoint: .trailing),
-                                in: Capsule()
-                            )
-                    }
-                }
-                Text(price).font(.headline).foregroundStyle(Color.jojoInk)
-                Text(detail).font(.subheadline).foregroundStyle(Color.jojoInkSoft)
-                if isSelected, !purchases.trialText(package).isEmpty {
-                    Label(purchases.trialText(package).capitalizedFirst + ", then " + price, systemImage: "gift.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.jojoVermilion)
-                        .transition(.opacity)
-                }
-            }
-            .padding(Spacing.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.jojoPaper, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                .strokeBorder(isSelected ? Color.jojoOrange : Color.jojoPaperStroke, lineWidth: isSelected ? 2 : 1))
-            .shadow(color: Color.jojoVermilion.opacity(isSelected ? 0.16 : 0.05), radius: 14, y: 6)
+            label()
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(PressableStyle())
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAddTraits(plan == choice ? .isSelected : [])
     }
 
-    private var footer: some View {
-        VStack(spacing: Spacing.s) {
-            Button {
-                Task { await buy() }
-            } label: {
-                if purchases.isPurchasing || purchases.isRestoring {
-                    ProgressView().tint(.white)
-                } else {
-                    Text(primaryCTATitle)
-                        .contentTransition(.opacity)
-                        .animation(.snappy, value: primaryCTATitle)
-                }
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(purchases.isPurchasing || purchases.isRestoring)
-            Text(subscriptionDisclosure)
-                .font(.caption2)
-                .foregroundStyle(Color.jojoInkFaint)
+    private func planMeta(_ symbol: String, _ title: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: symbol)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color.sakuraPink)
+            Text(title)
+                .font(.caption2.weight(.semibold))
                 .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: Spacing.l) {
-                Button("Restore Purchases") { Task { await restore() } }
-                    .disabled(purchases.isRestoring || purchases.isPurchasing)
-                if let terms = StoreConstants.termsURL { Button("Terms") { openURL(terms) } }
-                if let privacy = StoreConstants.privacyURL { Button("Privacy") { openURL(privacy) } }
-                if let support = StoreConstants.supportURL { Button("Support") { openURL(support) } }
-            }
-            .font(.footnote.weight(.medium))
-            .foregroundStyle(Color.jojoInkSoft)
-            .frame(minHeight: 44)
-            #if DEBUG
-            if allowsDebugBypass, DebugFlags.allowPaywallBypass {
-                Button("DEBUG: Skip paywall (simulator only)") {
-                    purchases.activateDebugBypass()
-                    onSubscribed()
-                }
-                .font(.caption.monospaced())
-                .foregroundStyle(.yellow.opacity(0.8))
-                .frame(minHeight: 44)
-            }
-            #endif
         }
-        .padding(.horizontal, Spacing.l)
-        .padding(.bottom, Spacing.s)
-        .padding(.top, Spacing.s)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var purchaseButton: some View {
+        Button {
+            Task { await buy() }
+        } label: {
+            if purchases.isPurchasing || purchases.isRestoring {
+                ProgressView().tint(.white)
+            } else {
+                HStack(spacing: 8) {
+                    Text(primaryCTATitle)
+                    Image(systemName: "arrow.right")
+                        .font(.headline.weight(.bold))
+                }
+                .contentTransition(.opacity)
+            }
+        }
+        .buttonStyle(PaywallCTAStyle())
+        .disabled(!plansReady || purchases.isPurchasing || purchases.isRestoring)
+    }
+
+    private var trialCaption: String {
+        guard let price = purchases.priceText(selectedPackage),
+              let period = purchases.periodSuffix(selectedPackage) else {
+            return "Loading plans from the App Store"
+        }
+        if selectedPackageHasTrial, let days = purchases.trialLengthDays(selectedPackage) {
+            return "\(days) days free  ·  Then \(price)/\(period)"
+        }
+        if selectedPackageHasTrial, !trialLine.isEmpty {
+            return "\(trialLine)  ·  Then \(price)/\(period)"
+        }
+        return "\(price)/\(period)  ·  Cancel anytime"
+    }
+
+    private var trustRow: some View {
+        HStack(alignment: .top, spacing: 8) {
+            trust("apple.logo", "Billed by Apple", "Charged to your Apple ID")
+            trust("iphone", "iPhone and iPad", "The Jojo app")
+            trust("arrow.clockwise", "Cancel anytime", "In Apple subscriptions")
+        }
+        .padding(.top, 6)
+    }
+
+    private func trust(_ symbol: String, _ title: String, _ detail: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 42, height: 42)
+                .background(Color.white.opacity(0.1), in: Circle())
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var flourish: some View {
+        Text("♥  一緒にがんばろう  ♥")
+            .font(.system(size: 22, weight: .medium, design: .serif))
+            .italic()
+            .foregroundStyle(Color.sakuraPink)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
+            .accessibilityLabel("Let's do this together")
+    }
+
+    private var legalRow: some View {
+        HStack(spacing: 8) {
+            if let terms = StoreConstants.termsURL {
+                Link("Terms of Service", destination: terms)
+            }
+            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            if let privacy = StoreConstants.privacyURL {
+                Link("Privacy Policy", destination: privacy)
+            }
+            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            if let support = StoreConstants.supportURL {
+                Link("Support", destination: support)
+            }
+            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            Button("Restore Purchases") { Task { await restore() } }
+                .disabled(purchases.isRestoring || purchases.isPurchasing)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)
     }
 
     private func buy() async {
@@ -293,6 +450,19 @@ struct PaywallView: View {
         case .failed(let message):
             withAnimation { errorMessage = message }
         }
+    }
+}
+
+private struct PaywallCTAStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 20, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(Color.sakuraFill, in: Capsule())
+            .shadow(color: Color.black.opacity(0.28), radius: 16, y: 8)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
