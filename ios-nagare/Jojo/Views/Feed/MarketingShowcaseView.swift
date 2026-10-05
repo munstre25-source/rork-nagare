@@ -62,7 +62,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     }
 
     func subtitle(accent: AccentTheme) -> String {
-        let page = scheme == .light ? "cream" : "black"
+        let page = scheme == .light ? "white" : "black"
         switch kind {
         case .forYou:
             return "\(accent.title) colors. Two clips play on the \(page) For You page. Karaoke, the dictionary, and the review card use that set."
@@ -74,12 +74,12 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     }
 
     func beats(accent: AccentTheme) -> [String] {
-        let page = scheme == .light ? "cream" : "black"
+        let page = scheme == .light ? "white" : "black"
         let ink = accent.title
         switch kind {
         case .forYou:
             return [
-                "Video starts small, with the control that makes it larger",
+                "The usual video, then the control enlarges it so the words sit on the picture",
                 "\(ink) underlines on content words, a second \(ink) shade on particles",
                 "A known word uses the \(ink) known color",
                 "Controls fade, then a touch brings them back",
@@ -91,9 +91,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             return [
                 "Explore’s learning paths",
                 "Open Listening",
-                "Two clips play small on \(page), karaoke in \(ink)",
+                "Two clips play on \(page), karaoke in \(ink)",
                 "Vocab opens with how many words you know",
-                "Review card: \(ink) word, sentence, and when it returns"
+                "Review card: \(ink) word, sentence, and the clip it came from"
             ]
         case .themeTour:
             return [
@@ -142,6 +142,8 @@ struct MarketingShowcaseView: View {
     @State private var bornCard: BornCardPayload?
     /// Mirrors the feed focus fade so the recording shows the capsule and For You switch disappearing.
     @State private var watchChromeVisible: Bool = true
+    /// For You only. Starts at the usual frame, then the existing control enlarges it.
+    @State private var demoVideoExpanded: Bool = false
     /// Name shown on Feed, Vocab, and Profile after a theme change.
     @State private var themeCaption: String?
     /// Open theme menu during the theme tour. The checked accent is the one on screen.
@@ -480,7 +482,7 @@ struct MarketingShowcaseView: View {
                                 clip: clip,
                                 showsChannelRow: true,
                                 immersiveFeed: true,
-                                videoExpanded: false,
+                                videoExpanded: demoVideoExpanded,
                                 onToggleVideoSize: {},
                                 onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                             )
@@ -666,6 +668,7 @@ struct MarketingShowcaseView: View {
         stage = script.kind == .themeTour ? .analytics : (script.kind == .forYou ? .feed : .explore)
         tabHighlight = script.kind == .themeTour ? .profile : .feed
         watchChromeVisible = true
+        demoVideoExpanded = false
         JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
         phase = .running
         track("marketing_showcase_started", props: [
@@ -697,7 +700,10 @@ struct MarketingShowcaseView: View {
         stage = .feed
         let known = markDemoKnown(on: first)
         coordinator.activate(first, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(2400))
+        try? await Task.sleep(for: .milliseconds(1600))
+        guard !Task.isCancelled else { return }
+        withAnimation(.snappy) { demoVideoExpanded = true }
+        try? await Task.sleep(for: .milliseconds(1800))
         guard !Task.isCancelled else { return }
         await fadeDemoChrome()
         try? await Task.sleep(for: .milliseconds(1400))
@@ -947,6 +953,7 @@ struct MarketingShowcaseView: View {
         vocabHighlight = nil
         tabHighlight = .feed
         watchChromeVisible = true
+        demoVideoExpanded = false
         themeCaption = nil
         themeMenu = nil
     }

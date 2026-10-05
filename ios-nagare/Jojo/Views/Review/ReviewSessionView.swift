@@ -289,6 +289,11 @@ struct KikuFlashcardBack: View {
                 FlashcardSectionTitle(title: "Context", systemImage: "text.bubble.fill")
                 contextCard(clip: clip, translation: line?.translation)
             }
+            if playsClip, let clip {
+                ClipThumbnailButton(clip: clip, emphasizesPlay: true) {
+                    onPlayClip(clip)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -374,20 +379,17 @@ struct ReviewStageBackground: View {
     }
 }
 
-/// JOJO wordmark with the accent blossom. Review sits behind the subscription, so it carries PRO.
+/// JOJO wordmark with the accent blossom.
 struct ReviewWordmark: View {
     var body: some View {
         HStack(spacing: 5) {
             Text("JOJO")
                 .font(.system(size: 22, weight: .heavy, design: .rounded))
             Blossom(size: 16, color: Color.sakuraPink)
-            Text("PRO")
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                .tracking(0.6)
         }
         .foregroundStyle(Color.sakuraPink)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Jojo Pro")
+        .accessibilityLabel("Jojo")
     }
 }
 
@@ -598,63 +600,64 @@ struct ReviewUntilFooter: View {
     }
 }
 
-/// Colors for the review card. Each accent has a cream version and a night version.
+/// Colors for the review card. Sakura, Purple, and Orange each have a white-page set and a night set.
 enum FlashcardInk {
-    static let page = JojoPalette.color(
-        sakuraLight: "#FFF6EE", sakuraDark: "#07060E",
-        plumLight: "#F7F2FA", plumDark: "#0C0814",
-        orangeLight: "#FFF8F2", orangeDark: "#100C08"
-    )
-    static let plate = JojoPalette.color(
+    static var page: Color { JojoPalette.color(
+        sakuraLight: "#FFFFFF", sakuraDark: "#07060E",
+        plumLight: "#FFFFFF", plumDark: "#0C0814",
+        orangeLight: "#FFFFFF", orangeDark: "#100C08"
+    ) }
+    static var plate: Color { JojoPalette.color(
         sakuraLight: "#FFFFFF", sakuraDark: "#1A1022",
         plumLight: "#FFFFFF", plumDark: "#161222",
         orangeLight: "#FFFFFF", orangeDark: "#1C140E"
-    )
-    static let row = JojoPalette.color(
+    ) }
+    static var row: Color { JojoPalette.color(
         sakuraLight: "#FFF0F6", sakuraDark: "#2A1A32",
         plumLight: "#F4EEF7", plumDark: "#241C32",
         orangeLight: "#FFF4E8", orangeDark: "#2A1C12"
-    )
-    static let ink = JojoPalette.color(
+    ) }
+    /// Word and definition type. Near-black on the white page for every accent.
+    static var ink: Color { JojoPalette.color(
         sakuraLight: "#1C1C1E", sakuraDark: "#FFFFFF",
         plumLight: "#1C1C1E", plumDark: "#FFFFFF",
         orangeLight: "#1C1C1E", orangeDark: "#FFFFFF"
-    )
-    static let muted = JojoPalette.color(
+    ) }
+    static var muted: Color { JojoPalette.color(
         sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
         plumLight: "#655C6B", plumDark: "#C7C7CC",
         orangeLight: "#6B5E52", orangeDark: "#C7C7CC"
-    )
-    static let againFill = JojoPalette.color(
+    ) }
+    static var againFill: Color { JojoPalette.color(
         sakuraLight: "#F8D0E4", sakuraDark: "#F7C6DE",
         plumLight: "#E3D2E8", plumDark: "#E4D0EE",
         orangeLight: "#F8E0C4", orangeDark: "#F6D4AE"
-    )
-    static let againInk = JojoPalette.color(
+    ) }
+    static var againInk: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#A01458",
         plumLight: "#5C3A72", plumDark: "#4A2C60",
         orangeLight: "#C45C00", orangeDark: "#8A3E00"
-    )
-    static let goodA = JojoPalette.color(
+    ) }
+    static var goodA: Color { JojoPalette.color(
         sakuraLight: "#E21888", sakuraDark: "#FF4FA3",
-        plumLight: "#9A62B0", plumDark: "#C084DC",
+        plumLight: "#7A4684", plumDark: "#C084DC",
         orangeLight: "#E07A12", orangeDark: "#FFB020"
-    )
-    static let goodB = JojoPalette.color(
+    ) }
+    static var goodB: Color { JojoPalette.color(
         sakuraLight: "#9B3DFF", sakuraDark: "#B44DFF",
         plumLight: "#5C3A72", plumDark: "#7A4684",
         orangeLight: "#C45C00", orangeDark: "#D35400"
-    )
-    static let posFill = JojoPalette.color(
+    ) }
+    static var posFill: Color { JojoPalette.color(
         sakuraLight: "#F3D0E6", sakuraDark: "#5C2A6A",
         plumLight: "#E3D2E8", plumDark: "#5C3A72",
         orangeLight: "#F8E0C4", orangeDark: "#6B3A12"
-    )
-    static let posInk = JojoPalette.color(
+    ) }
+    static var posInk: Color { JojoPalette.color(
         sakuraLight: "#7A2460", sakuraDark: "#F6D6EA",
         plumLight: "#5C3A72", plumDark: "#F3E6FA",
         orangeLight: "#8A3E00", orangeDark: "#FFE0B8"
-    )
+    ) }
 }
 
 /// Revolving card motion between flashcards (Kiku-style).

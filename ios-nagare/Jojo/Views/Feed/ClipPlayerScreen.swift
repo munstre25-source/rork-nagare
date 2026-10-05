@@ -34,7 +34,7 @@ struct ClipQueueScreen: View {
     var forcedId: String? = nil
     /// Marketing playback loops every clip so both stay visibly playing.
     var loopPlayback: Bool = false
-    /// Walkthroughs always open small, so the boxed control is the one that enlarges the video.
+    /// Walkthroughs open at the usual frame instead of the saved maximized one.
     var preferMinimized: Bool = false
 
     @Environment(AppModel.self) private var app

@@ -774,12 +774,14 @@ final class AppModel {
     func setTheme(_ theme: AccentTheme) {
         profile.theme = theme
         JojoPalette.activate(theme: theme, scheme: profile.scheme)
+        paletteEpoch += 1
         save()
     }
 
     func setScheme(_ scheme: JojoScheme) {
         profile.scheme = scheme
         JojoPalette.activate(theme: profile.theme, scheme: scheme)
+        paletteEpoch += 1
         save()
     }
 

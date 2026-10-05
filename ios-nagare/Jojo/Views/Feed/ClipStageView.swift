@@ -14,7 +14,8 @@ struct ClipStageView: View {
     var showsRail: Bool = true
     /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
-    /// When true, the video takes the upper half of the page. When false, it shrinks so the transcript leads.
+    /// Maximized fills the page with the video and lays the words on that picture.
+    /// The resting size is the original full-width frame, with the transcript underneath.
     var videoExpanded: Bool = false
     var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
@@ -46,26 +47,25 @@ struct ClipStageView: View {
         min(max(0, size.width - 36), 560)
     }
 
-    /// Expanded is the Kiku hero: the whole 16:9 frame, as wide as the column.
-    /// Minimized is a small centered frame so the lines below can take the page.
+    /// Resting feed size: the original full-width 16:9 frame. Maximize replaces this with a full-page picture.
     private func videoSize(in size: CGSize) -> CGSize {
         let column = columnWidth(in: size)
         let naturalHeight = column * 9 / 16
-        if videoExpanded && !isPopupHere {
-            let height = min(naturalHeight, max(180, size.height - 240))
-            return CGSize(width: column, height: height)
-        }
-        let height = min(112, max(88, size.height * 0.14))
-        let width = min(column * 0.62, height * 16 / 9)
-        return CGSize(width: width, height: height)
+        let height = min(naturalHeight, max(200, size.height * 0.42))
+        return CGSize(width: column, height: height)
     }
 
     var body: some View {
         Group {
             if usesFlexibleVideo {
                 GeometryReader { geo in
-                    stage(videoHeight: videoSize(in: geo.size).height, videoWidth: videoSize(in: geo.size).width, columnWidth: columnWidth(in: geo.size))
-                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                    stage(
+                        videoHeight: videoExpanded ? geo.size.height : videoSize(in: geo.size).height,
+                        videoWidth: videoExpanded ? geo.size.width : videoSize(in: geo.size).width,
+                        columnWidth: columnWidth(in: geo.size),
+                        fillsPage: videoExpanded
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
             } else {
                 stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
@@ -96,8 +96,82 @@ struct ClipStageView: View {
     }
 
     @ViewBuilder
-    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
+    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, fillsPage: Bool = false) -> some View {
         let player = coordinator.player(for: clip)
+        if fillsPage {
+            maximizedStage(player: player)
+        } else {
+            restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth)
+        }
+    }
+
+    /// Video fills the page. The line sits on the picture, the way Kiku's maximized feed does.
+    private func maximizedStage(player: (any ClipPlayer)?) -> some View {
+        ZStack {
+            ClipVideoView(
+                clip: clip,
+                player: player,
+                showsControls: false,
+                showsRail: false,
+                compactChrome: true,
+                onActivate: onActivate,
+                onFullscreen: onFullscreen,
+                onInfo: nil,
+                onShadowing: nil,
+                fitsFrame: false,
+                watchChromeHidden: watchChromeHidden,
+                onRevealWatchChrome: onRevealWatchChrome
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 88)
+                    .allowsHitTesting(false)
+                Spacer(minLength: 0)
+                LinearGradient(colors: [.clear, .black.opacity(0.82)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 220)
+                    .allowsHitTesting(false)
+            }
+
+            VStack(spacing: 0) {
+                if showsChannelRow {
+                    ChannelRow(
+                        clip: clip,
+                        trailing: channelTrailing,
+                        showsFollow: false,
+                        emphasizesTitle: false
+                    )
+                    .padding(.top, 4)
+                }
+                Spacer(minLength: 0)
+                ClipActionRow(
+                    clip: clip,
+                    player: player,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing
+                )
+                .padding(.horizontal, 16)
+                transcript(player: player, onVideo: true)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 2)
+                if let onToggleVideoSize, !isPopupHere {
+                    HStack {
+                        Spacer(minLength: 0)
+                        videoSizeButton(action: onToggleVideoSize)
+                    }
+                    .padding(.trailing, 10)
+                    .padding(.bottom, 4)
+                }
+            }
+            .environment(\.colorScheme, .dark)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.bgPlayer)
+    }
+
+    private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
         VStack(spacing: 0) {
             if showsChannelRow {
                 ChannelRow(
@@ -122,7 +196,7 @@ struct ClipStageView: View {
                     onFullscreen: onFullscreen,
                     onInfo: immersiveFeed ? nil : onInfo,
                     onShadowing: immersiveFeed ? nil : onShadowing,
-                    fitsFrame: usesFlexibleVideo && videoExpanded && !isPopupHere,
+                    fitsFrame: false,
                     watchChromeHidden: watchChromeHidden,
                     onRevealWatchChrome: onRevealWatchChrome
                 )
@@ -172,7 +246,7 @@ struct ClipStageView: View {
         }
         .frame(width: 44, height: 44)
         .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
-        .accessibilityHint(videoExpanded ? "Shrinks the video and shows more of the transcript" : "Shows the whole video, larger")
+        .accessibilityHint(videoExpanded ? "Returns the video to its usual size, with the words underneath" : "Enlarges the video so the words sit on the picture")
     }
 
     private func savedBanner(_ word: String) -> some View {
@@ -200,7 +274,7 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?) -> some View {
+    private func transcript(player: (any ClipPlayer)?, onVideo: Bool = false) -> some View {
         TranscriptSection(
             clip: clip,
             player: player,
@@ -210,7 +284,8 @@ struct ClipStageView: View {
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
             windowMode: immersiveFeed,
-            followingLines: videoExpanded ? 1 : 4
+            followingLines: onVideo ? 1 : 2,
+            sitsOnVideo: onVideo
         )
     }
 
@@ -373,8 +448,10 @@ struct TranscriptSection: View {
     var forceDenseAids: Bool = false
     /// Kiku window: current line plus the lines after it, no nested scroll.
     var windowMode: Bool = false
-    /// How many lines after the current one stay on screen. Minimized video shows more.
+    /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
+    /// Words paint directly on the picture instead of on a card under the video.
+    var sitsOnVideo: Bool = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -387,7 +464,8 @@ struct TranscriptSection: View {
             onlyCurrentLine: onlyCurrentLine,
             forceDenseAids: forceDenseAids,
             windowMode: windowMode,
-            followingLines: followingLines
+            followingLines: followingLines,
+            sitsOnVideo: sitsOnVideo
         )
     }
 }

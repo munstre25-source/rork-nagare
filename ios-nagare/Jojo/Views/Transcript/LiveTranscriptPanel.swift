@@ -15,13 +15,20 @@ struct LiveTranscriptPanel: View {
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
+    /// The line is drawn on the video, so it skips the raised card.
+    var sitsOnVideo: Bool = false
 
     @Environment(WordLookupController.self) private var lookup
     @Namespace private var spokenNamespace
 
     var body: some View {
         Group {
-            if windowMode {
+            if windowMode && sitsOnVideo {
+                windowStack
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if windowMode {
                 windowStack
                     .padding(.top, tooltip == nil ? Spacing.s : 40)
                     .padding(.bottom, Spacing.l)
@@ -68,7 +75,7 @@ struct LiveTranscriptPanel: View {
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
-                    raisedCard: index == currentLine,
+                    raisedCard: sitsOnVideo ? false : index == currentLine,
                     showsLineTools: true
                 )
                 .id(index)

@@ -41,26 +41,23 @@ enum JojoPalette {
         activate(theme: .sakura, scheme: .dark)
     }
 
-    /// A color that follows the chosen accent and whether that accent is on cream or on black.
+    /// A color for the accent and appearance that are active right now.
+    /// Resolved immediately so switching Sakura, Purple, or Orange repaints every screen.
     static func color(
         sakuraLight: String, sakuraDark: String,
         plumLight: String, plumDark: String,
         orangeLight: String, orangeDark: String
     ) -> Color {
-        Color(uiColor: UIColor { _ in
-            let theme = AccentTheme(rawValue: UserDefaults.standard.string(forKey: JojoPalette.themeKey) ?? "") ?? .sakura
-            let scheme = JojoScheme(rawValue: UserDefaults.standard.string(forKey: JojoPalette.schemeKey) ?? "") ?? .dark
-            let hex: String
-            switch (theme, scheme) {
-            case (.sakura, .light): hex = sakuraLight
-            case (.sakura, .dark): hex = sakuraDark
-            case (.plum, .light): hex = plumLight
-            case (.plum, .dark): hex = plumDark
-            case (.orange, .light): hex = orangeLight
-            case (.orange, .dark): hex = orangeDark
-            }
-            return UIColor(hex: hex)
-        })
+        let hex: String
+        switch (theme, scheme) {
+        case (.sakura, .light): hex = sakuraLight
+        case (.sakura, .dark): hex = sakuraDark
+        case (.plum, .light): hex = plumLight
+        case (.plum, .dark): hex = plumDark
+        case (.orange, .light): hex = orangeLight
+        case (.orange, .dark): hex = orangeDark
+        }
+        return Color(hex: hex)
     }
 }
 
@@ -79,72 +76,75 @@ extension Color {
     // MARK: Backgrounds
     /// Pure black for the video frame itself — never lightens with appearance.
     static let bgPlayer = Color(hex: "#000000")
-    /// Page behind a playing clip. Cream in light mode, pure black in dark mode.
-    static let watchBackground = Color.adaptive(light: "#FFF6EE", dark: "#000000")
-    /// Raised chrome under the transcript / feed cards. Cream in light, near-black in dark.
+    /// Page behind a playing clip. White in light mode, pure black in dark mode.
+    static let watchBackground = Color.adaptive(light: "#FFFFFF", dark: "#000000")
+    /// Raised chrome under the transcript / feed cards. White in light, near-black in dark.
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
-    static let hairlineDark = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
-    /// App page background — cream in light; deep night (icon sky) in dark.
-    static let canvas = Color.adaptive(light: "#FFF6EE", dark: "#0B0816")
+    static let hairlineDark = Color.adaptive(light: "#E5E5EA", dark: "#2A2A2A")
+    /// App page background — white in light; deep night (icon sky) in dark.
+    static let canvas = Color.adaptive(light: "#FFFFFF", dark: "#0B0816")
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
-    static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
-    static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
+    static let cardStroke = Color.adaptive(light: "#E5E5EA", dark: "#2A2A2A")
+    static let fieldFill = Color.adaptive(light: "#F2F2F7", dark: "#1C1C1E")
     /// Active karaoke line card (Kiku-style raised surface).
     static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#2C2C2E")
     /// Soft lift behind the active karaoke line, in the active accent.
-    static let activeLineGlow = LearningInk.glow.opacity(0.55)
+    static var activeLineGlow: Color { LearningInk.glow.opacity(0.55) }
 
     // MARK: Brand accent
     /// Marks, underlines, and icons. Each theme picks a shade that stays readable on its page.
-    static let sakuraPink = JojoPalette.color(
+    static var sakuraPink: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#FF7EB8",
         plumLight: "#7A4684", plumDark: "#E8D0F2",
         orangeLight: "#C45C00", orangeDark: "#FFB020"
-    )
-    static let sakuraPinkDeep = sakuraPink
-    /// Soft chips. Pale on cream, a solid dark tint at night so white type still reads.
-    static let sakuraPinkLight = JojoPalette.color(
+    ) }
+    static var sakuraPinkDeep: Color { sakuraPink }
+    /// Soft chips. Pale on white, a solid dark tint at night so white type still reads.
+    static var sakuraPinkLight: Color { JojoPalette.color(
         sakuraLight: "#F8D0E4", sakuraDark: "#6A2458",
         plumLight: "#E3D2E8", plumDark: "#5C3A72",
         orangeLight: "#F8E0C4", orangeDark: "#6B3A12"
-    )
-    static let sakuraPinkSoft = sakuraPinkLight
+    ) }
+    static var sakuraPinkSoft: Color { sakuraPinkLight }
     /// Fills that carry a white label.
-    static let sakuraButton = JojoPalette.color(
+    static var sakuraButton: Color { JojoPalette.color(
         sakuraLight: "#E21888", sakuraDark: "#E21888",
         plumLight: "#7A4684", plumDark: "#7A4684",
         orangeLight: "#D35400", orangeDark: "#D35400"
-    )
+    ) }
 
-    /// Interactive chrome (tabs, toggles, selection, charts) — sakura, not orange.
-    static let brandAccent = sakuraPink
-    static let brandAccentSoft = sakuraPinkSoft
-    static let brandAccentLight = sakuraPinkLight
-    static let brandAccentDeep = sakuraPinkDeep
+    /// Interactive chrome (tabs, toggles, selection, charts). Follows the selected accent.
+    static var brandAccent: Color { sakuraPink }
+    static var brandAccentSoft: Color { sakuraPinkSoft }
+    static var brandAccentLight: Color { sakuraPinkLight }
+    static var brandAccentDeep: Color { sakuraPinkDeep }
 
-    /// Legacy names kept so call sites compile; they now resolve to sakura accent.
-    static let jojoOrange = brandAccent
-    static let jojoOrangeSoft = brandAccentSoft
-    static let jojoOrangeLight = brandAccentLight
-    /// Was hinomaru red — now deep sakura so chrome never reintroduces orange/vermilion.
-    static let jojoVermilion = brandAccentDeep
+    /// Legacy names kept so call sites compile. They follow the selected accent.
+    static var jojoOrange: Color { brandAccent }
+    static var jojoOrangeSoft: Color { brandAccentSoft }
+    static var jojoOrangeLight: Color { brandAccentLight }
+    static var jojoVermilion: Color { brandAccentDeep }
 
-    /// Main-app chrome. Same sakura as the icon and onboarding, so the accent never shifts after the first screen.
-    static let designOrange = sakuraPink
-    static let designOrangeDeep = sakuraPinkDeep
+    /// Main-app chrome. Follows Sakura, Purple, or Orange with the light or dark page.
+    static var designOrange: Color { sakuraPink }
+    static var designOrangeDeep: Color { sakuraPinkDeep }
 
-    /// Solid plum fill for controls with white type.
-    static let sakuraFill = LinearGradient(
-        colors: [Color.sakuraButton, Color.sakuraButton],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-    static let sakuraBar = LinearGradient(
-        colors: [Color.sakuraButton, Color.sakuraButton],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
+    /// Solid accent fill for controls with white type.
+    static var sakuraFill: LinearGradient {
+        LinearGradient(
+            colors: [Color.sakuraButton, Color.sakuraButton],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    static var sakuraBar: LinearGradient {
+        LinearGradient(
+            colors: [Color.sakuraButton, Color.sakuraButton],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
 
     // MARK: Brand surfaces (icon: sakura-night sky, cream paper)
     /// Cream paper surfaces in light mode.
@@ -164,11 +164,11 @@ extension Color {
     static let nightIndigo = Color(hex: "#140C2E")
     static let nightViolet = Color(hex: "#2A1452")
     static let nightPlum = Color(hex: "#4A1D6B")
-    static let neonMagenta = JojoPalette.color(
+    static var neonMagenta: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#FF7EB8",
         plumLight: "#7A4684", plumDark: "#E8D0F2",
         orangeLight: "#C45C00", orangeDark: "#FFB020"
-    )
+    ) }
     static let lanternAmber = Color(hex: "#FFB347")
 
     // MARK: Readable secondary (light theme was washing out on cream/white)
@@ -179,13 +179,13 @@ extension Color {
     static let translationText = Color.adaptive(light: "#1C1C1E", dark: "#F5F5F7")
 
     // MARK: Word states / POS underlines
-    static let tappableBlue = LearningInk.content
-    static let spokenGreen = LearningInk.known
-    static let lookedUpOrange = LearningInk.familiar
+    static var tappableBlue: Color { LearningInk.content }
+    static var spokenGreen: Color { LearningInk.known }
+    static var lookedUpOrange: Color { LearningInk.familiar }
     /// Content words (noun, verb, adjective).
-    static let posContentBlue = LearningInk.content
+    static var posContentBlue: Color { LearningInk.content }
     /// Function words (particle, auxiliary, copula).
-    static let posParticleOrange = LearningInk.particle
+    static var posParticleOrange: Color { LearningInk.particle }
 
     // MARK: SRS
     static let againBackground = Color(hex: "#FFD9DE")
@@ -207,90 +207,90 @@ extension Color {
     ]
 }
 
-/// Jewel colors for Japanese, karaoke, and the dictionary. Each accent has a cream set and a night set.
+/// Jewel colors for Japanese, karaoke, and the dictionary. Each accent has a white-page set and a night set.
 enum LearningInk {
-    /// Kanji and kana at rest.
-    static let japanese = JojoPalette.color(
+    /// Kanji and kana at rest. Near-black on white, white on night, for every accent.
+    static var japanese: Color { JojoPalette.color(
         sakuraLight: "#1A1020", sakuraDark: "#FFFFFF",
         plumLight: "#1A1024", plumDark: "#FFFFFF",
         orangeLight: "#1C1208", orangeDark: "#FFFFFF"
-    )
+    ) }
     /// Reading above a word.
-    static let furigana = JojoPalette.color(
+    static var furigana: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#FFB7D8",
         plumLight: "#7A4684", plumDark: "#E8C8FF",
         orangeLight: "#C45C00", orangeDark: "#FFD7A1"
-    )
+    ) }
     /// Romaji under a word.
-    static let romaji = JojoPalette.color(
+    static var romaji: Color { JojoPalette.color(
         sakuraLight: "#8A3A62", sakuraDark: "#F3C6DC",
         plumLight: "#5C3A72", plumDark: "#D4B8EE",
         orangeLight: "#8A4E12", orangeDark: "#F6C48A"
-    )
+    ) }
     /// Nouns, verbs, and adjectives.
-    static let content = JojoPalette.color(
+    static var content: Color { JojoPalette.color(
         sakuraLight: "#007EA8", sakuraDark: "#5CEBFF",
         plumLight: "#6B2FA0", plumDark: "#C084FF",
         orangeLight: "#D35400", orangeDark: "#FFB020"
-    )
+    ) }
     /// Particles and other function words.
-    static let particle = JojoPalette.color(
+    static var particle: Color { JojoPalette.color(
         sakuraLight: "#E21888", sakuraDark: "#FF5CAA",
         plumLight: "#C43B86", plumDark: "#FF7AD9",
         orangeLight: "#C2186A", orangeDark: "#FF6B8A"
-    )
+    ) }
     /// The word currently being spoken.
-    static let spoken = JojoPalette.color(
+    static var spoken: Color { JojoPalette.color(
         sakuraLight: "#C45C00", sakuraDark: "#FFE14A",
         plumLight: "#A15C00", plumDark: "#F6E27F",
         orangeLight: "#0B6E8A", orangeDark: "#5CEBFF"
-    )
+    ) }
     /// A word the learner marked known.
-    static let known = JojoPalette.color(
+    static var known: Color { JojoPalette.color(
         sakuraLight: "#0B8A4C", sakuraDark: "#5DFFB0",
         plumLight: "#0E7A45", plumDark: "#7DFFC3",
         orangeLight: "#0E7A45", orangeDark: "#6DFFB0"
-    )
+    ) }
     /// Saved or familiar, quieter than the spoken word.
-    static let familiar = JojoPalette.color(
+    static var familiar: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#FF8AD4",
         plumLight: "#7A4684", plumDark: "#E8D0F2",
         orangeLight: "#C45C00", orangeDark: "#FF8A3D"
-    )
-    /// English under a karaoke line.
-    static let english = JojoPalette.color(
+    ) }
+    /// English under a karaoke line. Dark on white for Sakura, Purple, and Orange.
+    static var english: Color { JojoPalette.color(
         sakuraLight: "#3A2A32", sakuraDark: "#FFD0E6",
         plumLight: "#3A2A44", plumDark: "#EBD6FF",
         orangeLight: "#4A3828", orangeDark: "#FFE0C2"
-    )
+    ) }
     /// Glow behind the active line and the spoken pulse.
-    static let glow = JojoPalette.color(
+    static var glow: Color { JojoPalette.color(
         sakuraLight: "#E21888", sakuraDark: "#FF4FA3",
         plumLight: "#7A4684", plumDark: "#C084FF",
         orangeLight: "#D35400", orangeDark: "#FFB020"
-    )
+    ) }
 
     /// The dictionary card stays on a night plate in both appearances, so these jewels stay luminous.
-    static let dictionaryPlate = JojoPalette.color(
+    static var dictionaryPlate: Color { JojoPalette.color(
         sakuraLight: "#140C18", sakuraDark: "#140C18",
         plumLight: "#120C1C", plumDark: "#120C1C",
         orangeLight: "#1A1008", orangeDark: "#1A1008"
-    )
-    static let dictionaryWord = JojoPalette.color(
+    ) }
+    static var dictionaryWord: Color { JojoPalette.color(
         sakuraLight: "#FF7EB8", sakuraDark: "#FF7EB8",
         plumLight: "#E8D0F2", plumDark: "#E8D0F2",
         orangeLight: "#FFB020", orangeDark: "#FFB020"
-    )
-    static let dictionaryReading = JojoPalette.color(
+    ) }
+    static var dictionaryReading: Color { JojoPalette.color(
         sakuraLight: "#FFB7D8", sakuraDark: "#FFB7D8",
         plumLight: "#C084FF", plumDark: "#C084FF",
         orangeLight: "#FFD7A1", orangeDark: "#FFD7A1"
-    )
-    static let dictionaryGloss = JojoPalette.color(
+    ) }
+    static var dictionaryGloss: Color { JojoPalette.color(
         sakuraLight: "#FFE14A", sakuraDark: "#FFE14A",
         plumLight: "#F6E27F", plumDark: "#F6E27F",
         orangeLight: "#FFD7A1", orangeDark: "#FFD7A1"
-    )
+    ) }
 }
 
 /// Shared animation curves so feed, popup and tabs feel like one product.

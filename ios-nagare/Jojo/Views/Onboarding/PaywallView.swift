@@ -210,9 +210,9 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
-    /// The button promises a trial only when the selected StoreKit product includes one.
+    /// Yearly opens on the trial. Monthly switches the button to Continue.
     private var primaryCTATitle: String {
-        selectedPackageHasTrial ? "Start Free Trial" : "Subscribe"
+        plan == .yearly ? "Start free trial" : "Continue"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
@@ -282,7 +282,7 @@ struct PaywallView: View {
                 .padding(.top, 4)
             }
             .padding(16)
-            .padding(.top, 8)
+            .frame(maxWidth: .infinity, minHeight: Self.planCardHeight, maxHeight: Self.planCardHeight, alignment: .topLeading)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -332,6 +332,7 @@ struct PaywallView: View {
                 .padding(.top, 2)
             }
             .padding(16)
+            .frame(maxWidth: .infinity, minHeight: Self.planCardHeight, maxHeight: Self.planCardHeight, alignment: .topLeading)
             .background(PaywallInk.monthly, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -496,6 +497,11 @@ struct PaywallView: View {
             withAnimation { errorMessage = message }
         }
     }
+}
+
+extension PaywallView {
+    /// Both plan cards share one height so Yearly does not grow past Monthly.
+    fileprivate static let planCardHeight: CGFloat = 210
 }
 
 private enum PaywallInk {
