@@ -38,6 +38,7 @@ struct DailyGoalBar: View {
     @Environment(AppModel.self) private var app
     @State private var trophyBounce: Bool = false
     @State private var showConfetti: Bool = false
+    @State private var bloom: Bool = false
 
     var body: some View {
         HStack(spacing: Spacing.m) {
@@ -59,13 +60,19 @@ struct DailyGoalBar: View {
             }
             .frame(height: 6)
             ZStack {
+                Circle()
+                    .fill(Color.sakuraButton.opacity(bloom ? 0 : 0.75))
+                    .frame(width: 36, height: 36)
+                    .blur(radius: 6)
+                    .scaleEffect(bloom ? 3.4 : 0.25)
+                    .opacity(showConfetti ? 1 : 0)
                 Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(app.isGoalReached ? Color.sakuraPink : .secondary)
                     .scaleEffect(trophyBounce ? 1.5 : 1)
                     .rotationEffect(.degrees(trophyBounce ? -12 : 0))
                 if showConfetti {
-                    ConfettiBurst()
+                    ConfettiBurst(colors: [Color.sakuraButton, Color.sakuraPinkLight, .white], count: 16, radius: 52)
                 }
             }
             .frame(width: 44, height: 44)
@@ -78,6 +85,8 @@ struct DailyGoalBar: View {
     }
 
     private func celebrate() {
+        Haptics.heavy()
+        withAnimation(.easeOut(duration: 0.55)) { bloom = true }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.4)) { trophyBounce = true }
         showConfetti = true
         Task {
@@ -85,6 +94,7 @@ struct DailyGoalBar: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) { trophyBounce = false }
             try? await Task.sleep(for: .milliseconds(900))
             showConfetti = false
+            bloom = false
         }
     }
 }

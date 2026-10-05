@@ -76,8 +76,8 @@ struct ReviewSessionView: View {
             }
 
             if showGoodPulse {
-                GoodCheckPulse()
-                    .transition(.scale.combined(with: .opacity))
+                GoodCheckPulse(known: allWords.filter { $0.state == .known }.count)
+                    .transition(.opacity)
                     .zIndex(2)
                     .allowsHitTesting(false)
             }
@@ -200,13 +200,13 @@ struct ReviewSessionView: View {
     }
 
     private func answer(_ word: SavedWord, good: Bool) {
-        good ? Haptics.medium() : Haptics.soft()
+        good ? Haptics.success() : Haptics.soft()
         app.answer(word, good: good)
 
         if good {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { showGoodPulse = true }
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.58)) { showGoodPulse = true }
             Task {
-                try? await Task.sleep(for: .milliseconds(350))
+                try? await Task.sleep(for: .milliseconds(560))
                 withAnimation(.easeOut(duration: 0.2)) { showGoodPulse = false }
                 advance(good: true)
             }
@@ -740,17 +740,31 @@ struct ReviewCardDeal: ViewModifier, Animatable {
 }
 
 private struct GoodCheckPulse: View {
-    @State private var scale: CGFloat = 0.4
+    var known: Int
+    @State private var scale: CGFloat = 1.65
+    @State private var glow: CGFloat = 1
 
     var body: some View {
-        Image(systemName: "checkmark.circle.fill")
-            .font(.system(size: 72, weight: .bold))
-            .foregroundStyle(Color.goodBackground)
-            .scaleEffect(scale)
-            .shadow(color: Color.goodBackground.opacity(0.45), radius: 24)
-            .onAppear {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) { scale = 1.1 }
+        VStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 84, weight: .bold))
+                .foregroundStyle(Color.goodBackground)
+                .scaleEffect(scale)
+                .shadow(color: Color.goodBackground.opacity(0.55 * glow), radius: 28)
+            Text("\(known)")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.goodBackground)
+                .contentTransition(.numericText(value: Double(known)))
+            Text(known == 1 ? "word you know" : "words you know")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
+                scale = 1
+                glow = 0.35
             }
+        }
     }
 }
 

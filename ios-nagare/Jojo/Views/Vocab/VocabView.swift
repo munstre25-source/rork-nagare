@@ -196,7 +196,7 @@ struct VocabView: View {
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(Color.sakuraButton, in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ChunkyPressStyle())
                 if let next = reviewPool.first {
                     let gloss = next.displayDefinitions(mode: app.profile.dictionary).first ?? next.gloss
                     Text("Next · \(next.surface)\(gloss.isEmpty ? "" : " · \(gloss)")")

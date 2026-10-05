@@ -9,6 +9,13 @@ nonisolated struct DayMinutes: Identifiable, Sendable {
     var id: Date { date }
 }
 
+/// A word that just became a card, flying toward the Vocab tab.
+struct WordFlight: Equatable {
+    var id: Int
+    var surface: String
+    var reading: String
+}
+
 /// Destinations opened from the home-screen widget or `jojo://` URLs.
 nonisolated enum DeepLink: String, Equatable, Sendable {
     case feed
@@ -46,6 +53,8 @@ final class AppModel {
     var feedChromeHidden: Bool = false
     /// Bumps when follow list changes so the Following feed can refresh.
     private(set) var followRevision: Int = 0
+    /// The newest saved word, so the feed can pop it and fly it to Vocab.
+    var rewardFlight: WordFlight?
     /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.
     private(set) var vocabBadgePulse: Int = 0
 
@@ -646,7 +655,15 @@ final class AppModel {
         }
         lookedUpKeys.insert(key)
         wordStates[key] = word.state
-        if isNew { vocabBadgePulse += 1 }
+        if isNew {
+            vocabBadgePulse += 1
+            let reading = word.primaryReading
+            rewardFlight = WordFlight(
+                id: vocabBadgePulse,
+                surface: word.surface,
+                reading: reading == word.surface ? "" : reading
+            )
+        }
         if persist {
             rememberTaste("save", clip: clip)
             save()
@@ -1093,6 +1110,7 @@ final class AppModel {
         }
         profile.onboardingCompleted = true
         profile.onboardingCompletedAt = Date()
+        profile.lastWelcomedDay = Self.dayKey(Date())
         // Baselines exclude seeded watch history + seed vocab from the soft ask.
         profile.feedbackBaselineWatchSeconds = totalWatchSeconds
         profile.feedbackBaselineWordCount = savedWordCount
@@ -1113,6 +1131,18 @@ final class AppModel {
 
     private var savedWordCount: Int {
         ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).count
+    }
+
+    /// Once a day, after a previous study day, the due count and streak spring in.
+    func claimWelcomeHome() -> (due: Int, streak: Int)? {
+        let today = Self.dayKey(Date())
+        guard profile.onboardingCompleted, profile.lastWelcomedDay != today else { return nil }
+        profile.lastWelcomedDay = today
+        let due = dueWordCount
+        let streak = currentStreak
+        save()
+        guard due > 0 || streak > 0 else { return nil }
+        return (due, streak)
     }
 
     /// Call when the main tabs appear. Returns true when the enjoy/feedback sheet should show.

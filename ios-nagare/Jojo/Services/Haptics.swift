@@ -18,6 +18,12 @@ enum Haptics {
         mediumGenerator.impactOccurred()
     }
 
+    static func heavy() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
     static func soft() {
         softGenerator.prepare()
         softGenerator.impactOccurred()

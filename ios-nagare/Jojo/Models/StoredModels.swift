@@ -67,6 +67,8 @@ final class UserProfile {
     /// Channel names the user follows (For You / Following split).
     var followedChannelNames: [String] = []
     var lastGoalCelebratedDay: String = ""
+    /// Calendar day the welcome-back burst already played, so it shows once a day.
+    var lastWelcomedDay: String = ""
     var didSeedDemoData: Bool = false
     var firstClipId: String?
 

@@ -50,6 +50,8 @@ struct MainTabView: View {
     /// New flashcards saved since the last visit to Vocab. The system badge shows only this count.
     @State private var newVocabSinceVisit: Int = 0
     @State private var showingExplore = false
+    @State private var welcome: (due: Int, streak: Int)?
+    @State private var flight: WordFlight?
 
     /// True only on For You, once the learner has settled into a playing clip.
     private var focusCapsuleHidden: Bool {
@@ -130,7 +132,36 @@ struct MainTabView: View {
                 showCancellationSurvey = true
             }
         }
+        .overlay {
+            ZStack {
+                if let welcome {
+                    WelcomeHomeBurst(due: welcome.due, streak: welcome.streak)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
+                if let flight {
+                    WordFlightView(surface: flight.surface, reading: flight.reading)
+                        .id(flight.id)
+                        .transition(.opacity)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .onChange(of: app.rewardFlight) { _, next in
+            guard let next else { return }
+            flight = next
+            Task {
+                try? await Task.sleep(for: .milliseconds(1100))
+                if flight?.id == next.id { flight = nil }
+            }
+        }
         .onAppear {
+            if let home = app.claimWelcomeHome() {
+                welcome = home
+                Task {
+                    try? await Task.sleep(for: .milliseconds(1700))
+                    withAnimation(.easeOut(duration: 0.25)) { welcome = nil }
+                }
+            }
             if app.pendingDeepLink == .review { tab = .vocab }
             if app.pendingDeepLink == .feed { tab = .feed }
             if app.noteMainAppOpenAndShouldAskFeedback() {
@@ -246,6 +277,7 @@ struct KikuTabBar: View {
                             .frame(minWidth: 16, minHeight: 16)
                             .background(Color.sakuraButton, in: Capsule())
                             .offset(x: 8, y: -6)
+                            .modifier(BadgePop(value: badge))
                     }
                 }
                 Text(title)

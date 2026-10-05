@@ -75,6 +75,7 @@ struct ProfileView: View {
                         StatTile(symbol: "flame.fill", tint: .designOrange, value: "\(app.currentStreak)-day", caption: "streak")
                         StatTile(symbol: "clock", tint: .designOrangeDeep, value: watchText, caption: "watched")
                     }
+                    streakWeek
                     weeklyChart
                     mastery
                     Button {
@@ -94,7 +95,7 @@ struct ProfileView: View {
                                 Capsule().fill(words.isEmpty ? Color.accentDisabled : Color.sakuraButton)
                             }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ChunkyPressStyle())
                     .disabled(words.isEmpty)
                     settings
                     Text("Jojo 流れ · Scroll, Listen, Flow into Japanese.")
@@ -180,6 +181,35 @@ struct ProfileView: View {
         .padding(Spacing.l)
         .cardStyle()
         .accessibilityElement(children: .combine)
+    }
+
+    private var streakWeek: some View {
+        let days = app.weeklyMinutes
+        return HStack(spacing: 8) {
+            ForEach(days) { day in
+                let studied = day.minutes >= 1
+                let isToday = Calendar.current.isDateInToday(day.date)
+                VStack(spacing: 6) {
+                    Text(day.date.formatted(.dateTime.weekday(.narrow)))
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(isToday ? Color.sakuraButton : .secondary)
+                    Circle()
+                        .fill(studied ? Color.designOrange : Color.primary.opacity(0.12))
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            if studied {
+                                Image(systemName: "checkmark")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .shadow(color: isToday ? Color.sakuraButton.opacity(0.85) : .clear, radius: isToday ? 8 : 0)
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("\(day.date.formatted(.dateTime.weekday(.wide)))\(studied ? ", studied" : "")")
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     private var weeklyChart: some View {
