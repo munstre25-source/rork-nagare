@@ -454,7 +454,7 @@ struct PaywallView: View {
 }
 
 private struct PaywallCTAStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
         configuration.label
             .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
