@@ -60,25 +60,31 @@ supabase db push
 supabase functions deploy explain-word youtube-search analyze-clip publish-clip fill-catalog
 supabase secrets set \
   GEMINI_API_KEY=… \
+  GEMINI_API_KEY2=… \
+  GEMINI_API_KEY3=… \
   GEMINI_MODEL_EXPLAIN=… \
   GEMINI_MODEL_ANALYZE=… \
   YOUTUBE_API_KEY=… \
   ADMIN_TOKEN=… \
   REVENUECAT_SECRET_API_KEY=… \
-  OPENROUTER_API_KEY=…
+  OPENROUTER_API_KEY=… \
+  OPENROUTER_MODEL=thinkingmachines/inkling:free
 ```
 
 ### Secrets you must set
 
 | Name | Required | Purpose |
 |------|----------|---------|
-| `GEMINI_API_KEY` | yes | Gemini API calls |
-| `GEMINI_MODEL_EXPLAIN` | yes | Model id for `explain-word` (no hard-coded default) |
-| `GEMINI_MODEL_ANALYZE` | yes | Model id for `analyze-clip` (no hard-coded default) |
+| `GEMINI_API_KEY` | yes | Gemini key for watching YouTube clips |
+| `GEMINI_API_KEY2` | no | Second Gemini key, used when the first is overloaded |
+| `GEMINI_API_KEY3` | no | Third Gemini key, used when the second is overloaded |
+| `GEMINI_MODEL_EXPLAIN` | yes | Fallback model if OpenRouter cannot explain a word |
+| `GEMINI_MODEL_ANALYZE` | yes | Model id for `analyze-clip` and `fill-catalog` |
 | `YOUTUBE_API_KEY` | yes | YouTube Data API for `youtube-search` |
 | `ADMIN_TOKEN` | yes | Admin functions (`x-admin-token`, compared constant-time) |
 | `REVENUECAT_SECRET_API_KEY` | yes | Entitlement checks for `explain-word` |
-| `OPENROUTER_API_KEY` | no | Backup for word explanations when Gemini fails |
+| `OPENROUTER_API_KEY` | no | Free OpenRouter key for word explanations |
+| `OPENROUTER_MODEL` | no | Text model, default `thinkingmachines/inkling:free` |
 
 Platform-provided (usually already present in Edge Functions): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`.
 

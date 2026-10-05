@@ -1,4 +1,4 @@
-import { openRouterKey, openRouterModel, requireEnv } from "./env.ts";
+import { geminiApiKeys, openRouterKey, openRouterModel } from "./env.ts";
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const ANALYZE_TIMEOUT_MS = 90_000;
@@ -51,7 +51,26 @@ async function callGeminiOnce(opts: {
   body: Record<string, unknown>;
   timeoutMs: number;
 }): Promise<GeminiJsonResult> {
-  const apiKey = requireEnv("GEMINI_API_KEY");
+  const keys = geminiApiKeys();
+  let lastError: Error | null = null;
+  for (const apiKey of keys) {
+    try {
+      return await callGeminiWithKey(apiKey, opts);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      lastError = err instanceof Error ? err : new Error("Gemini failed");
+      const overloaded = message.includes("Gemini HTTP 503") || message.includes("Gemini HTTP 429");
+      if (!overloaded || apiKey === keys[keys.length - 1]) throw lastError;
+    }
+  }
+  throw lastError ?? new Error("Gemini empty response");
+}
+
+async function callGeminiWithKey(apiKey: string, opts: {
+  model: string;
+  body: Record<string, unknown>;
+  timeoutMs: number;
+}): Promise<GeminiJsonResult> {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(opts.model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const controller = new AbortController();
@@ -64,11 +83,7 @@ async function callGeminiOnce(opts: {
       signal: controller.signal,
     });
     if (!res.ok) {
-      const detail = (await res.text())
-        .replace(/key=[^&\s"]+/gi, "key=redacted")
-        .replace(/AIza[0-9A-Za-z_-]+/g, "redacted")
-        .replace(/sk-or-[A-Za-z0-9_-]+/g, "redacted")
-        .slice(0, 240);
+      const detail = redactSecrets(await res.text(), [apiKey]).slice(0, 240);
       throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json();
@@ -80,35 +95,43 @@ async function callGeminiOnce(opts: {
   }
 }
 
+/** Gemini fallback for a word explanation when OpenRouter is unavailable. */
 export async function geminiGenerateJson(opts: {
   model: string;
   system: string;
   user: string;
   timeoutMs?: number;
 }): Promise<GeminiJsonResult> {
-  try {
-    return await callGemini({
-      model: opts.model,
-      timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      body: {
-        systemInstruction: { parts: [{ text: opts.system }] },
-        contents: [{ role: "user", parts: [{ text: opts.user }] }],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
+  return await callGemini({
+    model: opts.model,
+    timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    body: {
+      systemInstruction: { parts: [{ text: opts.system }] },
+      contents: [{ role: "user", parts: [{ text: opts.user }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
       },
-    });
-  } catch (err) {
-    const backup = await openRouterGenerateJson(opts);
-    if (backup) return backup;
-    throw err;
+    },
+  });
+}
+
+/** Free text model. Returns null when the key is missing or the call fails. */
+export async function openRouterTextJson(opts: {
+  system: string;
+  user: string;
+  timeoutMs?: number;
+}): Promise<GeminiJsonResult | null> {
+  try {
+    return await openRouterGenerateJson(opts);
+  } catch {
+    return null;
   }
 }
 
 /**
- * Text backup. This model accepts text and images, not video, so it is not used
- * to invent a transcript for a clip it cannot watch.
+ * Text tasks. This model accepts text and images, not a YouTube link, so clip
+ * watching stays on Gemini.
  */
 async function openRouterGenerateJson(opts: {
   system: string;
@@ -140,7 +163,7 @@ async function openRouterGenerateJson(opts: {
       signal: controller.signal,
     });
     if (!res.ok) {
-      const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
+      const detail = redactSecrets(await res.text(), [apiKey]).slice(0, 240);
       throw new Error(`OpenRouter HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json() as {
@@ -154,9 +177,17 @@ async function openRouterGenerateJson(opts: {
   }
 }
 
-function redactSecrets(text: string, apiKey: string): string {
-  return text
-    .split(apiKey).join("redacted")
+function redactSecrets(text: string, secrets: string[] = []): string {
+  let redacted = text;
+  for (const secret of secrets) {
+    if (secret) redacted = redacted.split(secret).join("redacted");
+  }
+  for (const secret of geminiApiKeys()) {
+    redacted = redacted.split(secret).join("redacted");
+  }
+  const openRouter = openRouterKey();
+  if (openRouter) redacted = redacted.split(openRouter).join("redacted");
+  return redacted
     .replace(/key=[^&\s"]+/gi, "key=redacted")
     .replace(/AIza[0-9A-Za-z_-]+/g, "redacted")
     .replace(/sk-or-[A-Za-z0-9_-]+/g, "redacted");

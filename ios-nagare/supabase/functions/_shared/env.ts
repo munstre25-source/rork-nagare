@@ -20,6 +20,18 @@ export function envInt(name: string, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
+/** Primary key, then GEMINI_API_KEY2, then GEMINI_API_KEY3 when a key is overloaded. Never log these. */
+export function geminiApiKeys(): string[] {
+  const names = ["GEMINI_API_KEY", "GEMINI_API_KEY2", "GEMINI_API_KEY3"];
+  const keys = names
+    .map((name) => Deno.env.get(name)?.trim() ?? "")
+    .filter((key) => key !== "");
+  if (keys.length === 0) {
+    throw new Error("Missing required env: GEMINI_API_KEY");
+  }
+  return keys;
+}
+
 export function geminiModelExplain(): string {
   return requireEnv("GEMINI_MODEL_EXPLAIN");
 }
@@ -32,7 +44,7 @@ export function promptVersion(): string {
   return envOr("PROMPT_VERSION", "3");
 }
 
-/** Backup for text generation when Gemini is unavailable. Never log the value. */
+/** OpenRouter key for word explanations. Never log the value. */
 export function openRouterKey(): string | null {
   const value = Deno.env.get("OPENROUTER_API_KEY")?.trim() ?? "";
   return value === "" ? null : value;

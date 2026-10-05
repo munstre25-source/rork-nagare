@@ -7,7 +7,7 @@ import {
   tryIncrementExplainRate,
   tryIncrementGeminiUsage,
 } from "../_shared/limits.ts";
-import { geminiGenerateJson, parseJsonObject } from "../_shared/gemini.ts";
+import { geminiGenerateJson, openRouterTextJson, parseJsonObject } from "../_shared/gemini.ts";
 import { sanitizeContext, sanitizeLookup } from "../_shared/explain.ts";
 import {
   assertAppUserIdBinding,
@@ -85,20 +85,34 @@ Deno.serve(async (req) => {
     const underUserLimit = await tryIncrementExplainRate(supabase, appUserId, kind);
     if (!underUserLimit) return errorResponse(429, "Rate limit exceeded");
 
-    const underGlobal = await tryIncrementGeminiUsage(supabase);
-    if (!underGlobal) return errorResponse(429, "Global Gemini cap exceeded");
-
     const model = geminiModelExplain();
+    const system = kind === "lookup" ? LOOKUP_SYSTEM : CONTEXT_SYSTEM;
     const userPrompt = kind === "lookup"
       ? `Word: ${word}\nSentence: ${sentence || "(none)"}`
       : `Explain how 「${word}」 is used in this sentence:\n${sentence}`;
 
-    const { text, model: usedModel } = await geminiGenerateJson({
-      model,
-      system: kind === "lookup" ? LOOKUP_SYSTEM : CONTEXT_SYSTEM,
+    const viaOpenRouter = await openRouterTextJson({
+      system,
       user: userPrompt,
       timeoutMs: 10_000,
     });
+    let text: string;
+    let usedModel: string;
+    if (viaOpenRouter) {
+      text = viaOpenRouter.text;
+      usedModel = viaOpenRouter.model;
+    } else {
+      const underGlobal = await tryIncrementGeminiUsage(supabase);
+      if (!underGlobal) return errorResponse(429, "Global Gemini cap exceeded");
+      const viaGemini = await geminiGenerateJson({
+        model,
+        system,
+        user: userPrompt,
+        timeoutMs: 10_000,
+      });
+      text = viaGemini.text;
+      usedModel = viaGemini.model;
+    }
 
     const raw = parseJsonObject(text);
     const payload = kind === "lookup"
