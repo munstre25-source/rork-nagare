@@ -949,6 +949,7 @@ final class AppModel {
     }
 
     func completeOnboarding(seedDemo: Bool = AppModel.seedsDemoOnOnboarding) {
+        restorePalette()
         assignFirstClip()
         if seedDemo, Self.seedsDemoOnOnboarding {
             seedDemoDataIfNeeded()

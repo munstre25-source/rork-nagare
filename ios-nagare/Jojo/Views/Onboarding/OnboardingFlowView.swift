@@ -43,19 +43,21 @@ struct OnboardingFlowView: View {
         .environment(\.colorScheme, activeSurface == .cream ? .light : .dark)
         .animation(.easeInOut(duration: 0.35), value: activeSurface)
         .onAppear {
-            JojoPalette.activateOnboarding()
             guard !didLoad else { return }
             didLoad = true
-            step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
-            if step == .trialTimeline { step = .demo }
-            if step == .socialProof { step = .dailyGoal }
-            if step == .welcome, !app.purchases.isSubscribed { step = .paywall }
+            var restored = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
+            if restored == .trialTimeline { restored = .demo }
+            if restored == .socialProof { restored = .dailyGoal }
+            if restored == .welcome, !app.purchases.isSubscribed { restored = .paywall }
+            step = restored
+            applyPalette(for: step)
             // Resume mid-funnel: skip splash.
             if step != .splash {
                 showSplash = false
             }
         }
         .onChange(of: step) { _, newStep in
+            applyPalette(for: newStep)
             app.setOnboardingStep(newStep)
             track("onboarding_\(newStep.analyticsName)_view", props: ["step": String(newStep.rawValue)])
         }
@@ -170,6 +172,8 @@ struct OnboardingFlowView: View {
             TrialTimelineStepView { next() }
         case .appReview:
             AppReviewStepView { next() }
+        case .look:
+            LookStepView { next() }
         case .acquisition:
             AcquisitionStepView { next() }
         case .paywall:
@@ -180,6 +184,16 @@ struct OnboardingFlowView: View {
             WelcomeStepView {
                 withAnimation(.easeInOut(duration: 0.5)) { app.completeOnboarding() }
             }
+        }
+    }
+
+    /// Sakura night for the funnel. The look they just saved paints the paywall and the welcome.
+    private func applyPalette(for step: OnboardingStep) {
+        switch step {
+        case .look, .paywall, .welcome:
+            app.restorePalette()
+        default:
+            JojoPalette.activateOnboarding()
         }
     }
 

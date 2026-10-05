@@ -39,6 +39,7 @@ struct PaywallView: View {
                     },
                     onRestoreFailed: { message in restoreAlert = message }
                 )
+                .overlay(alignment: .top) { savedLookChip }
             } else {
                 nativePaywall
             }
@@ -182,6 +183,24 @@ struct PaywallView: View {
         .accessibilityLabel("Jojo Pro")
     }
 
+    private var savedLookLine: String {
+        let look = "\(app.profile.theme.title) \(app.profile.scheme.title.lowercased()) · \(app.profile.glow.title) glow"
+        return "\(look) is saved. You can change it anytime in Profile settings."
+    }
+
+    private var savedLookChip: some View {
+        Text(savedLookLine)
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.top, 8)
+            .padding(.horizontal, Spacing.l)
+            .allowsHitTesting(false)
+    }
+
     private var headline: some View {
         let name = app.profile.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         let lead = name.isEmpty ? "Your feed is ready" : "\(name), your feed is ready"
@@ -202,6 +221,10 @@ struct PaywallView: View {
                 .offset(y: -6)
             Text("Scroll real Japanese. The dictionary opens on the word you tap, and that word becomes a flashcard.")
                 .font(.body)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(savedLookLine)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -616,8 +639,8 @@ private struct PaywallCTAStyle: ButtonStyle {
             .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 58)
-            .background(PaywallInk.pinkHot, in: Capsule())
-            .shadow(color: PaywallInk.pinkDeep.opacity(0.35), radius: 16, y: 8)
+            .background(Color.sakuraButton, in: Capsule())
+            .shadow(color: Color.sakuraButton.opacity(0.4), radius: 16, y: 8)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }

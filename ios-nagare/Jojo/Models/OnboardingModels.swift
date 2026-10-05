@@ -160,6 +160,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case name = 17
     /// Hands-on flashcard rating before the App Store ask.
     case flashcardTry = 18
+    /// Theme and text-glow setup, immediately before the paywall.
+    case look = 19
 
     /// Presentation order. `trialTimeline` stays on the enum so a saved step still decodes.
     /// The live feed demo comes just before the review ask, once the person has scrolled and tapped a word.
@@ -172,6 +174,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         .dailyGoal, .journey, .notifications,
         .demo,
         .appReview,
+        .look,
         .paywall, .welcome
     ]
 
@@ -200,6 +203,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         case .acquisition: "acquisition"
         case .paywall: "paywall"
         case .welcome: "welcome"
+        case .look: "look"
         }
     }
 
