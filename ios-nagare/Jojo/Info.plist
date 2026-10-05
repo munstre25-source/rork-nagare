@@ -42,5 +42,9 @@
 	<string>Jojo turns what you say into text and compares it with the line you just heard.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Jojo reads the Japanese in a photo so you can save those words.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 </dict>
 </plist>

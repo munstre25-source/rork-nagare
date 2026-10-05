@@ -43,6 +43,7 @@ struct JojoWidgetProvider: TimelineProvider {
 struct JojoWidgets: WidgetBundle {
     var body: some Widget {
         JojoStreakWidget()
+        ImmersionIslandWidget()
     }
 }
 
@@ -229,7 +230,7 @@ struct JojoWidgetView: View {
 }
 
 /// The six looks from Profile, painted without the app target.
-private struct WidgetPaint {
+struct WidgetPaint {
     var accentName: String
     var schemeName: String
 

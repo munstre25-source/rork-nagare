@@ -34,6 +34,7 @@ struct JojoApp: App {
                         await session.purchases.refreshCustomerInfo()
                         session.app.refreshAllReminders()
                         WidgetSnapshotPublisher.publish(from: session.app)
+                        ImmersionIsland.endStale()
                         MetaAttribution.activateApp()
                         MetaAttribution.syncToRevenueCat()
                     }

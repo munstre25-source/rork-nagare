@@ -72,6 +72,7 @@ struct FeedView: View {
                 coordinator.pause()
                 lookup.dismiss()
                 showWatchChrome()
+                ImmersionIsland.end()
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -90,6 +91,14 @@ struct FeedView: View {
                   isActiveTab, quizClip == nil else { return }
             coordinator.activate(clip)
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
+            ImmersionIsland.note(
+                clip: clip,
+                lineIndex: coordinator.player?.spokenLine ?? 0,
+                tokenIndex: coordinator.player?.spokenToken,
+                minutesLeft: app.minutesLeft,
+                goalProgress: app.goalProgress,
+                accent: app.profile.theme.rawValue
+            )
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
         .onChange(of: app.catalogGeneration) { _, _ in absorbNewClips() }
@@ -226,7 +235,19 @@ struct FeedView: View {
     }
 
     private func setup() {
-        coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
+        let playback = coordinator
+        coordinator.onWatchTick = { [weak app, weak playback] seconds in
+            app?.addWatch(seconds: seconds)
+            guard let app, let playback, let clip = playback.player?.clip else { return }
+            ImmersionIsland.note(
+                clip: clip,
+                lineIndex: playback.player?.spokenLine ?? 0,
+                tokenIndex: playback.player?.spokenToken,
+                minutesLeft: app.minutesLeft,
+                goalProgress: app.goalProgress,
+                accent: app.profile.theme.rawValue
+            )
+        }
         coordinator.onFinished = { handleClipFinished() }
         if clips.isEmpty {
             reloadClips()
