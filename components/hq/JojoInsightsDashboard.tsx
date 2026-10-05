@@ -12,6 +12,14 @@ type FeedbackItem = {
   created_at: string;
 };
 
+type DirectMessage = {
+  id: number;
+  app_user_id: string;
+  sender: string;
+  body: string;
+  created_at: string;
+};
+
 type InsightsPayload = {
   acquisition: { total: number; by_source: Record<string, number> };
   feedback: {
@@ -20,20 +28,63 @@ type InsightsPayload = {
     enjoyed_no: number;
     items: FeedbackItem[];
   };
+  messages?: DirectMessage[];
 };
+
+type ThreadEntry = { key: string; at: string; from: "user" | "jojo"; text: string };
+
+type Thread = { appUserId: string; entries: ThreadEntry[]; latest: string };
+
+function buildThreads(items: FeedbackItem[], messages: DirectMessage[]): Thread[] {
+  const ids = new Set<string>();
+  for (const item of items) ids.add(item.app_user_id);
+  for (const message of messages) ids.add(message.app_user_id);
+  const copied = new Map<string, Set<string>>();
+  for (const message of messages) {
+    if (message.sender !== "user") continue;
+    const set = copied.get(message.app_user_id) ?? new Set<string>();
+    set.add(message.body);
+    copied.set(message.app_user_id, set);
+  }
+  return [...ids]
+    .map((appUserId) => {
+      const entries: ThreadEntry[] = [];
+      for (const item of items) {
+        if (item.app_user_id !== appUserId || !item.message || item.message === "Enjoying the app") continue;
+        const labeled = item.category ? `[${item.category}] ${item.message}` : item.message;
+        const known = copied.get(appUserId);
+        if (known?.has(item.message) || known?.has(labeled)) continue;
+        entries.push({ key: `f-${item.id}`, at: item.created_at, from: "user", text: labeled });
+      }
+      for (const message of messages) {
+        if (message.app_user_id !== appUserId) continue;
+        entries.push({
+          key: `m-${message.id}`,
+          at: message.created_at,
+          from: message.sender === "jojo" ? "jojo" : "user",
+          text: message.body,
+        });
+      }
+      entries.sort((a, b) => a.at.localeCompare(b.at));
+      return { appUserId, entries, latest: entries.at(-1)?.at ?? "" };
+    })
+    .filter((thread) => thread.entries.length > 0)
+    .sort((a, b) => b.latest.localeCompare(a.latest));
+}
 
 export function JojoInsightsDashboard() {
   const [data, setData] = useState<InsightsPayload | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [sendingTo, setSendingTo] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-      const res = await fetch(`/hq/jojo-insights/api${qs}`, { cache: "no-store" });
+      const res = await fetch("/hq/jojo-insights/api", { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json as InsightsPayload);
@@ -43,7 +94,7 @@ export function JojoInsightsDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -65,7 +116,31 @@ export function JojoInsightsDashboard() {
     }
   }
 
+  async function sendReply(appUserId: string) {
+    const message = (drafts[appUserId] ?? "").trim();
+    if (!message) return;
+    setSendingTo(appUserId);
+    setError("");
+    try {
+      const res = await fetch("/hq/jojo-insights/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app_user_id: appUserId, message }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setDrafts((current) => ({ ...current, [appUserId]: "" }));
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Reply failed");
+    } finally {
+      setSendingTo("");
+    }
+  }
+
   const bySource = Object.entries(data?.acquisition.by_source ?? {}).sort((a, b) => b[1] - a[1]);
+  const threads = buildThreads(data?.feedback.items ?? [], data?.messages ?? []);
+  const visibleFeedback = (data?.feedback.items ?? []).filter((item) => !status || item.status === status);
   const maxSource = Math.max(1, ...bySource.map(([, n]) => n));
 
   return (
@@ -75,7 +150,7 @@ export function JojoInsightsDashboard() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b00]">Jojo · noindex</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Insights</h1>
           <p className="mt-2 max-w-2xl text-sm text-white/55">
-            Acquisition answers and enjoy/feedback prompts, read from Supabase. Gated by the HQ token.
+            Acquisition, private feedback, and a one-to-one thread with each learner. Only you and that person see the replies.
           </p>
         </div>
         <button
@@ -122,6 +197,65 @@ export function JojoInsightsDashboard() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+        <h2 className="text-lg font-semibold text-white">Messages</h2>
+        <p className="mt-1 text-sm text-white/50">
+          Your private board. A reply shows up only in that learner&apos;s app, under Feedback → Messages with Jojo.
+        </p>
+        <div className="mt-4 space-y-4">
+          {threads.length === 0 ? (
+            <p className="text-sm text-white/45">No conversations yet.</p>
+          ) : (
+            threads.map((thread) => (
+              <article key={thread.appUserId} className="rounded-xl border border-white/10 bg-[#12151c] p-4">
+                <p className="break-all text-xs text-white/40">{thread.appUserId}</p>
+                <div className="mt-3 space-y-2">
+                  {thread.entries.map((entry) => (
+                    <div
+                      key={entry.key}
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                        entry.from === "jojo"
+                          ? "ml-auto bg-[#ff6b00] text-black"
+                          : "bg-white/10 text-white/90"
+                      }`}
+                    >
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wide opacity-70">
+                        {entry.from === "jojo" ? "You" : "Learner"}
+                      </p>
+                      <p className="whitespace-pre-wrap">{entry.text}</p>
+                      <p className="mt-1 text-[10px] opacity-60">{new Date(entry.at).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+                <form
+                  className="mt-3 flex gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void sendReply(thread.appUserId);
+                  }}
+                >
+                  <input
+                    value={drafts[thread.appUserId] ?? ""}
+                    onChange={(event) =>
+                      setDrafts((current) => ({ ...current, [thread.appUserId]: event.target.value }))
+                    }
+                    placeholder="Reply just to this person"
+                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={sendingTo === thread.appUserId || !(drafts[thread.appUserId] ?? "").trim()}
+                    className="rounded-full bg-[#ff6b00] px-4 py-2 text-sm font-bold text-black disabled:opacity-50"
+                  >
+                    {sendingTo === thread.appUserId ? "Sending…" : "Send"}
+                  </button>
+                </form>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Feedback</h2>
           <select
@@ -136,10 +270,10 @@ export function JojoInsightsDashboard() {
           </select>
         </div>
         <div className="mt-4 space-y-3">
-          {(data?.feedback.items ?? []).length === 0 ? (
+          {visibleFeedback.length === 0 ? (
             <p className="text-sm text-white/45">No feedback yet.</p>
           ) : (
-            data!.feedback.items.map((item) => (
+            visibleFeedback.map((item) => (
               <article key={item.id} className="rounded-xl border border-white/10 bg-[#12151c] p-4">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap gap-2">

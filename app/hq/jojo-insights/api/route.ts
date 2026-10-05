@@ -31,7 +31,7 @@ async function proxyInsights(req: Request) {
     cache: "no-store",
   };
 
-  if (req.method === "PATCH") {
+  if (req.method === "PATCH" || req.method === "POST") {
     init.body = await req.text();
   }
 
@@ -48,5 +48,9 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  return proxyInsights(req);
+}
+
+export async function POST(req: Request) {
   return proxyInsights(req);
 }

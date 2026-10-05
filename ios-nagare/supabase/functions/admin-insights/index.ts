@@ -8,6 +8,11 @@ type PatchBody = {
   status?: string;
 };
 
+type ReplyBody = {
+  app_user_id?: string;
+  message?: string;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
 
@@ -16,6 +21,21 @@ Deno.serve(async (req) => {
     if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
 
     const sb = serviceClient();
+
+    if (req.method === "POST") {
+      const body = await readJson<ReplyBody>(req);
+      const appUserId = (body.app_user_id ?? "").trim();
+      const message = (body.message ?? "").replace(/\s+/g, " ").trim().slice(0, 2000);
+      if (!appUserId || appUserId.length > 128) return errorResponse(400, "Missing user");
+      if (!message) return errorResponse(400, "Write a reply");
+      const { data, error } = await sb
+        .from("direct_messages")
+        .insert({ app_user_id: appUserId, sender: "jojo", body: message })
+        .select("id, app_user_id, sender, body, created_at")
+        .single();
+      if (error || !data) return errorResponse(500, "Failed to send reply");
+      return jsonResponse({ message: data });
+    }
 
     if (req.method === "PATCH") {
       const body = await readJson<PatchBody>(req);
@@ -45,9 +65,17 @@ Deno.serve(async (req) => {
       feedbackQuery = feedbackQuery.eq("status", statusFilter);
     }
 
-    const [acq, fb] = await Promise.all([
+    const [acq, fb, board, notes] = await Promise.all([
       sb.from("acquisition_events").select("source, created_at"),
       feedbackQuery,
+      sb.from("feedback_posts")
+        .select("id, category, title, body, vote_count, comment_count, status, created_at")
+        .order("vote_count", { ascending: false })
+        .limit(100),
+      sb.from("direct_messages")
+        .select("id, app_user_id, sender, body, created_at")
+        .order("created_at", { ascending: false })
+        .limit(400),
     ]);
 
     if (acq.error || fb.error) return errorResponse(500, "Failed to load insights");
@@ -73,6 +101,10 @@ Deno.serve(async (req) => {
         enjoyed_no: enjoyedNo,
         items: feedback,
       },
+      board: {
+        items: board.error ? [] : (board.data ?? []),
+      },
+      messages: notes.error ? [] : (notes.data ?? []),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";

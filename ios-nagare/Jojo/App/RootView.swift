@@ -148,7 +148,7 @@ struct MainTabView: View {
             FeedbackFlowSheet { showFeedbackPrompt = false }
         }
         .sheet(isPresented: $showManualFeedback) {
-            FeedbackFlowSheet { showManualFeedback = false }
+            FeedbackBoardView()
         }
         .sheet(isPresented: $showCancellationSurvey) {
             CancellationSurveySheet { showCancellationSurvey = false }

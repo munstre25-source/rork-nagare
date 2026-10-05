@@ -65,6 +65,15 @@ Deno.serve(async (req) => {
     });
     if (error) return errorResponse(500, "Failed to save feedback");
 
+    if (enjoyed !== true && message) {
+      const note = category ? `[${category}] ${message}` : message;
+      await sb.from("direct_messages").insert({
+        app_user_id: appUserId,
+        sender: "user",
+        body: note.slice(0, 2000),
+      });
+    }
+
     return jsonResponse({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";

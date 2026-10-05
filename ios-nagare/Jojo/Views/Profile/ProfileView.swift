@@ -355,7 +355,7 @@ struct ProfileView: View {
             #endif
 
             if let onGiveFeedback {
-                SettingsRow(symbol: "bubble.left.and.bubble.right", title: "Give feedback") {
+                SettingsRow(symbol: "bubble.left.and.bubble.right", title: "Feedback") {
                     onGiveFeedback()
                 }
                 Divider().padding(.leading, 52)

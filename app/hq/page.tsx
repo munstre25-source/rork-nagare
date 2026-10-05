@@ -56,7 +56,7 @@ export default async function HQPage({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b00]">Private · noindex</p>
           <h1 className="mt-2 text-2xl font-semibold">Unlock Command Centre</h1>
           <p className="mt-2 text-sm text-white/55">
-            Private analytics for Jojo onboarding, acquisition, and cancellation feedback.
+            Private analytics for Jojo, plus a one-to-one message board with learners.
           </p>
           {!configuredToken ? (
             <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
