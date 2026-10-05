@@ -45,36 +45,37 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var subtitle: String {
+    func subtitle(accent: AccentTheme) -> String {
         let page = scheme == .light ? "cream" : "black"
         switch kind {
         case .forYou:
-            return "Sakura theme. Two clips play on the \(page) For You page, then the review card: reading, meanings, the sentence, and Again / Good."
+            return "\(accent.title) colors. Two clips play on the \(page) For You page. Karaoke, the dictionary, and the review card use that set."
         case .exploreVocab:
-            return "Sakura theme. Explore opens Listening, two clips play on \(page), then Vocab and the same review card."
+            return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab and the review card in the same set."
         }
     }
 
-    var beats: [String] {
+    func beats(accent: AccentTheme) -> [String] {
         let page = scheme == .light ? "cream" : "black"
+        let ink = accent.title
         switch kind {
         case .forYou:
             return [
                 "Video starts small, with the control that makes it larger",
-                "Channel name above the clip, sakura underlines, readable English",
-                "A word you know is boxed in green",
+                "\(ink) underlines on content words, a second \(ink) shade on particles",
+                "A known word uses the \(ink) known color",
                 "Controls fade, then a touch brings them back",
-                "Tap a new word — the dictionary card opens",
+                "Tap a word — the dictionary card opens in \(ink)",
                 "Swipe to the second clip",
-                "Review card: reading, two meanings, the sentence, Again and Good"
+                "Review card uses the same \(ink) word, reading, and meaning colors"
             ]
         case .exploreVocab:
             return [
                 "Explore’s learning paths",
                 "Open Listening",
-                "Two clips play small on \(page), with the same control that enlarges the video",
+                "Two clips play small on \(page), karaoke in \(ink)",
                 "Vocab opens with how many words you know",
-                "Review card: the word, the sentence it came from, and when it returns"
+                "Review card: \(ink) word, sentence, and when it returns"
             ]
         }
     }
@@ -85,6 +86,8 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
 /// Two clean arcs matching Kiku-style ads: For You immersion, and Explore → Vocab → cards.
 struct MarketingShowcaseView: View {
     var initialScript: MarketingScript = .forYouDark
+    /// Accent painted for this recording. Profile passes the theme the learner has selected.
+    var accent: AccentTheme = .sakura
     /// When true, skips the picker and starts the walkthrough immediately (launch play buttons).
     var autoBegin: Bool = false
 
@@ -93,6 +96,7 @@ struct MarketingShowcaseView: View {
 
     @State private var phase: Phase = .prep
     @State private var selectedScript: MarketingScript = .forYouDark
+    @State private var demoAccent: AccentTheme = .sakura
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var feedClips: [Clip] = []
@@ -125,6 +129,7 @@ struct MarketingShowcaseView: View {
                 prepScreen
             case .running:
                 showcaseStage
+                    .id("\(demoAccent.rawValue)-\(selectedScript.scheme.rawValue)")
             case .done:
                 doneScreen
             }
@@ -134,7 +139,8 @@ struct MarketingShowcaseView: View {
         .preferredColorScheme(selectedScript.scheme.colorScheme)
         .onAppear {
             selectedScript = initialScript
-            JojoPalette.activate(theme: .sakura, scheme: initialScript.scheme)
+            demoAccent = accent
+            JojoPalette.activate(theme: accent, scheme: initialScript.scheme)
             if autoBegin, !didAutoBegin {
                 didAutoBegin = true
                 // Let the cover present, then start.
@@ -145,7 +151,7 @@ struct MarketingShowcaseView: View {
             }
         }
         .onChange(of: selectedScript) { _, script in
-            JojoPalette.activate(theme: .sakura, scheme: script.scheme)
+            JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
         }
         .onDisappear {
             scriptTask?.cancel()
@@ -181,7 +187,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Sakura theme. Each walkthrough has a light and a dark version. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Pick Sakura, Purple, or Orange, then a light or dark walkthrough. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -202,7 +208,7 @@ struct MarketingShowcaseView: View {
                                 Image(systemName: selectedScript == script ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(selectedScript == script ? Color(hex: "#FF7EB8") : .white.opacity(0.35))
                             }
-                            Text(script.subtitle)
+                            Text(script.subtitle(accent: demoAccent))
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
                                 .multilineTextAlignment(.leading)
@@ -223,8 +229,29 @@ struct MarketingShowcaseView: View {
             }
             .padding(.horizontal, Spacing.l)
 
+            HStack(spacing: Spacing.s) {
+                ForEach(AccentTheme.allCases) { accent in
+                    Button {
+                        Haptics.selection()
+                        demoAccent = accent
+                        JojoPalette.activate(theme: accent, scheme: selectedScript.scheme)
+                    } label: {
+                        Text(accent.title)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(demoAccent == accent ? .white : .white.opacity(0.7))
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .background(
+                                demoAccent == accent ? Color.sakuraButton : Color.white.opacity(0.08),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.l)
+
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(selectedScript.beats.enumerated()), id: \.offset) { i, beat in
+                ForEach(Array(selectedScript.beats(accent: demoAccent).enumerated()), id: \.offset) { i, beat in
                     scriptBeatRow("\(i + 1)", beat)
                 }
             }
@@ -233,13 +260,14 @@ struct MarketingShowcaseView: View {
             .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .padding(.horizontal, Spacing.l)
             .animation(.snappy, value: selectedScript)
+            .animation(.snappy, value: demoAccent)
 
             Spacer(minLength: 0)
             Button {
                 Haptics.medium()
                 beginShowcase(selectedScript)
             } label: {
-                Label("Begin \(selectedScript.videoLabel) · \(selectedScript.scheme.title)", systemImage: "play.fill")
+                Label("Begin \(selectedScript.videoLabel) · \(demoAccent.title) · \(selectedScript.scheme.title)", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
@@ -548,14 +576,16 @@ struct MarketingShowcaseView: View {
         stage = script.kind == .forYou ? .feed : .explore
         tabHighlight = .feed
         watchChromeVisible = true
+        JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
         phase = .running
         track("marketing_showcase_started", props: [
             "script": script.rawValue,
+            "accent": demoAccent.rawValue,
             "clips": clips.map(\.id).joined(separator: ","),
         ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            JojoPalette.activate(theme: .sakura, scheme: script.scheme)
+            JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
             switch script.kind {
             case .forYou:
                 await runForYouScript(clips: clips, first: first)

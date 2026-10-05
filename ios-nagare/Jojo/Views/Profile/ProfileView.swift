@@ -111,7 +111,7 @@ struct ProfileView: View {
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
         #if DEBUG
         .fullScreenCover(item: $marketingScript) { script in
-            MarketingShowcaseView(initialScript: script, autoBegin: false)
+            MarketingShowcaseView(initialScript: script, accent: app.profile.theme, autoBegin: false)
         }
         #endif
         .sheet(isPresented: $showGoalPicker) { DailyGoalSheet() }

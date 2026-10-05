@@ -282,9 +282,9 @@ enum LearningInk {
         orangeLight: "#FFB020", orangeDark: "#FFB020"
     )
     static let dictionaryReading = JojoPalette.color(
-        sakuraLight: "#5CEBFF", sakuraDark: "#5CEBFF",
+        sakuraLight: "#FFB7D8", sakuraDark: "#FFB7D8",
         plumLight: "#C084FF", plumDark: "#C084FF",
-        orangeLight: "#5CEBFF", orangeDark: "#5CEBFF"
+        orangeLight: "#FFD7A1", orangeDark: "#FFD7A1"
     )
     static let dictionaryGloss = JojoPalette.color(
         sakuraLight: "#FFE14A", sakuraDark: "#FFE14A",
