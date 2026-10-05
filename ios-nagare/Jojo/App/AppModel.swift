@@ -166,7 +166,9 @@ final class AppModel {
                 merged.append(enriched)
             }
         }
-        clips = merged
+        // Only clips whose transcript was taken from the video are study material.
+        let verified = merged.filter(\.hasVerifiedTranscript)
+        clips = verified.isEmpty ? merged : verified
         indexLibrary(merged)
         rankedCache = nil
         rankedCacheKey = ""
@@ -244,6 +246,11 @@ final class AppModel {
             var byId: [String: RemoteClip] = [:]
             for row in existing {
                 if byId[row.clipId] != nil { context.delete(row) } else { byId[row.clipId] = row }
+            }
+            let publishedIds = Set(rows.map(\.clip.id))
+            for id in byId.keys where !publishedIds.contains(id) {
+                if let row = byId[id] { context.delete(row) }
+                byId[id] = nil
             }
             for (clip, json) in rows {
                 if let row = byId[clip.id] {

@@ -40,7 +40,7 @@ struct ValuePropCarousel: View {
                     subtitle: "Every word you tap becomes a card with the real sentence and clip it came from."
                 ) {
                     VStack(spacing: Spacing.m) {
-                        MockReviewCard(clip: app.clip(id: "konbini-diaries-01") ?? app.clips.first)
+                        MockReviewCard(clip: app.clip(id: "immersion-konbini-sayaka") ?? app.clips.first)
                         JojoMascot(height: 100, pose: .cheer)
                             .accessibilityHidden(true)
                     }

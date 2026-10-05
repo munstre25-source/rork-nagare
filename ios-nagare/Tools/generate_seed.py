@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Generates the bundled seed content for Nagare:
-  Nagare/Resources/SeedClips.json   (14 fully tokenized clips)
+Generates the bundled dictionary and debug vocab for Nagare.
+SeedClips.json is the verified catalog (lines taken from the video) and is not rewritten here.
   Nagare/Resources/Dictionary.json  (~300 common N5-N3 words, keyed by surface)
   Nagare/Resources/SeedVocab.json   (36 pre-saved words with clip context)
 
@@ -319,7 +319,8 @@ PUNCT = {"、", "。", "!", "?", "「", "」", "…"}
 
 # ---------- Clips ----------
 # Each line: "surface|surface|…" ; use "何@なん" to pick a specific reading for that token.
-# Real embeddable YouTube shorts/clips (JP region, public). Transcripts remain learner-authored.
+# Authored sample lines used only to build the offline dictionary and debug vocab.
+# The study feed ships SeedClips.json, whose lines were taken from the video.
 CLIPS = [
  dict(id="kissa-stories-01", videoId="m4yJzEGcHgk", title="Rainy Afternoon at the Kissaten", channel="Kissa Stories",
       avatar="#C9803F", category="drama", difficulty="Beginner", duration=24, gradient=["#3B2414", "#8A4B22", "#E3A35B"],
@@ -500,12 +501,9 @@ for i, (cid, surf, occ, state, step, due) in enumerate(SEED):
                            dueOffsetHours=due, addedDaysAgo=(36 - i) // 3))
 
 os.makedirs(OUT, exist_ok=True)
-with open(os.path.join(OUT, "SeedClips.json"), "w", encoding="utf-8") as f:
-    json.dump(clips, f, ensure_ascii=False, separators=(",", ":"))
+# SeedClips.json stays the verified catalog. Authored CLIPS are not the study feed.
 with open(os.path.join(OUT, "Dictionary.json"), "w", encoding="utf-8") as f:
     json.dump(dictionary, f, ensure_ascii=False, separators=(",", ":"))
 with open(os.path.join(OUT, "SeedVocab.json"), "w", encoding="utf-8") as f:
     json.dump(seed_vocab, f, ensure_ascii=False, separators=(",", ":"))
-print(f"clips={len(clips)} dictionary={len(dictionary)} seedVocab={len(seed_vocab)}")
-for c in clips:
-    print(c["id"], c["durationSec"], [ (l["start"], l["end"]) for l in c["lines"]])
+print(f"dictionary={len(dictionary)} seedVocab={len(seed_vocab)} (SeedClips.json left as the verified catalog)")
