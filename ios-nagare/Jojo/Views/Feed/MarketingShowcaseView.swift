@@ -360,80 +360,43 @@ struct MarketingShowcaseView: View {
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.s)
 
-            Spacer(minLength: Spacing.l)
-
-            ZStack {
-                if !flashRevealed {
-                    VStack(spacing: Spacing.l) {
-                        Text(word.surface)
-                            .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
-                            .foregroundStyle(.white)
-                        Text("Tap to reveal")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.45))
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 300)
-                    .padding(Spacing.l)
-                    .background(
-                        RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1.5)
-                    )
-                    .padding(.horizontal, Spacing.l)
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: Spacing.l) {
-                            WordHeaderCard(
-                                surface: word.surface,
-                                readings: word.readings,
-                                romaji: word.romaji,
-                                pos: word.pos,
-                                conjugationClass: word.conjugationClass,
-                                jlpt: word.jlpt,
-                                showFurigana: true,
-                                showRomaji: true
-                            )
-                            .environment(\.colorScheme, .dark)
-
-                            Text("Definitions")
-                                .font(.headline)
-                                .foregroundStyle(.white.opacity(0.55))
-                            ForEach(Array(word.definitions.prefix(2).enumerated()), id: \.offset) { i, def in
-                                DefinitionRow(number: i + 1, tag: word.pos, text: def, dark: true)
-                            }
-                            if !word.contextSentence.isEmpty {
-                                Text("Context")
-                                    .font(.headline)
-                                    .foregroundStyle(.white.opacity(0.55))
-                                HighlightedSentence(
-                                    sentence: word.contextSentence,
-                                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                                    size: 19,
-                                    baseColor: .white
-                                )
-                                .padding(Spacing.l)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.bgElevatedDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                                if let clip = app.clip(id: word.contextClipId) {
-                                    ClipThumbnailButton(clip: clip, emphasizesPlay: true) {}
-                                        .disabled(true)
-                                }
-                            }
-                        }
-                        .padding(Spacing.l)
-                    }
+            if !flashRevealed {
+                Spacer(minLength: Spacing.s)
+                VStack(spacing: Spacing.l) {
+                    Text(word.surface)
+                        .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
+                        .foregroundStyle(.white)
+                    Text("Tap to reveal")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.45))
                 }
-            }
-            .animation(Motion.cardFlip, value: flashRevealed)
-
-            if flashRevealed {
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(Spacing.l)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1.5)
+                )
+                .padding(.horizontal, Spacing.l)
+                Spacer(minLength: Spacing.s)
+                Color.clear.frame(height: 8)
+            } else {
+                ScrollView {
+                    KikuFlashcardBack(word: word, dark: true) { _ in }
+                        .environment(\.colorScheme, .dark)
+                        .padding(.horizontal, Spacing.l)
+                        .padding(.top, Spacing.s)
+                        .padding(.bottom, Spacing.m)
+                        .allowsHitTesting(false)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 HStack(spacing: Spacing.m) {
                     answerChip(title: "Again", subtitle: "<1m", color: .againBackground, fg: .againText)
                     answerChip(title: "Good", subtitle: "<10m", color: .goodBackground, fg: .goodText)
                 }
-                .padding(Spacing.l)
+                .padding(.horizontal, Spacing.l)
+                .padding(.bottom, Spacing.l)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else {
-                Color.clear.frame(height: 88)
             }
         }
         .background(Color.bgPlayer.ignoresSafeArea())

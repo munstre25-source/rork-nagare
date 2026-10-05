@@ -40,7 +40,8 @@ struct ReviewSessionView: View {
                 } else if let word = current {
                     ScrollView {
                         flipCard(for: word)
-                            .padding(Spacing.l)
+                            .padding(.horizontal, Spacing.l)
+                            .padding(.vertical, Spacing.s)
                             .id(word.key)
                             .transition(.asymmetric(
                                 insertion: .modifier(
@@ -54,6 +55,7 @@ struct ReviewSessionView: View {
                             ))
                     }
                     .scrollIndicators(.hidden)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(Motion.cardFlip, value: word.key)
                     if revealed {
                         answerButtons(for: word)
@@ -168,59 +170,7 @@ struct ReviewSessionView: View {
     }
 
     private func backFace(_ word: SavedWord) -> some View {
-        let defs = word.displayDefinitions(mode: app.profile.dictionary)
-        return VStack(alignment: .leading, spacing: Spacing.m) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(word.surface)
-                    .font(JojoFont.jp(36, bold: true, relativeTo: .largeTitle))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Button {
-                    SpeechService.shared.speak(word.contextSentence.isEmpty ? word.surface : word.contextSentence)
-                } label: {
-                    Image(systemName: "speaker.wave.2")
-                        .foregroundStyle(.white.opacity(0.8))
-                        .frame(width: 36, height: 36)
-                }
-                .accessibilityLabel("Play \(word.surface)")
-            }
-            if !word.romaji.isEmpty {
-                Text(word.romaji)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.55))
-            }
-            if let gloss = defs.first {
-                Text(gloss)
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            if !word.contextSentence.isEmpty {
-                Text("Context")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.45))
-                HighlightedSentence(
-                    sentence: word.contextSentence,
-                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                    size: 18,
-                    baseColor: .white
-                )
-                if let clip = app.clip(id: word.contextClipId), let line = clip.lines[safe: word.contextLineIndex] {
-                    Text(line.translation)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.6))
-                        .fixedSize(horizontal: false, vertical: true)
-                    ClipThumbnailButton(clip: clip, emphasizesPlay: true) { playing = clip }
-                }
-            }
-        }
-        .padding(Spacing.l)
-        .frame(maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
-        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.white.opacity(0.12)))
+        KikuFlashcardBack(word: word, onPlayClip: { playing = $0 })
     }
 
     private func answerButtons(for word: SavedWord) -> some View {
@@ -239,7 +189,7 @@ struct ReviewSessionView: View {
         .buttonStyle(PressableStyle())
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
-        .padding(.bottom, Spacing.s)
+        .padding(.bottom, Spacing.m)
         .background(Color.canvas)
     }
 
@@ -273,6 +223,79 @@ struct ReviewSessionView: View {
                 track("review_completed", props: ["count": String(total), "good": String(goodCount)])
             }
         }
+    }
+}
+
+/// One Kiku-style review card: word, definitions, context, and a clip that stays fully on screen.
+struct KikuFlashcardBack: View {
+    let word: SavedWord
+    var dark: Bool = false
+    var onPlayClip: (Clip) -> Void
+
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let defs = Array(word.displayDefinitions(mode: app.profile.dictionary).prefix(2))
+        VStack(alignment: .leading, spacing: 12) {
+            WordHeaderCard(
+                surface: word.surface,
+                readings: word.readings,
+                romaji: word.romaji,
+                pos: word.pos,
+                conjugationClass: word.conjugationClass,
+                jlpt: word.jlpt,
+                showFurigana: true,
+                showRomaji: true
+            )
+            if !defs.isEmpty {
+                Text("Definition")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                ForEach(Array(defs.enumerated()), id: \.offset) { index, def in
+                    DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def, dark: dark)
+                }
+            }
+            if !word.contextSentence.isEmpty {
+                Text("Context")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                HighlightedSentence(
+                    sentence: word.contextSentence,
+                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
+                    size: 18,
+                    baseColor: dark ? .white : .primary
+                )
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                if let clip = app.clip(id: word.contextClipId) {
+                    Button {
+                        onPlayClip(clip)
+                    } label: {
+                        ZStack {
+                            ClipPosterView(clip: clip, showsSymbol: false)
+                            Image(systemName: "play.fill")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 54, height: 54)
+                                .background(.black.opacity(0.45), in: Circle())
+                                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 148)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Play the clip for \(word.surface)")
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.16), lineWidth: 1)
+        )
     }
 }
 
