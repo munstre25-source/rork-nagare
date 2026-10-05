@@ -4,6 +4,7 @@ import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
+import { enrichHeardLines, HEAR_SYSTEM_CATALOG } from "../_shared/enrich.ts";
 import {
   durationFromLines,
   LineLike,
@@ -40,16 +41,7 @@ const GRADIENTS = [
   ["#2B1405", "#9C3D10", "#F2B134"],
 ];
 
-const SYSTEM = `You analyze a short Japanese YouTube video segment for language learners.
-Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ Token ] } ] }.
-Each Token: surface (required), reading (kana if kanji), altReadings (string[]), romaji, start, end, pos, conjugationClass (optional), jlpt (optional N5-N1), definitions (English string[]), formality (optional), tappable (bool), baseForm/baseReading/baseRomaji (optional for conjugated stems).
-Rules:
-- Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
-- Tokenize into learner-friendly units (particles separate). Punctuation may be tokens with pos "punctuation" and tappable false.
-- definitions required for tappable tokens.
-- Japanese dialogue only; no English in surface.
-- Transcribe speech you can actually hear. If the clip is mostly music, silence, or has no Japanese speech, return {"lines":[]}.
-- No markdown.`;
+const SYSTEM = HEAR_SYSTEM_CATALOG;
 
 type SearchItem = { id?: { videoId?: string } };
 type VideoItem = {
@@ -234,8 +226,7 @@ async function analyzeAndPublish(
   }
   const validated = validateLines(raw.lines, window.start, window.end);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
-
-  const lines = raw.lines as LineLike[];
+  const lines = await enrichHeardLines(raw.lines) as LineLike[];
   const row = {
     id,
     video_id: video.videoId,

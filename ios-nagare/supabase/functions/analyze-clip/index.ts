@@ -4,6 +4,7 @@ import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
+import { enrichHeardLines, HEAR_SYSTEM } from "../_shared/enrich.ts";
 import {
   durationFromLines,
   LineLike,
@@ -28,15 +29,7 @@ const GRADIENTS = [
   ["#2B1405", "#9C3D10", "#F2B134"],
 ];
 
-const SYSTEM = `You analyze a short Japanese YouTube video segment for language learners.
-Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ Token ] } ] }.
-Each Token: surface (required), reading (kana if kanji), altReadings (string[]), romaji, start, end, pos, conjugationClass (optional), jlpt (optional N5-N1), definitions (English string[]), formality (optional), tappable (bool), baseForm/baseReading/baseRomaji (optional for conjugated stems).
-Rules:
-- Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
-- Tokenize into learner-friendly units (particles separate). Punctuation may be tokens with pos "punctuation" and tappable false.
-- definitions required for tappable tokens.
-- Japanese dialogue only; no English in surface.
-- No markdown.`;
+const SYSTEM = HEAR_SYSTEM;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
@@ -91,11 +84,11 @@ Deno.serve(async (req) => {
     });
 
     const raw = parseJsonObject(text);
-    const lines = raw.lines;
-    const validated = validateLines(lines, startSec, endSec);
+    const validated = validateLines(raw.lines, startSec, endSec);
     if (!validated.ok) return errorResponse(422, validated.error);
+    const heard = await enrichHeardLines(raw.lines);
 
-    const durationSec = durationFromLines(lines as LineLike[], endSec - startSec);
+    const durationSec = durationFromLines(heard as LineLike[], endSec - startSec);
     const gradient = GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length];
 
     const row = {
@@ -106,7 +99,7 @@ Deno.serve(async (req) => {
       category,
       difficulty,
       duration_sec: durationSec,
-      lines,
+      lines: heard,
       published: false,
       channel_avatar_color: "#FF6B00",
       thumbnail_gradient: gradient,

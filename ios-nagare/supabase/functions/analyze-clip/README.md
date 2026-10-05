@@ -18,4 +18,4 @@ Content-Type: application/json
 }
 ```
 
-Does **not** scrape YouTube captions. Sends the YouTube watch URL to Gemini (`GEMINI_MODEL_ANALYZE`) as video input with start/end offsets. Validates timestamps (strictly increasing, clamped), non-empty tokens, mostly-Japanese text, and enums. Always inserts with `published=false`.
+Does **not** scrape YouTube captions. Gemini watches the YouTube URL and writes the words and timestamps. OpenRouter then adds readings, meanings, and JLPT. Those fields never replace the heard surfaces or times. Always inserts with `published=false`.
