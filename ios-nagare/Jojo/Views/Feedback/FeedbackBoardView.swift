@@ -563,7 +563,9 @@ private struct FeedbackCategoryPill: View {
                 .padding(.horizontal, 14)
                 .frame(minHeight: 36)
                 .foregroundStyle(selected ? Color.white : Color.primary)
-                .background(selected ? Color.sakuraFill : Color.fieldFill, in: Capsule())
+                .background {
+                    Capsule().fill(selected ? AnyShapeStyle(Color.sakuraFill) : AnyShapeStyle(Color.fieldFill))
+                }
         }
         .buttonStyle(.plain)
     }
