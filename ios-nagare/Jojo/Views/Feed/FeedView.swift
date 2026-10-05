@@ -52,7 +52,7 @@ struct FeedView: View {
                 }
             }
         }
-        .background(Color.canvas.ignoresSafeArea())
+        .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
         .simultaneousGesture(TapGesture().onEnded { revealWatchChrome() })
@@ -176,7 +176,7 @@ struct FeedView: View {
                 ForEach(clips) { clip in
                     ClipStageView(
                         clip: clip,
-                        showsChannelRow: false,
+                        showsChannelRow: true,
                         immersiveFeed: true,
                         videoExpanded: videoExpanded,
                         onToggleVideoSize: {
@@ -207,7 +207,7 @@ struct FeedView: View {
         .scrollPosition(id: $currentId)
         .scrollDisabled(lookup.isPresented || quizClip != nil)
         .scrollIndicators(.hidden)
-        .background(Color.canvas)
+        .background(Color.watchBackground)
         .clipped()
     }
 

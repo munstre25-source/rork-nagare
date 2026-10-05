@@ -75,20 +75,10 @@ struct VocabView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Vocab")
-                            .font(.system(size: 34, weight: .bold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                        Text("Grow your vocabulary, one word at a time.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    wordsYouKnowHeader
 
                     HStack(spacing: 10) {
-                        DesignSearchField(text: $query, placeholder: "Search words...")
+                        DesignSearchField(text: $query, placeholder: "English, Japanese, or romaji")
                         Button {
                             showFilters = true
                         } label: {
@@ -142,6 +132,69 @@ struct VocabView: View {
         }
         .onAppear { openPendingReviewIfNeeded() }
         .onChange(of: app.pendingDeepLink) { _, _ in openPendingReviewIfNeeded() }
+    }
+
+    private var knownCount: Int { words.filter { $0.state == .known }.count }
+
+    private var reviewCount: Int {
+        let pool = dueWords.isEmpty ? words.count : dueWords.count
+        return min(10, pool)
+    }
+
+    /// The count and review button the learner sees first, matching the vocab home in the reference ads.
+    private var wordsYouKnowHeader: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(knownCount)")
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                        .contentTransition(.numericText(value: Double(knownCount)))
+                        .animation(.snappy, value: knownCount)
+                    Text("Japanese words you know")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                JojoMascot(height: 76, floats: false, pose: .cheer)
+                    .accessibilityHidden(true)
+            }
+            Button {
+                let pool = dueWords.isEmpty ? Array(words) : dueWords
+                startReview(pool, title: "Review")
+            } label: {
+                Text(words.isEmpty ? "Review cards" : "Review \(reviewCount) cards")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Color.sakuraFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(words.isEmpty)
+            .opacity(words.isEmpty ? 0.45 : 1)
+            Button {
+                withAnimation(.snappy) { section = .mine }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "rectangle.stack.fill")
+                        .foregroundStyle(Color.designOrange)
+                    Text("Decks")
+                        .font(.headline.weight(.semibold))
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 52)
+                .background(Color.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.cardStroke))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var learnSection: some View {
@@ -261,6 +314,7 @@ struct VocabView: View {
 
     private var myWordsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
+            decksSection
             if filtered.isEmpty {
                 emptyVocab
             } else {
@@ -273,7 +327,6 @@ struct VocabView: View {
                     }
                 }
             }
-            decksSection
         }
     }
 

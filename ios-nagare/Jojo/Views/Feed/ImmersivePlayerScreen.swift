@@ -32,7 +32,7 @@ struct ImmersivePlayerScreen: View {
             }
             footer
         }
-        .background(Color.bgPlayer.ignoresSafeArea())
+        .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
         .environment(\.colorScheme, .dark)

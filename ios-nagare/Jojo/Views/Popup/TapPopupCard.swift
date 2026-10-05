@@ -273,8 +273,8 @@ struct TapPopupCard: View {
                 .textCase(.uppercase)
             HighlightedSentence(sentence: selection.sentence, target: selection.token.surface, size: 17, baseColor: .white)
             Text(selection.translation)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
             HStack(spacing: Spacing.s) {
                 Image(systemName: "clock.arrow.circlepath")
                 Text("First review in 10 minutes · \(selection.clip.channelName)")
@@ -331,15 +331,15 @@ struct DefinitionRow: View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
             Text("\(number)")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(dark ? Color.white.opacity(0.6) : .secondary)
+                .foregroundStyle(dark ? Color.white : Color.translationText)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(dark ? Color.white.opacity(0.08) : Color.primary.opacity(0.06)))
+                .background(Circle().fill(dark ? Color.white.opacity(0.16) : Color.primary.opacity(0.08)))
             if let tag {
                 PillView(text: tag, style: dark ? .neutralDark : .pos)
             }
             Text(text)
-                .font(.body)
-                .foregroundStyle(dark ? Color.white : Color.primary)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(dark ? Color.white : Color.translationText)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }

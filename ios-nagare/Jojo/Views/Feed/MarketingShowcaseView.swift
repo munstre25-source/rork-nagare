@@ -19,9 +19,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .forYou:
-            "Two clips play in For You. Controls fade while you watch, then a touch brings them back. Tap a word, swipe, review."
+            "Two clips play in For You. The channel sits above the video, a known word is boxed in green, and the English line stays bright. Controls fade, then a touch brings them back."
         case .exploreVocab:
-            "Explore paths → a clip plays and the controls fade → a touch brings them back → Vocab → flashcards flip"
+            "Explore opens Listening, two clips play on black, then Vocab shows how many words you know and the flashcards."
         }
     }
 
@@ -29,18 +29,20 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .forYou:
             [
-                "For You plays the first clip",
-                "The tab capsule and For You / Explore fade",
-                "A touch brings them back, then a word becomes a flashcard",
-                "Swipe up — the second clip plays and the controls fade again",
-                "Review that new card, clip and all, above Again and Good"
+                "Channel name above the clip, English under the words",
+                "A word you know is boxed in green",
+                "Controls fade, then a touch brings them back",
+                "Tap a new word — it becomes a card",
+                "Swipe to the second clip",
+                "The review card shows the definition in full"
             ]
         case .exploreVocab:
             [
                 "Explore’s learning paths",
-                "A clip plays, then the controls fade until a touch",
-                "Vocab shows the words you saved",
-                "Flashcards flip, and the whole card stays on screen"
+                "Open Listening",
+                "Two clips play on black — swipe down to the next",
+                "Vocab opens with how many words you know",
+                "Flashcards show the definition, the sentence, and the clip"
             ]
         }
     }
@@ -51,7 +53,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
 /// Two clean arcs matching Kiku-style ads: For You immersion, and Explore → Vocab → cards.
 struct MarketingShowcaseView: View {
     var initialScript: MarketingScript = .forYou
-    /// When true, skips the picker and starts the countdown immediately (launch play buttons).
+    /// When true, skips the picker and starts the walkthrough immediately (launch play buttons).
     var autoBegin: Bool = false
 
     @Environment(AppModel.self) private var app
@@ -70,7 +72,8 @@ struct MarketingShowcaseView: View {
     @State private var flashIndex: Int = 0
     @State private var flashWords: [SavedWord] = []
     @State private var scriptTask: Task<Void, Never>?
-    @State private var countdown: Int?
+    @State private var explorePath: LearningPath?
+    @State private var watchId: String?
     @State private var exploreHighlight: String?
     @State private var vocabHighlight: String?
     @State private var tabHighlight: AppTab = .feed
@@ -80,7 +83,7 @@ struct MarketingShowcaseView: View {
     @State private var watchChromeVisible: Bool = true
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case feed, explore, vocab, analytics, flashcard }
+    private enum Stage { case feed, explore, watching, vocab, analytics, flashcard }
 
     var body: some View {
         ZStack {
@@ -227,7 +230,20 @@ struct MarketingShowcaseView: View {
                 case .feed:
                     feedChrome
                 case .explore:
-                    ExploreHomeView(onOpenFeed: {})
+                    ExploreHomeView(onOpenFeed: {}, scriptedPath: explorePath, featuredClips: feedPair)
+                case .watching:
+                    if let first = feedPair.first {
+                        ClipQueueScreen(
+                            clips: feedPair,
+                            startId: first.id,
+                            startLine: 0,
+                            loopLine: true,
+                            forcedId: watchId,
+                            loopPlayback: true
+                        )
+                    } else {
+                        Color.watchBackground
+                    }
                 case .vocab:
                     VocabView()
                 case .analytics:
@@ -240,14 +256,14 @@ struct MarketingShowcaseView: View {
                                 removal: .opacity
                             ))
                     } else {
-                        Color.canvas
+                        Color.watchBackground
                     }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(.easeInOut(duration: 0.4), value: stage)
 
-            if stage != .flashcard {
+            if stage != .flashcard && stage != .watching {
                 showcaseTabBar
                     .opacity(stage == .feed && !watchChromeVisible ? 0 : 1)
                     .offset(y: stage == .feed && !watchChromeVisible ? 14 : 0)
@@ -255,13 +271,6 @@ struct MarketingShowcaseView: View {
             }
         }
         .overlay {
-            if let countdown {
-                Text("\(countdown)")
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.designOrange)
-                    .shadow(radius: 12)
-                    .transition(.scale.combined(with: .opacity))
-            }
             if let bornCard {
                 BornFlashcard(surface: bornCard.surface, romaji: bornCard.romaji, gloss: bornCard.gloss) {
                     self.bornCard = nil
@@ -309,7 +318,7 @@ struct MarketingShowcaseView: View {
                         ForEach(feedPair) { clip in
                             ClipStageView(
                                 clip: clip,
-                                showsChannelRow: false,
+                                showsChannelRow: true,
                                 immersiveFeed: true,
                                 videoExpanded: true,
                                 onToggleVideoSize: {},
@@ -327,7 +336,7 @@ struct MarketingShowcaseView: View {
                 .scrollDisabled(true)
             }
         }
-        .background(Color.canvas.ignoresSafeArea())
+        .background(Color.watchBackground.ignoresSafeArea())
     }
 
     /// The two bundled clips that actually play. Posters never lead the demo.
@@ -368,7 +377,7 @@ struct MarketingShowcaseView: View {
                         .foregroundStyle(.white)
                     Text("Tap to reveal")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.45))
+                        .foregroundStyle(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(Spacing.l)
@@ -422,7 +431,7 @@ struct MarketingShowcaseView: View {
             Text("Showcase finished")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("Stop your screen recording, then trim the countdown if you want.")
+            Text("Stop your screen recording.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -469,6 +478,15 @@ struct MarketingShowcaseView: View {
         return (try? app.context.fetch(descriptor))?.prefix(6).map { $0 } ?? []
     }
 
+    /// Boxes one content word in green so the recording shows a known word on the transcript.
+    private func markDemoKnown(on clip: Clip) -> Token? {
+        guard let line = clip.lines.first else { return nil }
+        guard let token = line.tokens.first(where: { $0.tappable && $0.containsKanji })
+            ?? line.tokens.first(where: \.tappable) else { return nil }
+        app.paint(token: token, explanation: nil, clip: clip, lineIndex: 0, mark: .known)
+        return token
+    }
+
     private func beginShowcase(_ script: MarketingScript) {
         lookup.offlineOnly = true
         lookup.previewOnly = true
@@ -491,8 +509,6 @@ struct MarketingShowcaseView: View {
         ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            await runCountdown()
-            guard !Task.isCancelled else { return }
             switch script {
             case .forYou:
                 await runForYouScript(clips: clips, first: first)
@@ -506,53 +522,46 @@ struct MarketingShowcaseView: View {
         }
     }
 
-    private func runCountdown() async {
-        for n in [3, 2, 1] {
-            withAnimation(.snappy) { countdown = n }
-            Haptics.selection()
-            try? await Task.sleep(for: .milliseconds(700))
-            if Task.isCancelled { return }
-        }
-        withAnimation { countdown = nil }
-    }
-
     /// Video 1: For You immersion → tap → swipe → flashcard reveal.
     private func runForYouScript(clips: [Clip], first: Clip) async {
         tabHighlight = .feed
         stage = .feed
+        let known = markDemoKnown(on: first)
         coordinator.activate(first, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(900))
+        try? await Task.sleep(for: .milliseconds(1600))
         guard !Task.isCancelled else { return }
         await fadeDemoChrome()
         try? await Task.sleep(for: .milliseconds(1400))
         guard !Task.isCancelled else { return }
         await revealDemoChrome()
 
-        // Tap a word — highlight new vocabulary
+        // Tap a different word so the green box and the new card are both on screen.
         var savedFromTap: SavedWord?
-        if let line = first.lines.first,
-           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
-            ?? line.tokens.firstIndex(where: \.tappable) {
-            let token = line.tokens[idx]
-            lookup.previewOnly = false
-            withAnimation(Motion.popupSpring) {
-                lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: first, app: app)
+        if let line = first.lines.first {
+            let candidates = line.tokens.enumerated().filter { $0.element.tappable && $0.element.containsKanji }
+            let pick = candidates.first { $0.element.surface != known?.surface } ?? candidates.first
+            if let pick {
+                let token = pick.element
+                lookup.previewOnly = false
+                withAnimation(Motion.popupSpring) {
+                    lookup.select(token: token, tokenIndex: pick.offset, lineIndex: 0, clip: first, app: app)
+                }
+                bornCard = BornCardPayload(
+                    surface: token.surface,
+                    romaji: token.romaji,
+                    gloss: token.definitions.first ?? ""
+                )
+                try? await Task.sleep(for: .milliseconds(2200))
+                guard !Task.isCancelled else { return }
+                let key = AppModel.wordKey(for: token)
+                savedFromTap = (try? app.context.fetch(
+                    FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
+                ))?.first
+                withAnimation(Motion.popupSpring) { lookup.dismiss() }
+                lookup.previewOnly = true
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
             }
-            bornCard = BornCardPayload(
-                surface: token.surface,
-                romaji: token.romaji,
-                gloss: token.definitions.first ?? ""
-            )
-            try? await Task.sleep(for: .milliseconds(2200))
-            guard !Task.isCancelled else { return }
-            let key = AppModel.wordKey(for: token)
-            savedFromTap = (try? app.context.fetch(
-                FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
-            ))?.first
-            withAnimation(Motion.popupSpring) { lookup.dismiss() }
-            lookup.previewOnly = true
-            try? await Task.sleep(for: .milliseconds(450))
-            guard !Task.isCancelled else { return }
         }
 
         // Swipe to next clip
@@ -574,38 +583,30 @@ struct MarketingShowcaseView: View {
         await playFlashcardSequence(startingWith: word, count: 2)
     }
 
-    /// Video 2: Explore → immersive → Vocab → analytics → flashcards.
+    /// Video 2: Explore home → Listening → two clips → Vocab → flashcards.
     private func runExploreVocabScript(clips: [Clip], first: Clip) async {
         tabHighlight = .feed
+        explorePath = nil
+        _ = markDemoKnown(on: feedPair.first ?? first)
         withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
-        try? await Task.sleep(for: .milliseconds(2200))
+        try? await Task.sleep(for: .milliseconds(1600))
         guard !Task.isCancelled else { return }
 
-        let pick = feedPair.first ?? first
-        withAnimation(.easeInOut(duration: 0.4)) { stage = .feed }
-        currentId = pick.id
-        coordinator.activate(pick, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(800))
+        withAnimation(.easeInOut(duration: 0.45)) { explorePath = .listening }
+        try? await Task.sleep(for: .milliseconds(1800))
         guard !Task.isCancelled else { return }
-        await fadeDemoChrome()
-        try? await Task.sleep(for: .milliseconds(1200))
-        guard !Task.isCancelled else { return }
-        await revealDemoChrome()
 
-        if let second = feedPair.dropFirst().first {
-            withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            coordinator.activate(second, startLine: 0, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(700))
-            guard !Task.isCancelled else { return }
-            await fadeDemoChrome()
-            try? await Task.sleep(for: .milliseconds(1100))
-            guard !Task.isCancelled else { return }
-            await revealDemoChrome()
-            withAnimation(.easeInOut(duration: 0.45)) { currentId = pick.id }
-            coordinator.activate(pick, startLine: 0, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(400))
+        let source = feedPair.isEmpty ? clips : feedPair
+        let pair = source.isEmpty ? [first] : Array(source.prefix(2))
+        let pick = pair[0]
+        watchId = pick.id
+        withAnimation(.easeInOut(duration: 0.4)) { stage = .watching }
+        try? await Task.sleep(for: .milliseconds(2400))
+        guard !Task.isCancelled else { return }
+
+        if pair.count > 1 {
+            withAnimation(.easeInOut(duration: 0.55)) { watchId = pair[1].id }
+            try? await Task.sleep(for: .milliseconds(2600))
             guard !Task.isCancelled else { return }
         }
 
@@ -614,29 +615,28 @@ struct MarketingShowcaseView: View {
             ?? line.tokens.firstIndex(where: \.tappable) {
             let token = line.tokens[idx]
             lookup.previewOnly = false
-            withAnimation(Motion.popupSpring) {
-                lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: pick, app: app)
-            }
+            lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: pick, app: app)
             bornCard = BornCardPayload(
                 surface: token.surface,
                 romaji: token.romaji,
                 gloss: token.definitions.first ?? ""
             )
-            try? await Task.sleep(for: .milliseconds(2000))
+            try? await Task.sleep(for: .milliseconds(1800))
             guard !Task.isCancelled else { return }
             withAnimation(Motion.popupSpring) { lookup.dismiss() }
+            bornCard = nil
             lookup.previewOnly = true
-            try? await Task.sleep(for: .milliseconds(400))
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
         }
 
-        coordinator.pause()
         flashWords = demoVocabFallback()
 
         withAnimation(.easeInOut(duration: 0.4)) {
             stage = .vocab
             tabHighlight = .vocab
         }
-        try? await Task.sleep(for: .milliseconds(1400))
+        try? await Task.sleep(for: .milliseconds(3200))
         guard !Task.isCancelled else { return }
 
         if let highlight = flashWords.first?.key {
@@ -689,7 +689,7 @@ struct MarketingShowcaseView: View {
             guard !Task.isCancelled else { return }
 
             withAnimation(Motion.cardFlip) { flashRevealed = true }
-            try? await Task.sleep(for: .milliseconds(2800))
+            try? await Task.sleep(for: .milliseconds(3200))
             guard !Task.isCancelled else { return }
 
             try? await Task.sleep(for: .milliseconds(450))
@@ -707,9 +707,10 @@ struct MarketingShowcaseView: View {
         flashIndex = 0
         flashWords = []
         bornCard = nil
-        countdown = nil
         feedClips = []
         currentId = nil
+        watchId = nil
+        explorePath = nil
         stage = .feed
         exploreHighlight = nil
         vocabHighlight = nil

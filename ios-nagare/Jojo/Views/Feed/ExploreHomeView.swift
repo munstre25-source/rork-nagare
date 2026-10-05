@@ -4,12 +4,17 @@ import SwiftUI
 struct ExploreHomeView: View {
     var onOpenFeed: () -> Void = {}
     var tabBarHidden: Binding<Bool> = .constant(false)
+    /// Debug walkthrough pushes this path after the home screen is on screen.
+    var scriptedPath: LearningPath? = nil
+    /// Clips pinned to the top of a path list during the marketing walkthrough.
+    var featuredClips: [Clip] = []
 
     @Environment(AppModel.self) private var app
     @State private var showGoal: Bool = false
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     topBar
@@ -43,7 +48,7 @@ struct ExploreHomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: LearningPath.self) { path in
-                LearningPathScreen(path: path)
+                LearningPathScreen(path: path, featuredClips: featuredClips)
             }
             .navigationDestination(for: SearchRoute.self) { _ in
                 SearchView(embedded: true)
@@ -51,6 +56,10 @@ struct ExploreHomeView: View {
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
             }
+        }
+        .onChange(of: scriptedPath) { _, newPath in
+            guard let newPath else { return }
+            path.append(newPath)
         }
     }
 
@@ -188,9 +197,12 @@ private struct LearningPathCard: View {
 
 struct LearningPathScreen: View {
     let path: LearningPath
+    var featuredClips: [Clip] = []
 
     @Environment(AppModel.self) private var app
     @State private var playing: Clip?
+    @State private var playQueue: [Clip] = []
+    @State private var playLine: Int?
     @State private var practiceClip: Clip?
     @State private var practiceCoordinator = PlaybackCoordinator()
 
@@ -207,7 +219,12 @@ struct LearningPathScreen: View {
                 ExploreView(
                     lockedCategories: categories,
                     lockedDifficulty: path == .jlpt ? .beginner : nil,
-                    onPlay: { clip, _ in playing = clip }
+                    leadingClips: featuredClips,
+                    onPlay: { clip, line, list in
+                        playQueue = list
+                        playLine = line
+                        playing = clip
+                    }
                 )
             }
         }
@@ -215,7 +232,7 @@ struct LearningPathScreen: View {
         .navigationTitle(path.title)
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(item: $playing) { clip in
-            ClipPlayerScreen(clip: clip)
+            ClipPlayerScreen(clip: clip, queue: playQueue, startLine: playLine, loopLine: playLine != nil)
                 .environment(app)
         }
         .sheet(item: $practiceClip) { clip in
@@ -279,6 +296,15 @@ struct LearningPathScreen: View {
 private struct GrammarPathView: View {
     @Environment(AppModel.self) private var app
     @State private var playing: Clip?
+    @State private var playLine: Int?
+
+    private var clipQueue: [Clip] {
+        var seen: Set<String> = []
+        return moments.compactMap { moment in
+            guard seen.insert(moment.clip.id).inserted else { return nil }
+            return moment.clip
+        }
+    }
 
     private var moments: [(clip: Clip, line: Line, surface: String, gloss: String)] {
         let grammar: Set<String> = ["particle", "auxiliary", "copula", "conjunction", "expression", "grammar"]
@@ -317,8 +343,8 @@ private struct GrammarPathView: View {
                             .font(JojoFont.jp(16, relativeTo: .body))
                             .lineLimit(2)
                         Text(moment.line.translation)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.translationText)
                             .lineLimit(2)
                         Button {
                             SpeechService.shared.speak(moment.line.text)
@@ -329,6 +355,7 @@ private struct GrammarPathView: View {
                         .buttonStyle(.plain)
                         .foregroundStyle(Color.designOrange)
                         Button {
+                            playLine = moment.clip.lines.firstIndex(where: { $0.start == moment.line.start })
                             playing = moment.clip
                         } label: {
                             Label("Open the clip", systemImage: "play.fill")
@@ -346,7 +373,7 @@ private struct GrammarPathView: View {
             .padding(20)
         }
         .fullScreenCover(item: $playing) { clip in
-            ClipPlayerScreen(clip: clip)
+            ClipPlayerScreen(clip: clip, queue: clipQueue, startLine: playLine)
                 .environment(app)
         }
     }
@@ -415,7 +442,7 @@ private struct JLPTPathView: View {
             .padding(20)
         }
         .fullScreenCover(item: $playing) { clip in
-            ClipPlayerScreen(clip: clip)
+            ClipPlayerScreen(clip: clip, queue: clips)
                 .environment(app)
         }
     }

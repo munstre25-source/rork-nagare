@@ -34,7 +34,7 @@ struct ShadowingOverlay: View {
                 Spacer()
             }
             .padding(Spacing.l)
-            .background(Color.canvas.ignoresSafeArea())
+            .background(Color.watchBackground.ignoresSafeArea())
             .navigationTitle("Shadowing")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -88,8 +88,8 @@ struct ShadowingOverlay: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             if phase != .practice {
                 Text(line.translation)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.translationText)
             } else {
                 Text("Say it out loud — translation hidden.")
                     .font(.subheadline)

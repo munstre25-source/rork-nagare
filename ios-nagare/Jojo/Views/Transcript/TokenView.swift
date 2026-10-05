@@ -107,7 +107,10 @@ struct TokenView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.spokenGreen.opacity(0.12))
         case .normal:
-            if isLookedUp {
+            if familiarity == .known {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.spokenGreen, lineWidth: 2)
+            } else if isLookedUp {
                 // Saved / looked-up words get an orange fill like Kiku's 石炭.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.designOrange.opacity(0.22))
@@ -131,7 +134,7 @@ struct TokenView: View {
 
     @ViewBuilder
     private var underline: some View {
-        if token.tappable, state != .selected {
+        if token.tappable, state != .selected, familiarity != .known {
             Capsule()
                 .fill(underlineColor)
                 .frame(height: 3)

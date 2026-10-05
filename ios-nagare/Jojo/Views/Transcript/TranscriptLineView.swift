@@ -52,8 +52,8 @@ struct TranscriptLineView: View {
                 }
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
-                        .font(forceDenseAids || raisedCard ? .subheadline : .body)
-                        .foregroundStyle(Color.textSecondary)
+                        .font((forceDenseAids || raisedCard ? Font.subheadline : Font.body).weight(.semibold))
+                        .foregroundStyle(Color.translationText)
                         .lineLimit(4)
                         .minimumScaleFactor(0.85)
                         .multilineTextAlignment(.leading)
@@ -70,7 +70,7 @@ struct TranscriptLineView: View {
                         .shadow(color: Color.activeLineGlow, radius: 10, y: 2)
                 }
             }
-            .opacity(isActive ? 1 : 0.45)
+            .opacity(isActive ? 1 : 0.82)
             .animation(.easeOut(duration: 0.2), value: isActive)
         }
     }

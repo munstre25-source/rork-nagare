@@ -71,7 +71,7 @@ struct ClipStageView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .background(usesFlexibleVideo ? Color.canvas : (immersiveFeed ? Color.bgPlayer : Color.clear))
+        .background(usesFlexibleVideo || immersiveFeed ? Color.watchBackground : Color.clear)
         .overlay {
             if isPopupHere { popupLayer }
         }
@@ -95,9 +95,11 @@ struct ClipStageView: View {
                     clip: clip,
                     trailing: channelTrailing,
                     showsFollow: !immersiveFeed,
-                    emphasizesTitle: immersiveFeed
+                    emphasizesTitle: false
                 )
                 .padding(.vertical, immersiveFeed ? 4 : 10)
+                .frame(width: columnWidth)
+                .frame(maxWidth: .infinity)
             }
 
             ZStack(alignment: .bottomTrailing) {

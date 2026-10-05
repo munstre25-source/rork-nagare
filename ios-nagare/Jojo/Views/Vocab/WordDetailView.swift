@@ -34,7 +34,9 @@ struct WordDetailView: View {
                     VStack(alignment: .leading, spacing: Spacing.s) {
                         HighlightedSentence(sentence: word.contextSentence, target: word.contextSurface.isEmpty ? word.surface : word.contextSurface)
                         if let clip, let line = clip.lines[safe: word.contextLineIndex] {
-                            Text(line.translation).font(.subheadline).foregroundStyle(.secondary)
+                            Text(line.translation)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.translationText)
                         }
                     }
                     .padding(Spacing.l)
@@ -111,7 +113,7 @@ struct WordHeaderCard: View {
             if showFurigana, !readings.isEmpty {
                 Text(readings.joined(separator: " · "))
                     .font(JojoFont.jp(18, relativeTo: .subheadline))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.translationText)
                     .multilineTextAlignment(.center)
             }
             HStack(spacing: Spacing.s) {
@@ -129,8 +131,8 @@ struct WordHeaderCard: View {
             }
             if showRomaji, !romaji.isEmpty {
                 Text(romaji)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.translationText)
                     .multilineTextAlignment(.center)
             }
             WordPills(pos: pos, conjugationClass: conjugationClass, jlpt: jlpt)

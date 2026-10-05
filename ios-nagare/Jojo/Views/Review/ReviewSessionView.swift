@@ -281,16 +281,16 @@ struct KikuFlashcardBack: View {
             )
             if !defs.isEmpty {
                 Text("Definition")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.translationText)
                 ForEach(Array(defs.enumerated()), id: \.offset) { index, def in
                     DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def, dark: dark)
                 }
             }
             if !word.contextSentence.isEmpty {
                 Text("Context")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.translationText)
                 HighlightedSentence(
                     sentence: word.contextSentence,
                     target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,

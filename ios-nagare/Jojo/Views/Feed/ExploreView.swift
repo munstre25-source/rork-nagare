@@ -5,7 +5,9 @@ struct ExploreView: View {
     var lockedCategories: Set<ClipCategory> = []
     var lockedDifficulty: Difficulty? = nil
     var favoritesOnlyStart: Bool = false
-    let onPlay: (Clip, Int?) -> Void
+    /// Shown first. The marketing walkthrough uses this so the two local clips are the ones on screen.
+    var leadingClips: [Clip] = []
+    let onPlay: (Clip, Int?, [Clip]) -> Void
 
     @Environment(AppModel.self) private var app
     @State private var difficulty: Difficulty?
@@ -15,7 +17,7 @@ struct ExploreView: View {
     @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
-        app.studyLibrary.filter { clip in
+        let base = app.studyLibrary.filter { clip in
             let categoryOK = lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)
             let difficultyOK = (lockedDifficulty ?? difficulty) == nil || clip.difficultyKind == (lockedDifficulty ?? difficulty)
             return categoryOK
@@ -24,6 +26,9 @@ struct ExploreView: View {
                 && (source == nil || clip.categoryKind.sourceType == source)
                 && (!favoritesOnly || app.isFavorite(clip.id))
         }
+        guard !leadingClips.isEmpty else { return base }
+        let ids = Set(leadingClips.map(\.id))
+        return leadingClips + base.filter { !ids.contains($0.id) }
     }
 
     var body: some View {
@@ -49,7 +54,7 @@ struct ExploreView: View {
                 } else {
                     LazyVStack(spacing: Spacing.l) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { index, clip in
-                            ExploreClipCard(clip: clip, onPlay: onPlay)
+                            ExploreClipCard(clip: clip, playlist: filtered, onPlay: onPlay)
                                 .opacity(appeared ? 1 : 0)
                                 .offset(y: appeared ? 0 : 16)
                                 .animation(
@@ -133,7 +138,8 @@ struct ExploreView: View {
 
 private struct ExploreClipCard: View {
     let clip: Clip
-    let onPlay: (Clip, Int?) -> Void
+    let playlist: [Clip]
+    let onPlay: (Clip, Int?, [Clip]) -> Void
     @Environment(AppModel.self) private var app
 
     var body: some View {
@@ -179,7 +185,7 @@ private struct ExploreClipCard: View {
                             HStack(spacing: Spacing.s) {
                                 Button {
                                     Haptics.light()
-                                    onPlay(clip, nil)
+                                    onPlay(clip, nil, playlist)
                                 } label: {
                                     Label("Play", systemImage: "play.fill")
                                         .font(.caption.weight(.bold))
@@ -190,7 +196,7 @@ private struct ExploreClipCard: View {
                                 }
                                 Button {
                                     Haptics.light()
-                                    onPlay(clip, 0)
+                                    onPlay(clip, 0, playlist)
                                 } label: {
                                     Label("Loop line", systemImage: "repeat")
                                         .font(.caption.weight(.semibold))
@@ -212,7 +218,7 @@ private struct ExploreClipCard: View {
             .contentShape(.rect)
             .onTapGesture {
                 Haptics.light()
-                onPlay(clip, nil)
+                onPlay(clip, nil, playlist)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(clip.title) by \(clip.channelName)")

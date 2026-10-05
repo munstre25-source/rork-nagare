@@ -35,7 +35,9 @@ extension Color {
 
     // MARK: Backgrounds
     /// Pure black for the video frame itself — never lightens with appearance.
-    static let bgPlayer = Color(hex: "#0A0A0A")
+    static let bgPlayer = Color(hex: "#000000")
+    /// Page behind a playing clip. Cream in light mode, pure black in dark mode.
+    static let watchBackground = Color.adaptive(light: "#FFF6EE", dark: "#000000")
     /// Raised chrome under the transcript / feed cards. Cream in light, near-black in dark.
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
@@ -46,7 +48,7 @@ extension Color {
     static let cardStroke = Color.adaptive(light: "#F2E2D1", dark: "#2A2A2A")
     static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
     /// Active karaoke line card (Kiku-style raised surface).
-    static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#1A1A1C")
+    static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#2C2C2E")
     /// Soft sakura-night lift behind the active line.
     static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
 
@@ -107,9 +109,11 @@ extension Color {
     static let lanternAmber = Color(hex: "#FFB347")
 
     // MARK: Readable secondary (light theme was washing out on cream/white)
-    /// Furigana / romaji / English under karaoke — stronger than system `.secondary`.
-    static let textSecondary = Color.adaptive(light: "#4A4A4A", dark: "#AEAEB2")
-    static let textTertiary = Color.adaptive(light: "#6B6B6B", dark: "#8E8E93")
+    /// Furigana / romaji — quieter than the English line, still readable.
+    static let textSecondary = Color.adaptive(light: "#3A3A3C", dark: "#C7C7CC")
+    static let textTertiary = Color.adaptive(light: "#5C5C5C", dark: "#AEAEB2")
+    /// English under a line, and the reading on a card. Near-black on cream, near-white on night.
+    static let translationText = Color.adaptive(light: "#1C1C1E", dark: "#F5F5F7")
 
     // MARK: Word states / POS underlines
     static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")
