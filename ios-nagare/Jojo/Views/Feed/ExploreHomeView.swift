@@ -10,6 +10,7 @@ struct ExploreHomeView: View {
     var featuredClips: [Clip] = []
 
     @Environment(AppModel.self) private var app
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showGoal: Bool = false
     @State private var showCapture: Bool = false
     @State private var path = NavigationPath()
@@ -26,6 +27,11 @@ struct ExploreHomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    StudySessionClock(running: scenePhase == .active)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if !app.profile.hideDailyGoalBar {
+                        DailyGoalBar()
+                    }
                     topBar
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Explore")
@@ -39,6 +45,9 @@ struct ExploreHomeView: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    exploreDoors
+                    Text("Ways to study")
+                        .font(.headline)
                     VStack(spacing: 12) {
                         ForEach(LearningPath.allCases) { path in
                             NavigationLink(value: path) {
@@ -63,6 +72,9 @@ struct ExploreHomeView: View {
             }
             .navigationDestination(for: SearchRoute.self) { _ in
                 SearchView(embedded: true)
+            }
+            .navigationDestination(for: TopicHub.self) { _ in
+                TopicStylesView()
             }
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
@@ -113,6 +125,27 @@ struct ExploreHomeView: View {
                 }
                 .accessibilityLabel("Daily goal")
             }
+        }
+    }
+
+    private var exploreDoors: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            NavigationLink(value: SearchRoute.search) {
+                ExploreDoorCard(title: "Search a word", subtitle: "Hear it in real clips", symbol: "magnifyingglass")
+            }
+            .buttonStyle(.plain)
+            NavigationLink(value: LearningPath.jlpt) {
+                ExploreDoorCard(title: "Difficulty levels", subtitle: "N5 through N1", symbol: "chart.bar.fill")
+            }
+            .buttonStyle(.plain)
+            NavigationLink(value: LearningPath.grammar) {
+                ExploreDoorCard(title: "Grammar patterns", subtitle: "Particles and forms in real lines", symbol: "text.book.closed")
+            }
+            .buttonStyle(.plain)
+            NavigationLink(value: TopicHub.topics) {
+                ExploreDoorCard(title: "Topics & styles", subtitle: "Conversation, culture, more", symbol: "square.grid.2x2")
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -225,6 +258,67 @@ struct ExploreHomeView: View {
 
 nonisolated enum SearchRoute: Hashable, Sendable {
     case search
+}
+
+nonisolated enum TopicHub: Hashable, Sendable {
+    case topics
+}
+
+private struct ExploreDoorCard: View {
+    let title: String
+    let subtitle: String
+    let symbol: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.studyAccent)
+                .frame(width: 36, height: 36)
+                .background(Color.studyFocus, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            Text(title)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
+    }
+}
+
+private struct TopicStylesView: View {
+    private let paths: [LearningPath] = [.conversation, .listening, .culture, .practice]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Pick a style and watch it in real clips.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(paths) { path in
+                    NavigationLink(value: path) {
+                        LearningPathCard(path: path)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(20)
+        }
+        .background(Color.studyPage.ignoresSafeArea())
+        .navigationTitle("Topics & styles")
+        .navigationBarTitleDisplayMode(.inline)
+        .environment(\.colorScheme, .light)
+    }
 }
 
 nonisolated enum LearningPath: String, CaseIterable, Identifiable, Hashable, Sendable {

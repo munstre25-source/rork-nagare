@@ -29,7 +29,7 @@ export function geminiModelAnalyze(): string {
 }
 
 export function promptVersion(): string {
-  return envOr("PROMPT_VERSION", "2");
+  return envOr("PROMPT_VERSION", "3");
 }
 
 export function utcDayString(d = new Date()): string {

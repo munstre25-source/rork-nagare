@@ -20,6 +20,7 @@ struct WordSearchHit: Identifiable, Hashable, Sendable {
 /// Search words, sentences, and grammar. Opened from Explore, and as a sheet from the feed.
 struct SearchView: View {
     var initialQuery: String = ""
+    var initialScope: SearchScope = .all
     var embedded: Bool = false
 
     @Environment(AppModel.self) private var app
@@ -52,6 +53,7 @@ struct SearchView: View {
         }
         .onAppear {
             if query.isEmpty { query = initialQuery }
+            if scope == .all { scope = initialScope }
             isFocused = initialQuery.isEmpty && !embedded
         }
         .onChange(of: query) { _, _ in
@@ -71,11 +73,17 @@ struct SearchView: View {
                     .font(.system(size: 34, weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Text("Find any word, fast.")
+                Text("See a word, a grammar point, or a phrase used in real clips.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 DesignSearchField(text: $query, placeholder: "Search kanji, kana or romaji", focused: $isFocused)
+                if isFocused {
+                    Text("Japanese works here. Switch keyboards with the globe key.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 OrangePillBar(items: SearchScope.allCases, selection: $scope, title: \.rawValue)
                 results
             }
@@ -117,7 +125,7 @@ struct SearchView: View {
                             Haptics.light()
                             playing = hit
                         } label: {
-                            SentenceResultRow(hit: hit)
+                            SentenceResultRow(hit: hit, query: trimmed)
                         }
                         .buttonStyle(.plain)
                     }
@@ -353,8 +361,17 @@ private struct DictionaryResultRow: View {
 
 private struct SentenceResultRow: View {
     let hit: SearchHit
+    var query: String = ""
 
     private var line: Line? { hit.clip.lines[safe: hit.lineIndex] }
+
+    private var matchedSurface: String {
+        guard let line else { return query }
+        if let token = line.tokens.first(where: { SearchMatcher.tokenMatches($0, query: query) }) {
+            return token.surface
+        }
+        return query
+    }
 
     private var level: String? {
         if let tokenLevel = line?.tokens.compactMap(\.jlpt).first { return tokenLevel }
@@ -372,12 +389,14 @@ private struct SentenceResultRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(line?.text ?? hit.clip.title)
-                    .font(JojoFont.jp(16, bold: true, relativeTo: .body))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HighlightedSentence(
+                    sentence: line?.text ?? hit.clip.title,
+                    target: matchedSurface,
+                    size: 16,
+                    baseColor: .primary,
+                    lineLimit: 2
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Text(hit.clip.channelName)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.studyMuted)

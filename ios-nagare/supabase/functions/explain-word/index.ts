@@ -26,7 +26,10 @@ Keys: word (string), readings (string[] kana), romaji (string), pos (string), co
 Keep definitions short. No markdown.`;
 
 const CONTEXT_SYSTEM = `You are a Japanese language tutor. Respond with a single JSON object only.
-Keys: contextual_explanation (string, how the word works in THIS sentence, English, concise), examples (string[] up to 4 short Japanese example sentences), related_words (string[] up to 6).
+Keys: contextual_explanation (string), examples (string[]), related_words (string[]).
+contextual_explanation is 2-3 short English sentences about THIS sentence only. Start with "In this sentence, 「word」 (reading) means ...". Then say what the speaker is doing with the word. Do not list dictionary senses.
+examples: up to 2 short Japanese sentences that use the word the same way, each followed by " — " and an English translation.
+related_words: up to 4 short Japanese words (synonym, polite form, or same family).
 No markdown.`;
 
 Deno.serve(async (req) => {

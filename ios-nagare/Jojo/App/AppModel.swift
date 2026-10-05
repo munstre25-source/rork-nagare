@@ -614,6 +614,17 @@ final class AppModel {
         save()
     }
 
+    /// Keeps the in-sentence explanation on the saved word so review can show it offline.
+    /// A fallback note fills an empty card. A live note replaces whatever is stored.
+    func rememberContext(_ note: String, token: Token, preferExisting: Bool) {
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let word = fetchWord(key: Self.wordKey(for: token)) else { return }
+        if preferExisting, !word.contextNote.isEmpty { return }
+        guard word.contextNote != trimmed else { return }
+        word.contextNote = trimmed
+        save()
+    }
+
     /// Upgrades a saved word's definitions once a live explanation arrives.
     func updateDefinitions(for token: Token, with explanation: WordExplanation) {
         guard explanation.source == .live || explanation.source == .cache,

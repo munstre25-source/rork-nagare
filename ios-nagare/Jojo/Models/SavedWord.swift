@@ -28,6 +28,8 @@ final class SavedWord {
     var jaDefinitions: [String] = []
     var occurrenceCount: Int = 0
     var contextSentence: String = ""
+    /// How the word works in the sentence it was found in. Empty until a tap explains it.
+    var contextNote: String = ""
     var contextSurface: String = ""
     var contextClipId: String = ""
     var contextLineIndex: Int = 0

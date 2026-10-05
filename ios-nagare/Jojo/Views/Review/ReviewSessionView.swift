@@ -174,7 +174,7 @@ struct ReviewSessionView: View {
     }
 
     private func backFace(_ word: SavedWord) -> some View {
-        KikuFlashcardBack(word: word, onPlayClip: { playing = $0 })
+        KikuFlashcardBack(word: word, remembered: showGoodPulse, onPlayClip: { playing = $0 })
     }
 
     private func answerButtons(for word: SavedWord) -> some View {
@@ -275,6 +275,8 @@ struct KikuFlashcardBack: View {
     let word: SavedWord
     /// Onboarding practice speaks the line. Review opens the clip.
     var playsClip: Bool = true
+    /// Green check on the scene after Good.
+    var remembered: Bool = false
     var onPlayClip: (Clip) -> Void
 
     @Environment(AppModel.self) private var app
@@ -301,44 +303,85 @@ struct KikuFlashcardBack: View {
                 FlashcardSectionTitle(title: "Context", systemImage: "text.bubble.fill")
                 contextCard(clip: clip, translation: line?.translation)
             }
-            if playsClip, let clip {
-                ClipThumbnailButton(clip: clip, emphasizesPlay: true) {
-                    onPlayClip(clip)
-                }
-            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
+    private var sentenceNote: String {
+        let stored = word.contextNote.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !stored.isEmpty { return stored }
+        guard !word.gloss.isEmpty else { return "" }
+        let named = word.primaryReading.isEmpty ? word.surface : "\(word.surface) (\(word.primaryReading))"
+        return "In this sentence, \(named) means “\(word.gloss)”."
+    }
+
     private func contextCard(clip: Clip?, translation: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 10) {
-                HighlightedSentence(
-                    sentence: word.contextSentence,
-                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                    size: 22,
-                    baseColor: FlashcardInk.ink
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Button {
-                    if playsClip, let clip {
-                        onPlayClip(clip)
-                    } else {
-                        SpeechService.shared.speak(word.contextSentence)
-                    }
-                } label: {
-                    Image(systemName: "speaker.wave.2.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.sakuraPink)
-                        .frame(width: 36, height: 36)
-                }
-                .accessibilityLabel("Play this line")
-            }
-            if let translation, !translation.isEmpty {
-                Text(translation)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(FlashcardInk.muted)
+            if !sentenceNote.isEmpty {
+                Text(sentenceNote)
+                    .font(.subheadline)
+                    .foregroundStyle(FlashcardInk.ink)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(4)
+            }
+            HStack(alignment: .top, spacing: 10) {
+                if let clip {
+                    Button {
+                        if playsClip {
+                            onPlayClip(clip)
+                        } else {
+                            SpeechService.shared.speak(word.contextSentence)
+                        }
+                    } label: {
+                        ClipPosterView(clip: clip, showsSymbol: false)
+                            .frame(width: 92, height: 62)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay {
+                                Image(systemName: "play.fill")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(.black.opacity(0.45), in: Circle())
+                            }
+                            .overlay(alignment: .topTrailing) {
+                                if remembered {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(Color.spokenGreen)
+                                        .background(Circle().fill(.white).padding(2))
+                                        .offset(x: 6, y: -6)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(playsClip ? "Watch this line" : "Play this line")
+                } else {
+                    Button {
+                        SpeechService.shared.speak(word.contextSentence)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Color.sakuraPink)
+                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel("Play this line")
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    HighlightedSentence(
+                        sentence: word.contextSentence,
+                        target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
+                        size: 20,
+                        baseColor: FlashcardInk.ink
+                    )
+                    if let translation, !translation.isEmpty {
+                        Text(translation)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(FlashcardInk.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(3)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(14)

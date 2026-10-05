@@ -220,6 +220,39 @@ struct TapPopupCard: View {
         .accessibilityHidden(true)
     }
 
+    @ViewBuilder
+    private func sentenceMeaning(fallbackGloss: String) -> some View {
+        if let context = lookup.context, !context.contextualExplanation.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text("In this sentence")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(inkSoft)
+                    if lookup.isLoadingContext {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .tint(inkSoft)
+                    }
+                }
+                Text(context.contextualExplanation)
+                    .font(.footnote)
+                    .foregroundStyle(ink)
+                    .lineLimit(compact ? 4 : 8)
+                if !compact, let example = context.examples.first, !example.isEmpty {
+                    Text(example)
+                        .font(JojoFont.jp(14, relativeTo: .footnote))
+                        .foregroundStyle(ink)
+                        .lineLimit(3)
+                }
+            }
+        } else if let selection = lookup.selection, !fallbackGloss.isEmpty {
+            Text(lineMeaning(surface: selection.token.surface, gloss: fallbackGloss))
+                .font(.footnote)
+                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(3)
+        }
+    }
+
     private func lineMeaning(surface: String, gloss: String) -> AttributedString {
         var result = AttributedString("In this line, \(surface) means “\(gloss)”.")
         result.foregroundColor = onDark ? Color.white.opacity(0.78) : Color.translationText
@@ -242,15 +275,12 @@ struct TapPopupCard: View {
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
                 DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: onDark)
             }
-            if let selection = lookup.selection {
-                let gloss = explanation.definitions.first ?? explanation.jaDefinitions.first ?? ""
-                if !gloss.isEmpty {
-                    Text(lineMeaning(surface: selection.token.surface, gloss: gloss))
-                        .font(.footnote)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(3)
-                }
+            if compact, defs.count > capped.count, !showAllDefinitions {
+                Text("+\(defs.count - capped.count) more")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(LearningInk.dictionaryReading)
             }
+            sentenceMeaning(fallbackGloss: explanation.definitions.first ?? explanation.jaDefinitions.first ?? "")
             if !compact {
                 HStack {
                     if defs.count > capped.count, !showAllDefinitions {
@@ -404,12 +434,14 @@ struct HighlightedSentence: View {
     let target: String
     var size: CGFloat = 18
     var baseColor: Color = .primary
+    var lineLimit: Int? = nil
 
     var body: some View {
         Text(attributed)
             .font(JojoFont.jp(size, relativeTo: .body))
             .lineSpacing(4)
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(lineLimit)
+            .fixedSize(horizontal: false, vertical: lineLimit == nil)
     }
 
     private var attributed: AttributedString {

@@ -60,13 +60,14 @@ final class WordLookupController {
     func select(token: Token, tokenIndex: Int, lineIndex: Int, clip: Clip, app: AppModel) {
         guard token.tappable else { return }
         Haptics.light()
-        let sameWord = selection?.token.surface == token.surface
         let newSelection = Selection(clip: clip, lineIndex: lineIndex, tokenIndex: tokenIndex, token: token)
+        let sameMoment = selection?.token.surface == token.surface && selection?.sentence == newSelection.sentence
         selection = newSelection
-        if !sameWord {
+        if !sameMoment {
             tab = .dictionary
             context = nil
             contextTask?.cancel()
+            isLoadingContext = false
         }
         let instant = app.lexicon.instantExplanation(for: token) ?? .fallback(for: token)
         explanation = instant
@@ -80,6 +81,7 @@ final class WordLookupController {
             track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
         }
 
+        loadContextIfNeeded(app: app)
         guard instant.source == .fallback, !offlineOnly, !previewOnly else { return }
         lookupTask?.cancel()
         let service = app.explainService
@@ -97,19 +99,22 @@ final class WordLookupController {
     func loadContextIfNeeded(app: AppModel) {
         guard let selection, context == nil, !isLoadingContext else { return }
         let fallback = Self.offlineContext(for: selection, app: app)
-        if offlineOnly {
-            context = fallback
-            return
+        context = fallback
+        if !previewOnly {
+            app.rememberContext(fallback.contextualExplanation, token: selection.token, preferExisting: true)
         }
+        if offlineOnly || previewOnly { return }
         isLoadingContext = true
         let service = app.explainService
         let userId = app.purchases.appUserId
         contextTask = Task { [weak self, weak app] in
             let outcome = await service.context(token: selection.token, sentence: selection.sentence, appUserId: userId, fallback: fallback)
-            guard let self, !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled, self.selection == selection else { return }
             self.isLoadingContext = false
-            guard self.selection == selection else { return }
-            self.context = outcome.context
+            if !outcome.context.isFallback {
+                self.context = outcome.context
+                app?.rememberContext(outcome.context.contextualExplanation, token: selection.token, preferExisting: false)
+            }
             app?.persistCache(outcome.newCache)
         }
     }
@@ -137,14 +142,23 @@ final class WordLookupController {
             if examples.count == 3 { break }
         }
         let gloss = token.definitions.first ?? app.lexicon.entry(for: base)?.definitions.first ?? "this word"
-        var explanation = "In “\(selection.sentence)”, \(token.surface) means “\(gloss)”."
+        let reading = token.reading ?? token.baseReading
+        let named: String
+        if let reading, !reading.isEmpty {
+            named = "\(token.surface) (\(reading))"
+        } else {
+            named = token.surface
+        }
+        var explanation = "In this sentence, \(named) means “\(gloss)”."
+        if !selection.translation.isEmpty {
+            explanation += " Here the speaker is saying: \(selection.translation)"
+        }
         if token.baseForm != nil {
-            explanation += " It's a form of \(base) (\(token.baseReading ?? token.dictionaryRomaji))."
+            explanation += " \(token.surface) is a form of \(base)."
         }
         if let formality = token.formality {
-            explanation += " Register: \(formality)."
+            explanation += " It sounds \(formality)."
         }
-        explanation += " Line meaning: \(selection.translation)"
         let relatedUnique = app.relatedForms(pos: token.pos, jlpt: token.jlpt, excluding: base)
         return ContextExplanation(
             contextualExplanation: explanation,

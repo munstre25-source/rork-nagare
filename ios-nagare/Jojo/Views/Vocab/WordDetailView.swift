@@ -32,6 +32,12 @@ struct WordDetailView: View {
                 if !word.contextSentence.isEmpty {
                     SectionTitle("Context")
                     VStack(alignment: .leading, spacing: Spacing.s) {
+                        if !word.contextNote.isEmpty {
+                            Text(word.contextNote)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         HighlightedSentence(sentence: word.contextSentence, target: word.contextSurface.isEmpty ? word.surface : word.contextSurface)
                         if let clip, let line = clip.lines[safe: word.contextLineIndex] {
                             Text(line.translation)
