@@ -69,6 +69,14 @@ struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .tint(Color.designOrange)
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !app.hidesMainTabBar {
+                KikuTabBar(selection: $tab, vocabBadge: newVocabSinceVisit)
+                    .padding(.top, 6)
+                    .padding(.bottom, 4)
+            }
+        }
         .preferredColorScheme(app.profile.appearance.colorScheme)
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }
@@ -126,7 +134,7 @@ struct MainTabView: View {
     }
 }
 
-/// For You and Explore share the Feed tab, so the system tab bar stays on Feed, Vocab, and Profile.
+/// For You and Explore share the Feed tab. The floating capsule is the only bottom chrome.
 private struct FeedTab: View {
     @Binding var showingExplore: Bool
     var feedActive: Bool
@@ -145,5 +153,66 @@ private struct FeedTab: View {
                 ExploreHomeView(onOpenFeed: { showingExplore = false })
             }
         }
+    }
+}
+
+/// Kiku's bottom capsule: three icon-and-label buttons, centered, not a full-width bar.
+struct KikuTabBar: View {
+    @Binding var selection: AppTab
+    var vocabBadge: Int = 0
+
+    var body: some View {
+        HStack(spacing: 4) {
+            item(.feed, title: "Feed", symbol: "play.circle")
+            item(.vocab, title: "Vocab", symbol: "book", badge: vocabBadge)
+            item(.profile, title: "Profile", symbol: "person")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(Color.black.opacity(0.88))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                }
+        }
+        .frame(maxWidth: 280)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func item(_ tab: AppTab, title: String, symbol: String, badge: Int = 0) -> some View {
+        let selected = selection == tab
+        return Button {
+            Haptics.selection()
+            selection = tab
+        } label: {
+            VStack(spacing: 3) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: selected ? "\(symbol).fill" : symbol)
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(width: 44, height: 24)
+                    if badge > 0 {
+                        Text("\(badge)")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 4)
+                            .frame(minWidth: 16, minHeight: 16)
+                            .background(Color.designOrange, in: Capsule())
+                            .offset(x: 8, y: -6)
+                    }
+                }
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.45))
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

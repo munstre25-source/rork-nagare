@@ -72,6 +72,8 @@ struct WordDetailView: View {
         .navigationTitle(word.surface)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear { app.hidesMainTabBar = true }
+        .onDisappear { app.hidesMainTabBar = false }
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, startLine: word.contextLineIndex, loopLine: true)
         }

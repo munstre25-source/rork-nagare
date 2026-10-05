@@ -36,6 +36,8 @@ final class AppModel {
     var pendingFeedClipId: String?
     /// Deep link destination from widgets / URLs (`jojo://review`, `jojo://feed`).
     var pendingDeepLink: DeepLink?
+    /// Pushed screens such as a word's detail hide the floating tab bar.
+    var hidesMainTabBar: Bool = false
     /// Bumps when follow list changes so the Following feed can refresh.
     private(set) var followRevision: Int = 0
     /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.

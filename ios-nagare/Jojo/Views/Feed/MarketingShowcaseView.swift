@@ -266,39 +266,8 @@ struct MarketingShowcaseView: View {
     }
 
     private var showcaseTabBar: some View {
-        HStack(spacing: 0) {
-            showcaseTab(.feed, title: "Feed", systemImage: "play.circle.fill")
-            showcaseTab(.vocab, title: "Vocab", systemImage: "book.fill", badge: max(flashWords.count, 1))
-            showcaseTab(.profile, title: "Profile", systemImage: "person.fill")
-        }
-        .padding(.top, 6)
-        .padding(.bottom, 10)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
-    }
-
-    private func showcaseTab(_ tab: AppTab, title: String, systemImage: String, badge: Int = 0) -> some View {
-        VStack(spacing: 2) {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 20, weight: .semibold))
-                    .frame(width: 44, height: 28)
-                if badge > 0, tab == .vocab {
-                    Text("\(badge)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .frame(minWidth: 16, minHeight: 16)
-                        .background(Color.jojoOrange, in: Capsule())
-                        .offset(x: 10, y: -6)
-                }
-            }
-            Text(title).font(.caption2.weight(.semibold))
-        }
-        .foregroundStyle(tabHighlight == tab ? Color.designOrange : Color.secondary)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
+        KikuTabBar(selection: $tabHighlight, vocabBadge: flashWords.count)
+            .padding(.bottom, 6)
     }
 
     // MARK: For You chrome

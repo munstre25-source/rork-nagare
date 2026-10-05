@@ -11,8 +11,10 @@ struct LiveTranscriptPanel: View {
     var onlyCurrentLine: Bool = false
     /// Feed immersive mode: always show furigana + romaji + JP/EN.
     var forceDenseAids: Bool = false
-    /// Kiku window: current + next line, no nested ScrollView.
+    /// Kiku window: current line plus the lines after it, no nested scroll.
     var windowMode: Bool = false
+    /// How many lines after the current one stay on screen.
+    var followingLines: Int = 1
 
     @Environment(WordLookupController.self) private var lookup
     @Namespace private var spokenNamespace
@@ -21,10 +23,9 @@ struct LiveTranscriptPanel: View {
         Group {
             if windowMode {
                 windowStack
-                    .padding(.horizontal, 20)
                     .padding(.top, tooltip == nil ? Spacing.s : 40)
-                    .padding(.bottom, Spacing.xl)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(.bottom, Spacing.l)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .clipped()
             } else if onlyCurrentLine {
                 lineStack
@@ -70,6 +71,7 @@ struct LiveTranscriptPanel: View {
                     raisedCard: index == currentLine
                 )
                 .id(index)
+                .padding(.horizontal, index == currentLine ? 0 : Spacing.m)
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .move(edge: .top).combined(with: .opacity)
@@ -101,10 +103,11 @@ struct LiveTranscriptPanel: View {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
     }
 
-    /// Current + up to 1 following line (kiku demo2 settled For You).
+    /// Current line plus the following lines. The card stays in the centered column.
     private var windowLines: [Int] {
         guard !clip.lines.isEmpty else { return [] }
-        let end = min(clip.lines.count - 1, currentLine + 1)
+        let extra = max(0, followingLines)
+        let end = min(clip.lines.count - 1, currentLine + extra)
         return Array(currentLine...end)
     }
 }

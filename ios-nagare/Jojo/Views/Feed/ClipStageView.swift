@@ -33,19 +33,38 @@ struct ClipStageView: View {
     }
 
     /// Landscape player that leaves room for karaoke (kiku demo2).
-    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 10 : videoAspect }
+    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 9 : videoAspect }
 
     /// Feed pages pass a resize control. Fullscreen and previews keep the fixed aspect.
     private var usesFlexibleVideo: Bool { immersiveFeed && onToggleVideoSize != nil }
+
+    /// Video, controls, and the transcript card share this centered column.
+    private func columnWidth(in size: CGSize) -> CGFloat {
+        min(max(0, size.width - 36), 560)
+    }
+
+    /// Expanded is the Kiku hero. Minimized is a small centered frame so the lines below can take the page.
+    private func videoSize(in size: CGSize) -> CGSize {
+        let column = columnWidth(in: size)
+        let naturalHeight = column * 9 / 16
+        if videoExpanded && !isPopupHere {
+            let height = min(naturalHeight, max(168, size.height * 0.34))
+            return CGSize(width: column, height: height)
+        }
+        let height = min(112, max(88, size.height * 0.14))
+        let width = min(column * 0.62, height * 16 / 9)
+        return CGSize(width: width, height: height)
+    }
 
     var body: some View {
         Group {
             if usesFlexibleVideo {
                 GeometryReader { geo in
-                    stage(videoHeight: videoHeight(in: geo.size))
+                    stage(videoHeight: videoSize(in: geo.size).height, videoWidth: videoSize(in: geo.size).width, columnWidth: columnWidth(in: geo.size))
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
             } else {
-                stage(videoHeight: nil)
+                stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
@@ -64,17 +83,8 @@ struct ClipStageView: View {
         }
     }
 
-    private func videoHeight(in size: CGSize) -> CGFloat {
-        let natural = size.width * 10 / 16
-        let expanded = videoExpanded && !isPopupHere
-        if expanded {
-            return min(natural, max(180, size.height * 0.52))
-        }
-        return min(natural * 0.62, max(132, size.height * 0.30))
-    }
-
     @ViewBuilder
-    private func stage(videoHeight: CGFloat?) -> some View {
+    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
         let player = coordinator.player(for: clip)
         VStack(spacing: 0) {
             if showsChannelRow {
@@ -99,7 +109,7 @@ struct ClipStageView: View {
                     onInfo: immersiveFeed ? nil : onInfo,
                     onShadowing: immersiveFeed ? nil : onShadowing
                 )
-                .modifier(ClipVideoFrame(height: videoHeight, aspect: resolvedAspect))
+                .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
 
                 if let onToggleVideoSize, !isPopupHere {
                     Button(action: onToggleVideoSize) {
@@ -109,10 +119,12 @@ struct ClipStageView: View {
                             .frame(width: 36, height: 36)
                             .background(.black.opacity(0.55), in: Circle())
                     }
-                    .padding(10)
+                    .padding(8)
                     .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
+                    .accessibilityHint(videoExpanded ? "Shrinks the video and shows more of the transcript" : "Restores the video")
                 }
             }
+            .frame(maxWidth: .infinity)
 
             if immersiveFeed {
                 ClipActionRow(
@@ -121,15 +133,14 @@ struct ClipStageView: View {
                     onInfo: onInfo,
                     onShadowing: onShadowing
                 )
+                .frame(width: columnWidth)
+                .frame(maxWidth: .infinity)
             }
 
-            if usesFlexibleVideo {
-                transcript(player: player)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            } else {
-                transcript(player: player)
-                    .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-            }
+            transcript(player: player)
+                .frame(width: columnWidth)
+                .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
+                .clipped()
         }
     }
 
@@ -142,7 +153,8 @@ struct ClipStageView: View {
             isPulsing: isPulsing,
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
-            windowMode: immersiveFeed
+            windowMode: immersiveFeed,
+            followingLines: videoExpanded ? 1 : 4
         )
     }
 
@@ -182,8 +194,9 @@ struct ClipStageView: View {
     }
 }
 
-/// Fixed aspect, or an explicit height when the feed video is minimized or maximized.
+/// Fixed aspect, or an explicit size when the feed video is minimized or maximized.
 private struct ClipVideoFrame: ViewModifier {
+    var width: CGFloat?
     var height: CGFloat?
     var aspect: CGFloat
 
@@ -191,7 +204,8 @@ private struct ClipVideoFrame: ViewModifier {
     func body(content: Content) -> some View {
         if let height {
             content
-                .frame(maxWidth: .infinity)
+                .frame(width: width)
+                .frame(maxWidth: width == nil ? .infinity : nil)
                 .frame(height: height)
                 .clipped()
         } else {
@@ -221,7 +235,14 @@ struct ClipActionRow: View {
     }
 
     var body: some View {
-        HStack(spacing: Spacing.s) {
+        HStack(spacing: 2) {
+            Text("\(formatClock(player?.currentTime ?? 0)) / \(formatClock(player?.duration ?? clip.durationSec))")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: Spacing.s)
             Button {
                 Haptics.selection()
                 coordinator.cycleRate()
@@ -270,8 +291,6 @@ struct ClipActionRow: View {
                 .accessibilityLabel("Shadowing practice")
             }
 
-            Spacer(minLength: 0)
-
             if let onInfo {
                 Button(action: onInfo) {
                     Image(systemName: "info.circle")
@@ -282,8 +301,8 @@ struct ClipActionRow: View {
                 .accessibilityLabel("Clip info")
             }
         }
-        .padding(.horizontal, Spacing.l)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 2)
+        .padding(.vertical, 2)
     }
 }
 
@@ -296,8 +315,10 @@ struct TranscriptSection: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var forceDenseAids: Bool = false
-    /// Kiku window: current + next line, no nested scroll.
+    /// Kiku window: current line plus the lines after it, no nested scroll.
     var windowMode: Bool = false
+    /// How many lines after the current one stay on screen. Minimized video shows more.
+    var followingLines: Int = 1
 
     var body: some View {
         LiveTranscriptPanel(
@@ -309,7 +330,8 @@ struct TranscriptSection: View {
             tooltip: tooltip,
             onlyCurrentLine: onlyCurrentLine,
             forceDenseAids: forceDenseAids,
-            windowMode: windowMode
+            windowMode: windowMode,
+            followingLines: followingLines
         )
     }
 }
