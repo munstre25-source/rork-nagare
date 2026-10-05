@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 /// Formats seconds as m:ss.
 nonisolated func formatClock(_ seconds: Double) -> String {

@@ -118,11 +118,11 @@ struct ClipStageView: View {
                     showsControls: !immersiveFeed,
                     showsRail: immersiveFeed ? false : showsRail,
                     compactChrome: immersiveFeed,
-                    fitsFrame: usesFlexibleVideo && videoExpanded && !isPopupHere,
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     onInfo: immersiveFeed ? nil : onInfo,
                     onShadowing: immersiveFeed ? nil : onShadowing,
+                    fitsFrame: usesFlexibleVideo && videoExpanded && !isPopupHere,
                     watchChromeHidden: watchChromeHidden,
                     onRevealWatchChrome: onRevealWatchChrome
                 )
