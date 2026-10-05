@@ -19,9 +19,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .forYou:
-            "Two clips play in For You → tap a word → a flashcard is created → swipe → review"
+            "Two clips play in For You. Controls fade while you watch, then a touch brings them back. Tap a word, swipe, review."
         case .exploreVocab:
-            "Explore paths → a clip plays → Vocab → flashcards flip"
+            "Explore paths → a clip plays and the controls fade → a touch brings them back → Vocab → flashcards flip"
         }
     }
 
@@ -30,14 +30,15 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .forYou:
             [
                 "For You plays the first clip",
-                "Tap a word — a flashcard is created",
-                "Swipe up — the second clip plays",
+                "The tab capsule and For You / Explore fade",
+                "A touch brings them back, then a word becomes a flashcard",
+                "Swipe up — the second clip plays and the controls fade again",
                 "Review that new card"
             ]
         case .exploreVocab:
             [
                 "Explore’s learning paths",
-                "A clip plays in the feed layout",
+                "A clip plays, then the controls fade until a touch",
                 "Vocab shows the words you saved",
                 "Flashcards flip, front to back"
             ]
@@ -75,6 +76,8 @@ struct MarketingShowcaseView: View {
     @State private var tabHighlight: AppTab = .feed
     @State private var didAutoBegin: Bool = false
     @State private var bornCard: BornCardPayload?
+    /// Mirrors the feed focus fade so the recording shows the capsule and For You switch disappearing.
+    @State private var watchChromeVisible: Bool = true
 
     private enum Phase { case prep, running, done }
     private enum Stage { case feed, explore, vocab, analytics, flashcard }
@@ -246,6 +249,9 @@ struct MarketingShowcaseView: View {
 
             if stage != .flashcard {
                 showcaseTabBar
+                    .opacity(stage == .feed && !watchChromeVisible ? 0 : 1)
+                    .offset(y: stage == .feed && !watchChromeVisible ? 14 : 0)
+                    .animation(.easeInOut(duration: 0.45), value: watchChromeVisible)
             }
         }
         .overlay {
@@ -280,6 +286,8 @@ struct MarketingShowcaseView: View {
             }
             ZStack {
                 CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: {})
+                    .opacity(watchChromeVisible ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.45), value: watchChromeVisible)
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     Image(systemName: "flag")
@@ -513,6 +521,7 @@ struct MarketingShowcaseView: View {
         app.markVocabSaveCoachSeen()
         stage = script == .forYou ? .feed : .explore
         tabHighlight = .feed
+        watchChromeVisible = true
         phase = .running
         track("marketing_showcase_started", props: [
             "script": script.rawValue,
@@ -550,8 +559,12 @@ struct MarketingShowcaseView: View {
         tabHighlight = .feed
         stage = .feed
         coordinator.activate(first, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(1800))
+        try? await Task.sleep(for: .milliseconds(900))
         guard !Task.isCancelled else { return }
+        await fadeDemoChrome()
+        try? await Task.sleep(for: .milliseconds(1400))
+        guard !Task.isCancelled else { return }
+        await revealDemoChrome()
 
         // Tap a word — highlight new vocabulary
         var savedFromTap: SavedWord?
@@ -586,8 +599,12 @@ struct MarketingShowcaseView: View {
             try? await Task.sleep(for: .milliseconds(700))
             guard !Task.isCancelled else { return }
             coordinator.activate(second, startLine: 0, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(2400))
+            try? await Task.sleep(for: .milliseconds(800))
             guard !Task.isCancelled else { return }
+            await fadeDemoChrome()
+            try? await Task.sleep(for: .milliseconds(1600))
+            guard !Task.isCancelled else { return }
+            await revealDemoChrome()
         }
 
         // Flashcard ending
@@ -606,16 +623,24 @@ struct MarketingShowcaseView: View {
         withAnimation(.easeInOut(duration: 0.4)) { stage = .feed }
         currentId = pick.id
         coordinator.activate(pick, startLine: 0, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(1800))
+        try? await Task.sleep(for: .milliseconds(800))
         guard !Task.isCancelled else { return }
+        await fadeDemoChrome()
+        try? await Task.sleep(for: .milliseconds(1200))
+        guard !Task.isCancelled else { return }
+        await revealDemoChrome()
 
         if let second = feedPair.dropFirst().first {
             withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             coordinator.activate(second, startLine: 0, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(1800))
+            try? await Task.sleep(for: .milliseconds(700))
             guard !Task.isCancelled else { return }
+            await fadeDemoChrome()
+            try? await Task.sleep(for: .milliseconds(1100))
+            guard !Task.isCancelled else { return }
+            await revealDemoChrome()
             withAnimation(.easeInOut(duration: 0.45)) { currentId = pick.id }
             coordinator.activate(pick, startLine: 0, loopLine: true)
             try? await Task.sleep(for: .milliseconds(400))
@@ -668,6 +693,18 @@ struct MarketingShowcaseView: View {
         await playFlashcardSequence(startingWith: flashWords.first, count: 3)
     }
 
+    /// Same fade the live feed uses once a clip has the learner's attention.
+    private func fadeDemoChrome() async {
+        withAnimation(.easeInOut(duration: 0.45)) { watchChromeVisible = false }
+        try? await Task.sleep(for: .milliseconds(480))
+    }
+
+    /// A touch brings the capsule and the For You / Explore switch back.
+    private func revealDemoChrome() async {
+        withAnimation(.easeOut(duration: 0.28)) { watchChromeVisible = true }
+        try? await Task.sleep(for: .milliseconds(320))
+    }
+
     private func playFlashcardSequence(startingWith first: SavedWord?, count: Int) async {
         var queue = flashWords
         if let first, !queue.contains(where: { $0.key == first.key }) {
@@ -715,6 +752,7 @@ struct MarketingShowcaseView: View {
         exploreHighlight = nil
         vocabHighlight = nil
         tabHighlight = .feed
+        watchChromeVisible = true
     }
 }
 

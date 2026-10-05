@@ -22,6 +22,9 @@ struct ClipStageView: View {
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
     var onShadowing: (() -> Void)?
+    /// When the feed has faded its chrome, the next tap on the video brings it back.
+    var watchChromeHidden: Bool = false
+    var onRevealWatchChrome: () -> Void = {}
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
@@ -107,7 +110,9 @@ struct ClipStageView: View {
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     onInfo: immersiveFeed ? nil : onInfo,
-                    onShadowing: immersiveFeed ? nil : onShadowing
+                    onShadowing: immersiveFeed ? nil : onShadowing,
+                    watchChromeHidden: watchChromeHidden,
+                    onRevealWatchChrome: onRevealWatchChrome
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
 

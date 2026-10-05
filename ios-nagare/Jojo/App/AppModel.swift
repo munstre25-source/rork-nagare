@@ -38,6 +38,8 @@ final class AppModel {
     var pendingDeepLink: DeepLink?
     /// Pushed screens such as a word's detail hide the floating tab bar.
     var hidesMainTabBar: Bool = false
+    /// Feed focus: the capsule is faded while a clip plays. FeedView owns the timer.
+    var feedChromeHidden: Bool = false
     /// Bumps when follow list changes so the Following feed can refresh.
     private(set) var followRevision: Int = 0
     /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.
@@ -600,6 +602,12 @@ final class AppModel {
 
     func setHideDailyGoalBar(_ hide: Bool) {
         profile.hideDailyGoalBar = hide
+        save()
+    }
+
+    func setFadeWatchChrome(_ enabled: Bool) {
+        profile.fadeWatchChrome = enabled
+        if !enabled { feedChromeHidden = false }
         save()
     }
 

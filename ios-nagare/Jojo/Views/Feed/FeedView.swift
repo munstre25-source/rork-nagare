@@ -16,6 +16,8 @@ struct FeedView: View {
     @State private var pendingLoopLine: Int?
     @State private var videoExpanded: Bool = true
     @State private var bornCard: BornCardPayload?
+    @State private var watchChromeVisible: Bool = true
+    @State private var chromeHideTask: Task<Void, Never>?
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -53,9 +55,20 @@ struct FeedView: View {
         .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
-        .onAppear(perform: setup)
+        .simultaneousGesture(TapGesture().onEnded { revealWatchChrome() })
+        .onAppear {
+            setup()
+            scheduleWatchChromeHide()
+        }
         .onChange(of: isActiveTab) { _, active in
-            if active { resumeIfPossible() } else { coordinator.pause(); lookup.dismiss() }
+            if active {
+                resumeIfPossible()
+                scheduleWatchChromeHide()
+            } else {
+                coordinator.pause()
+                lookup.dismiss()
+                showWatchChrome()
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
@@ -63,16 +76,30 @@ struct FeedView: View {
                 coordinator.endHoldSlow()
                 app.persistWatchLog()
                 app.refreshStreakReminder()
+                showWatchChrome()
             }
         }
         .onChange(of: currentId) { _, newId in
             lookup.dismiss()
+            revealWatchChrome()
             guard let newId, let clip = clips.first(where: { $0.id == newId }),
                   isActiveTab, quizClip == nil else { return }
             coordinator.activate(clip)
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
+        .onChange(of: lookup.isPresented) { _, presented in
+            if presented { showWatchChrome() } else { scheduleWatchChromeHide() }
+        }
+        .onChange(of: quizClip?.id) { _, _ in
+            if quizClip != nil { showWatchChrome() } else { scheduleWatchChromeHide() }
+        }
+        .onChange(of: app.profile.fadeWatchChrome) { _, enabled in
+            if enabled { scheduleWatchChromeHide() } else { showWatchChrome() }
+        }
+        .onChange(of: coordinator.player?.isPlaying ?? false) { _, playing in
+            if playing { scheduleWatchChromeHide() } else { showWatchChrome() }
+        }
         .onChange(of: lookup.tapPulse) { _, _ in
             guard lookup.occurrenceCount == 1, let selection = lookup.selection else { return }
             let gloss = lookup.explanation?.definitions.first ?? selection.token.definitions.first ?? ""
@@ -114,6 +141,9 @@ struct FeedView: View {
     private var header: some View {
         ZStack {
             CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: onOpenExplore)
+                .opacity(watchChromeVisible ? 1 : 0)
+                .allowsHitTesting(watchChromeVisible)
+                .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 Button {
@@ -163,7 +193,9 @@ struct FeedView: View {
                         onShadowing: {
                             coordinator.pause()
                             shadowingClip = clip
-                        }
+                        },
+                        watchChromeHidden: !watchChromeVisible,
+                        onRevealWatchChrome: { revealWatchChrome() }
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
@@ -228,5 +260,50 @@ struct FeedView: View {
             clips.insert(clip, at: 0)
         }
         withAnimation { currentId = id }
+    }
+
+    /// Bring For You / Explore and the tab capsule back, then hide them again once playback settles.
+    private func revealWatchChrome() {
+        chromeHideTask?.cancel()
+        if !watchChromeVisible || app.feedChromeHidden {
+            withAnimation(.easeOut(duration: 0.28)) {
+                watchChromeVisible = true
+                app.feedChromeHidden = false
+            }
+        }
+        scheduleWatchChromeHide()
+    }
+
+    /// Keep the chrome up. Used when playback stops or the learner leaves the feed.
+    private func showWatchChrome() {
+        chromeHideTask?.cancel()
+        guard !watchChromeVisible || app.feedChromeHidden else { return }
+        withAnimation(.easeOut(duration: 0.28)) {
+            watchChromeVisible = true
+            app.feedChromeHidden = false
+        }
+    }
+
+    private func scheduleWatchChromeHide() {
+        chromeHideTask?.cancel()
+        guard app.profile.fadeWatchChrome, isActiveTab else {
+            showWatchChrome()
+            return
+        }
+        chromeHideTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.6))
+            guard !Task.isCancelled else { return }
+            guard coordinator.player?.isPlaying == true,
+                  !lookup.isPresented,
+                  quizClip == nil,
+                  bornCard == nil,
+                  infoClip == nil,
+                  shadowingClip == nil,
+                  fullscreenClip == nil else { return }
+            withAnimation(.easeInOut(duration: 0.45)) {
+                watchChromeVisible = false
+                app.feedChromeHidden = true
+            }
+        }
     }
 }

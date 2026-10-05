@@ -50,6 +50,11 @@ struct MainTabView: View {
     @State private var newVocabSinceVisit: Int = 0
     @State private var showingExplore = false
 
+    /// True only on For You, once the learner has settled into a playing clip.
+    private var focusCapsuleHidden: Bool {
+        app.feedChromeHidden && tab == .feed && !showingExplore
+    }
+
     var body: some View {
         TabView(selection: $tab) {
             FeedTab(
@@ -75,6 +80,11 @@ struct MainTabView: View {
                 KikuTabBar(selection: $tab, vocabBadge: newVocabSinceVisit)
                     .padding(.top, 6)
                     .padding(.bottom, 4)
+                    .opacity(focusCapsuleHidden ? 0 : 1)
+                    .offset(y: focusCapsuleHidden ? 14 : 0)
+                    .allowsHitTesting(!focusCapsuleHidden)
+                    .animation(.easeInOut(duration: 0.4), value: focusCapsuleHidden)
+                    .accessibilityHidden(focusCapsuleHidden)
             }
         }
         .preferredColorScheme(app.profile.appearance.colorScheme)
@@ -83,7 +93,10 @@ struct MainTabView: View {
         }
         .onChange(of: tab) { _, newTab in
             if newTab == .vocab { newVocabSinceVisit = 0 }
-            if newTab != .feed { showingExplore = false }
+            if newTab != .feed {
+                showingExplore = false
+                app.feedChromeHidden = false
+            }
         }
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil {

@@ -73,6 +73,8 @@ final class UserProfile {
     var showRomaji: Bool = false
     var dictionaryMode: String = DictionaryMode.english.rawValue
     var hideDailyGoalBar: Bool = false
+    /// While a clip is playing, the tab capsule and For You / Explore switch fade until the next touch.
+    var fadeWatchChrome: Bool = true
     /// When true, For You only surfaces clips at the user's level or one step harder.
     var gateContentByLevel: Bool = true
 

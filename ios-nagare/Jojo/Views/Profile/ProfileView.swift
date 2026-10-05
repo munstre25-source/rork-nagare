@@ -274,6 +274,12 @@ struct ProfileView: View {
                             set: { app.setHideDailyGoalBar(!$0) }
                            ))
             Divider().padding(.leading, 52)
+            settingsToggle(symbol: "eye.slash", title: "Fade controls while watching",
+                           isOn: Binding(
+                            get: { app.profile.fadeWatchChrome },
+                            set: { app.setFadeWatchChrome($0) }
+                           ))
+            Divider().padding(.leading, 52)
 
             #if DEBUG
             settingsHeader("Debug · Marketing")

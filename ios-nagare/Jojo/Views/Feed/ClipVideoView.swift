@@ -18,6 +18,9 @@ struct ClipVideoView: View {
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
     var onShadowing: (() -> Void)?
+    /// Feed focus: a tap on the video brings the chrome back instead of pausing.
+    var watchChromeHidden: Bool = false
+    var onRevealWatchChrome: () -> Void = {}
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
@@ -74,6 +77,10 @@ struct ClipVideoView: View {
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { doubleTapSave() }
         .onTapGesture(count: 1) {
+            if watchChromeHidden {
+                onRevealWatchChrome()
+                return
+            }
             if let player {
                 withAnimation(.snappy) { player.togglePlay() }
             } else {
