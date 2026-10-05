@@ -565,7 +565,7 @@ struct ReviewGradeButton: View {
         .background {
             if good {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(LinearGradient(colors: [FlashcardInk.goodA, FlashcardInk.goodB], startPoint: .leading, endPoint: .trailing))
+                    .fill(FlashcardInk.goodA)
             } else {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(FlashcardInk.againFill)

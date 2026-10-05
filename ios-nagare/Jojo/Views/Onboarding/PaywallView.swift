@@ -66,24 +66,26 @@ struct PaywallView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(Spacing.m)
-                            .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     purchaseButton
                         .opacity(showPlans ? 1 : 0)
                         .offset(y: showPlans ? 0 : 24)
-                    Text(trialCaption)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(maxWidth: .infinity)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 8) {
+                        Text(trialCaption)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Text(subscriptionDisclosure)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(14)
+                    .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     trustRow
                     flourish
                     legalRow
-                    Text(subscriptionDisclosure)
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.72))
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -117,11 +119,7 @@ struct PaywallView: View {
                         .scaleEffect(kenBurns ? 1.08 : 1.0)
                         .clipped()
                 }
-                LinearGradient(
-                    colors: [Color.black.opacity(0.12), Color.black.opacity(0.05), Color.black.opacity(0.45)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                Color.black.opacity(0.55)
             }
         }
         .ignoresSafeArea()
@@ -167,7 +165,7 @@ struct PaywallView: View {
                 .offset(y: -6)
             Text("Scroll real Japanese. The dictionary opens on the word you tap, and that word becomes a flashcard.")
                 .font(.body)
-                .foregroundStyle(.white.opacity(0.88))
+                .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -187,7 +185,7 @@ struct PaywallView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(PaywallInk.pink)
                 .frame(width: 46, height: 46)
-                .background(PaywallInk.pink.opacity(0.22), in: Circle())
+                .background(PaywallInk.ink, in: Circle())
                 .overlay(Circle().strokeBorder(PaywallInk.pink, lineWidth: 1.5))
             Text(title)
                 .font(.caption2.weight(.bold))
@@ -195,7 +193,7 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
             Text(detail)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.62))
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -250,7 +248,7 @@ struct PaywallView: View {
                 HStack(alignment: .center) {
                     Image(systemName: plan == .yearly ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
-                        .foregroundStyle(plan == .yearly ? PaywallInk.pink : PaywallInk.ink.opacity(0.35))
+                        .foregroundStyle(plan == .yearly ? PaywallInk.pink : PaywallInk.ink)
                     Text("Yearly")
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(PaywallInk.ink)
@@ -274,7 +272,7 @@ struct PaywallView: View {
                 if let perMonthLine {
                     Text(perMonthLine)
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(PaywallInk.ink.opacity(0.72))
+                        .foregroundStyle(PaywallInk.ink)
                 }
                 HStack(spacing: 0) {
                     planMeta("play.rectangle.fill", "Whole feed")
@@ -285,10 +283,7 @@ struct PaywallView: View {
             }
             .padding(16)
             .padding(.top, 8)
-            .background(
-                LinearGradient(colors: [Color.white, PaywallInk.card], startPoint: .top, endPoint: .bottom),
-                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-            )
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(PaywallInk.pink, lineWidth: plan == .yearly ? 2.5 : 1)
@@ -313,7 +308,7 @@ struct PaywallView: View {
                 HStack {
                     Image(systemName: plan == .monthly ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
-                        .foregroundStyle(plan == .monthly ? PaywallInk.pink : Color.white.opacity(0.55))
+                        .foregroundStyle(plan == .monthly ? PaywallInk.pink : .white)
                     Text("Monthly")
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
@@ -327,20 +322,20 @@ struct PaywallView: View {
                 }
                 Text("Same feed, billed each month")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.white)
                 HStack(spacing: 16) {
                     Label("Whole feed", systemImage: "checkmark")
                     Label("Cancel anytime", systemImage: "checkmark")
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.white)
                 .padding(.top, 2)
             }
             .padding(16)
             .background(PaywallInk.monthly, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(plan == .monthly ? PaywallInk.pink : Color.white.opacity(0.16), lineWidth: plan == .monthly ? 2.5 : 1)
+                    .strokeBorder(plan == .monthly ? PaywallInk.pink : .white, lineWidth: plan == .monthly ? 2.5 : 1)
             )
         }
     }
@@ -418,14 +413,14 @@ struct PaywallView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 42, height: 42)
-                .background(Color.white.opacity(0.1), in: Circle())
+                .background(Color(hex: "#140C2E"), in: Circle())
             Text(title)
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
             Text(detail)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -446,15 +441,15 @@ struct PaywallView: View {
             if let terms = StoreConstants.termsURL {
                 Link("Terms of Service", destination: terms)
             }
-            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            Text("|").foregroundStyle(.white)
             if let privacy = StoreConstants.privacyURL {
                 Link("Privacy Policy", destination: privacy)
             }
-            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            Text("|").foregroundStyle(.white)
             if let support = StoreConstants.supportURL {
                 Link("Support", destination: support)
             }
-            Text("|").foregroundStyle(Color.sakuraPinkSoft)
+            Text("|").foregroundStyle(.white)
             Button("Restore Purchases") { Task { await restore() } }
                 .disabled(purchases.isRestoring || purchases.isPurchasing)
         }
@@ -518,14 +513,7 @@ private struct PaywallCTAStyle: ButtonStyle {
             .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 58)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "#FF8EC4"), PaywallInk.pinkHot, PaywallInk.pinkDeep],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ),
-                in: Capsule()
-            )
+            .background(PaywallInk.pinkHot, in: Capsule())
             .shadow(color: PaywallInk.pinkDeep.opacity(0.35), radius: 16, y: 8)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
