@@ -928,7 +928,8 @@ final class AppModel {
     }
 
     /// Release onboarding never invents watch history or saved words. Debug builds may.
-    static var seedsDemoOnOnboarding: Bool {
+    /// Nonisolated so it can be a default argument; it only reads the build configuration.
+    nonisolated static var seedsDemoOnOnboarding: Bool {
         #if DEBUG
         true
         #else
