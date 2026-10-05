@@ -38,23 +38,21 @@ struct ReviewSessionView: View {
                     ReviewCompleteView(reviewed: total, good: goodCount) { dismiss() }
                         .transition(.scale(scale: 0.9).combined(with: .opacity))
                 } else if let word = current {
-                    ScrollView {
-                        flipCard(for: word)
-                            .padding(.horizontal, Spacing.l)
-                            .padding(.vertical, Spacing.s)
-                            .id(word.key)
-                            .transition(.asymmetric(
-                                insertion: .modifier(
-                                    active: ReviewCardFlip(angle: -88),
-                                    identity: ReviewCardFlip(angle: 0)
-                                ).combined(with: .opacity),
-                                removal: .modifier(
-                                    active: ReviewCardFlip(angle: 88),
-                                    identity: ReviewCardFlip(angle: 0)
-                                ).combined(with: .opacity)
-                            ))
+                    Group {
+                        if revealed {
+                            FittedFlashcard {
+                                flipCard(for: word)
+                                    .padding(.horizontal, Spacing.l)
+                                    .padding(.vertical, Spacing.s)
+                            }
+                        } else {
+                            flipCard(for: word)
+                                .padding(.horizontal, Spacing.l)
+                                .padding(.vertical, Spacing.s)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
-                    .scrollIndicators(.hidden)
+                    .id(word.key)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(Motion.cardFlip, value: word.key)
                     if revealed {
@@ -223,6 +221,40 @@ struct ReviewSessionView: View {
                 track("review_completed", props: ["count": String(total), "good": String(goodCount)])
             }
         }
+    }
+}
+
+/// Shrinks a flashcard so the word, context, and clip all stay above the rating buttons.
+struct FittedFlashcard<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    @State private var contentHeight: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            let scale = contentHeight > 1 ? min(1, geo.size.height / contentHeight) : 1
+            content()
+                .frame(width: geo.size.width, alignment: .top)
+                .fixedSize(horizontal: false, vertical: true)
+                .background {
+                    GeometryReader { inner in
+                        Color.clear
+                            .preference(key: FlashcardHeightKey.self, value: inner.size.height)
+                    }
+                }
+                .scaleEffect(scale, anchor: .top)
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                .onPreferenceChange(FlashcardHeightKey.self) { height in
+                    guard height > 1, abs(height - contentHeight) > 0.5 else { return }
+                    contentHeight = height
+                }
+        }
+    }
+}
+
+private struct FlashcardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

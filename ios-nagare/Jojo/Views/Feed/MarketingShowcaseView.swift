@@ -33,7 +33,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
                 "The tab capsule and For You / Explore fade",
                 "A touch brings them back, then a word becomes a flashcard",
                 "Swipe up — the second clip plays and the controls fade again",
-                "Review that new card"
+                "Review that new card, clip and all, above Again and Good"
             ]
         case .exploreVocab:
             [
@@ -380,15 +380,14 @@ struct MarketingShowcaseView: View {
                 Spacer(minLength: Spacing.s)
                 Color.clear.frame(height: 8)
             } else {
-                ScrollView {
+                FittedFlashcard {
                     KikuFlashcardBack(word: word, dark: true) { _ in }
                         .environment(\.colorScheme, .dark)
                         .padding(.horizontal, Spacing.l)
                         .padding(.top, Spacing.s)
-                        .padding(.bottom, Spacing.m)
+                        .padding(.bottom, Spacing.s)
                         .allowsHitTesting(false)
                 }
-                .scrollIndicators(.hidden)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 HStack(spacing: Spacing.m) {
                     answerChip(title: "Again", subtitle: "<1m", color: .againBackground, fg: .againText)
@@ -690,7 +689,7 @@ struct MarketingShowcaseView: View {
             guard !Task.isCancelled else { return }
 
             withAnimation(Motion.cardFlip) { flashRevealed = true }
-            try? await Task.sleep(for: .milliseconds(2200))
+            try? await Task.sleep(for: .milliseconds(2800))
             guard !Task.isCancelled else { return }
 
             try? await Task.sleep(for: .milliseconds(450))
