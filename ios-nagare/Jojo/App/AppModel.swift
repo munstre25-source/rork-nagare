@@ -131,6 +131,29 @@ final class AppModel {
         clipsById[id]
     }
 
+    /// Clips for screen recordings and the onboarding feed. Only lines taken from the video,
+    /// with the convenience-store order and the Genki dialogue first.
+    func showcaseClips(limit: Int = 3) -> [Clip] {
+        let verified = studyLibrary.filter { $0.hasVerifiedTranscript && $0.hasPlayableVideo && !$0.lines.isEmpty }
+        let preferred = [
+            "immersion-konbini-sayaka",
+            "immersion-_8b_ERSJ6_Q-5-45",
+            "immersion-komeda-order",
+            "immersion-kids-aisatsu",
+        ]
+        var ordered: [Clip] = []
+        for id in preferred {
+            if let clip = verified.first(where: { $0.id == id }) {
+                ordered.append(clip)
+            }
+        }
+        for clip in verified where !ordered.contains(where: { $0.id == clip.id }) {
+            ordered.append(clip)
+        }
+        if ordered.isEmpty { ordered = studyLibrary }
+        return Array(ordered.prefix(max(limit, 1)))
+    }
+
     /// Clips whose transcript contains this dictionary form or surface, in library order.
     func clipsMentioning(_ word: String, limit: Int = 4) -> [Clip] {
         guard !word.isEmpty, let ids = clipIdsByWord[word] else { return [] }

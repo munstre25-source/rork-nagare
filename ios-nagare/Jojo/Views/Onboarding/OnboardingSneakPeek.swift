@@ -173,14 +173,7 @@ struct OnboardingSneakPeek: View {
     }
 
     private func prepareClips() {
-        let preferred = ["hoshizora-academy-07", "boss-rush-live-09"]
-        var ordered: [Clip] = []
-        for id in preferred {
-            if let clip = app.clip(id: id) { ordered.append(clip) }
-        }
-        if ordered.isEmpty {
-            ordered = Array(app.clips.prefix(2))
-        }
+        let ordered = app.showcaseClips(limit: 2)
         feedClips = ordered
         currentId = ordered.first?.id
     }

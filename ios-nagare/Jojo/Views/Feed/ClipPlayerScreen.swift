@@ -144,7 +144,7 @@ struct ClipQueueScreen: View {
         appliedStart = true
         coordinator.activate(
             clip,
-            startLine: loopPlayback ? 0 : (useStart ? startLine : nil),
+            startLine: (loopPlayback && id == startId) ? startLine : (useStart ? startLine : nil),
             loopLine: loopPlayback || (useStart && loopLine)
         )
     }

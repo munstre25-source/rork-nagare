@@ -65,7 +65,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         let page = scheme == .light ? "white" : "black"
         switch kind {
         case .forYou:
-            return "\(accent.title) colors. Two clips play on the \(page) For You page. Karaoke, the dictionary, and the review card use that set."
+            return "\(accent.title) colors. The convenience-store order and the Genki dialogue play on the \(page) For You page, with the words those videos actually say."
         case .exploreVocab:
             return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab’s known count, clip search, and the review card."
         case .themeTour:
@@ -220,7 +220,7 @@ struct MarketingShowcaseView: View {
             guard phase == .running, stage == .feed,
                   !showFlashcard,
                   let newId, let clip = feedClips.first(where: { $0.id == newId }) else { return }
-            coordinator.activate(clip, startLine: 0, loopLine: true)
+            coordinator.activate(clip, startLine: richestLine(on: clip).index, loopLine: true)
         }
     }
 
@@ -361,7 +361,7 @@ struct MarketingShowcaseView: View {
                         ClipQueueScreen(
                             clips: feedPair,
                             startId: first.id,
-                            startLine: 0,
+                            startLine: richestLine(on: first).index,
                             loopLine: true,
                             forcedId: watchId,
                             loopPlayback: true,
@@ -502,7 +502,7 @@ struct MarketingShowcaseView: View {
                                 immersiveFeed: true,
                                 videoExpanded: demoVideoExpanded,
                                 onToggleVideoSize: {},
-                                onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
+                                onActivate: { coordinator.activate(clip, startLine: richestLine(on: clip).index, loopLine: true) }
                             )
                             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                             .clipped()
@@ -519,10 +519,9 @@ struct MarketingShowcaseView: View {
         .background(Color.canvas.ignoresSafeArea())
     }
 
-    /// The two bundled clips that actually play. Posters never lead the demo.
+    /// The two verified clips. Their lines are the words the video says.
     private var feedPair: [Clip] {
-        let local = feedClips.filter(\.hasLocalVideo)
-        return Array((local.count >= 2 ? local : feedClips).prefix(2))
+        Array(feedClips.prefix(2))
     }
 
     // MARK: Flashcard
@@ -646,15 +645,7 @@ struct MarketingShowcaseView: View {
     // MARK: Scripts
 
     private func demoFeedClips() -> [Clip] {
-        let preferredIds = ["hoshizora-academy-07", "boss-rush-live-09"]
-        var ordered: [Clip] = preferredIds.compactMap { app.clip(id: $0) }.filter(\.hasLocalVideo)
-        if ordered.count < 2 {
-            for clip in app.clips where clip.hasLocalVideo && !ordered.contains(where: { $0.id == clip.id }) {
-                ordered.append(clip)
-                if ordered.count >= 2 { break }
-            }
-        }
-        return ordered
+        app.showcaseClips(limit: 2)
     }
 
     private func demoVocabFallback() -> [SavedWord] {
@@ -663,12 +654,31 @@ struct MarketingShowcaseView: View {
     }
 
     /// Boxes one content word in green so the recording shows a known word on the transcript.
-    private func markDemoKnown(on clip: Clip) -> Token? {
-        guard let line = clip.lines.first else { return nil }
-        guard let token = line.tokens.first(where: { $0.tappable && $0.containsKanji })
+    private func markDemoKnown(on clip: Clip, lineIndex: Int) -> Token? {
+        guard let line = clip.lines[safe: lineIndex] else { return nil }
+        guard let token = line.tokens.first(where: { $0.tappable && !$0.definitions.isEmpty && $0.containsKanji })
+            ?? line.tokens.first(where: { $0.tappable && !$0.definitions.isEmpty })
             ?? line.tokens.first(where: \.tappable) else { return nil }
-        app.paint(token: token, explanation: nil, clip: clip, lineIndex: 0, mark: .known)
+        app.paint(token: token, explanation: nil, clip: clip, lineIndex: lineIndex, mark: .known)
         return token
+    }
+
+    /// The spoken line with a translation and defined words, so the card explains what was said.
+    private func richestLine(on clip: Clip) -> (index: Int, line: Line) {
+        guard !clip.lines.isEmpty else {
+            return (0, Line(tokens: [], translation: "", start: 0, end: 0))
+        }
+        let best = clip.lines.enumerated().max { lhs, rhs in
+            lineScore(lhs.element) < lineScore(rhs.element)
+        }
+        if let best { return (best.offset, best.element) }
+        return (0, clip.lines[0])
+    }
+
+    private func lineScore(_ line: Line) -> Int {
+        let words = line.tokens.filter(\.tappable)
+        let defined = words.filter { !$0.definitions.isEmpty }.count
+        return defined * 3 + min(words.count, 8) + (line.translation.isEmpty ? 0 : 5)
     }
 
     private func beginShowcase(_ script: MarketingScript) {
@@ -716,9 +726,10 @@ struct MarketingShowcaseView: View {
     private func runForYouScript(clips: [Clip], first: Clip) async {
         tabHighlight = .feed
         stage = .feed
-        let known = markDemoKnown(on: first)
+        let focus = richestLine(on: first)
+        let known = markDemoKnown(on: first, lineIndex: focus.index)
         app.setGlowLevel(.glow)
-        coordinator.activate(first, startLine: 0, loopLine: true)
+        coordinator.activate(first, startLine: focus.index, loopLine: true)
         try? await Task.sleep(for: .milliseconds(1600))
         guard !Task.isCancelled else { return }
         withAnimation(.snappy) { demoVideoExpanded = true }
@@ -731,16 +742,16 @@ struct MarketingShowcaseView: View {
 
         // Tap a different word so the green box and the new card are both on screen.
         var savedFromTap: SavedWord?
-        if let line = first.lines.first {
-            let candidates = line.tokens.enumerated().filter { $0.element.tappable && $0.element.containsKanji }
-            let rich = candidates.filter { $0.element.surface != known?.surface && $0.element.jlpt != nil && $0.element.definitions.count > 1 }
-            let pick = rich.first ?? candidates.first { $0.element.surface != known?.surface } ?? candidates.first
-            if let pick {
-                let token = pick.element
-                lookup.previewOnly = false
-                withAnimation(Motion.popupSpring) {
-                    lookup.select(token: token, tokenIndex: pick.offset, lineIndex: 0, clip: first, app: app)
-                }
+        let line = focus.line
+        let candidates = line.tokens.enumerated().filter { $0.element.tappable && !$0.element.definitions.isEmpty }
+        let rich = candidates.filter { $0.element.surface != known?.surface && !$0.element.definitions.isEmpty }
+        let pick = rich.first { $0.element.surface != known?.surface } ?? candidates.first
+        if let pick {
+            let token = pick.element
+            lookup.previewOnly = false
+            withAnimation(Motion.popupSpring) {
+                lookup.select(token: token, tokenIndex: pick.offset, lineIndex: focus.index, clip: first, app: app)
+            }
                 bornCard = BornCardPayload(
                     surface: token.surface,
                     romaji: token.romaji,
@@ -756,15 +767,15 @@ struct MarketingShowcaseView: View {
                 lookup.previewOnly = true
                 try? await Task.sleep(for: .milliseconds(450))
                 guard !Task.isCancelled else { return }
-            }
         }
 
         // Swipe to next clip
         if let second = clips.dropFirst().first {
+            let secondFocus = richestLine(on: second)
             withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
             try? await Task.sleep(for: .milliseconds(700))
             guard !Task.isCancelled else { return }
-            coordinator.activate(second, startLine: 0, loopLine: true)
+            coordinator.activate(second, startLine: secondFocus.index, loopLine: true)
             try? await Task.sleep(for: .milliseconds(800))
             guard !Task.isCancelled else { return }
             await fadeDemoChrome()
@@ -784,7 +795,9 @@ struct MarketingShowcaseView: View {
         tabHighlight = .feed
         explorePath = nil
         app.setGlowLevel(.glow)
-        _ = markDemoKnown(on: feedPair.first ?? first)
+        let focusClip = feedPair.first ?? first
+        let focus = richestLine(on: focusClip)
+        _ = markDemoKnown(on: focusClip, lineIndex: focus.index)
         withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
         try? await Task.sleep(for: .milliseconds(2200))
         guard !Task.isCancelled else { return }
@@ -803,18 +816,24 @@ struct MarketingShowcaseView: View {
 
         if pair.count > 1 {
             withAnimation(.easeInOut(duration: 0.55)) { watchId = pair[1].id }
-            try? await Task.sleep(for: .milliseconds(2600))
+            try? await Task.sleep(for: .milliseconds(700))
             guard !Task.isCancelled else { return }
+            let other = richestLine(on: pair[1])
+            coordinator.activate(pair[1], startLine: other.index, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(1900))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.45)) { watchId = pick.id }
         }
 
         var savedFromClip: SavedWord?
-        if let line = pick.lines.first,
-           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable && ($0.jlpt != nil) && $0.definitions.count > 1 })
-            ?? line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
-            ?? line.tokens.firstIndex(where: \.tappable) {
+        let spoken = richestLine(on: pick)
+        coordinator.activate(pick, startLine: spoken.index, loopLine: true)
+        let line = spoken.line
+        if let idx = line.tokens.firstIndex(where: { $0.tappable && !$0.definitions.isEmpty && $0.surface != line.tokens.first(where: \.tappable)?.surface })
+            ?? line.tokens.firstIndex(where: { $0.tappable && !$0.definitions.isEmpty }) {
             let token = line.tokens[idx]
             lookup.previewOnly = false
-            lookup.select(token: token, tokenIndex: idx, lineIndex: 0, clip: pick, app: app)
+            lookup.select(token: token, tokenIndex: idx, lineIndex: spoken.index, clip: pick, app: app)
             bornCard = BornCardPayload(
                 surface: token.surface,
                 romaji: token.romaji,
@@ -864,7 +883,8 @@ struct MarketingShowcaseView: View {
     private func runThemeTour(first: Clip) async {
         app.setScheme(selectedScript.scheme)
         watchChromeVisible = true
-        _ = markDemoKnown(on: first)
+        let tourLine = richestLine(on: first)
+        _ = markDemoKnown(on: first, lineIndex: tourLine.index)
         await playGlowOnProfile()
         guard !Task.isCancelled else { return }
         for theme in [AccentTheme.sakura, .plum, .orange] {
@@ -891,7 +911,7 @@ struct MarketingShowcaseView: View {
                 stage = .feed
                 tabHighlight = .feed
             }
-            coordinator.activate(first, startLine: 0, loopLine: true)
+            coordinator.activate(first, startLine: tourLine.index, loopLine: true)
             try? await Task.sleep(for: .milliseconds(2400))
             guard !Task.isCancelled else { return }
 

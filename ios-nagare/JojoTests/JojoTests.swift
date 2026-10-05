@@ -40,6 +40,15 @@ struct JojoTests {
         #expect(app.recommendedClip() != nil)
     }
 
+    @Test func showcasePlaysVerifiedClips() throws {
+        let app = try makeApp()
+        let clips = app.showcaseClips(limit: 2)
+        #expect(clips.count == 2)
+        #expect(clips.allSatisfy(\.hasVerifiedTranscript))
+        #expect(clips[0].id == "immersion-konbini-sayaka")
+        #expect(clips[1].id == "immersion-_8b_ERSJ6_Q-5-45")
+    }
+
     @Test func onboardingWithoutDemoSeedLeavesProgressEmpty() throws {
         let app = try makeApp()
         app.completeOnboarding(seedDemo: false)

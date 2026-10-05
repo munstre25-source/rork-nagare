@@ -92,17 +92,10 @@ struct OnboardingFeedDemoView: View {
         .padding(.bottom, Spacing.xs)
     }
 
-    /// Release plays the clips their answers already ranked. Bundled demo files stay in debug.
+    /// Plays the verified clips, so the transcript on screen is what the video says.
     private func start() {
         lookup.offlineOnly = true
-        let ordered: [Clip]
-        #if DEBUG
-        let preferred = ["hoshizora-academy-07", "boss-rush-live-09"]
-        let local = preferred.compactMap { app.clip(id: $0) }.filter(\.hasLocalVideo)
-        ordered = local.count >= 2 ? local : Array(app.forYouClips.prefix(3))
-        #else
-        ordered = Array(app.forYouClips.prefix(3))
-        #endif
+        let ordered = app.showcaseClips(limit: 3)
         clips = ordered
         currentId = ordered.first?.id
         if let first = ordered.first {
