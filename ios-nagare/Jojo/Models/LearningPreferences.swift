@@ -10,8 +10,43 @@ nonisolated enum AccentTheme: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .sakura: "Sakura"
-        case .plum: "Purple"
+        case .plum: "Lavender"
         case .orange: "Orange"
+        }
+    }
+}
+
+/// How strong the halo is on karaoke words and the dictionary word.
+nonisolated enum GlowLevel: String, CaseIterable, Identifiable, Sendable {
+    case off, soft, glow, liquid
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: "Off"
+        case .soft: "Soft"
+        case .glow: "Glow"
+        case .liquid: "Liquid"
+        }
+    }
+
+    /// Share of the accent used in the halo. Zero removes it.
+    var intensity: Double {
+        switch self {
+        case .off: 0
+        case .soft: 0.35
+        case .glow: 0.7
+        case .liquid: 1
+        }
+    }
+
+    var radius: CGFloat {
+        switch self {
+        case .off: 0
+        case .soft: 4
+        case .glow: 9
+        case .liquid: 16
         }
     }
 }

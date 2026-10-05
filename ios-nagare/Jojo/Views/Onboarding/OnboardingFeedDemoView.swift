@@ -31,7 +31,8 @@ struct OnboardingFeedDemoView: View {
                                     withAnimation(.snappy) { videoExpanded.toggle() }
                                 },
                         onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) },
-                        onFullscreen: nil
+                        onFullscreen: nil,
+                        onSkip: { skipClip() }
                     )
                             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                             .id(clip.id)
@@ -91,18 +92,27 @@ struct OnboardingFeedDemoView: View {
         .padding(.bottom, Spacing.xs)
     }
 
+    /// Release plays the clips their answers already ranked. Bundled demo files stay in debug.
     private func start() {
         lookup.offlineOnly = true
+        let ordered: [Clip]
+        #if DEBUG
         let preferred = ["hoshizora-academy-07", "boss-rush-live-09"]
-        var ordered = preferred.compactMap { app.clip(id: $0) }.filter(\.hasLocalVideo)
-        for clip in app.clips where !ordered.contains(where: { $0.id == clip.id }) {
-            ordered.append(clip)
-            if ordered.count >= 3 { break }
-        }
+        let local = preferred.compactMap { app.clip(id: $0) }.filter(\.hasLocalVideo)
+        ordered = local.count >= 2 ? local : Array(app.forYouClips.prefix(3))
+        #else
+        ordered = Array(app.forYouClips.prefix(3))
+        #endif
         clips = ordered
         currentId = ordered.first?.id
         if let first = ordered.first {
             coordinator.activate(first, startLine: 0, loopLine: true)
         }
+    }
+
+    private func skipClip() {
+        guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
+        let next = clips.indices.contains(index + 1) ? clips[index + 1] : clips.first
+        currentId = next?.id
     }
 }

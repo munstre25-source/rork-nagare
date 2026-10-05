@@ -77,7 +77,7 @@ struct ValuePropCarousel: View {
 
     /// Static phone-frame poster — no interactive / looping clip before paywall.
     private var feedPreviewPoster: some View {
-        let clip = app.clip(id: "hoshizora-academy-07") ?? app.clips.first
+        let clip = app.recommendedClip() ?? app.clips.first
         return VStack(spacing: Spacing.m) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)

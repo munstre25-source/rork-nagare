@@ -86,8 +86,8 @@ struct FlashcardTryStepView: View {
                 .opacity(revealed ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
         }
-        .rotation3DEffect(.degrees(revealed ? 180 : 0), axis: (x: 0, y: 1, z: 0), perspective: 0.45)
-        .animation(.spring(response: 0.55, dampingFraction: 0.82), value: revealed)
+        .modifier(CardTurnModifier(angle: revealed ? 180 : 0))
+        .animation(Motion.cardFlip, value: revealed)
         .contentShape(Rectangle())
         .onTapGesture { reveal() }
         .accessibilityElement(children: .combine)

@@ -53,8 +53,17 @@ struct ReviewSessionView: View {
                         }
                     }
                     .id(word.key)
+                    .transition(.asymmetric(
+                        insertion: .modifier(
+                            active: ReviewCardDeal(degrees: 26, offsetY: 46, scale: 0.94, opacity: 0),
+                            identity: ReviewCardDeal(degrees: 0, offsetY: 0, scale: 1, opacity: 1)
+                        ),
+                        removal: .modifier(
+                            active: ReviewCardDeal(degrees: -20, offsetY: -40, scale: 0.92, opacity: 0),
+                            identity: ReviewCardDeal(degrees: 0, offsetY: 0, scale: 1, opacity: 1)
+                        )
+                    ))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .animation(Motion.cardFlip, value: word.key)
                     if revealed {
                         answerButtons(for: word)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -139,7 +148,7 @@ struct ReviewSessionView: View {
                     .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
             }
         }
-        .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
+        .modifier(CardTurnModifier(angle: flipAngle))
         .onTapGesture {
             guard !revealed else { return }
             Haptics.light()
@@ -184,7 +193,6 @@ struct ReviewSessionView: View {
                 }
             }
             .buttonStyle(PressableStyle())
-            ReviewUntilFooter(text: SRS.untilReview(next))
         }
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
@@ -208,10 +216,14 @@ struct ReviewSessionView: View {
     }
 
     private func advance(good: Bool) {
-        withAnimation(Motion.cardFlip) {
+        var reset = Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) {
             showAllDefs = false
             revealed = false
             flipAngle = 0
+        }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
             completed += 1
             if good { goodCount += 1 }
             queue.removeFirst()
@@ -544,7 +556,7 @@ private struct FlashcardDefinitionRow: View {
     }
 }
 
-/// Again is the pale accent. Good is the solid accent ramp. Both follow sakura, purple, or orange.
+/// Again is the pale accent. Good is the solid accent ramp. Both follow sakura, lavender, or orange.
 struct ReviewGradeButton: View {
     let title: String
     let interval: String
@@ -579,28 +591,7 @@ struct ReviewGradeButton: View {
     }
 }
 
-struct ReviewUntilFooter: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Blossom(size: 12, color: Color.sakuraPink)
-            Capsule().fill(FlashcardInk.muted.opacity(0.45)).frame(width: 28, height: 1)
-            Image(systemName: "clock")
-                .font(.caption.weight(.semibold))
-            Text(text)
-                .font(.caption.weight(.semibold))
-            Capsule().fill(FlashcardInk.muted.opacity(0.45)).frame(width: 28, height: 1)
-            Blossom(size: 12, color: Color.sakuraPink)
-        }
-        .foregroundStyle(FlashcardInk.muted)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(text)
-    }
-}
-
-/// Colors for the review card. Sakura, Purple, and Orange each have a white-page set and a night set.
+/// Colors for the review card. Sakura, Lavender, and Orange each have a white-page set and a night set.
 enum FlashcardInk {
     static var page: Color { JojoPalette.color(
         sakuraLight: "#FFFFFF", sakuraDark: "#07060E",
@@ -639,14 +630,14 @@ enum FlashcardInk {
         orangeLight: "#C45C00", orangeDark: "#8A3E00"
     ) }
     static var goodA: Color { JojoPalette.color(
-        sakuraLight: "#E21888", sakuraDark: "#FF4FA3",
-        plumLight: "#7A4684", plumDark: "#C084DC",
-        orangeLight: "#E07A12", orangeDark: "#FFB020"
+        sakuraLight: "#FF4D8D", sakuraDark: "#FF4D8D",
+        plumLight: "#8B5CF6", plumDark: "#8B5CF6",
+        orangeLight: "#FF7A00", orangeDark: "#FF7A00"
     ) }
     static var goodB: Color { JojoPalette.color(
-        sakuraLight: "#9B3DFF", sakuraDark: "#B44DFF",
-        plumLight: "#5C3A72", plumDark: "#7A4684",
-        orangeLight: "#C45C00", orangeDark: "#D35400"
+        sakuraLight: "#FF7EB8", sakuraDark: "#FF7EB8",
+        plumLight: "#A78BFA", plumDark: "#C4B5FD",
+        orangeLight: "#FF9A3C", orangeDark: "#FFB020"
     ) }
     static var posFill: Color { JojoPalette.color(
         sakuraLight: "#F3D0E6", sakuraDark: "#5C2A6A",
@@ -660,13 +651,48 @@ enum FlashcardInk {
     ) }
 }
 
-/// Revolving card motion between flashcards (Kiku-style).
-private struct ReviewCardFlip: ViewModifier {
+/// A card turn that lifts at the midpoint, so the reveal reads as a flip rather than a flat spin.
+struct CardTurnModifier: ViewModifier, Animatable {
     var angle: Double
+
+    var animatableData: Double {
+        get { angle }
+        set { angle = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        let turn = sin(angle * .pi / 180)
+        content
+            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.52)
+            .rotation3DEffect(.degrees(-7 * turn), axis: (x: 1, y: 0, z: 0), perspective: 0.8)
+            .scaleEffect(1 - 0.045 * turn)
+            .shadow(color: Color.sakuraPink.opacity(0.18 + 0.32 * turn), radius: 10 + 18 * turn, y: 6 + 8 * turn)
+    }
+}
+
+/// The next card is dealt in; the answered card lifts away. Neither one un-flips.
+struct ReviewCardDeal: ViewModifier, Animatable {
+    var degrees: Double
+    var offsetY: CGFloat
+    var scale: CGFloat
+    var opacity: Double
+
+    var animatableData: AnimatablePair<AnimatablePair<Double, CGFloat>, AnimatablePair<CGFloat, Double>> {
+        get { AnimatablePair(AnimatablePair(degrees, offsetY), AnimatablePair(scale, opacity)) }
+        set {
+            degrees = newValue.first.first
+            offsetY = newValue.first.second
+            scale = newValue.second.first
+            opacity = newValue.second.second
+        }
+    }
 
     func body(content: Content) -> some View {
         content
-            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
+            .rotation3DEffect(.degrees(degrees), axis: (x: 0, y: 1, z: 0), perspective: 0.7)
+            .scaleEffect(scale)
+            .offset(y: offsetY)
+            .opacity(opacity)
     }
 }
 

@@ -48,6 +48,7 @@ struct OnboardingFlowView: View {
             didLoad = true
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
             if step == .trialTimeline { step = .demo }
+            if step == .socialProof { step = .dailyGoal }
             if step == .welcome, !app.purchases.isSubscribed { step = .paywall }
             // Resume mid-funnel: skip splash.
             if step != .splash {
@@ -158,7 +159,7 @@ struct OnboardingFlowView: View {
         case .flashcardTry:
             FlashcardTryStepView { next() }
         case .socialProof:
-            SocialProofStepView { next() }
+            Color.clear
         case .dailyGoal:
             DailyGoalStepView { next() }
         case .journey:

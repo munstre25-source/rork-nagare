@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 import SwiftData
 
@@ -191,3 +192,4 @@ private struct SneakFlip: ViewModifier {
         content.rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
     }
 }
+#endif

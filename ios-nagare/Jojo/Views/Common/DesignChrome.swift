@@ -59,7 +59,7 @@ extension View {
     }
 }
 
-/// Sakura / cream pill used on Explore, Vocab, and Search.
+/// Equal segments inside one capsule, used on Vocab and Search.
 struct OrangePillBar<Item: Hashable>: View {
     let items: [Item]
     @Binding var selection: Item

@@ -69,9 +69,11 @@ final class UserProfile {
     var firstClipId: String?
 
     // Learning preferences (defaults keep existing behaviour).
-    var accentTheme: String = AccentTheme.sakura.rawValue
+    var accentTheme: String = AccentTheme.orange.rawValue
     /// `light` or `dark`. Older installs stored the accent name here; `AppModel` migrates those.
-    var appearanceMode: String = JojoScheme.dark.rawValue
+    var appearanceMode: String = JojoScheme.light.rawValue
+    /// `off`, `soft`, `glow`, or `liquid`. Controls the halo on karaoke and dictionary words.
+    var glowLevel: String = GlowLevel.soft.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     var showRomaji: Bool = false
@@ -117,6 +119,11 @@ final class UserProfile {
     var scheme: JojoScheme {
         get { JojoScheme(rawValue: appearanceMode) ?? .dark }
         set { appearanceMode = newValue.rawValue }
+    }
+
+    var glow: GlowLevel {
+        get { GlowLevel(rawValue: glowLevel) ?? .soft }
+        set { glowLevel = newValue.rawValue }
     }
 
     var subtitles: SubtitleMode {

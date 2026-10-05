@@ -39,8 +39,6 @@ struct ExploreHomeView: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    todayPlan
-                    captureRow
                     VStack(spacing: 12) {
                         ForEach(LearningPath.allCases) { path in
                             NavigationLink(value: path) {
@@ -49,13 +47,15 @@ struct ExploreHomeView: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    todayPlan
+                    captureRow
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
-            .background(Color.canvas.ignoresSafeArea())
+            .background(Color.studyPage.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: LearningPath.self) { path in
@@ -88,6 +88,7 @@ struct ExploreHomeView: View {
             guard let newPath else { return }
             path.append(newPath)
         }
+        .environment(\.colorScheme, .light)
     }
 
     private var topBar: some View {
@@ -159,7 +160,7 @@ struct ExploreHomeView: View {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white.opacity(0.72))
+                        .fill(Color.card)
                     Image(systemName: "camera.viewfinder")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Color.designOrangeDeep)
@@ -182,7 +183,7 @@ struct ExploreHomeView: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(12)
-            .background(Color.adaptive(light: "#E7F8F2", dark: "#1A332C"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(Color.sakuraPinkLight, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Read Japanese from a photo")
@@ -253,14 +254,15 @@ nonisolated enum LearningPath: String, CaseIterable, Identifiable, Hashable, Sen
         }
     }
 
+    /// Pastel lane from the study-screen design. Dark values stay readable at night.
     var tint: Color {
         switch self {
-        case .conversation: Color.adaptive(light: "#E7F4FF", dark: "#1A2C40")
-        case .grammar: Color.adaptive(light: "#FDE8EF", dark: "#3A2430")
-        case .listening: Color.adaptive(light: "#E5F1FF", dark: "#1A2744")
-        case .culture: Color.adaptive(light: "#F3E8FF", dark: "#2C2440")
-        case .jlpt: Color.adaptive(light: "#E5F8EE", dark: "#1A3328")
-        case .practice: Color.adaptive(light: "#FFF6E8", dark: "#3A3020")
+        case .conversation: Color.adaptive(light: "#FFF1D6", dark: "#3A2A16")
+        case .grammar: Color.adaptive(light: "#FDE7EF", dark: "#3A2230")
+        case .listening: Color.adaptive(light: "#E5F1FF", dark: "#1A2C3E")
+        case .culture: Color.adaptive(light: "#F3E8FF", dark: "#2C243C")
+        case .jlpt: Color.adaptive(light: "#E5F6EA", dark: "#1A3326")
+        case .practice: Color.adaptive(light: "#FFF6E4", dark: "#332816")
         }
     }
 
@@ -291,17 +293,17 @@ private struct LearningPathCard: View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.72))
+                    .fill(Color.card)
                 if let glyph = path.glyph {
                     Text(glyph)
                         .font(.system(size: path == .jlpt ? 16 : 15, weight: .bold))
-                        .foregroundStyle(Color.designOrangeDeep)
+                        .foregroundStyle(Color.studyAccent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 } else {
                     Image(systemName: path.symbol)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color.designOrangeDeep)
+                        .foregroundStyle(Color.studyAccent)
                 }
             }
             .frame(width: 64, height: 64)

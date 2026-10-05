@@ -8,15 +8,16 @@ struct ProfileView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
     @Environment(\.marketingScrollsToTheme) private var marketingScrollsToTheme
+    @Environment(\.marketingProfileAnchor) private var marketingProfileAnchor
     @Query private var words: [SavedWord]
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showGoalPicker: Bool = false
     @State private var showManageSubs: Bool = false
     @State private var showCustomerCenter: Bool = false
     @State private var restoreMessage: String?
-    @State private var confirmReset: Bool = false
     @State private var confirmDeleteAccount: Bool = false
     #if DEBUG
+    @State private var confirmReset: Bool = false
     @State private var marketingScript: MarketingScript?
     #endif
     var onGiveFeedback: (() -> Void)? = nil
@@ -90,7 +91,7 @@ struct ProfileView: View {
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 48)
                             .background {
-                                Capsule().fill(words.isEmpty ? Color(hex: "#5C3A68") : Color.sakuraButton)
+                                Capsule().fill(words.isEmpty ? Color.accentDisabled : Color.sakuraButton)
                             }
                     }
                     .buttonStyle(.plain)
@@ -108,15 +109,13 @@ struct ProfileView: View {
             .scrollIndicators(.hidden)
             .background(Color.canvas.ignoresSafeArea())
             .onAppear {
-                guard marketingScrollsToTheme else { return }
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(60))
-                    proxy.scrollTo("appearance", anchor: .top)
-                }
+                scrollMarketingProfile(proxy)
             }
-            .onChange(of: marketingScrollsToTheme) { _, on in
-                guard on else { return }
-                proxy.scrollTo("appearance", anchor: .top)
+            .onChange(of: marketingScrollsToTheme) { _, _ in
+                scrollMarketingProfile(proxy)
+            }
+            .onChange(of: marketingProfileAnchor) { _, _ in
+                scrollMarketingProfile(proxy)
             }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -136,11 +135,13 @@ struct ProfileView: View {
         } message: {
             Text(restoreMessage ?? "")
         }
+        #if DEBUG
         .confirmationDialog("Reset demo data?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Reset words & history", role: .destructive) { app.resetDemoData() }
         } message: {
             Text("Your saved words and watch history return to the starter set.")
         }
+        #endif
         .confirmationDialog("Delete all data?", isPresented: $confirmDeleteAccount, titleVisibility: .visible) {
             Button("Delete All Data", role: .destructive) { app.deleteAllUserData() }
         } message: {
@@ -234,6 +235,23 @@ struct ProfileView: View {
         .cardStyle()
     }
 
+    private func scrollMarketingProfile(_ proxy: ScrollViewProxy) {
+        if let marketingProfileAnchor {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(60))
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo(marketingProfileAnchor, anchor: .center)
+                }
+            }
+            return
+        }
+        guard marketingScrollsToTheme else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(60))
+            proxy.scrollTo("appearance", anchor: .top)
+        }
+    }
+
     private var settings: some View {
         VStack(spacing: 0) {
             settingsHeader("Appearance")
@@ -253,6 +271,8 @@ struct ProfileView: View {
             } label: {
                 SettingsRowLabel(symbol: "circle.lefthalf.filled", title: "Appearance", value: app.profile.scheme.title)
             }
+            Divider().padding(.leading, 52)
+            GlowLevelRow()
             Divider().padding(.leading, 52)
 
             settingsHeader("Subtitles & reading")
@@ -330,6 +350,8 @@ struct ProfileView: View {
                 marketingScript = .themeTourDark
             }
             Divider().padding(.leading, 52)
+            SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red, iconTint: .red) { confirmReset = true }
+            Divider().padding(.leading, 52)
             #endif
 
             if let onGiveFeedback {
@@ -391,8 +413,6 @@ struct ProfileView: View {
                     openURL(mail)
                 }
             }
-            Divider().padding(.leading, 52)
-            SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red, iconTint: .red) { confirmReset = true }
         }
         .cardStyle()
     }
@@ -416,6 +436,76 @@ struct ProfileView: View {
         }
         .padding(.horizontal, Spacing.l)
         .frame(minHeight: 54)
+    }
+}
+
+/// Glow choices with a small word that breathes at the selected level.
+private struct GlowLevelRow: View {
+    @Environment(AppModel.self) private var app
+    @State private var breath = false
+    @State private var pickPulse = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: Spacing.m) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Color.designOrangeDeep)
+                    .frame(width: 28)
+                Text("Text glow")
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Text("光")
+                    .font(JojoFont.jp(28, bold: true, relativeTo: .title2))
+                    .foregroundStyle(LearningInk.dictionaryWord)
+                    .textGlow(LearningInk.glow, level: app.profile.glow, boosted: breath || pickPulse)
+                    .scaleEffect(pickPulse ? 1.12 : 1)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pickPulse)
+                    .accessibilityHidden(true)
+            }
+            HStack(spacing: 8) {
+                ForEach(GlowLevel.allCases) { level in
+                    let selected = app.profile.glow == level
+                    Button {
+                        guard app.profile.glow != level else { return }
+                        Haptics.selection()
+                        app.setGlowLevel(level)
+                        pickPulse = true
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(320))
+                            pickPulse = false
+                        }
+                    } label: {
+                        Text(level.title)
+                            .font(.caption.weight(.bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                            .foregroundStyle(selected ? Color.white : Color.primary)
+                            .background(selected ? Color.sakuraButton : Color.fieldFill, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(level.title) glow")
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+            .padding(.leading, 28 + Spacing.m)
+        }
+        .padding(.horizontal, Spacing.l)
+        .padding(.vertical, 12)
+        .id("text-glow")
+        .animation(.easeInOut(duration: 0.35), value: app.profile.glow)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.15).repeatForever(autoreverses: true)) {
+                breath = true
+            }
+        }
+        .onChange(of: app.profile.glow) { _, _ in
+            pickPulse = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(320))
+                pickPulse = false
+            }
+        }
     }
 }
 
@@ -567,10 +657,20 @@ private struct MarketingScrollsToThemeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct MarketingProfileAnchorKey: EnvironmentKey {
+    static let defaultValue: String? = nil
+}
+
 extension EnvironmentValues {
     /// Marketing theme tour scrolls Profile to the Theme row.
     var marketingScrollsToTheme: Bool {
         get { self[MarketingScrollsToThemeKey.self] }
         set { self[MarketingScrollsToThemeKey.self] = newValue }
+    }
+
+    /// When set, the theme tour scrolls Profile to this row instead.
+    var marketingProfileAnchor: String? {
+        get { self[MarketingProfileAnchorKey.self] }
+        set { self[MarketingProfileAnchorKey.self] = newValue }
     }
 }

@@ -25,9 +25,13 @@ struct FeedView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            StudySessionClock(running: isActiveTab && scenePhase == .active)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.l)
+                .padding(.top, 2)
             if !app.profile.hideDailyGoalBar {
                 DailyGoalBar()
-                    .padding(.top, 4)
+                    .padding(.top, 2)
             }
             header
             ZStack {
@@ -52,7 +56,7 @@ struct FeedView: View {
                 }
             }
         }
-        .background(Color.watchBackground.ignoresSafeArea())
+        .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
         .simultaneousGesture(TapGesture().onEnded { revealWatchChrome() })
@@ -197,7 +201,8 @@ struct FeedView: View {
                             shadowingClip = clip
                         },
                         watchChromeHidden: !watchChromeVisible,
-                        onRevealWatchChrome: { revealWatchChrome() }
+                        onRevealWatchChrome: { revealWatchChrome() },
+                        onSkip: { advance() }
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
@@ -209,7 +214,7 @@ struct FeedView: View {
         .scrollPosition(id: $currentId)
         .scrollDisabled(lookup.isPresented || quizClip != nil)
         .scrollIndicators(.hidden)
-        .background(Color.watchBackground)
+        .background(Color.canvas)
         .clipped()
     }
 

@@ -87,9 +87,23 @@ struct TranscriptLineView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if raisedCard {
+                    let glow = app.profile.glow
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         .fill(Color.transcriptCard)
-                        .shadow(color: Color.activeLineGlow, radius: 10, y: 2)
+                        .shadow(color: Color.activeLineGlow.opacity(glow.intensity), radius: 4 + glow.radius, y: 2)
+                        .overlay {
+                            if glow == .liquid {
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.22), Color.white.opacity(0.04), .clear],
+                                            startPoint: .top,
+                                            endPoint: .center
+                                        )
+                                    )
+                                    .allowsHitTesting(false)
+                            }
+                        }
                 }
             }
             .opacity(isActive ? 1 : 0.82)

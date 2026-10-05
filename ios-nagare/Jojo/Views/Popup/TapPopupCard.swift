@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The floating tap-to-understand card. Always dark (lives over the player/transcript).
+/// The floating tap-to-understand card. Follows the light or dark page and the selected accent.
 struct TapPopupCard: View {
     /// Feed / Kiku-style: smaller card so the video stays visible around it.
     var compact: Bool = false
@@ -8,15 +8,21 @@ struct TapPopupCard: View {
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showAllDefinitions: Bool = false
     @State private var badgeBump: Bool = false
+
+    private var onDark: Bool { colorScheme == .dark }
+    private var ink: Color { onDark ? .white : Color.primary }
+    private var inkSoft: Color { onDark ? Color.white.opacity(0.72) : Color.secondary }
+    private var chip: Color { onDark ? Color.white.opacity(0.1) : Color.fieldFill }
 
     var body: some View {
         if let selection = lookup.selection, let explanation = lookup.explanation {
             VStack(alignment: .leading, spacing: compact ? Spacing.s : Spacing.m) {
                 header(selection: selection, explanation: explanation)
                 HStack(spacing: Spacing.s) {
-                    WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: true)
+                    WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: onDark)
                     Spacer(minLength: 0)
                     Button {
                         SpeechService.shared.speak(selection.token.surface)
@@ -41,7 +47,7 @@ struct TapPopupCard: View {
                 .transition(.opacity)
                 pageDots
                 Capsule()
-                    .fill(Color.white.opacity(0.35))
+                    .fill(onDark ? Color.white.opacity(0.35) : Color.primary.opacity(0.2))
                     .frame(width: 36, height: 4)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 2)
@@ -50,13 +56,29 @@ struct TapPopupCard: View {
             .background(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .fill(LearningInk.dictionaryPlate)
-                    .shadow(color: LearningInk.dictionaryWord.opacity(0.45), radius: 24, y: 10)
+                    .shadow(
+                        color: LearningInk.dictionaryWord.opacity(0.45 * app.profile.glow.intensity),
+                        radius: 10 + app.profile.glow.radius,
+                        y: 10
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .strokeBorder(LearningInk.dictionaryWord.opacity(0.7), lineWidth: 1.5)
             )
-            .environment(\.colorScheme, .dark)
+            .overlay {
+                if app.profile.glow == .liquid {
+                    RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.22), Color.white.opacity(0.05), .clear],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        )
+                        .allowsHitTesting(false)
+                }
+            }
             .onChange(of: lookup.tapPulse) { _, _ in
                 showAllDefinitions = false
                 badgeBump = true
@@ -95,7 +117,7 @@ struct TapPopupCard: View {
                         .foregroundStyle(LearningInk.dictionaryWord)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                        .shadow(color: LearningInk.dictionaryWord.opacity(0.45), radius: 8)
+                        .textGlow(LearningInk.dictionaryWord, level: app.profile.glow)
                     if app.profile.showFurigana, !explanation.readings.isEmpty {
                         Text(explanation.readings.joined(separator: ", "))
                             .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
@@ -111,7 +133,7 @@ struct TapPopupCard: View {
                 if !compact, let base = selection.token.baseForm {
                     Text("from \(base)")
                         .font(JojoFont.jp(13, relativeTo: .footnote))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(inkSoft)
                 }
                 if !compact {
                     Label("In Vocab", systemImage: "bookmark.fill")
@@ -148,11 +170,11 @@ struct TapPopupCard: View {
                 .font(.caption.weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .foregroundStyle(selected ? .white : .white.opacity(0.75))
+                .foregroundStyle(selected ? Color.white : inkSoft)
                 .frame(maxWidth: .infinity, minHeight: 32)
                 .background {
                     if selected { Capsule().fill(Color.sakuraFill) }
-                    else { Capsule().fill(Color.white.opacity(0.08)) }
+                    else { Capsule().fill(chip) }
                 }
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -168,7 +190,7 @@ struct TapPopupCard: View {
                 } label: {
                     Image(systemName: tab.symbol)
                         .font(.system(size: compact ? 15 : 17, weight: .semibold))
-                        .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : .white.opacity(0.82))
+                        .foregroundStyle(lookup.tab == tab ? Color.jojoOrange : inkSoft)
                         .frame(width: compact ? 44 : 52, height: 40)
                         .background(
                             lookup.tab == tab ? Color.sakuraPinkSoft : Color.clear,
@@ -181,7 +203,7 @@ struct TapPopupCard: View {
             Spacer()
         }
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1).offset(y: 4)
+            Rectangle().fill(onDark ? Color.white.opacity(0.08) : Color.primary.opacity(0.08)).frame(height: 1).offset(y: 4)
         }
     }
 
@@ -189,7 +211,7 @@ struct TapPopupCard: View {
         HStack(spacing: 5) {
             ForEach(PopupTab.allCases, id: \.self) { tab in
                 Circle()
-                    .fill(lookup.tab == tab ? Color.jojoOrange : Color.white.opacity(0.3))
+                    .fill(lookup.tab == tab ? Color.jojoOrange : (onDark ? Color.white.opacity(0.3) : Color.primary.opacity(0.2)))
                     .frame(width: 6, height: 6)
             }
         }
@@ -200,7 +222,7 @@ struct TapPopupCard: View {
 
     private func lineMeaning(surface: String, gloss: String) -> AttributedString {
         var result = AttributedString("In this line, \(surface) means “\(gloss)”.")
-        result.foregroundColor = Color.white.opacity(0.78)
+        result.foregroundColor = onDark ? Color.white.opacity(0.78) : Color.translationText
         if let range = result.range(of: surface) {
             result[range].foregroundColor = LearningInk.dictionaryWord
             result[range].font = .footnote.weight(.bold)
@@ -218,7 +240,7 @@ struct TapPopupCard: View {
         let visible = showAllDefinitions ? defs : capped
         return VStack(alignment: .leading, spacing: Spacing.s) {
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
-                DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: true)
+                DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: onDark)
             }
             if let selection = lookup.selection {
                 let gloss = explanation.definitions.first ?? explanation.jaDefinitions.first ?? ""
@@ -246,7 +268,7 @@ struct TapPopupCard: View {
                 if let note = explanation.formalityNote {
                     Label(note.capitalized + " register", systemImage: "quote.bubble")
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(inkSoft)
                 }
                 relatedClipsRail(for: explanation.word)
             }
@@ -260,7 +282,7 @@ struct TapPopupCard: View {
             VStack(alignment: .leading, spacing: Spacing.s) {
                 Text("Also in")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(inkSoft)
                     .textCase(.uppercase)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Spacing.s) {
@@ -272,10 +294,10 @@ struct TapPopupCard: View {
                             } label: {
                                 Text(clip.channelName)
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(ink)
                                     .padding(.horizontal, 12)
                                     .frame(minHeight: 36)
-                                    .background(Color.white.opacity(0.12), in: Capsule())
+                                    .background(chip, in: Capsule())
                             }
                         }
                     }
@@ -291,16 +313,16 @@ struct TapPopupCard: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.jojoOrange)
                 .textCase(.uppercase)
-            HighlightedSentence(sentence: selection.sentence, target: selection.token.surface, size: 17, baseColor: .white)
+            HighlightedSentence(sentence: selection.sentence, target: selection.token.surface, size: 17, baseColor: ink)
             Text(selection.translation)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(ink)
             HStack(spacing: Spacing.s) {
                 Image(systemName: "clock.arrow.circlepath")
                 Text("First review in 10 minutes · \(selection.clip.channelName)")
             }
             .font(.footnote)
-            .foregroundStyle(.white.opacity(0.5))
+            .foregroundStyle(inkSoft)
         }
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -313,12 +335,12 @@ struct TapPopupCard: View {
             VStack(alignment: .leading, spacing: Spacing.s) {
                 Text(context.contextualExplanation)
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(ink)
                     .fixedSize(horizontal: false, vertical: true)
                 ForEach(Array(context.examples.prefix(2).enumerated()), id: \.offset) { index, example in
                     Text(example)
                         .font(JojoFont.jp(14, relativeTo: .subheadline))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(ink)
                         .padding(Spacing.m)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.definitionTints[(index + 1) % 3], in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -326,13 +348,13 @@ struct TapPopupCard: View {
                 if !context.relatedWords.isEmpty {
                     Text("Related: " + context.relatedWords.joined(separator: " · "))
                         .font(JojoFont.jp(13, relativeTo: .footnote))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(inkSoft)
                 }
             }
         } else {
             HStack(spacing: Spacing.s) {
-                ProgressView().tint(.white)
-                Text("Finding examples…").font(.subheadline).foregroundStyle(.white.opacity(0.6))
+                ProgressView().tint(ink)
+                Text("Finding examples…").font(.subheadline).foregroundStyle(inkSoft)
             }
             .frame(minHeight: 60)
             .onAppear { lookup.loadContextIfNeeded(app: app) }

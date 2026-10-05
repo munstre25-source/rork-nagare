@@ -169,7 +169,6 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         .flashcardTry,
         .name, .acquisition,
         .motivation, .taste, .level,
-        .socialProof,
         .dailyGoal, .journey, .notifications,
         .demo,
         .appReview,

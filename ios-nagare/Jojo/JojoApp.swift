@@ -11,62 +11,119 @@ import SwiftData
 @main
 struct JojoApp: App {
     @UIApplicationDelegateAdaptor(JojoAppDelegate.self) private var appDelegate
-    private let container: ModelContainer
-    @State private var purchases: PurchaseManager
-    @State private var app: AppModel
+    @State private var launch: AppLaunch
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
         FontRegistry.registerFonts()
         UITabBar.appearance().isHidden = true
-        let schema = Schema([SavedWord.self, CachedExplanation.self, UserProfile.self, RemoteClip.self, CustomDeck.self])
-        // CloudKit-compatible models, but sync is intentionally disabled in this version.
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
-        let resolved: ModelContainer
-        do {
-            resolved = try ModelContainer(for: schema, configurations: [configuration])
-        } catch {
-            print("[Jojo] persistent store failed (\(error.localizedDescription)); using in-memory store")
-            let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
-            do {
-                resolved = try ModelContainer(for: schema, configurations: [memory])
-            } catch {
-                fatalError("Unable to create any ModelContainer: \(error)")
-            }
-        }
-        container = resolved
-        let manager = PurchaseManager()
-        manager.configure()
-        _purchases = State(initialValue: manager)
-        _app = State(initialValue: AppModel(container: resolved, purchases: manager))
+        LibraryStore.logReleaseConfiguration()
+        _launch = State(initialValue: AppLaunch.open())
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environment(app)
-                .environment(purchases)
-                .modelContainer(container)
-                .task {
-                    app.startRemoteSync()
-                    await purchases.refreshCustomerInfo()
-                    WidgetSnapshotPublisher.publish(from: app)
-                    MetaAttribution.activateApp()
-                    MetaAttribution.syncToRevenueCat()
-                }
-                .onOpenURL { url in
-                    if MetaAttribution.handleOpenURL(url) { return }
-                    app.handleDeepLink(url)
-                }
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task { await purchases.refreshCustomerInfo() }
-                WidgetSnapshotPublisher.publish(from: app)
-                MetaAttribution.activateApp()
-                MetaAttribution.syncToRevenueCat()
-                app.refreshAllReminders()
+            switch launch {
+            case .ready(let session):
+                RootView()
+                    .environment(session.app)
+                    .environment(session.purchases)
+                    .modelContainer(session.container)
+                    .task {
+                        session.app.startRemoteSync()
+                        await session.purchases.refreshCustomerInfo()
+                        session.app.refreshAllReminders()
+                        WidgetSnapshotPublisher.publish(from: session.app)
+                        MetaAttribution.activateApp()
+                        MetaAttribution.syncToRevenueCat()
+                    }
+                    .onOpenURL { url in
+                        if MetaAttribution.handleOpenURL(url) { return }
+                        session.app.handleDeepLink(url)
+                    }
+            case .unavailable:
+                LibraryRecoveryView(
+                    onRetry: { launch = AppLaunch.open() },
+                    onReset: {
+                        LibraryStore.reset()
+                        launch = AppLaunch.open()
+                    }
+                )
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, case .ready(let session) = launch else { return }
+            Task {
+                await session.purchases.refreshCustomerInfo()
+                session.app.refreshAllReminders()
+            }
+            WidgetSnapshotPublisher.publish(from: session.app)
+            MetaAttribution.activateApp()
+            MetaAttribution.syncToRevenueCat()
+        }
+    }
+}
+
+/// A launched library, or a blocked open so we never keep writing into a throwaway memory store.
+@MainActor
+enum AppLaunch {
+    case ready(AppSession)
+    case unavailable
+
+    static func open() -> AppLaunch {
+        do {
+            let container = try LibraryStore.makeContainer()
+            let manager = PurchaseManager()
+            manager.configure()
+            let app = AppModel(container: container, purchases: manager)
+            return .ready(AppSession(container: container, purchases: manager, app: app))
+        } catch {
+            print("[Jojo] persistent store failed (\(error.localizedDescription))")
+            return .unavailable
+        }
+    }
+}
+
+@MainActor
+final class AppSession {
+    let container: ModelContainer
+    let purchases: PurchaseManager
+    let app: AppModel
+
+    init(container: ModelContainer, purchases: PurchaseManager, app: AppModel) {
+        self.container = container
+        self.purchases = purchases
+        self.app = app
+    }
+}
+
+enum LibraryStore {
+    static func makeContainer() throws -> ModelContainer {
+        let schema = persistentSchema
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
+        return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    /// Deletes the on-disk SwiftData store so the next open starts clean.
+    static func reset() {
+        let configuration = ModelConfiguration(schema: persistentSchema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
+        let url = configuration.url
+        let files = [
+            url,
+            URL(fileURLWithPath: url.path + "-wal"),
+            URL(fileURLWithPath: url.path + "-shm")
+        ]
+        for file in files {
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
+    /// Booleans only. Secret values stay out of the log.
+    static func logReleaseConfiguration() {
+        print("[Jojo] config revenueCat=\(Secrets.isRevenueCatConfigured) supabase=\(Secrets.isSupabaseConfigured) meta=\(Secrets.isMetaConfigured)")
+    }
+
+    private static var persistentSchema: Schema {
+        Schema([SavedWord.self, CachedExplanation.self, UserProfile.self, RemoteClip.self, CustomDeck.self])
     }
 }

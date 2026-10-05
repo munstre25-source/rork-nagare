@@ -1,5 +1,38 @@
 import SwiftUI
 
+/// Accent pill with how long this For You visit has been open. Pauses off the tab and in the background.
+struct StudySessionClock: View {
+    var running: Bool
+
+    @State private var accumulated: TimeInterval = 0
+    @State private var mark = Date()
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let elapsed = shown(at: context.date)
+            Text(formatClock(elapsed))
+                .font(.caption.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .frame(minWidth: 52, minHeight: 26)
+                .background(Color.sakuraButton, in: Capsule())
+                .accessibilityLabel("Study time \(formatClock(elapsed))")
+        }
+        .onChange(of: running) { _, isRunning in
+            if isRunning {
+                mark = .now
+            } else {
+                accumulated += Date().timeIntervalSince(mark)
+            }
+        }
+    }
+
+    private func shown(at date: Date) -> TimeInterval {
+        accumulated + (running ? date.timeIntervalSince(mark) : 0)
+    }
+}
+
 /// Thin sakura daily-goal progress bar with remaining minutes and a trophy that fills on completion.
 struct DailyGoalBar: View {
     @Environment(AppModel.self) private var app

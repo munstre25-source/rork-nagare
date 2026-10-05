@@ -131,6 +131,7 @@ final class PurchaseManager {
             offeringFailed = true
             return
         }
+        offeringFailed = false
         isLoadingOffering = true
         defer { isLoadingOffering = false }
         do {

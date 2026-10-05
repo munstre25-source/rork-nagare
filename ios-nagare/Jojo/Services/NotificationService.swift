@@ -84,20 +84,32 @@ enum NotificationService {
 
     /// Reminder one day before a free trial ends (default: 3-day yearly trial → fire after 2 days).
     static func scheduleTrialReminder(trialDays: Int = 3) {
+        guard trialDays > 1 else { return }
+        let expiration = Date().addingTimeInterval(TimeInterval(trialDays) * 86_400)
+        scheduleTrialReminder(endingAt: expiration)
+    }
+
+    /// One day before the entitlement's trial end. No-op if that moment has already passed.
+    static func scheduleTrialReminder(endingAt expiration: Date) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [trialId])
-        guard trialDays > 1 else { return }
-        let fireAfterDays = max(1, trialDays - 1)
+        let fire = expiration.addingTimeInterval(-86_400)
+        let interval = fire.timeIntervalSinceNow
+        guard interval > 60 else { return }
         let content = UNMutableNotificationContent()
         content.title = "Your free trial ends tomorrow"
-        content.body = "Jojo Pro renews after your \(trialDays)-day trial unless you cancel at least 24 hours before it ends (Settings → Apple ID → Subscriptions)."
+        content.body = "Jojo Pro renews after your trial unless you cancel at least 24 hours before it ends (Settings → Apple ID → Subscriptions)."
         content.sound = .default
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(fireAfterDays * 86_400), repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         add(UNNotificationRequest(identifier: trialId, content: content, trigger: trigger))
     }
 
+    static func cancelTrialReminder() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [trialId])
+    }
+
     static func cancelReminders() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, atRiskId])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, atRiskId, trialId])
     }
 
     static func cancelAll() {

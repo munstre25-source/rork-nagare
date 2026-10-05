@@ -18,6 +18,7 @@ struct TokenView: View {
     var showRomaji: Bool = true
     let onTap: () -> Void
 
+    @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
     @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 11
     @ScaledMetric(relativeTo: .title2) private var wordSize: CGFloat = 24
@@ -62,6 +63,7 @@ struct TokenView: View {
                 .background { wordBackground }
                 .overlay { spokenOutline }
                 .overlay(alignment: .bottom) { underline }
+                .textGlow(glowColor, level: app.profile.glow, boosted: state == .spoken || pulse)
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
@@ -73,7 +75,6 @@ struct TokenView: View {
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
         .scaleEffect(pulse || tapBounce ? 1.08 : 1)
-        .shadow(color: (pulse || state == .spoken) ? LearningInk.spoken.opacity(0.85) : .clear, radius: pulse ? 12 : 6)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -161,6 +162,13 @@ struct TokenView: View {
         if familiarity == .known { parts.append("known") }
         if familiarity == .familiar { parts.append("familiar") }
         return parts.joined(separator: ", ")
+    }
+
+    private var glowColor: Color {
+        switch state {
+        case .selected, .spoken: return LearningInk.spoken
+        case .normal: return familiarity == .known ? LearningInk.known : LearningInk.glow
+        }
     }
 
     private var underlineColor: Color {

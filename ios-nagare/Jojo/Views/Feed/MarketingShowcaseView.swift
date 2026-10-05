@@ -3,7 +3,7 @@ import SwiftUI
 import SwiftData
 
 /// Which silent marketing walkthrough to screen-record.
-/// Each walkthrough has a light and a dark cut. Videos 1 and 2 use the accent picked on the prep screen. Video 3 visits Sakura, Purple, and Orange.
+/// Each walkthrough has a light and a dark cut. Videos 1 and 2 use the accent picked on the prep screen. Video 3 visits Sakura, Lavender, and Orange.
 nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     case forYouLight
     case forYouDark
@@ -69,7 +69,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .exploreVocab:
             return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab and the review card in the same set."
         case .themeTour:
-            return "Profile’s theme control, then Sakura, Purple, and Orange on Feed, Vocab, and Profile. \(scheme.title) paper."
+            return "Profile’s theme and text glow, then Sakura, Lavender, and Orange on Feed, Vocab, and Profile. \(scheme.title) paper."
         }
     }
 
@@ -80,7 +80,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .forYou:
             return [
                 "The usual video, then the control enlarges it so the words sit on the picture",
-                "\(ink) underlines on content words, a second \(ink) shade on particles",
+                "\(ink) underlines, with the text glow on the words",
                 "A known word uses the \(ink) known color",
                 "Controls fade, then a touch brings them back",
                 "Tap a word — the dictionary card opens in \(ink)",
@@ -89,17 +89,18 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             ]
         case .exploreVocab:
             return [
-                "Explore’s learning paths",
+                "Explore’s learning paths, in \(ink)",
                 "Open Listening",
-                "Two clips play on \(page), karaoke in \(ink)",
+                "Two clips play on \(page), karaoke glowing in \(ink)",
                 "Vocab opens with how many words you know",
                 "Review card: \(ink) word, sentence, and the clip it came from"
             ]
         case .themeTour:
             return [
                 "Profile opens on the theme control",
+                "Text glow steps from Soft to Liquid, with 光 breathing",
                 "Sakura across Feed, Vocab, and Profile",
-                "Switch to Purple and visit the three tabs",
+                "Switch to Lavender and visit the three tabs",
                 "Switch to Orange and visit the three tabs"
             ]
         }
@@ -148,9 +149,12 @@ struct MarketingShowcaseView: View {
     @State private var themeCaption: String?
     /// Open theme menu during the theme tour. The checked accent is the one on screen.
     @State private var themeMenu: AccentTheme?
-    /// Theme and paper to put back when the recording ends.
+    /// Theme, paper, and glow to put back when the recording ends.
     @State private var parkedAccent: AccentTheme?
     @State private var parkedScheme: JojoScheme?
+    @State private var parkedGlow: GlowLevel?
+    /// Profile scroll target during the theme tour. Nil keeps the theme row.
+    @State private var profileAnchor: String?
 
     private enum Phase { case prep, running, done }
     private enum Stage { case feed, explore, watching, vocab, analytics, flashcard }
@@ -177,6 +181,7 @@ struct MarketingShowcaseView: View {
             if parkedAccent == nil {
                 parkedAccent = app.profile.theme
                 parkedScheme = app.profile.scheme
+                parkedGlow = app.profile.glow
             }
             JojoPalette.activate(theme: accent, scheme: initialScript.scheme)
             if autoBegin, !didAutoBegin {
@@ -198,6 +203,9 @@ struct MarketingShowcaseView: View {
             if let parkedAccent, let parkedScheme {
                 app.setScheme(parkedScheme)
                 app.setTheme(parkedAccent)
+            }
+            if let parkedGlow {
+                app.setGlowLevel(parkedGlow)
             }
             if app.profile.onboardingCompleted {
                 app.restorePalette()
@@ -229,7 +237,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Pick Sakura, Purple, or Orange, then a light or dark walkthrough. Video 3 visits all three themes. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Pick Sakura, Lavender, or Orange, then a light or dark walkthrough. Video 3 visits all three themes. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -364,6 +372,7 @@ struct MarketingShowcaseView: View {
                 case .analytics:
                     ProfileView()
                         .environment(\.marketingScrollsToTheme, themeMenu != nil)
+                        .environment(\.marketingProfileAnchor, profileAnchor)
                 case .flashcard:
                     if let flashWord {
                         flashcardBeat(flashWord)
@@ -451,9 +460,13 @@ struct MarketingShowcaseView: View {
 
     private var feedChrome: some View {
         VStack(spacing: 0) {
+            StudySessionClock(running: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.l)
+                .padding(.top, 2)
             if !app.profile.hideDailyGoalBar {
                 DailyGoalBar()
-                    .padding(.top, 4)
+                    .padding(.top, 2)
             }
             ZStack {
                 CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: {})
@@ -572,7 +585,6 @@ struct MarketingShowcaseView: View {
                                     good: true
                                 )
                             }
-                            ReviewUntilFooter(text: SRS.untilReview(SRS.goodInterval(fromStep: word.intervalStepIndex)))
                         }
                         .padding(.horizontal, Spacing.l)
                         .padding(.bottom, Spacing.l)
@@ -580,7 +592,8 @@ struct MarketingShowcaseView: View {
                     .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                 }
             }
-            .rotation3DEffect(.degrees(flashRevealed ? 180 : 0), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
+            .modifier(CardTurnModifier(angle: flashRevealed ? 180 : 0))
+            .animation(.spring(response: 0.62, dampingFraction: 0.78), value: flashRevealed)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background { ReviewStageBackground() }
@@ -699,6 +712,7 @@ struct MarketingShowcaseView: View {
         tabHighlight = .feed
         stage = .feed
         let known = markDemoKnown(on: first)
+        app.setGlowLevel(.glow)
         coordinator.activate(first, startLine: 0, loopLine: true)
         try? await Task.sleep(for: .milliseconds(1600))
         guard !Task.isCancelled else { return }
@@ -757,12 +771,14 @@ struct MarketingShowcaseView: View {
         // Flashcard ending
         let word = savedFromTap ?? flashWords.first
         await playFlashcardSequence(startingWith: word, count: 2)
+        restoreParkedGlow()
     }
 
     /// Video 2: Explore home → Listening → two clips → Vocab → flashcards.
     private func runExploreVocabScript(clips: [Clip], first: Clip) async {
         tabHighlight = .feed
         explorePath = nil
+        app.setGlowLevel(.glow)
         _ = markDemoKnown(on: feedPair.first ?? first)
         withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
         try? await Task.sleep(for: .milliseconds(2200))
@@ -835,13 +851,16 @@ struct MarketingShowcaseView: View {
         guard !Task.isCancelled else { return }
 
         await playFlashcardSequence(startingWith: savedFromClip ?? flashWords.first, count: 2)
+        restoreParkedGlow()
     }
 
-    /// Video 3: open the theme menu, then show Feed, Vocab, and Profile in Sakura, Purple, and Orange.
+    /// Video 3: open the theme menu, then show Feed, Vocab, and Profile in Sakura, Lavender, and Orange.
     private func runThemeTour(first: Clip) async {
         app.setScheme(selectedScript.scheme)
         watchChromeVisible = true
         _ = markDemoKnown(on: first)
+        await playGlowOnProfile()
+        guard !Task.isCancelled else { return }
         for theme in [AccentTheme.sakura, .plum, .orange] {
             guard !Task.isCancelled else { return }
             coordinator.stop()
@@ -849,6 +868,7 @@ struct MarketingShowcaseView: View {
             withAnimation(.easeInOut(duration: 0.35)) {
                 demoAccent = theme
                 themeMenu = theme
+                profileAnchor = nil
                 themeCaption = nil
                 stage = .analytics
                 tabHighlight = .profile
@@ -890,6 +910,32 @@ struct MarketingShowcaseView: View {
             app.setScheme(parkedScheme)
             app.setTheme(parkedAccent)
         }
+        restoreParkedGlow()
+    }
+
+    private func restoreParkedGlow() {
+        if let parkedGlow {
+            app.setGlowLevel(parkedGlow)
+        }
+    }
+
+    /// Profile already owns text glow. Step Soft → Glow → Liquid so the 光 preview breathes on camera.
+    private func playGlowOnProfile() async {
+        withAnimation(.easeInOut(duration: 0.35)) {
+            stage = .analytics
+            tabHighlight = .profile
+            themeMenu = nil
+            themeCaption = nil
+            profileAnchor = "text-glow"
+        }
+        for level in [GlowLevel.soft, .glow, .liquid] {
+            guard !Task.isCancelled else { return }
+            app.setGlowLevel(level)
+            try? await Task.sleep(for: .milliseconds(1100))
+        }
+        guard !Task.isCancelled else { return }
+        app.setGlowLevel(.glow)
+        try? await Task.sleep(for: .milliseconds(400))
     }
 
     /// Same fade the live feed uses once a clip has the learner's attention.
@@ -956,6 +1002,7 @@ struct MarketingShowcaseView: View {
         demoVideoExpanded = false
         themeCaption = nil
         themeMenu = nil
+        profileAnchor = nil
     }
 }
 

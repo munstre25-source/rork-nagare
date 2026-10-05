@@ -3,7 +3,7 @@ import SwiftUI
 nonisolated enum SearchScope: String, CaseIterable, Hashable, Sendable {
     case all = "All"
     case words = "Words"
-    case sentences = "Sentences"
+    case sentences = "Clips"
     case grammar = "Grammar"
 }
 
@@ -85,7 +85,8 @@ struct SearchView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .scrollIndicators(.hidden)
-        .background(Color.canvas.ignoresSafeArea())
+        .background(Color.studyPage.ignoresSafeArea())
+        .environment(\.colorScheme, .light)
     }
 
     @ViewBuilder
@@ -101,26 +102,13 @@ struct SearchView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
         } else {
-            if scope == .all || scope == .words, !wordHits.isEmpty {
-                resultSection(
-                    title: "Words (\(wordHits.count))",
-                    expanded: showAllWords,
-                    canExpand: wordHits.count > 4,
-                    expandTitle: "See all words"
-                ) {
-                    showAllWords.toggle()
-                } content: {
-                    ForEach(visibleWords) { hit in
-                        DictionaryResultRow(hit: hit)
-                    }
-                }
-            }
+            resultSummary
             if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
                 resultSection(
-                    title: "Sentences (\(sentenceHits.count))",
+                    title: "Clips (\(sentenceHits.count))",
                     expanded: showAllSentences,
-                    canExpand: sentenceHits.count > 3,
-                    expandTitle: "See all sentences"
+                    canExpand: sentenceHits.count > 8,
+                    expandTitle: "See all clips"
                 ) {
                     showAllSentences.toggle()
                 } content: {
@@ -132,6 +120,20 @@ struct SearchView: View {
                             SentenceResultRow(hit: hit)
                         }
                         .buttonStyle(.plain)
+                    }
+                }
+            }
+            if scope == .all || scope == .words, !wordHits.isEmpty {
+                resultSection(
+                    title: "Words (\(wordHits.count))",
+                    expanded: showAllWords,
+                    canExpand: wordHits.count > 4,
+                    expandTitle: "See all words"
+                ) {
+                    showAllWords.toggle()
+                } content: {
+                    ForEach(visibleWords) { hit in
+                        DictionaryResultRow(hit: hit)
                     }
                 }
             }
@@ -150,12 +152,30 @@ struct SearchView: View {
         }
     }
 
+    private var resultSummary: some View {
+        var parts: [String] = []
+        if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
+            parts.append(sentenceHits.count == 1 ? "1 clip" : "\(sentenceHits.count) clips")
+        }
+        if scope == .all || scope == .words, !wordHits.isEmpty {
+            parts.append(wordHits.count == 1 ? "1 word" : "\(wordHits.count) words")
+        }
+        if scope == .all || scope == .grammar, !grammarHits.isEmpty {
+            parts.append(grammarHits.count == 1 ? "1 grammar point" : "\(grammarHits.count) grammar")
+        }
+        return Text(parts.joined(separator: " · "))
+            .font(.title3.weight(.bold))
+            .foregroundStyle(LearningInk.japanese)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
     private var visibleWords: [WordSearchHit] {
         showAllWords || scope == .words ? wordHits : Array(wordHits.prefix(4))
     }
 
     private var visibleSentences: [SearchHit] {
-        showAllSentences || scope == .sentences ? sentenceHits : Array(sentenceHits.prefix(3))
+        showAllSentences || scope == .sentences ? sentenceHits : Array(sentenceHits.prefix(8))
     }
 
     private var suggestionsView: some View {
@@ -206,7 +226,7 @@ struct SearchView: View {
                             .font(.caption.weight(.bold))
                     }
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.designOrange)
+                    .foregroundStyle(Color.studyAccent)
                     .frame(minHeight: 36)
                 }
             }
@@ -323,8 +343,11 @@ private struct DictionaryResultRow: View {
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.bottom, 8)
     }
 }
 
@@ -344,31 +367,37 @@ private struct SentenceResultRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
+            ClipPosterView(clip: hit.clip, showsSymbol: false)
+                .frame(width: 84, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(line?.text ?? hit.clip.title)
-                    .font(JojoFont.jp(17, bold: true, relativeTo: .body))
+                    .font(JojoFont.jp(16, bold: true, relativeTo: .body))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                Text(hit.clip.channelName)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.studyMuted)
+                    .lineLimit(1)
                 if let translation = line?.translation, !translation.isEmpty {
                     Text(translation)
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                        .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            VStack(alignment: .trailing, spacing: 8) {
-                if let level {
-                    JLPTBadge(level: level)
-                }
-                Image(systemName: "speaker.wave.2")
-                    .foregroundStyle(.secondary)
+            if let level {
+                JLPTBadge(level: level)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.bottom, 8)
     }
 }

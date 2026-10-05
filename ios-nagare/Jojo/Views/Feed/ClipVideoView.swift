@@ -24,9 +24,12 @@ struct ClipVideoView: View {
     /// Feed focus: a tap on the video brings the chrome back instead of pausing.
     var watchChromeHidden: Bool = false
     var onRevealWatchChrome: () -> Void = {}
+    /// Advance the feed when a YouTube embed cannot be recovered.
+    var onSkip: (() -> Void)? = nil
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
+    @Environment(\.openURL) private var openURL
     @State private var saveBurst: Bool = false
     @State private var savedWordLabel: String?
     @State private var holdHint: Bool = false
@@ -34,7 +37,10 @@ struct ClipVideoView: View {
     var body: some View {
         ZStack {
             surface
-            if player?.isPlaying != true, !coordinator.isHoldSlowActive {
+            if embedFailed {
+                embedFailure
+            }
+            if player?.isPlaying != true, !coordinator.isHoldSlowActive, !embedFailed {
                 Image(systemName: "play.fill")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)
@@ -80,6 +86,7 @@ struct ClipVideoView: View {
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { doubleTapSave() }
         .onTapGesture(count: 1) {
+            if embedFailed { return }
             if watchChromeHidden {
                 onRevealWatchChrome()
                 return
@@ -150,11 +157,44 @@ struct ClipVideoView: View {
             ZStack {
                 ClipPosterView(clip: clip, showsSymbol: false)
                 YouTubePlayerView(player: youtube)
-                    .opacity(youtube.isReady || youtube.embedFailed ? 1 : 0.01)
+                    .opacity(youtube.isReady && !youtube.embedFailed ? 1 : 0.01)
             }
         } else {
             ClipPosterView(clip: clip, isAnimating: player?.isPlaying == true)
         }
+    }
+
+    private var embedFailed: Bool {
+        (player as? YouTubeClipPlayer)?.embedFailed == true
+    }
+
+    private var embedFailure: some View {
+        VStack(spacing: Spacing.m) {
+            Text("Video couldn’t load")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+            HStack(spacing: Spacing.s) {
+                if let url = clip.youtubeURL {
+                    Button("Open in YouTube") {
+                        openURL(url)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.jojoOrange)
+                }
+                if let onSkip {
+                    Button("Skip") {
+                        Haptics.selection()
+                        onSkip()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.white)
+                }
+            }
+        }
+        .padding(Spacing.l)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.black.opacity(0.55))
     }
 
     private var sourceBadge: some View {

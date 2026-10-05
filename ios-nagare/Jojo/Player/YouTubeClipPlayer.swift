@@ -210,13 +210,16 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 if !isMuted { run("player&&player.unMute()") }
             }
         case "error":
-            embedFailed = true
             print("[YouTube] player error \(value.map { String(Int($0)) } ?? "?") for \(clip.videoId)")
             // One retry via youtube-nocookie host — helps some embedder-identity failures.
             if !didRetryNocookie {
                 didRetryNocookie = true
+                embedFailed = false
                 isReady = false
                 loadPlayerHTML(in: webView, host: "https://www.youtube-nocookie.com")
+            } else {
+                embedFailed = true
+                isPlaying = false
             }
         default:
             break

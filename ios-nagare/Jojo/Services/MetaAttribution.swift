@@ -29,7 +29,9 @@ enum MetaAttribution {
         Settings.shared.displayName = "Jojo"
         // RevenueCat owns Subscribe / StartTrial / renewals — avoid double-counting.
         Settings.shared.isAutoLogAppEventsEnabled = false
-        Settings.shared.isAdvertiserIDCollectionEnabled = true
+        // IDFA collection stays off until ATT returns .authorized.
+        Settings.shared.isAdvertiserIDCollectionEnabled = false
+        Settings.shared.isAdvertiserTrackingEnabled = false
 
         return ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
@@ -66,8 +68,9 @@ enum MetaAttribution {
         if ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
             _ = await ATTrackingManager.requestTrackingAuthorization()
         }
-        Settings.shared.isAdvertiserTrackingEnabled =
-            ATTrackingManager.trackingAuthorizationStatus == .authorized
+        let authorized = ATTrackingManager.trackingAuthorizationStatus == .authorized
+        Settings.shared.isAdvertiserTrackingEnabled = authorized
+        Settings.shared.isAdvertiserIDCollectionEnabled = authorized
         syncToRevenueCat()
     }
 }

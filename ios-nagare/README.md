@@ -224,7 +224,7 @@ Enable the App Group on both the app and widget App IDs in the Apple Developer p
 - The level badge (N5→N1) is estimated from known and learning word counts.
 - The streak counts consecutive days with at least 1 minute watched.
 - A streak-at-risk nudge fires at 21:30 and the daily reminder at 19:00. A Day-2 reminder is scheduled after starting a 3-day yearly trial when notifications are allowed.
-- Social-proof ratings and quotes are sample content.
+- Onboarding does not show named testimonials. For You opens on clips ranked from the answers saved during onboarding.
 - Noto Sans JP is bundled as static Regular/Bold subsets (Latin + kana + CJK unified). Hiragino Sans is the fallback.
 - The SwiftData models are CloudKit-compatible, but CloudKit sync is disabled (`cloudKitDatabase: .none`).
 - Terms / Privacy / Support: `https://socialreporthq.com/jojo/{terms,privacy,support}` (`StoreConstants`). Contact: `support@socialreporthq.com`.

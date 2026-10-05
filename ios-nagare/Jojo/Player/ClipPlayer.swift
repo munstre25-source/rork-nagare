@@ -100,12 +100,14 @@ enum PlaybackUI {
     }
 }
 
-/// Builds the right player for a clip. Local bundle wins so Simulator / Rork can record
-/// walkthroughs without relying on YouTube embeds.
+/// Builds the right player for a clip. Bundled MP4s are debug walkthroughs only.
+/// Release playback uses the YouTube source for the same clip.
 @MainActor
 enum ClipPlayerFactory {
     static func make(for clip: Clip) -> any ClipPlayer {
+        #if DEBUG
         if clip.hasLocalVideo { return LocalClipPlayer(clip: clip) }
+        #endif
         if clip.hasRealVideo { return YouTubeClipPlayer(clip: clip) }
         return SimulatedClipPlayer(clip: clip)
     }

@@ -785,6 +785,11 @@ final class AppModel {
         save()
     }
 
+    func setGlowLevel(_ level: GlowLevel) {
+        profile.glow = level
+        save()
+    }
+
     /// Puts the saved theme back after a Sakura-only marketing demo.
     func restorePalette() {
         JojoPalette.activate(theme: profile.theme, scheme: profile.scheme)
@@ -861,6 +866,25 @@ final class AppModel {
         } else {
             NotificationService.scheduleStreakAtRisk(streak: currentStreak)
         }
+        refreshTrialReminder()
+    }
+
+    /// Trial-end nudge from the entitlement expiration, including when reminders are turned on after purchase.
+    func refreshTrialReminder() {
+        guard profile.remindersEnabled else {
+            NotificationService.cancelTrialReminder()
+            return
+        }
+        // Customer info may still be loading. Leave a reminder that was already scheduled.
+        guard let status = purchases.status else { return }
+        guard purchases.isSubscribed,
+              status.isInTrial,
+              let expiration = status.expirationDate,
+              expiration.timeIntervalSinceNow > 60 else {
+            NotificationService.cancelTrialReminder()
+            return
+        }
+        NotificationService.scheduleTrialReminder(endingAt: expiration)
     }
 
     var dueWordCount: Int {
@@ -903,9 +927,20 @@ final class AppModel {
         fetchWord(key: key)
     }
 
-    func completeOnboarding() {
+    /// Release onboarding never invents watch history or saved words. Debug builds may.
+    static var seedsDemoOnOnboarding: Bool {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
+    }
+
+    func completeOnboarding(seedDemo: Bool = AppModel.seedsDemoOnOnboarding) {
         assignFirstClip()
-        seedDemoDataIfNeeded()
+        if seedDemo, Self.seedsDemoOnOnboarding {
+            seedDemoDataIfNeeded()
+        }
         profile.onboardingCompleted = true
         profile.onboardingCompletedAt = Date()
         // Baselines exclude seeded watch history + seed vocab from the soft ask.
@@ -1080,6 +1115,14 @@ final class AppModel {
         pendingDeepLink = nil
         goalCelebrationCount = 0
         unsavedWatchSeconds = 0
+
+        let defaults = UserDefaults.standard
+        // Entitlement cache and the debug bypass are local leftovers. RevenueCat keeps its own anonymous ID.
+        defaults.removeObject(forKey: "nagare.entitlement.cached")
+        defaults.removeObject(forKey: "nagare.debug.bypass")
+        defaults.removeObject(forKey: "nagare.local.anon.id")
+        defaults.removeObject(forKey: "nagare.analytics.log")
+        defaults.removeObject(forKey: "nagare.explain.calllog")
 
         let fresh = UserProfile()
         context.delete(profile)

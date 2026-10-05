@@ -19,19 +19,47 @@ struct PaywallView: View {
     @State private var showPlans = false
     @State private var peekIn = false
     @State private var kenBurns = false
+    @State private var offeringTimedOut = false
+    @State private var offeringWatch = 0
+    @State private var restoreAlert: String?
 
     private var purchases: PurchaseManager { app.purchases }
+    private var showsRemotePaywall: Bool {
+        purchases.offering?.hasPaywall == true
+    }
 
     var body: some View {
-        nativePaywall
+        Group {
+            if let offering = purchases.offering, offering.hasPaywall {
+                RemotePaywallView(
+                    offering: offering,
+                    onSubscribed: {
+                        scheduleTrialReminderNow(trialDays: nil)
+                        onSubscribed()
+                    },
+                    onRestoreFailed: { message in restoreAlert = message }
+                )
+            } else {
+                nativePaywall
+            }
+        }
+            .alert("Restore Purchases", isPresented: Binding(
+                get: { restoreAlert != nil },
+                set: { if !$0 { restoreAlert = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(restoreAlert ?? "")
+            }
             .onAppear {
                 guard !didTrackView else { return }
                 didTrackView = true
                 track("onboarding_paywall_view", props: [
                     "offering_loaded": purchases.offering == nil ? "0" : "1",
-                    "remote": "0"
+                    "remote": showsRemotePaywall ? "1" : "0"
                 ])
                 if purchases.offering == nil { Task { await purchases.loadOffering() } }
+                watchOfferingLoad()
                 if purchases.isSubscribed { onSubscribed() }
                 withAnimation(.easeOut(duration: 0.35)) { appeared = true }
                 withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { strokeProgress = 1 }
@@ -44,6 +72,9 @@ struct PaywallView: View {
             }
             .onChange(of: purchases.isSubscribed) { _, subscribed in
                 if subscribed { onSubscribed() }
+            }
+            .onChange(of: plansReady) { _, ready in
+                if ready { offeringTimedOut = false }
             }
     }
 
@@ -68,7 +99,13 @@ struct PaywallView: View {
                             .padding(Spacing.m)
                             .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
-                    purchaseButton
+                    Group {
+                        if offeringUnavailable {
+                            offeringRetry
+                        } else {
+                            purchaseButton
+                        }
+                    }
                         .opacity(showPlans ? 1 : 0)
                         .offset(y: showPlans ? 0 : 24)
                     VStack(spacing: 8) {
@@ -231,6 +268,10 @@ struct PaywallView: View {
     private var yearlyPrice: String? { purchases.priceText(purchases.yearly) }
     private var monthlyPrice: String? { purchases.priceText(purchases.monthly) }
     private var plansReady: Bool { yearlyPrice != nil && monthlyPrice != nil }
+    /// Offerings failed, or they have not arrived within 8 seconds.
+    private var offeringUnavailable: Bool {
+        !plansReady && (purchases.offeringFailed || offeringTimedOut)
+    }
 
     private var perMonthLine: String? {
         guard let amount = purchases.perMonthText(purchases.yearly) else { return nil }
@@ -265,6 +306,10 @@ struct PaywallView: View {
                 if let yearlyPrice, let period = purchases.periodSuffix(purchases.yearly) {
                     Text("\(yearlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(PaywallInk.ink)
+                } else if offeringUnavailable {
+                    Text("Plans didn’t load")
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(PaywallInk.ink)
                 } else {
                     ProgressView().tint(PaywallInk.pink)
@@ -316,6 +361,10 @@ struct PaywallView: View {
                 if let monthlyPrice, let period = purchases.periodSuffix(purchases.monthly) {
                     Text("\(monthlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
+                } else if offeringUnavailable {
+                    Text("Plans didn’t load")
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
                     ProgressView().tint(.white)
@@ -385,7 +434,29 @@ struct PaywallView: View {
         .disabled(!plansReady || purchases.isPurchasing || purchases.isRestoring)
     }
 
+    private var offeringRetry: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Couldn’t load plans. Check your connection and try again.")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+            Button {
+                Task { await retryOffering() }
+            } label: {
+                if purchases.isLoadingOffering {
+                    ProgressView().tint(.white)
+                } else {
+                    Text("Try again")
+                }
+            }
+            .buttonStyle(PaywallCTAStyle())
+            .disabled(purchases.isLoadingOffering)
+        }
+    }
+
     private var trialCaption: String {
+        if offeringUnavailable {
+            return "Plans didn’t load. Restore still works if you already subscribed."
+        }
         guard let price = purchases.priceText(selectedPackage),
               let period = purchases.periodSuffix(selectedPackage) else {
             return "Loading plans from the App Store"
@@ -469,10 +540,7 @@ struct PaywallView: View {
         case .success:
             Haptics.success()
             track("onboarding_payment_success", props: ["plan": plan == .yearly ? "yearly" : "monthly"])
-            if await NotificationService.isAuthorized(),
-               let days = purchases.trialLengthDays(selectedPackage) {
-                NotificationService.scheduleTrialReminder(trialDays: days)
-            }
+            scheduleTrialReminderNow(trialDays: purchases.trialLengthDays(selectedPackage))
             onSubscribed()
         case .cancelled:
             track("onboarding_payment_cancelled")
@@ -483,6 +551,35 @@ struct PaywallView: View {
             track("onboarding_payment_failed")
             withAnimation { errorMessage = message }
         }
+    }
+
+    /// Uses the trial end date when RevenueCat has it. Otherwise counts forward from today.
+    /// Later reminder opt-in is handled by `AppModel.refreshTrialReminder()`.
+    private func scheduleTrialReminderNow(trialDays: Int?) {
+        guard app.profile.remindersEnabled else { return }
+        if let status = purchases.status, status.isInTrial, let expiration = status.expirationDate {
+            NotificationService.scheduleTrialReminder(endingAt: expiration)
+        } else if let trialDays {
+            NotificationService.scheduleTrialReminder(trialDays: trialDays)
+        }
+    }
+
+    private func watchOfferingLoad() {
+        offeringWatch += 1
+        let watch = offeringWatch
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(8))
+            guard watch == offeringWatch, !plansReady else { return }
+            offeringTimedOut = true
+        }
+    }
+
+    private func retryOffering() async {
+        offeringTimedOut = false
+        errorMessage = nil
+        await purchases.loadOffering()
+        if !plansReady { offeringTimedOut = true }
+        watchOfferingLoad()
     }
 
     private func restore() async {

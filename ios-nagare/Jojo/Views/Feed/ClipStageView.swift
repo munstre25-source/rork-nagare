@@ -26,6 +26,7 @@ struct ClipStageView: View {
     /// When the feed has faded its chrome, the next tap on the video brings it back.
     var watchChromeHidden: Bool = false
     var onRevealWatchChrome: () -> Void = {}
+    var onSkip: (() -> Void)? = nil
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
@@ -72,7 +73,7 @@ struct ClipStageView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .background(usesFlexibleVideo || immersiveFeed ? Color.watchBackground : Color.clear)
+        .background(usesFlexibleVideo || immersiveFeed ? Color.canvas : Color.clear)
         .overlay {
             if isPopupHere { popupLayer }
         }
@@ -120,7 +121,8 @@ struct ClipStageView: View {
                 onShadowing: nil,
                 fitsFrame: false,
                 watchChromeHidden: watchChromeHidden,
-                onRevealWatchChrome: onRevealWatchChrome
+                onRevealWatchChrome: onRevealWatchChrome,
+                onSkip: onSkip
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
@@ -198,7 +200,8 @@ struct ClipStageView: View {
                     onShadowing: immersiveFeed ? nil : onShadowing,
                     fitsFrame: false,
                     watchChromeHidden: watchChromeHidden,
-                    onRevealWatchChrome: onRevealWatchChrome
+                    onRevealWatchChrome: onRevealWatchChrome,
+                    onSkip: onSkip
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
             }
@@ -209,7 +212,8 @@ struct ClipStageView: View {
                     clip: clip,
                     player: player,
                     onInfo: onInfo,
-                    onShadowing: onShadowing
+                    onShadowing: onShadowing,
+                    onToggleVideoSize: isPopupHere ? nil : onToggleVideoSize
                 )
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity)
@@ -219,16 +223,6 @@ struct ClipStageView: View {
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
                 .clipped()
-
-            if let onToggleVideoSize, !isPopupHere {
-                HStack {
-                    Spacer(minLength: 0)
-                    videoSizeButton(action: onToggleVideoSize)
-                }
-                .frame(width: columnWidth)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 6)
-            }
         }
     }
 
@@ -353,6 +347,8 @@ struct ClipActionRow: View {
     let player: (any ClipPlayer)?
     var onInfo: (() -> Void)?
     var onShadowing: (() -> Void)?
+    /// Resting feed only. Maximized keeps the corner control on the picture.
+    var onToggleVideoSize: (() -> Void)? = nil
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
@@ -382,8 +378,8 @@ struct ClipActionRow: View {
                     .font(.footnote.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(.primary)
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 36)
+                    .padding(.horizontal, 8)
+                    .frame(minHeight: 32)
                     .background(Color.fieldFill, in: Capsule())
                     .frame(minHeight: 44)
             }
@@ -393,47 +389,64 @@ struct ClipActionRow: View {
                 Haptics.light()
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             } label: {
-                Image(systemName: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(app.isFavorite(clip.id) ? Color.designOrange : .secondary)
-                    .frame(width: 44, height: 44)
+                rowIcon(app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark", tint: app.isFavorite(clip.id) ? Color.designOrange : .secondary)
             }
             .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
 
             Button {
                 Haptics.selection()
                 if player == nil { coordinator.activate(clip) }
+                else { player?.togglePlay() }
+            } label: {
+                Image(systemName: player?.isPlaying == true ? "pause.fill" : "play.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 28, height: 28)
+                    .background(Color.fieldFill, in: Circle())
+                    .frame(width: 34, height: 44)
+            }
+            .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
+
+            Button {
+                Haptics.selection()
+                if player == nil { coordinator.activate(clip) }
                 player?.toggleLoopCurrentLine()
             } label: {
-                Image(systemName: "repeat")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(player?.loopRange != nil ? Color.designOrange : .secondary)
-                    .frame(width: 44, height: 44)
+                rowIcon("repeat", tint: player?.loopRange != nil ? Color.designOrange : .secondary)
             }
             .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
 
-            if let onShadowing {
+            if let onShadowing, onToggleVideoSize == nil {
                 Button(action: onShadowing) {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 44, height: 44)
+                    rowIcon("mic.fill", tint: .secondary)
                 }
                 .accessibilityLabel("Shadowing practice")
             }
 
             if let onInfo {
                 Button(action: onInfo) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 44, height: 44)
+                    rowIcon("info.circle", tint: .secondary)
                 }
                 .accessibilityLabel("Clip info")
+            }
+
+            if let onToggleVideoSize {
+                Button(action: onToggleVideoSize) {
+                    rowIcon("arrow.up.left.and.arrow.down.right", tint: .primary)
+                }
+                .accessibilityLabel("Maximize video")
+                .accessibilityHint("Enlarges the video so the words sit on the picture")
             }
         }
         .padding(.horizontal, 2)
         .padding(.vertical, 2)
+    }
+
+    private func rowIcon(_ systemName: String, tint: Color) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 34, height: 44)
     }
 }
 

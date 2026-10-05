@@ -28,7 +28,7 @@
 	<key>FacebookAutoLogAppEventsEnabled</key>
 	<false/>
 	<key>FacebookAdvertiserIDCollectionEnabled</key>
-	<true/>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>

@@ -16,7 +16,7 @@ nonisolated enum ContentLibrary {
     }
 
     private static func decode<T: Decodable>(_ type: T.Type, resource: String) -> T? {
-        guard let url = Bundle.main.url(forResource: resource, withExtension: "json") else {
+        guard let url = resourceURL(resource) else {
             print("[Content] missing resource \(resource).json")
             return nil
         }
@@ -27,4 +27,17 @@ nonisolated enum ContentLibrary {
             return nil
         }
     }
+
+    /// `Bundle.main` in a hosted unit test is the test bundle. The app bundle still holds the JSON.
+    private static func resourceURL(_ resource: String) -> URL? {
+        let bundles = [Bundle.main, Bundle(for: ContentBundleLocator.self)]
+        for bundle in bundles {
+            if let url = bundle.url(forResource: resource, withExtension: "json") {
+                return url
+            }
+        }
+        return nil
+    }
 }
+
+private final class ContentBundleLocator: NSObject {}

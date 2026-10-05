@@ -87,7 +87,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 56)
             .background {
                 RoundedRectangle(cornerRadius: Radius.button, style: .continuous)
-                    .fill(isEnabled ? Color.sakuraButton : Color(hex: "#5C3A68"))
+                    .fill(isEnabled ? Color.sakuraButton : Color.accentDisabled)
             }
             .shadow(color: Color.black.opacity(isEnabled ? 0.22 : 0), radius: 10, y: 4)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
