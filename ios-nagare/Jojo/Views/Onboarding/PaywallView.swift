@@ -92,7 +92,7 @@ struct PaywallView: View {
             .scaleEffect(appeared ? 1 : 0.96)
             .opacity(appeared ? 1 : 0)
 
-            JojoMascot(height: 150, pose: .peek, floats: false)
+            JojoMascot(height: 150, floats: false, pose: .peek)
                 .offset(x: peekIn ? 36 : 150, y: peekIn ? 24 : 70)
                 .opacity(peekIn ? 1 : 0)
                 .allowsHitTesting(false)
