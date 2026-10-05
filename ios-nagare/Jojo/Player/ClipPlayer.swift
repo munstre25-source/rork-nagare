@@ -58,7 +58,7 @@ extension ClipPlayer {
 }
 
 /// Publishes playhead state without notifying SwiftUI on every audio frame.
-@MainActor
+/// Not main-actor isolated: the video clock calls it from AVPlayer's time callback.
 enum PlaybackUI {
     /// Updates the karaoke markers when they change, and the clock about four times a second.
     static func note(

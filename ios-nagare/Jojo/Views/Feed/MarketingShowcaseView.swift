@@ -49,9 +49,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         let page = scheme == .light ? "cream" : "black"
         switch kind {
         case .forYou:
-            "Sakura theme. Two clips play on the \(page) For You page, then the review card: reading, meanings, the sentence, and Again / Good."
+            return "Sakura theme. Two clips play on the \(page) For You page, then the review card: reading, meanings, the sentence, and Again / Good."
         case .exploreVocab:
-            "Sakura theme. Explore opens Listening, two clips play on \(page), then Vocab and the same review card."
+            return "Sakura theme. Explore opens Listening, two clips play on \(page), then Vocab and the same review card."
         }
     }
 
@@ -59,7 +59,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         let page = scheme == .light ? "cream" : "black"
         switch kind {
         case .forYou:
-            [
+            return [
                 "Channel name above the clip, sakura underlines, readable English",
                 "A word you know is boxed in green",
                 "Controls fade, then a touch brings them back",
@@ -68,7 +68,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
                 "Review card: reading, two meanings, the sentence, Again and Good"
             ]
         case .exploreVocab:
-            [
+            return [
                 "Explore’s learning paths",
                 "Open Listening",
                 "Two clips play on \(page) — sakura transcript, swipe to the next",
