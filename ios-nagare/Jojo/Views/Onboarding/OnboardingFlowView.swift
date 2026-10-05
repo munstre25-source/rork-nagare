@@ -273,6 +273,8 @@ struct SplashView: View {
             debugDemoButton("For You · Dark", script: .forYouDark, hint: "Sakura dark: feed, word tap, swipe, flashcard")
             debugDemoButton("Explore · Light", script: .exploreVocabLight, hint: "Sakura light: explore, vocab, flashcards")
             debugDemoButton("Explore · Dark", script: .exploreVocabDark, hint: "Sakura dark: explore, vocab, flashcards")
+            debugDemoButton("Themes · Light", script: .themeTourLight, hint: "Theme menu, then Feed, Vocab, and Profile in Sakura, Purple, and Orange")
+            debugDemoButton("Themes · Dark", script: .themeTourDark, hint: "Same theme tour on the dark paper")
         }
         .padding(.top, Spacing.s)
     }

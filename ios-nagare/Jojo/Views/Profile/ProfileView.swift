@@ -7,6 +7,7 @@ import StoreKit
 struct ProfileView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
+    @Environment(\.marketingScrollsToTheme) private var marketingScrollsToTheme
     @Query private var words: [SavedWord]
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showGoalPicker: Bool = false
@@ -44,6 +45,7 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.l) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -105,6 +107,18 @@ struct ProfileView: View {
             }
             .scrollIndicators(.hidden)
             .background(Color.canvas.ignoresSafeArea())
+            .onAppear {
+                guard marketingScrollsToTheme else { return }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(60))
+                    proxy.scrollTo("appearance", anchor: .top)
+                }
+            }
+            .onChange(of: marketingScrollsToTheme) { _, on in
+                guard on else { return }
+                proxy.scrollTo("appearance", anchor: .top)
+            }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -223,6 +237,7 @@ struct ProfileView: View {
     private var settings: some View {
         VStack(spacing: 0) {
             settingsHeader("Appearance")
+                .id("appearance")
             Menu {
                 ForEach(AccentTheme.allCases) { theme in
                     Button(theme.title) { app.setTheme(theme) }
@@ -305,6 +320,14 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
             SettingsRow(symbol: "play.circle", title: "Explore & Vocab · Dark") {
                 marketingScript = .exploreVocabDark
+            }
+            Divider().padding(.leading, 52)
+            SettingsRow(symbol: "paintpalette", title: "Themes · Light") {
+                marketingScript = .themeTourLight
+            }
+            Divider().padding(.leading, 52)
+            SettingsRow(symbol: "paintpalette", title: "Themes · Dark") {
+                marketingScript = .themeTourDark
             }
             Divider().padding(.leading, 52)
             #endif
@@ -537,5 +560,17 @@ extension View {
     func cardStyle() -> some View {
         background(Color.card, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.cardStroke))
+    }
+}
+
+private struct MarketingScrollsToThemeKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Marketing theme tour scrolls Profile to the Theme row.
+    var marketingScrollsToTheme: Bool {
+        get { self[MarketingScrollsToThemeKey.self] }
+        set { self[MarketingScrollsToThemeKey.self] = newValue }
     }
 }

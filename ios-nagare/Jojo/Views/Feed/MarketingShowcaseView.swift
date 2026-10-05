@@ -3,35 +3,49 @@ import SwiftUI
 import SwiftData
 
 /// Which silent marketing walkthrough to screen-record.
-/// Each walkthrough has a light and a dark cut. Demos always paint the Sakura accent.
+/// Each walkthrough has a light and a dark cut. Videos 1 and 2 use the accent picked on the prep screen. Video 3 visits Sakura, Purple, and Orange.
 nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
     case forYouLight
     case forYouDark
     case exploreVocabLight
     case exploreVocabDark
+    case themeTourLight
+    case themeTourDark
 
     var id: String { rawValue }
 
-    enum Kind { case forYou, exploreVocab }
+    enum Kind { case forYou, exploreVocab, themeTour }
 
     var kind: Kind {
         switch self {
         case .forYouLight, .forYouDark: .forYou
         case .exploreVocabLight, .exploreVocabDark: .exploreVocab
+        case .themeTourLight, .themeTourDark: .themeTour
         }
     }
 
     var scheme: JojoScheme {
         switch self {
-        case .forYouLight, .exploreVocabLight: .light
-        case .forYouDark, .exploreVocabDark: .dark
+        case .forYouLight, .exploreVocabLight, .themeTourLight: .light
+        case .forYouDark, .exploreVocabDark, .themeTourDark: .dark
         }
     }
 
-    var videoLabel: String { kind == .forYou ? "Video 1" : "Video 2" }
+    var videoLabel: String {
+        switch kind {
+        case .forYou: return "Video 1"
+        case .exploreVocab: return "Video 2"
+        case .themeTour: return "Video 3"
+        }
+    }
 
     var title: String {
-        let name = kind == .forYou ? "Video 1 · For You" : "Video 2 · Explore & Vocab"
+        let name: String
+        switch kind {
+        case .forYou: name = "Video 1 · For You"
+        case .exploreVocab: name = "Video 2 · Explore & Vocab"
+        case .themeTour: name = "Video 3 · Themes"
+        }
         return "\(name) · \(scheme.title)"
     }
 
@@ -42,6 +56,8 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .forYouDark: .forYouLight
         case .exploreVocabLight: .exploreVocabDark
         case .exploreVocabDark: .exploreVocabLight
+        case .themeTourLight: .themeTourDark
+        case .themeTourDark: .themeTourLight
         }
     }
 
@@ -52,6 +68,8 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             return "\(accent.title) colors. Two clips play on the \(page) For You page. Karaoke, the dictionary, and the review card use that set."
         case .exploreVocab:
             return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab and the review card in the same set."
+        case .themeTour:
+            return "Profile’s theme control, then Sakura, Purple, and Orange on Feed, Vocab, and Profile. \(scheme.title) paper."
         }
     }
 
@@ -76,6 +94,13 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
                 "Two clips play small on \(page), karaoke in \(ink)",
                 "Vocab opens with how many words you know",
                 "Review card: \(ink) word, sentence, and when it returns"
+            ]
+        case .themeTour:
+            return [
+                "Profile opens on the theme control",
+                "Sakura across Feed, Vocab, and Profile",
+                "Switch to Purple and visit the three tabs",
+                "Switch to Orange and visit the three tabs"
             ]
         }
     }
@@ -117,6 +142,13 @@ struct MarketingShowcaseView: View {
     @State private var bornCard: BornCardPayload?
     /// Mirrors the feed focus fade so the recording shows the capsule and For You switch disappearing.
     @State private var watchChromeVisible: Bool = true
+    /// Name shown on Feed, Vocab, and Profile after a theme change.
+    @State private var themeCaption: String?
+    /// Open theme menu during the theme tour. The checked accent is the one on screen.
+    @State private var themeMenu: AccentTheme?
+    /// Theme and paper to put back when the recording ends.
+    @State private var parkedAccent: AccentTheme?
+    @State private var parkedScheme: JojoScheme?
 
     private enum Phase { case prep, running, done }
     private enum Stage { case feed, explore, watching, vocab, analytics, flashcard }
@@ -140,6 +172,10 @@ struct MarketingShowcaseView: View {
         .onAppear {
             selectedScript = initialScript
             demoAccent = accent
+            if parkedAccent == nil {
+                parkedAccent = app.profile.theme
+                parkedScheme = app.profile.scheme
+            }
             JojoPalette.activate(theme: accent, scheme: initialScript.scheme)
             if autoBegin, !didAutoBegin {
                 didAutoBegin = true
@@ -157,6 +193,10 @@ struct MarketingShowcaseView: View {
             scriptTask?.cancel()
             coordinator.stop()
             lookup.dismiss()
+            if let parkedAccent, let parkedScheme {
+                app.setScheme(parkedScheme)
+                app.setTheme(parkedAccent)
+            }
             if app.profile.onboardingCompleted {
                 app.restorePalette()
             } else {
@@ -182,17 +222,39 @@ struct MarketingShowcaseView: View {
             }
             Spacer(minLength: 0)
             Image(systemName: "record.circle")
-                .font(.system(size: 48))
+                .font(.system(size: 40))
                 .foregroundStyle(Color.jojoOrange)
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Pick Sakura, Purple, or Orange, then a light or dark walkthrough. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Pick Sakura, Purple, or Orange, then a light or dark walkthrough. Video 3 visits all three themes. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.s)
 
+            HStack(spacing: Spacing.s) {
+                ForEach(AccentTheme.allCases) { accent in
+                    Button {
+                        Haptics.selection()
+                        demoAccent = accent
+                        JojoPalette.activate(theme: accent, scheme: selectedScript.scheme)
+                    } label: {
+                        Text(accent.title)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(demoAccent == accent ? .white : .white.opacity(0.7))
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .background(
+                                demoAccent == accent ? Color.sakuraButton : Color.white.opacity(0.08),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, Spacing.l)
+
+            ScrollView {
             VStack(spacing: Spacing.m) {
                 ForEach(MarketingScript.allCases) { script in
                     Button {
@@ -229,27 +291,6 @@ struct MarketingShowcaseView: View {
             }
             .padding(.horizontal, Spacing.l)
 
-            HStack(spacing: Spacing.s) {
-                ForEach(AccentTheme.allCases) { accent in
-                    Button {
-                        Haptics.selection()
-                        demoAccent = accent
-                        JojoPalette.activate(theme: accent, scheme: selectedScript.scheme)
-                    } label: {
-                        Text(accent.title)
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(demoAccent == accent ? .white : .white.opacity(0.7))
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                            .background(
-                                demoAccent == accent ? Color.sakuraButton : Color.white.opacity(0.08),
-                                in: Capsule()
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, Spacing.l)
-
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(Array(selectedScript.beats(accent: demoAccent).enumerated()), id: \.offset) { i, beat in
                     scriptBeatRow("\(i + 1)", beat)
@@ -261,13 +302,15 @@ struct MarketingShowcaseView: View {
             .padding(.horizontal, Spacing.l)
             .animation(.snappy, value: selectedScript)
             .animation(.snappy, value: demoAccent)
+            }
+            .scrollIndicators(.hidden)
 
             Spacer(minLength: 0)
             Button {
                 Haptics.medium()
                 beginShowcase(selectedScript)
             } label: {
-                Label("Begin \(selectedScript.videoLabel) · \(demoAccent.title) · \(selectedScript.scheme.title)", systemImage: "play.fill")
+                Label("Begin \(selectedScript.videoLabel) · \(selectedScript.kind == .themeTour ? "All themes" : demoAccent.title) · \(selectedScript.scheme.title)", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
@@ -318,6 +361,7 @@ struct MarketingShowcaseView: View {
                     VocabView()
                 case .analytics:
                     ProfileView()
+                        .environment(\.marketingScrollsToTheme, themeMenu != nil)
                 case .flashcard:
                     if let flashWord {
                         flashcardBeat(flashWord)
@@ -340,6 +384,26 @@ struct MarketingShowcaseView: View {
                     .animation(.easeInOut(duration: 0.45), value: watchChromeVisible)
             }
         }
+        .overlay(alignment: .top) {
+            if let themeCaption {
+                Text(themeCaption)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                    .background(Color.sakuraButton, in: Capsule())
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if themeMenu != nil {
+                themeMenuCard
+                    .padding(.top, 108)
+                    .padding(.trailing, 28)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+            }
+        }
         .overlay {
             if let bornCard {
                 BornFlashcard(surface: bornCard.surface, romaji: bornCard.romaji, gloss: bornCard.gloss) {
@@ -353,6 +417,32 @@ struct MarketingShowcaseView: View {
     private var showcaseTabBar: some View {
         KikuTabBar(selection: $tabHighlight, vocabBadge: flashWords.count)
             .padding(.bottom, 6)
+    }
+
+    /// The same three choices as Profile’s Theme menu, held open for the recording.
+    private var themeMenuCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(AccentTheme.allCases.enumerated()), id: \.element.id) { index, theme in
+                HStack {
+                    Text(theme.title)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 12)
+                    if themeMenu == theme {
+                        Image(systemName: "checkmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.designOrangeDeep)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .frame(minWidth: 168, minHeight: 44)
+                if index < AccentTheme.allCases.count - 1 {
+                    Divider().padding(.leading, 16)
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
     }
 
     // MARK: For You chrome
@@ -573,8 +663,8 @@ struct MarketingShowcaseView: View {
         currentId = first.id
         flashWords = demoVocabFallback()
         app.markVocabSaveCoachSeen()
-        stage = script.kind == .forYou ? .feed : .explore
-        tabHighlight = .feed
+        stage = script.kind == .themeTour ? .analytics : (script.kind == .forYou ? .feed : .explore)
+        tabHighlight = script.kind == .themeTour ? .profile : .feed
         watchChromeVisible = true
         JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
         phase = .running
@@ -591,6 +681,8 @@ struct MarketingShowcaseView: View {
                 await runForYouScript(clips: clips, first: first)
             case .exploreVocab:
                 await runExploreVocabScript(clips: clips, first: first)
+            case .themeTour:
+                await runThemeTour(first: first)
             }
             guard !Task.isCancelled else { return }
             coordinator.stop()
@@ -739,6 +831,61 @@ struct MarketingShowcaseView: View {
         await playFlashcardSequence(startingWith: savedFromClip ?? flashWords.first, count: 2)
     }
 
+    /// Video 3: open the theme menu, then show Feed, Vocab, and Profile in Sakura, Purple, and Orange.
+    private func runThemeTour(first: Clip) async {
+        app.setScheme(selectedScript.scheme)
+        watchChromeVisible = true
+        _ = markDemoKnown(on: first)
+        for theme in [AccentTheme.sakura, .plum, .orange] {
+            guard !Task.isCancelled else { return }
+            coordinator.stop()
+            lookup.dismiss()
+            withAnimation(.easeInOut(duration: 0.35)) {
+                demoAccent = theme
+                themeMenu = theme
+                themeCaption = nil
+                stage = .analytics
+                tabHighlight = .profile
+            }
+            app.setTheme(theme)
+            try? await Task.sleep(for: .milliseconds(1800))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.25)) {
+                themeMenu = nil
+                themeCaption = theme.title
+            }
+            withAnimation(.easeInOut(duration: 0.4)) {
+                stage = .feed
+                tabHighlight = .feed
+            }
+            coordinator.activate(first, startLine: 0, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(2400))
+            guard !Task.isCancelled else { return }
+
+            coordinator.stop()
+            withAnimation(.easeInOut(duration: 0.4)) {
+                stage = .vocab
+                tabHighlight = .vocab
+            }
+            try? await Task.sleep(for: .milliseconds(2000))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.4)) {
+                stage = .analytics
+                tabHighlight = .profile
+            }
+            try? await Task.sleep(for: .milliseconds(1800))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) { themeCaption = nil }
+        }
+        if let parkedAccent, let parkedScheme {
+            demoAccent = parkedAccent
+            app.setScheme(parkedScheme)
+            app.setTheme(parkedAccent)
+        }
+    }
+
     /// Same fade the live feed uses once a clip has the learner's attention.
     private func fadeDemoChrome() async {
         withAnimation(.easeInOut(duration: 0.45)) { watchChromeVisible = false }
@@ -800,6 +947,8 @@ struct MarketingShowcaseView: View {
         vocabHighlight = nil
         tabHighlight = .feed
         watchChromeVisible = true
+        themeCaption = nil
+        themeMenu = nil
     }
 }
 
