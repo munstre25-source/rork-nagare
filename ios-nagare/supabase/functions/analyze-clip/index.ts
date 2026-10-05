@@ -122,6 +122,9 @@ Deno.serve(async (req) => {
     if (message.startsWith("Missing required env")) {
       return errorResponse(500, "Server misconfigured");
     }
+    if (message.startsWith("Gemini HTTP ") || message === "Gemini empty response") {
+      return errorResponse(502, message.slice(0, 240));
+    }
     return errorResponse(500, "Analyze failed");
   }
 });

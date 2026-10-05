@@ -42,7 +42,11 @@ async function callGemini(opts: {
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`Gemini HTTP ${res.status}`);
+      const detail = (await res.text())
+        .replace(/key=[^&\s"]+/gi, "key=redacted")
+        .replace(/AIza[0-9A-Za-z_-]+/g, "redacted")
+        .slice(0, 240);
+      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json();
     const text = stripFence(extractText(data));
