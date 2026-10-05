@@ -29,11 +29,11 @@ nonisolated enum JojoScheme: String, CaseIterable, Identifiable, Sendable {
 
 /// Whether the feed video is the large Kiku frame or the small one. Shared by For You and Explore.
 enum VideoFramePreference {
-    private static let key = "jojo.videoExpanded"
+    private static let key = "jojo.videoFrameExpanded"
 
     static var isExpanded: Bool {
         get {
-            UserDefaults.standard.object(forKey: key) as? Bool ?? true
+            UserDefaults.standard.object(forKey: key) as? Bool ?? false
         }
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }

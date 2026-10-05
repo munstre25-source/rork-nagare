@@ -11,7 +11,7 @@ struct OnboardingFeedDemoView: View {
     @State private var lookup = WordLookupController()
     @State private var clips: [Clip] = []
     @State private var currentId: String?
-    @State private var videoExpanded: Bool = true
+    @State private var videoExpanded: Bool = false
     @State private var didOpenDictionary: Bool = false
 
     var body: some View {

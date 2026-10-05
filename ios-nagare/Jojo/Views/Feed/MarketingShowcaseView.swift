@@ -60,6 +60,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         switch kind {
         case .forYou:
             return [
+                "Video starts small, with the control that makes it larger",
                 "Channel name above the clip, sakura underlines, readable English",
                 "A word you know is boxed in green",
                 "Controls fade, then a touch brings them back",
@@ -71,7 +72,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             return [
                 "Explore’s learning paths",
                 "Open Listening",
-                "Two clips play on \(page) — sakura transcript, swipe to the next",
+                "Two clips play small on \(page), with the same control that enlarges the video",
                 "Vocab opens with how many words you know",
                 "Review card: the word, the sentence it came from, and when it returns"
             ]
@@ -279,7 +280,8 @@ struct MarketingShowcaseView: View {
                             startLine: 0,
                             loopLine: true,
                             forcedId: watchId,
-                            loopPlayback: true
+                            loopPlayback: true,
+                            preferMinimized: true
                         )
                     } else {
                         Color.watchBackground
@@ -360,7 +362,7 @@ struct MarketingShowcaseView: View {
                                 clip: clip,
                                 showsChannelRow: true,
                                 immersiveFeed: true,
-                                videoExpanded: true,
+                                videoExpanded: false,
                                 onToggleVideoSize: {},
                                 onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) }
                             )

@@ -15,7 +15,7 @@ struct ClipStageView: View {
     /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
     /// When true, the video takes the upper half of the page. When false, it shrinks so the transcript leads.
-    var videoExpanded: Bool = true
+    var videoExpanded: Bool = false
     var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}

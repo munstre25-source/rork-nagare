@@ -34,13 +34,15 @@ struct ClipQueueScreen: View {
     var forcedId: String? = nil
     /// Marketing playback loops every clip so both stay visibly playing.
     var loopPlayback: Bool = false
+    /// Walkthroughs always open small, so the boxed control is the one that enlarges the video.
+    var preferMinimized: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var currentId: String?
-    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
+    @State private var videoExpanded: Bool
     @State private var infoClip: Clip?
     @State private var appliedStart: Bool = false
 
@@ -50,7 +52,8 @@ struct ClipQueueScreen: View {
         startLine: Int? = nil,
         loopLine: Bool = false,
         forcedId: String? = nil,
-        loopPlayback: Bool = false
+        loopPlayback: Bool = false,
+        preferMinimized: Bool = false
     ) {
         self.clips = clips
         self.startId = startId
@@ -58,7 +61,9 @@ struct ClipQueueScreen: View {
         self.loopLine = loopLine
         self.forcedId = forcedId
         self.loopPlayback = loopPlayback
+        self.preferMinimized = preferMinimized
         _currentId = State(initialValue: startId)
+        _videoExpanded = State(initialValue: preferMinimized ? false : VideoFramePreference.isExpanded)
     }
 
     var body: some View {
