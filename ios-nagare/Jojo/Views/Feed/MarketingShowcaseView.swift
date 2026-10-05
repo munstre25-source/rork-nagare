@@ -67,7 +67,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .forYou:
             return "\(accent.title) colors. Two clips play on the \(page) For You page. Karaoke, the dictionary, and the review card use that set."
         case .exploreVocab:
-            return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab and the review card in the same set."
+            return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab’s known count, clip search, and the review card."
         case .themeTour:
             return "Profile’s theme and text glow, then Sakura, Lavender, and Orange on Feed, Vocab, and Profile. \(scheme.title) paper."
         }
@@ -92,7 +92,8 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
                 "Explore’s learning paths, in \(ink)",
                 "Open Listening",
                 "Two clips play on \(page), karaoke glowing in \(ink)",
-                "Vocab opens with how many words you know",
+                "Vocab opens on words you know, what’s due, and how often each word was met",
+                "Search opens the clips where that word is said, with the show and its JLPT level",
                 "Review card: \(ink) word, sentence, and the clip it came from"
             ]
         case .themeTour:
@@ -155,9 +156,11 @@ struct MarketingShowcaseView: View {
     @State private var parkedGlow: GlowLevel?
     /// Profile scroll target during the theme tour. Nil keeps the theme row.
     @State private var profileAnchor: String?
+    /// Word the clip-search beat looks up.
+    @State private var demoSearchQuery: String = ""
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case feed, explore, watching, vocab, analytics, flashcard }
+    private enum Stage { case feed, explore, watching, vocab, search, analytics, flashcard }
 
     var body: some View {
         ZStack {
@@ -369,6 +372,8 @@ struct MarketingShowcaseView: View {
                     }
                 case .vocab:
                     VocabView()
+                case .search:
+                    SearchView(initialQuery: demoSearchQuery, embedded: true)
                 case .analytics:
                     ProfileView()
                         .environment(\.marketingScrollsToTheme, themeMenu != nil)
@@ -511,7 +516,7 @@ struct MarketingShowcaseView: View {
                 .scrollDisabled(true)
             }
         }
-        .background(Color.watchBackground.ignoresSafeArea())
+        .background(Color.canvas.ignoresSafeArea())
     }
 
     /// The two bundled clips that actually play. Posters never lead the demo.
@@ -834,14 +839,15 @@ struct MarketingShowcaseView: View {
             stage = .vocab
             tabHighlight = .vocab
         }
-        try? await Task.sleep(for: .milliseconds(3200))
+        try? await Task.sleep(for: .milliseconds(2800))
         guard !Task.isCancelled else { return }
 
-        if let highlight = flashWords.first?.key {
-            withAnimation(.snappy) { vocabHighlight = highlight }
-            try? await Task.sleep(for: .milliseconds(800))
-            guard !Task.isCancelled else { return }
-        }
+        demoSearchQuery = savedFromClip?.surface
+            ?? pick.lines.first?.tokens.first(where: \.tappable)?.surface
+            ?? "好き"
+        withAnimation(.easeInOut(duration: 0.4)) { stage = .search }
+        try? await Task.sleep(for: .milliseconds(3200))
+        guard !Task.isCancelled else { return }
 
         withAnimation(.easeInOut(duration: 0.4)) {
             stage = .analytics
@@ -894,7 +900,7 @@ struct MarketingShowcaseView: View {
                 stage = .vocab
                 tabHighlight = .vocab
             }
-            try? await Task.sleep(for: .milliseconds(2000))
+            try? await Task.sleep(for: .milliseconds(2800))
             guard !Task.isCancelled else { return }
 
             withAnimation(.easeInOut(duration: 0.4)) {
@@ -997,6 +1003,7 @@ struct MarketingShowcaseView: View {
         stage = .feed
         exploreHighlight = nil
         vocabHighlight = nil
+        demoSearchQuery = ""
         tabHighlight = .feed
         watchChromeVisible = true
         demoVideoExpanded = false
