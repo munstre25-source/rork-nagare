@@ -19,6 +19,9 @@ struct JojoWidgetProvider: TimelineProvider {
                 totalWords: 36,
                 teaserSurface: "美味しい",
                 teaserGloss: "delicious; tasty",
+                teaserReading: "おいしい",
+                accent: "sakura",
+                scheme: "dark",
                 updatedAt: Date()
             )
         )
@@ -50,9 +53,6 @@ struct JojoStreakWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: JojoWidgetProvider()) { entry in
             JojoWidgetView(entry: entry)
-                .containerBackground(for: .widget) {
-                    Color(red: 0.04, green: 0.04, blue: 0.04)
-                }
         }
         .configurationDisplayName("Jojo Progress")
         .description("Streak, daily goal, and cards due — tap to keep your flow.")
@@ -70,9 +70,22 @@ struct JojoWidgetView: View {
     let entry: JojoWidgetEntry
 
     private var snapshot: WidgetSnapshot { entry.snapshot }
-    private let sakura = Color(red: 1, green: 0.373, blue: 0.635)
+    private var paint: WidgetPaint { WidgetPaint(accent: snapshot.accent, scheme: snapshot.scheme) }
 
     var body: some View {
+        content
+            .containerBackground(for: .widget) {
+                switch family {
+                case .accessoryCircular, .accessoryRectangular:
+                    AccessoryWidgetBackground()
+                default:
+                    paint.paper
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .systemSmall:
             small
@@ -92,24 +105,24 @@ struct JojoWidgetView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Image(systemName: snapshot.dueCount > 0 ? "rectangle.stack.fill" : "flame.fill")
-                        .foregroundStyle(sakura)
+                        .foregroundStyle(paint.accent)
                     Spacer(minLength: 0)
                     Text("Jojo")
                         .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(paint.muted)
                 }
                 Spacer(minLength: 0)
                 Text(snapshot.headline)
                     .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(paint.ink)
                     .minimumScaleFactor(0.7)
                     .contentTransition(.numericText())
                 Text(snapshot.headlineCaption)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(paint.ink.opacity(0.72))
                 Text(snapshot.goalCaption)
                     .font(.caption2)
-                    .foregroundStyle(snapshot.isGoalReached ? sakura : .white.opacity(0.5))
+                    .foregroundStyle(snapshot.isGoalReached ? paint.accent : paint.muted)
             }
             .padding(4)
         }
@@ -122,47 +135,54 @@ struct JojoWidgetView: View {
                     Label {
                         Text("\(snapshot.streak)-day streak")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(paint.ink)
                     } icon: {
-                        Image(systemName: "flame.fill").foregroundStyle(sakura)
+                        Image(systemName: "flame.fill").foregroundStyle(paint.accent)
                     }
                     progressBar
                     Text(snapshot.goalCaption)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.65))
+                        .foregroundStyle(paint.muted)
                     Spacer(minLength: 0)
                     HStack(spacing: 6) {
                         Image(systemName: "rectangle.stack.fill")
-                            .foregroundStyle(sakura)
+                            .foregroundStyle(paint.accent)
                         Text(snapshot.dueCount > 0 ? "\(snapshot.dueCount) cards due" : "All caught up")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(paint.ink)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if let surface = snapshot.teaserSurface {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
+                        if let reading = snapshot.teaserReading {
+                            Text(reading)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(paint.reading)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
                         Text(surface)
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.white)
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundStyle(paint.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                         if let gloss = snapshot.teaserGloss {
                             Text(gloss)
                                 .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.55))
+                                .foregroundStyle(paint.muted)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.center)
                         }
                         Text(snapshot.dueCount > 0 ? "Review" : "Watch")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(sakura)
+                            .foregroundStyle(paint.accent)
                     }
                     .frame(width: 110)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 8)
                     .padding(.horizontal, 8)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(paint.chip, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
             }
             .padding(4)
@@ -172,9 +192,9 @@ struct JojoWidgetView: View {
     private var progressBar: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.12))
+                Capsule().fill(paint.ink.opacity(0.12))
                 Capsule()
-                    .fill(sakura)
+                    .fill(paint.accent)
                     .frame(width: max(6, proxy.size.width * snapshot.goalProgress))
             }
         }
@@ -208,6 +228,73 @@ struct JojoWidgetView: View {
     }
 }
 
+/// The six looks from Profile, painted without the app target.
+private struct WidgetPaint {
+    var accentName: String
+    var schemeName: String
+
+    init(accent: String, scheme: String) {
+        accentName = accent
+        schemeName = scheme
+    }
+
+    var dark: Bool { schemeName != "light" }
+
+    var paper: Color {
+        guard !dark else { return Color(hex: 0x0B0816) }
+        switch accentName {
+        case "sakura": return Color(hex: 0xFFF5F8)
+        case "plum": return Color(hex: 0xF6F1FF)
+        default: return Color(hex: 0xFFF8F3)
+        }
+    }
+
+    var accent: Color {
+        switch (accentName, dark) {
+        case ("sakura", false): return Color(hex: 0xFF4D8D)
+        case ("sakura", true): return Color(hex: 0xFF7EB8)
+        case ("plum", false): return Color(hex: 0x8B5CF6)
+        case ("plum", true): return Color(hex: 0xC4B5FD)
+        case (_, false): return Color(hex: 0xFF7A00)
+        default: return Color(hex: 0xFFB020)
+        }
+    }
+
+    var ink: Color {
+        guard !dark else { return .white }
+        switch accentName {
+        case "sakura": return Color(hex: 0x1A1020)
+        case "plum": return Color(hex: 0x1A1024)
+        default: return Color(hex: 0x1C1208)
+        }
+    }
+
+    var reading: Color {
+        switch (accentName, dark) {
+        case ("sakura", false): return Color(hex: 0xFF4D8D)
+        case ("sakura", true): return Color(hex: 0xFFB7D8)
+        case ("plum", false): return Color(hex: 0x8B5CF6)
+        case ("plum", true): return Color(hex: 0xDDD6FE)
+        case (_, false): return Color(hex: 0xFF7A00)
+        default: return Color(hex: 0xFFD7A1)
+        }
+    }
+
+    var muted: Color { ink.opacity(dark ? 0.55 : 0.5) }
+
+    var chip: Color { dark ? Color.white.opacity(0.08) : accent.opacity(0.12) }
+}
+
+private extension Color {
+    init(hex: UInt32) {
+        self.init(
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255
+        )
+    }
+}
+
 #Preview(as: .systemSmall) {
     JojoStreakWidget()
 } timeline: {
@@ -221,6 +308,9 @@ struct JojoWidgetView: View {
             totalWords: 36,
             teaserSurface: "美味しい",
             teaserGloss: "delicious",
+            teaserReading: "おいしい",
+            accent: "sakura",
+            scheme: "dark",
             updatedAt: .now
         )
     )

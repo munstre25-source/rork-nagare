@@ -25,7 +25,39 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
     /// Next due (or recently added) surface for medium widget teaser.
     var teaserSurface: String?
     var teaserGloss: String?
+    /// Kana for the teaser when the surface is kanji. Empty when the surface is already kana.
+    var teaserReading: String?
+    /// Accent raw value: sakura, plum, or orange.
+    var accent: String
+    /// light or dark.
+    var scheme: String
     var updatedAt: Date
+
+    init(
+        streak: Int,
+        dailyGoalMinutes: Int,
+        minutesWatchedToday: Int,
+        dueCount: Int,
+        totalWords: Int,
+        teaserSurface: String?,
+        teaserGloss: String?,
+        teaserReading: String?,
+        accent: String,
+        scheme: String,
+        updatedAt: Date
+    ) {
+        self.streak = streak
+        self.dailyGoalMinutes = dailyGoalMinutes
+        self.minutesWatchedToday = minutesWatchedToday
+        self.dueCount = dueCount
+        self.totalWords = totalWords
+        self.teaserSurface = teaserSurface
+        self.teaserGloss = teaserGloss
+        self.teaserReading = teaserReading
+        self.accent = accent
+        self.scheme = scheme
+        self.updatedAt = updatedAt
+    }
 
     static let empty = WidgetSnapshot(
         streak: 0,
@@ -35,6 +67,9 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         totalWords: 0,
         teaserSurface: nil,
         teaserGloss: nil,
+        teaserReading: nil,
+        accent: "orange",
+        scheme: "light",
         updatedAt: .distantPast
     )
 
@@ -83,6 +118,41 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
             return .empty
         }
         return snapshot
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        streak = try c.decode(Int.self, forKey: .streak)
+        dailyGoalMinutes = try c.decode(Int.self, forKey: .dailyGoalMinutes)
+        minutesWatchedToday = try c.decode(Int.self, forKey: .minutesWatchedToday)
+        dueCount = try c.decode(Int.self, forKey: .dueCount)
+        totalWords = try c.decode(Int.self, forKey: .totalWords)
+        teaserSurface = try c.decodeIfPresent(String.self, forKey: .teaserSurface)
+        teaserGloss = try c.decodeIfPresent(String.self, forKey: .teaserGloss)
+        teaserReading = try c.decodeIfPresent(String.self, forKey: .teaserReading)
+        accent = try c.decodeIfPresent(String.self, forKey: .accent) ?? "orange"
+        scheme = try c.decodeIfPresent(String.self, forKey: .scheme) ?? "light"
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(streak, forKey: .streak)
+        try c.encode(dailyGoalMinutes, forKey: .dailyGoalMinutes)
+        try c.encode(minutesWatchedToday, forKey: .minutesWatchedToday)
+        try c.encode(dueCount, forKey: .dueCount)
+        try c.encode(totalWords, forKey: .totalWords)
+        try c.encodeIfPresent(teaserSurface, forKey: .teaserSurface)
+        try c.encodeIfPresent(teaserGloss, forKey: .teaserGloss)
+        try c.encodeIfPresent(teaserReading, forKey: .teaserReading)
+        try c.encode(accent, forKey: .accent)
+        try c.encode(scheme, forKey: .scheme)
+        try c.encode(updatedAt, forKey: .updatedAt)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case streak, dailyGoalMinutes, minutesWatchedToday, dueCount, totalWords
+        case teaserSurface, teaserGloss, teaserReading, accent, scheme, updatedAt
     }
 
     func save() {
