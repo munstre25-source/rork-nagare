@@ -48,13 +48,13 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected ? Color.designOrange : Color.textTertiary)
+                    .foregroundStyle(state == .selected || state == .spoken ? LearningInk.spoken : LearningInk.furigana)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
             Text(token.surface)
                 .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(state == .selected ? Color.designOrange : Color.primary)
+                .foregroundStyle(japaneseColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
                 .padding(.horizontal, token.tappable ? 6 : 0)
@@ -65,7 +65,7 @@ struct TokenView: View {
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected ? Color.designOrange : Color.textTertiary)
+                    .foregroundStyle(state == .selected || state == .spoken ? LearningInk.spoken : LearningInk.romaji)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
@@ -73,6 +73,7 @@ struct TokenView: View {
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
         .scaleEffect(pulse || tapBounce ? 1.08 : 1)
+        .shadow(color: (pulse || state == .spoken) ? LearningInk.spoken.opacity(0.85) : .clear, radius: pulse ? 12 : 6)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -98,18 +99,18 @@ struct TokenView: View {
         switch state {
         case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.designOrange, lineWidth: 2.5)
+                .strokeBorder(LearningInk.spoken, lineWidth: 2.5)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.sakuraPinkSoft)
+                        .fill(LearningInk.spoken.opacity(0.22))
                 )
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.spokenGreen.opacity(0.12))
+                .fill(LearningInk.spoken.opacity(0.22))
         case .normal:
             if familiarity == .known {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.spokenGreen, lineWidth: 2)
+                    .strokeBorder(LearningInk.known, lineWidth: 2)
             } else if isLookedUp {
                 // Saved / looked-up words get an orange fill like Kiku's 石炭.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -124,11 +125,11 @@ struct TokenView: View {
     private var spokenOutline: some View {
         if state == .spoken, let ns = spokenNamespace {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.spokenGreen, lineWidth: 2)
+                .strokeBorder(LearningInk.spoken, lineWidth: 2)
                 .matchedGeometryEffect(id: "spokenOutline", in: ns)
         } else if state == .spoken {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.spokenGreen, lineWidth: 2)
+                .strokeBorder(LearningInk.spoken, lineWidth: 2)
         }
     }
 
@@ -140,6 +141,15 @@ struct TokenView: View {
                 .frame(height: 3)
                 .padding(.horizontal, 4)
                 .offset(y: 3)
+        }
+    }
+
+    private var japaneseColor: Color {
+        switch state {
+        case .selected, .spoken: LearningInk.spoken
+        case .normal:
+            if familiarity == .known { return LearningInk.known }
+            return LearningInk.japanese
         }
     }
 
@@ -155,9 +165,9 @@ struct TokenView: View {
 
     private var underlineColor: Color {
         switch familiarity {
-        case .known: Color.spokenGreen
-        case .familiar: Color.designOrange
-        default: isLookedUp ? Color.lookedUpOrange : token.underlineColor
+        case .known: LearningInk.known
+        case .familiar: LearningInk.familiar
+        default: isLookedUp ? LearningInk.familiar : token.underlineColor
         }
     }
 }

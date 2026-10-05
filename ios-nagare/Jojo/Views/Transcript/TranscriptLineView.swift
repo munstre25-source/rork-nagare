@@ -55,7 +55,7 @@ struct TranscriptLineView: View {
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
                         .font((forceDenseAids || raisedCard ? Font.subheadline : Font.body).weight(.semibold))
-                        .foregroundStyle(Color.translationText)
+                        .foregroundStyle(LearningInk.english)
                         .lineLimit(4)
                         .minimumScaleFactor(0.85)
                         .multilineTextAlignment(.leading)
@@ -75,7 +75,7 @@ struct TranscriptLineView: View {
                         } label: {
                             Image(systemName: "speaker.wave.2")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Color.designOrange)
+                                .foregroundStyle(LearningInk.spoken)
                                 .frame(width: 36, height: 36)
                         }
                         .buttonStyle(.plain)

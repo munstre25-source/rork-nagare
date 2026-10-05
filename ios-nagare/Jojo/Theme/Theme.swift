@@ -92,8 +92,8 @@ extension Color {
     static let fieldFill = Color.adaptive(light: "#F7E8D8", dark: "#1C1C1E")
     /// Active karaoke line card (Kiku-style raised surface).
     static let transcriptCard = Color.adaptive(light: "#FFFFFF", dark: "#2C2C2E")
-    /// Soft sakura-night lift behind the active line.
-    static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
+    /// Soft lift behind the active karaoke line, in the active accent.
+    static let activeLineGlow = LearningInk.glow.opacity(0.55)
 
     // MARK: Brand accent
     /// Marks, underlines, and icons. Each theme picks a shade that stays readable on its page.
@@ -179,13 +179,13 @@ extension Color {
     static let translationText = Color.adaptive(light: "#1C1C1E", dark: "#F5F5F7")
 
     // MARK: Word states / POS underlines
-    static let tappableBlue = Color.adaptive(light: "#2563EB", dark: "#4C8DFF")
-    static let spokenGreen = Color.adaptive(light: "#15803D", dark: "#34C759")
-    static let lookedUpOrange = Color.sakuraPinkSoft
-    /// Content words (noun, verb, adjective) — blue underline.
-    static let posContentBlue = Color.adaptive(light: "#2563EB", dark: "#3B82F6")
-    /// Function words (particle, auxiliary, copula) — sakura underline (icon accent).
-    static let posParticleOrange = Color.sakuraPink
+    static let tappableBlue = LearningInk.content
+    static let spokenGreen = LearningInk.known
+    static let lookedUpOrange = LearningInk.familiar
+    /// Content words (noun, verb, adjective).
+    static let posContentBlue = LearningInk.content
+    /// Function words (particle, auxiliary, copula).
+    static let posParticleOrange = LearningInk.particle
 
     // MARK: SRS
     static let againBackground = Color(hex: "#FFD9DE")
@@ -205,6 +205,92 @@ extension Color {
         .adaptive(light: "#F1F1F4", dark: "#23252B"),
         .adaptive(light: "#F7EDF6", dark: "#2A2230")
     ]
+}
+
+/// Jewel colors for Japanese, karaoke, and the dictionary. Each accent has a cream set and a night set.
+enum LearningInk {
+    /// Kanji and kana at rest.
+    static let japanese = JojoPalette.color(
+        sakuraLight: "#1A1020", sakuraDark: "#FFFFFF",
+        plumLight: "#1A1024", plumDark: "#FFFFFF",
+        orangeLight: "#1C1208", orangeDark: "#FFFFFF"
+    )
+    /// Reading above a word.
+    static let furigana = JojoPalette.color(
+        sakuraLight: "#C2186A", sakuraDark: "#FFB7D8",
+        plumLight: "#7A4684", plumDark: "#E8C8FF",
+        orangeLight: "#C45C00", orangeDark: "#FFD7A1"
+    )
+    /// Romaji under a word.
+    static let romaji = JojoPalette.color(
+        sakuraLight: "#8A3A62", sakuraDark: "#F3C6DC",
+        plumLight: "#5C3A72", plumDark: "#D4B8EE",
+        orangeLight: "#8A4E12", orangeDark: "#F6C48A"
+    )
+    /// Nouns, verbs, and adjectives.
+    static let content = JojoPalette.color(
+        sakuraLight: "#007EA8", sakuraDark: "#5CEBFF",
+        plumLight: "#6B2FA0", plumDark: "#C084FF",
+        orangeLight: "#D35400", orangeDark: "#FFB020"
+    )
+    /// Particles and other function words.
+    static let particle = JojoPalette.color(
+        sakuraLight: "#E21888", sakuraDark: "#FF5CAA",
+        plumLight: "#C43B86", plumDark: "#FF7AD9",
+        orangeLight: "#C2186A", orangeDark: "#FF6B8A"
+    )
+    /// The word currently being spoken.
+    static let spoken = JojoPalette.color(
+        sakuraLight: "#C45C00", sakuraDark: "#FFE14A",
+        plumLight: "#A15C00", plumDark: "#F6E27F",
+        orangeLight: "#0B6E8A", orangeDark: "#5CEBFF"
+    )
+    /// A word the learner marked known.
+    static let known = JojoPalette.color(
+        sakuraLight: "#0B8A4C", sakuraDark: "#5DFFB0",
+        plumLight: "#0E7A45", plumDark: "#7DFFC3",
+        orangeLight: "#0E7A45", orangeDark: "#6DFFB0"
+    )
+    /// Saved or familiar, quieter than the spoken word.
+    static let familiar = JojoPalette.color(
+        sakuraLight: "#C2186A", sakuraDark: "#FF8AD4",
+        plumLight: "#7A4684", plumDark: "#E8D0F2",
+        orangeLight: "#C45C00", orangeDark: "#FF8A3D"
+    )
+    /// English under a karaoke line.
+    static let english = JojoPalette.color(
+        sakuraLight: "#3A2A32", sakuraDark: "#FFD0E6",
+        plumLight: "#3A2A44", plumDark: "#EBD6FF",
+        orangeLight: "#4A3828", orangeDark: "#FFE0C2"
+    )
+    /// Glow behind the active line and the spoken pulse.
+    static let glow = JojoPalette.color(
+        sakuraLight: "#E21888", sakuraDark: "#FF4FA3",
+        plumLight: "#7A4684", plumDark: "#C084FF",
+        orangeLight: "#D35400", orangeDark: "#FFB020"
+    )
+
+    /// The dictionary card stays on a night plate in both appearances, so these jewels stay luminous.
+    static let dictionaryPlate = JojoPalette.color(
+        sakuraLight: "#140C18", sakuraDark: "#140C18",
+        plumLight: "#120C1C", plumDark: "#120C1C",
+        orangeLight: "#1A1008", orangeDark: "#1A1008"
+    )
+    static let dictionaryWord = JojoPalette.color(
+        sakuraLight: "#FF7EB8", sakuraDark: "#FF7EB8",
+        plumLight: "#E8D0F2", plumDark: "#E8D0F2",
+        orangeLight: "#FFB020", orangeDark: "#FFB020"
+    )
+    static let dictionaryReading = JojoPalette.color(
+        sakuraLight: "#5CEBFF", sakuraDark: "#5CEBFF",
+        plumLight: "#C084FF", plumDark: "#C084FF",
+        orangeLight: "#5CEBFF", orangeDark: "#5CEBFF"
+    )
+    static let dictionaryGloss = JojoPalette.color(
+        sakuraLight: "#FFE14A", sakuraDark: "#FFE14A",
+        plumLight: "#F6E27F", plumDark: "#F6E27F",
+        orangeLight: "#FFD7A1", orangeDark: "#FFD7A1"
+    )
 }
 
 /// Shared animation curves so feed, popup and tabs feel like one product.

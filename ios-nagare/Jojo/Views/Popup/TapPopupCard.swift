@@ -23,7 +23,7 @@ struct TapPopupCard: View {
                     } label: {
                         Image(systemName: "speaker.wave.2")
                             .font(compact ? .body : .title3)
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(LearningInk.dictionaryReading)
                             .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
                     }
                     .accessibilityLabel("Play pronunciation")
@@ -49,12 +49,12 @@ struct TapPopupCard: View {
             .padding(compact ? Spacing.m : Spacing.l)
             .background(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(Color(hex: "#1C1C1E"))
-                    .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
+                    .fill(LearningInk.dictionaryPlate)
+                    .shadow(color: LearningInk.dictionaryWord.opacity(0.45), radius: 24, y: 10)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(LearningInk.dictionaryWord.opacity(0.7), lineWidth: 1.5)
             )
             .environment(\.colorScheme, .dark)
             .onChange(of: lookup.tapPulse) { _, _ in
@@ -92,20 +92,21 @@ struct TapPopupCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
                     Text(explanation.word)
                         .font(JojoFont.jp(compact ? 28 : 38, bold: true, relativeTo: .largeTitle))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(LearningInk.dictionaryWord)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
+                        .shadow(color: LearningInk.dictionaryWord.opacity(0.45), radius: 8)
                     if app.profile.showFurigana, !explanation.readings.isEmpty {
                         Text(explanation.readings.joined(separator: ", "))
                             .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(LearningInk.dictionaryReading)
                             .lineLimit(1)
                     }
                 }
                 if app.profile.showRomaji, !explanation.romaji.isEmpty {
                     Text(explanation.romaji)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LearningInk.dictionaryGloss)
                 }
                 if !compact, let base = selection.token.baseForm {
                     Text("from \(base)")
@@ -197,6 +198,20 @@ struct TapPopupCard: View {
         .accessibilityHidden(true)
     }
 
+    private func lineMeaning(surface: String, gloss: String) -> AttributedString {
+        var result = AttributedString("In this line, \(surface) means “\(gloss)”.")
+        result.foregroundColor = Color.white.opacity(0.78)
+        if let range = result.range(of: surface) {
+            result[range].foregroundColor = LearningInk.dictionaryWord
+            result[range].font = .footnote.weight(.bold)
+        }
+        if let range = result.range(of: gloss) {
+            result[range].foregroundColor = LearningInk.dictionaryGloss
+            result[range].font = .footnote.weight(.semibold)
+        }
+        return result
+    }
+
     private func dictionaryTab(_ explanation: WordExplanation, limit: Int = 2) -> some View {
         let defs = explanation.displayDefinitions(mode: app.profile.dictionary)
         let capped = Array(defs.prefix(max(1, limit)))
@@ -208,9 +223,8 @@ struct TapPopupCard: View {
             if let selection = lookup.selection {
                 let gloss = explanation.definitions.first ?? explanation.jaDefinitions.first ?? ""
                 if !gloss.isEmpty {
-                    Text("In this line, \(selection.token.surface) means “\(gloss)”.")
+                    Text(lineMeaning(surface: selection.token.surface, gloss: gloss))
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.72))
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(3)
                 }
@@ -223,7 +237,7 @@ struct TapPopupCard: View {
                         } label: {
                             Label("\(defs.count - capped.count) more", systemImage: "plus")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Color.tappableBlue)
+                                .foregroundStyle(LearningInk.dictionaryReading)
                                 .frame(minHeight: 44)
                         }
                     }
@@ -337,9 +351,9 @@ struct DefinitionRow: View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
             Text("\(number)")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(dark ? Color.white : Color.translationText)
+                .foregroundStyle(dark ? LearningInk.dictionaryPlate : Color.translationText)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(dark ? Color.white.opacity(0.16) : Color.primary.opacity(0.08)))
+                .background(Circle().fill(dark ? LearningInk.dictionaryWord : Color.primary.opacity(0.08)))
             if let tag {
                 PillView(text: tag, style: dark ? .neutralDark : .pos)
             }
@@ -380,7 +394,7 @@ struct HighlightedSentence: View {
         var result = AttributedString(sentence)
         result.foregroundColor = baseColor
         if !target.isEmpty, let range = result.range(of: target) {
-            result[range].foregroundColor = Color.jojoOrange
+            result[range].foregroundColor = LearningInk.dictionaryWord
             result[range].font = JojoFont.jp(size, bold: true, relativeTo: .body)
         }
         return result
