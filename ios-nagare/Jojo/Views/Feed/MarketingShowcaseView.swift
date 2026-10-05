@@ -40,7 +40,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
                 "Explore’s learning paths",
                 "A clip plays, then the controls fade until a touch",
                 "Vocab shows the words you saved",
-                "Flashcards flip, front to back"
+                "Flashcards flip, and the whole card stays on screen"
             ]
         }
     }
