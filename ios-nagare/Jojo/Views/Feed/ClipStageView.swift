@@ -46,12 +46,13 @@ struct ClipStageView: View {
         min(max(0, size.width - 36), 560)
     }
 
-    /// Expanded is the Kiku hero. Minimized is a small centered frame so the lines below can take the page.
+    /// Expanded is the Kiku hero: the whole 16:9 frame, as wide as the column.
+    /// Minimized is a small centered frame so the lines below can take the page.
     private func videoSize(in size: CGSize) -> CGSize {
         let column = columnWidth(in: size)
         let naturalHeight = column * 9 / 16
         if videoExpanded && !isPopupHere {
-            let height = min(naturalHeight, max(168, size.height * 0.34))
+            let height = min(naturalHeight, max(180, size.height - 240))
             return CGSize(width: column, height: height)
         }
         let height = min(112, max(88, size.height * 0.14))
@@ -74,6 +75,14 @@ struct ClipStageView: View {
         .background(usesFlexibleVideo || immersiveFeed ? Color.watchBackground : Color.clear)
         .overlay {
             if isPopupHere { popupLayer }
+        }
+        .overlay(alignment: .top) {
+            if isPopupHere, !lookup.previewOnly, lookup.occurrenceCount == 1, let token = lookup.selection?.token {
+                savedBanner(token.dictionaryForm.isEmpty ? token.surface : token.dictionaryForm)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 20)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
         .clipped()
         .onChange(of: isPopupHere) { _, presented in
@@ -109,6 +118,7 @@ struct ClipStageView: View {
                     showsControls: !immersiveFeed,
                     showsRail: immersiveFeed ? false : showsRail,
                     compactChrome: immersiveFeed,
+                    fitsFrame: usesFlexibleVideo && videoExpanded && !isPopupHere,
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     onInfo: immersiveFeed ? nil : onInfo,
@@ -117,19 +127,6 @@ struct ClipStageView: View {
                     onRevealWatchChrome: onRevealWatchChrome
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
-
-                if let onToggleVideoSize, !isPopupHere {
-                    Button(action: onToggleVideoSize) {
-                        Image(systemName: videoExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(.black.opacity(0.55), in: Circle())
-                    }
-                    .padding(8)
-                    .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
-                    .accessibilityHint(videoExpanded ? "Shrinks the video and shows more of the transcript" : "Restores the video")
-                }
             }
             .frame(maxWidth: .infinity)
 
@@ -148,7 +145,59 @@ struct ClipStageView: View {
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
                 .clipped()
+
+            if let onToggleVideoSize, !isPopupHere {
+                HStack {
+                    Spacer(minLength: 0)
+                    videoSizeButton(action: onToggleVideoSize)
+                }
+                .frame(width: columnWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 6)
+            }
         }
+    }
+
+    /// The boxed expand control at the bottom right of the feed, matching the Kiku player.
+    private func videoSizeButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 36, height: 36)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.9), lineWidth: 1.5)
+                )
+        }
+        .frame(width: 44, height: 44)
+        .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
+        .accessibilityHint(videoExpanded ? "Shrinks the video and shows more of the transcript" : "Shows the whole video, larger")
+    }
+
+    private func savedBanner(_ word: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(Color.spokenGreen)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(word) added to your words.")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text("Ready to review anytime.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
     }
 
     private func transcript(player: (any ClipPlayer)?) -> some View {

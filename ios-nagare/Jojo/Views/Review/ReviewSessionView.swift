@@ -73,7 +73,7 @@ struct ReviewSessionView: View {
                     .allowsHitTesting(false)
             }
         }
-        .background(Color.canvas.ignoresSafeArea())
+        .background { ReviewStageBackground() }
         .animation(Motion.cardFlip, value: revealed)
         .onAppear {
             guard queue.isEmpty, !isFinished else { return }
@@ -92,32 +92,40 @@ struct ReviewSessionView: View {
     }
 
     private var topBar: some View {
-        HStack(spacing: Spacing.m) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 44, height: 44)
-                    .background(Color.fieldFill, in: Circle())
-            }
-            .accessibilityLabel("Close review")
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.primary.opacity(0.1))
-                    Capsule().fill(Color.jojoOrange)
-                        .frame(width: proxy.size.width * (total == 0 ? 0 : Double(completed) / Double(total)))
-                        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: completed)
+        VStack(spacing: 10) {
+            ZStack {
+                ReviewWordmark()
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(FlashcardInk.ink)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Close review")
+                    Spacer()
                 }
             }
-            .frame(height: 6)
-            Text("\(min(completed + (isFinished ? 0 : 1), total))/\(total)")
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .contentTransition(.numericText())
+            HStack(spacing: 10) {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(FlashcardInk.ink.opacity(0.14))
+                        Capsule().fill(Color.sakuraButton)
+                            .frame(width: proxy.size.width * (total == 0 ? 0 : Double(completed) / Double(total)))
+                            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: completed)
+                    }
+                }
+                .frame(height: 8)
+                Text("\(min(completed + (isFinished ? 0 : 1), total))/\(total)")
+                    .font(.subheadline.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(FlashcardInk.muted)
+                    .contentTransition(.numericText())
+            }
         }
         .padding(.horizontal, Spacing.l)
-        .padding(.vertical, Spacing.s)
+        .padding(.top, Spacing.s)
+        .padding(.bottom, 4)
     }
 
     private func flipCard(for word: SavedWord) -> some View {
@@ -145,26 +153,15 @@ struct ReviewSessionView: View {
     }
 
     private func frontFace(_ word: SavedWord) -> some View {
-        VStack(spacing: Spacing.m) {
-            Spacer(minLength: 24)
-            Text(word.contextSentence.isEmpty ? word.surface : word.contextSentence)
-                .font(JojoFont.jp(word.contextSentence.isEmpty ? 44 : 28, bold: true, relativeTo: .largeTitle))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(4)
-                .minimumScaleFactor(0.7)
-            Text("Tap to flip")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.55))
-            Spacer(minLength: 24)
-        }
-        .frame(maxWidth: .infinity, minHeight: 360)
-        .padding(Spacing.l)
-        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+        FlashcardHero(
+            surface: word.surface,
+            reading: app.profile.showFurigana ? word.primaryReading : "",
+            romaji: app.profile.showRomaji ? word.romaji : "",
+            pos: word.pos,
+            jlpt: word.jlpt,
+            hint: "Tap to reveal"
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func backFace(_ word: SavedWord) -> some View {
@@ -172,23 +169,26 @@ struct ReviewSessionView: View {
     }
 
     private func answerButtons(for word: SavedWord) -> some View {
-        HStack(spacing: Spacing.m) {
-            Button {
-                answer(word, good: false)
-            } label: {
-                AnswerLabel(title: "Again", interval: SRS.againLabel, symbol: "arrow.counterclockwise", fg: .againText, bg: .againBackground)
+        let next = SRS.goodInterval(fromStep: word.intervalStepIndex)
+        return VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Button {
+                    answer(word, good: false)
+                } label: {
+                    ReviewGradeButton(title: "Again", interval: SRS.againLabel, good: false)
+                }
+                Button {
+                    answer(word, good: true)
+                } label: {
+                    ReviewGradeButton(title: "Good", interval: SRS.label(next), good: true)
+                }
             }
-            Button {
-                answer(word, good: true)
-            } label: {
-                AnswerLabel(title: "Good", interval: SRS.label(SRS.goodInterval(fromStep: word.intervalStepIndex)), symbol: "checkmark", fg: .goodText, bg: .goodBackground)
-            }
+            .buttonStyle(PressableStyle())
+            ReviewUntilFooter(text: SRS.untilReview(next))
         }
-        .buttonStyle(PressableStyle())
         .padding(.horizontal, Spacing.l)
         .padding(.top, Spacing.s)
         .padding(.bottom, Spacing.m)
-        .background(Color.canvas)
     }
 
     private func answer(_ word: SavedWord, good: Bool) {
@@ -258,77 +258,403 @@ private struct FlashcardHeightKey: PreferenceKey {
     }
 }
 
-/// One Kiku-style review card: word, definitions, context, and a clip that stays fully on screen.
+/// One review card: the word plate, definitions, and the sentence it came from.
 struct KikuFlashcardBack: View {
     let word: SavedWord
-    var dark: Bool = false
+    /// Onboarding practice speaks the line. Review opens the clip.
+    var playsClip: Bool = true
     var onPlayClip: (Clip) -> Void
 
     @Environment(AppModel.self) private var app
 
     var body: some View {
         let defs = Array(word.displayDefinitions(mode: app.profile.dictionary).prefix(2))
-        VStack(alignment: .leading, spacing: 12) {
-            WordHeaderCard(
+        let clip = app.clip(id: word.contextClipId)
+        let line = clip?.lines[safe: word.contextLineIndex]
+        VStack(alignment: .leading, spacing: 16) {
+            FlashcardHero(
                 surface: word.surface,
-                readings: word.readings,
-                romaji: word.romaji,
+                reading: app.profile.showFurigana ? word.primaryReading : "",
+                romaji: app.profile.showRomaji ? word.romaji : "",
                 pos: word.pos,
-                conjugationClass: word.conjugationClass,
-                jlpt: word.jlpt,
-                showFurigana: true,
-                showRomaji: true
+                jlpt: word.jlpt
             )
             if !defs.isEmpty {
-                Text("Definition")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.translationText)
+                FlashcardSectionTitle(title: "Definition", systemImage: "book.closed.fill")
                 ForEach(Array(defs.enumerated()), id: \.offset) { index, def in
-                    DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def, dark: dark)
+                    FlashcardDefinitionRow(number: index + 1, tag: word.pos, text: def)
                 }
             }
             if !word.contextSentence.isEmpty {
-                Text("Context")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.translationText)
+                FlashcardSectionTitle(title: "Context", systemImage: "text.bubble.fill")
+                contextCard(clip: clip, translation: line?.translation)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private func contextCard(clip: Clip?, translation: String?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
                 HighlightedSentence(
                     sentence: word.contextSentence,
                     target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                    size: 18,
-                    baseColor: dark ? .white : .primary
+                    size: 22,
+                    baseColor: FlashcardInk.ink
                 )
-                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                if let clip = app.clip(id: word.contextClipId) {
-                    Button {
+                Button {
+                    if playsClip, let clip {
                         onPlayClip(clip)
-                    } label: {
-                        ZStack {
-                            ClipPosterView(clip: clip, showsSymbol: false)
-                            Image(systemName: "play.fill")
-                                .font(.title2.weight(.bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 54, height: 54)
-                                .background(.black.opacity(0.45), in: Circle())
-                                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    } else {
+                        SpeechService.shared.speak(word.contextSentence)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Play the clip for \(word.surface)")
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.sakuraPink)
+                        .frame(width: 36, height: 36)
                 }
+                .accessibilityLabel("Play this line")
+            }
+            if let translation, !translation.isEmpty {
+                Text(translation)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(FlashcardInk.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.16), lineWidth: 1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FlashcardInk.row, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(0.45), lineWidth: 1)
+        )
+        .overlay(alignment: .bottomTrailing) {
+            HStack(spacing: -4) {
+                Blossom(size: 22, color: Color.sakuraPinkLight)
+                Blossom(size: 14, color: Color.sakuraPink)
+            }
+            .padding(8)
+            .allowsHitTesting(false)
+        }
+    }
+}
+
+/// Night or cream stage behind a review session. Sakura uses the temple scene; purple and orange use their own glow.
+struct ReviewStageBackground: View {
+    var body: some View {
+        ZStack {
+            FlashcardInk.page
+            if JojoPalette.scheme == .dark, JojoPalette.theme == .sakura {
+                JojoBrandBackground(scene: .templeDusk, showsHills: false, showsPetals: true)
+                    .opacity(0.72)
+            } else {
+                RadialGradient(
+                    colors: [Color.sakuraPink.opacity(JojoPalette.scheme == .dark ? 0.38 : 0.22), .clear],
+                    center: .init(x: 0.9, y: 0.08),
+                    startRadius: 8,
+                    endRadius: 380
+                )
+                RadialGradient(
+                    colors: [Color.sakuraPinkLight.opacity(0.55), .clear],
+                    center: .init(x: 0.05, y: 0.85),
+                    startRadius: 8,
+                    endRadius: 280
+                )
+                BrandPetalField(
+                    tint: Color.sakuraPinkLight,
+                    density: JojoPalette.scheme == .dark ? .lush : .sparse
+                )
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+/// JOJO wordmark with the accent blossom. Review sits behind the subscription, so it carries PRO.
+struct ReviewWordmark: View {
+    var body: some View {
+        HStack(spacing: 5) {
+            Text("JOJO")
+                .font(.system(size: 22, weight: .heavy, design: .rounded))
+            Blossom(size: 16, color: Color.sakuraPink)
+            Text("PRO")
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .tracking(0.6)
+        }
+        .foregroundStyle(Color.sakuraPink)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Jojo Pro")
+    }
+}
+
+/// The glowing word plate: reading, kanji, romaji, part of speech, level, and Jojo.
+struct FlashcardHero: View {
+    let surface: String
+    let reading: String
+    let romaji: String
+    let pos: String
+    let jlpt: String?
+    var hint: String? = nil
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 8) {
+                HStack {
+                    readingPill
+                    Spacer(minLength: 0)
+                    Blossom(size: 18, color: Color.sakuraPink)
+                        .opacity(0.9)
+                }
+                Text(surface)
+                    .font(JojoFont.jp(56, bold: true, relativeTo: .largeTitle))
+                    .foregroundStyle(FlashcardInk.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .frame(maxWidth: .infinity)
+                if !romaji.isEmpty {
+                    Text(romaji.uppercased())
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .tracking(2)
+                        .foregroundStyle(FlashcardInk.ink.opacity(0.92))
+                }
+                if let hint {
+                    Text(hint)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(FlashcardInk.muted)
+                        .padding(.top, 4)
+                } else {
+                    HStack(spacing: 8) {
+                        if !pos.isEmpty {
+                            Text(pos)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(FlashcardInk.posInk)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(FlashcardInk.posFill, in: Capsule())
+                        }
+                        if let jlpt, !jlpt.isEmpty {
+                            Text(jlpt)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Color.jlptPillText)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 5)
+                                .background(Color.jlptPill, in: Capsule())
+                        }
+                    }
+                    .padding(.top, 2)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .padding(.trailing, 64)
+
+            JojoMascot(height: 112, floats: false, pose: .peek)
+                .offset(x: 6, y: 18)
+                .allowsHitTesting(false)
+        }
+        .background(FlashcardInk.plate, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(0.9), lineWidth: 1.5)
+        )
+        .shadow(color: Color.sakuraPink.opacity(0.45), radius: 16, y: 4)
+    }
+
+    private var readingPill: some View {
+        Button {
+            SpeechService.shared.speak(surface)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 13, weight: .bold))
+                if !reading.isEmpty {
+                    Text(reading)
+                        .font(JojoFont.jp(16, relativeTo: .body))
+                }
+                Image(systemName: "waveform")
+                    .font(.system(size: 12, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 34)
+            .background(Color.sakuraButton, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Play pronunciation")
+    }
+}
+
+private struct FlashcardSectionTitle: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+            Text(title)
+                .font(.subheadline.weight(.bold))
+            Rectangle()
+                .fill(Color.sakuraPink.opacity(0.35))
+                .frame(height: 1)
+        }
+        .foregroundStyle(Color.sakuraPink)
+    }
+}
+
+private struct FlashcardDefinitionRow: View {
+    let number: Int
+    let tag: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text("\(number)")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(Color.sakuraButton, in: Circle())
+            if !tag.isEmpty {
+                Text(tag)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(FlashcardInk.posInk)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(FlashcardInk.posFill, in: Capsule())
+            }
+            Text(text)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(FlashcardInk.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(FlashcardInk.row, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(0.28), lineWidth: 1)
         )
     }
+}
+
+/// Again is the pale accent. Good is the solid accent ramp. Both follow sakura, purple, or orange.
+struct ReviewGradeButton: View {
+    let title: String
+    let interval: String
+    var good: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: good ? "face.smiling" : "face.frowning")
+                .font(.system(size: 26, weight: .medium))
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title)
+                    .font(.title3.weight(.bold))
+                Text(interval)
+                    .font(.subheadline.weight(.semibold))
+                    .opacity(0.85)
+            }
+        }
+        .foregroundStyle(good ? Color.white : FlashcardInk.againInk)
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .background {
+            if good {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(LinearGradient(colors: [FlashcardInk.goodA, FlashcardInk.goodB], startPoint: .leading, endPoint: .trailing))
+            } else {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(FlashcardInk.againFill)
+            }
+        }
+        .shadow(color: good ? FlashcardInk.goodA.opacity(0.35) : .clear, radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), next review in \(interval)")
+    }
+}
+
+struct ReviewUntilFooter: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Blossom(size: 12, color: Color.sakuraPink)
+            Capsule().fill(FlashcardInk.muted.opacity(0.45)).frame(width: 28, height: 1)
+            Image(systemName: "clock")
+                .font(.caption.weight(.semibold))
+            Text(text)
+                .font(.caption.weight(.semibold))
+            Capsule().fill(FlashcardInk.muted.opacity(0.45)).frame(width: 28, height: 1)
+            Blossom(size: 12, color: Color.sakuraPink)
+        }
+        .foregroundStyle(FlashcardInk.muted)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(text)
+    }
+}
+
+/// Colors for the review card. Each accent has a cream version and a night version.
+enum FlashcardInk {
+    static let page = JojoPalette.color(
+        sakuraLight: "#FFF6EE", sakuraDark: "#07060E",
+        plumLight: "#F7F2FA", plumDark: "#0C0814",
+        orangeLight: "#FFF8F2", orangeDark: "#100C08"
+    )
+    static let plate = JojoPalette.color(
+        sakuraLight: "#FFFFFF", sakuraDark: "#1A1022",
+        plumLight: "#FFFFFF", plumDark: "#161222",
+        orangeLight: "#FFFFFF", orangeDark: "#1C140E"
+    )
+    static let row = JojoPalette.color(
+        sakuraLight: "#FFF0F6", sakuraDark: "#2A1A32",
+        plumLight: "#F4EEF7", plumDark: "#241C32",
+        orangeLight: "#FFF4E8", orangeDark: "#2A1C12"
+    )
+    static let ink = JojoPalette.color(
+        sakuraLight: "#1C1C1E", sakuraDark: "#FFFFFF",
+        plumLight: "#1C1C1E", plumDark: "#FFFFFF",
+        orangeLight: "#1C1C1E", orangeDark: "#FFFFFF"
+    )
+    static let muted = JojoPalette.color(
+        sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
+        plumLight: "#655C6B", plumDark: "#C7C7CC",
+        orangeLight: "#6B5E52", orangeDark: "#C7C7CC"
+    )
+    static let againFill = JojoPalette.color(
+        sakuraLight: "#F8D0E4", sakuraDark: "#F7C6DE",
+        plumLight: "#E3D2E8", plumDark: "#E4D0EE",
+        orangeLight: "#F8E0C4", orangeDark: "#F6D4AE"
+    )
+    static let againInk = JojoPalette.color(
+        sakuraLight: "#C2186A", sakuraDark: "#A01458",
+        plumLight: "#5C3A72", plumDark: "#4A2C60",
+        orangeLight: "#C45C00", orangeDark: "#8A3E00"
+    )
+    static let goodA = JojoPalette.color(
+        sakuraLight: "#E21888", sakuraDark: "#FF4FA3",
+        plumLight: "#9A62B0", plumDark: "#C084DC",
+        orangeLight: "#E07A12", orangeDark: "#FFB020"
+    )
+    static let goodB = JojoPalette.color(
+        sakuraLight: "#9B3DFF", sakuraDark: "#B44DFF",
+        plumLight: "#5C3A72", plumDark: "#7A4684",
+        orangeLight: "#C45C00", orangeDark: "#D35400"
+    )
+    static let posFill = JojoPalette.color(
+        sakuraLight: "#F3D0E6", sakuraDark: "#5C2A6A",
+        plumLight: "#E3D2E8", plumDark: "#5C3A72",
+        orangeLight: "#F8E0C4", orangeDark: "#6B3A12"
+    )
+    static let posInk = JojoPalette.color(
+        sakuraLight: "#7A2460", sakuraDark: "#F6D6EA",
+        plumLight: "#5C3A72", plumDark: "#F3E6FA",
+        orangeLight: "#8A3E00", orangeDark: "#FFE0B8"
+    )
 }
 
 /// Revolving card motion between flashcards (Kiku-style).
@@ -353,32 +679,6 @@ private struct GoodCheckPulse: View {
             .onAppear {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) { scale = 1.1 }
             }
-    }
-}
-
-private struct AnswerLabel: View {
-    let title: String
-    let interval: String
-    let symbol: String
-    let fg: Color
-    let bg: Color
-
-    var body: some View {
-        HStack(spacing: Spacing.m) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .bold))
-                .frame(width: 32, height: 32)
-                .background(fg.opacity(0.18), in: Circle())
-            VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.title3.weight(.bold))
-                Text(interval).font(.subheadline.weight(.medium)).opacity(0.85)
-            }
-        }
-        .foregroundStyle(fg)
-        .frame(maxWidth: .infinity, minHeight: 72)
-        .background(bg, in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title), next review in \(interval)")
     }
 }
 

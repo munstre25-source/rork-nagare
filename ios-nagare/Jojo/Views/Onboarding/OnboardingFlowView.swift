@@ -43,7 +43,7 @@ struct OnboardingFlowView: View {
         .environment(\.colorScheme, activeSurface == .cream ? .light : .dark)
         .animation(.easeInOut(duration: 0.35), value: activeSurface)
         .onAppear {
-            JojoPalette.activate(.sakura)
+            JojoPalette.activateOnboarding()
             guard !didLoad else { return }
             didLoad = true
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
@@ -269,30 +269,26 @@ struct SplashView: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(Color.sakuraPink)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Button {
-                Haptics.selection()
-                marketingScript = .forYou
-            } label: {
-                Label("Play For You demo", systemImage: "play.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .accessibilityHint("Silent walkthrough: feed, word tap, swipe, flashcard")
-            Button {
-                Haptics.selection()
-                marketingScript = .exploreVocab
-            } label: {
-                Label("Play Explore & Vocab demo", systemImage: "play.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .accessibilityHint("Silent walkthrough: explore, vocab, flashcards")
+            debugDemoButton("For You · Light", script: .forYouLight, hint: "Sakura light: feed, word tap, swipe, flashcard")
+            debugDemoButton("For You · Dark", script: .forYouDark, hint: "Sakura dark: feed, word tap, swipe, flashcard")
+            debugDemoButton("Explore · Light", script: .exploreVocabLight, hint: "Sakura light: explore, vocab, flashcards")
+            debugDemoButton("Explore · Dark", script: .exploreVocabDark, hint: "Sakura dark: explore, vocab, flashcards")
         }
         .padding(.top, Spacing.s)
+    }
+
+    private func debugDemoButton(_ title: String, script: MarketingScript, hint: String) -> some View {
+        Button {
+            Haptics.selection()
+            marketingScript = script
+        } label: {
+            Label(title, systemImage: "play.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .accessibilityHint(hint)
     }
     #endif
 }

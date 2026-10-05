@@ -20,6 +20,8 @@ nonisolated enum DeepLink: String, Equatable, Sendable {
 @MainActor
 final class AppModel {
     let container: ModelContainer
+    /// Bumped after a marketing demo restores the user's accent, so the open tabs re-resolve colors.
+    var paletteEpoch: Int = 0
     let purchases: PurchaseManager
     let lexicon: LocalLexicon
     let explainService: WordExplainService
@@ -48,6 +50,13 @@ final class AppModel {
     @ObservationIgnored private let seedClips: [Clip]
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var clipsById: [String: Clip] = [:]
+    /// Dictionary form or surface form → clip ids that contain it.
+    @ObservationIgnored private var clipIdsByWord: [String: [String]] = [:]
+    /// `pos|jlpt` → a short list of dictionary forms, for offline related-word suggestions.
+    @ObservationIgnored private var formsByPosJLPT: [String: [String]] = [:]
+    @ObservationIgnored private var rankedCacheKey = ""
+    @ObservationIgnored private var rankedCache: [Clip]?
 
     var context: ModelContext { container.mainContext }
 
@@ -72,7 +81,12 @@ final class AppModel {
         if let data = profile.watchLogData, let log = try? JSONDecoder().decode([String: Double].self, from: data) {
             watchLog = log
         }
-        JojoPalette.activate(profile.onboardingCompleted ? profile.appearance : .sakura)
+        migrateAppearanceIfNeeded()
+        if profile.onboardingCompleted {
+            JojoPalette.activate(theme: profile.theme, scheme: profile.scheme)
+        } else {
+            JojoPalette.activateOnboarding()
+        }
         rebuildClips()
         reloadLookedUpKeys()
         preloadCaches()
@@ -112,7 +126,31 @@ final class AppModel {
     // MARK: Clips
 
     func clip(id: String) -> Clip? {
-        clips.first { $0.id == id }
+        clipsById[id]
+    }
+
+    /// Clips whose transcript contains this dictionary form or surface, in library order.
+    func clipsMentioning(_ word: String, limit: Int = 4) -> [Clip] {
+        guard !word.isEmpty, let ids = clipIdsByWord[word] else { return [] }
+        var result: [Clip] = []
+        result.reserveCapacity(min(limit, ids.count))
+        for id in ids {
+            guard let clip = clipsById[id] else { continue }
+            result.append(clip)
+            if result.count == limit { break }
+        }
+        return result
+    }
+
+    /// Other dictionary forms with the same part of speech and JLPT tag.
+    func relatedForms(pos: String, jlpt: String?, excluding: String, limit: Int = 4) -> [String] {
+        let bucket = formsByPosJLPT["\(pos)|\(jlpt ?? "")"] ?? []
+        var result: [String] = []
+        for form in bucket where form != excluding {
+            result.append(form)
+            if result.count == limit { break }
+        }
+        return result
     }
 
     private func rebuildClips() {
@@ -129,12 +167,52 @@ final class AppModel {
             }
         }
         clips = merged
+        indexLibrary(merged)
+        rankedCache = nil
+        rankedCacheKey = ""
+        catalogGeneration += 1
     }
 
-    /// Learner-facing library. Verified clips win once any have synced; the bundled scripts stay as the offline fallback.
+    private func indexLibrary(_ library: [Clip]) {
+        var byId: [String: Clip] = [:]
+        var words: [String: [String]] = [:]
+        var related: [String: [String]] = [:]
+        byId.reserveCapacity(library.count)
+        for clip in library {
+            byId[clip.id] = clip
+            var seenWords = Set<String>()
+            for line in clip.lines {
+                for token in line.tokens {
+                    remember(token.dictionaryForm, clipId: clip.id, seen: &seenWords, into: &words)
+                    if token.surface != token.dictionaryForm {
+                        remember(token.surface, clipId: clip.id, seen: &seenWords, into: &words)
+                    }
+                    guard token.tappable, !token.dictionaryForm.isEmpty else { continue }
+                    let key = "\(token.pos)|\(token.jlpt ?? "")"
+                    var forms = related[key] ?? []
+                    if forms.count < 24, !forms.contains(token.dictionaryForm) {
+                        forms.append(token.dictionaryForm)
+                        related[key] = forms
+                    }
+                }
+            }
+        }
+        clipsById = byId
+        clipIdsByWord = words
+        formsByPosJLPT = related
+    }
+
+    private func remember(_ word: String, clipId: String, seen: inout Set<String>, into words: inout [String: [String]]) {
+        guard !word.isEmpty, seen.insert(word).inserted else { return }
+        words[word, default: []].append(clipId)
+    }
+
+    /// Bumped when the synced library changes so For You can append new clips.
+    var catalogGeneration: Int = 0
+
+    /// Published clips plus the bundled set. A remote row with the same id replaces the bundle.
     var studyLibrary: [Clip] {
-        let verified = clips.filter(\.hasVerifiedTranscript)
-        return verified.isEmpty ? clips : verified
+        clips
     }
 
     private func enrich(_ clip: Clip) -> Clip {
@@ -219,6 +297,28 @@ final class AppModel {
 
     /// Liked swipes outrank motivations. A pass beats a motivation for that genre.
     private func rankedStudyClips() -> [Clip] {
+        let key = rankingKey()
+        if rankedCacheKey == key, let rankedCache { return rankedCache }
+        let ranked = computeRankedStudyClips()
+        rankedCacheKey = key
+        rankedCache = ranked
+        return ranked
+    }
+
+    private func rankingKey() -> String {
+        [
+            String(catalogGeneration),
+            profile.readingLevel.rawValue,
+            profile.gateContentByLevel ? "1" : "0",
+            profile.tastesLiked.joined(separator: ","),
+            profile.tastesDisliked.joined(separator: ","),
+            profile.motivations.joined(separator: ","),
+            profile.firstName,
+            profile.finishedClipIds.joined(separator: ",")
+        ].joined(separator: "|")
+    }
+
+    private func computeRankedStudyClips() -> [Clip] {
         let liked = Set(profile.tastesLiked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
         let disliked = Set(profile.tastesDisliked.compactMap(Taste.init(rawValue:)).flatMap(\.categories))
         let motivated = Set(profile.motivations.compactMap(Motivation.init(rawValue:)).flatMap(\.categories))
@@ -258,6 +358,9 @@ final class AppModel {
             }
             s -= Double(abs(clip.difficultyKind.rank - level)) * 8
             if clip.hasVerifiedTranscript { s += 4 }
+            if let seen = profile.finishedClipIds.firstIndex(of: clip.id) {
+                s -= 400 + Double(seen)
+            }
             s += feedTieBreak(clip.id)
             return s
         }
@@ -449,6 +552,62 @@ final class AppModel {
         save()
     }
 
+    /// Due cards the learner actually meets, most-seen first.
+    func relevantDueKeys(limit: Int = 10) -> [String] {
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        return words
+            .filter { $0.dueAt <= Date() && $0.state != .known }
+            .sorted { lhs, rhs in
+                if lhs.occurrenceCount != rhs.occurrenceCount {
+                    return lhs.occurrenceCount > rhs.occurrenceCount
+                }
+                return lhs.dueAt < rhs.dueAt
+            }
+            .prefix(limit)
+            .map(\.key)
+    }
+
+    /// Saves a word read from a photo or screenshot. The sentence is the line it was found in.
+    @discardableResult
+    func saveCaptured(hit: CaptureHit) -> Bool {
+        let word: SavedWord
+        let isNew: Bool
+        if let existing = fetchWord(key: hit.key) {
+            word = existing
+            isNew = false
+        } else {
+            isNew = true
+            word = SavedWord(
+                key: hit.key,
+                surface: hit.surface,
+                readings: hit.reading.isEmpty ? [] : [hit.reading],
+                romaji: hit.romaji,
+                pos: hit.pos,
+                conjugationClass: hit.conjugationClass,
+                jlpt: hit.jlpt,
+                definitions: hit.definitions,
+                jaDefinitions: hit.jaDefinitions
+            )
+            word.contextSentence = hit.sentence
+            word.contextSurface = hit.surface
+            word.contextClipId = ""
+            word.contextLineIndex = 0
+            word.dueAt = Date()
+            context.insert(word)
+        }
+        word.occurrenceCount += 1
+        if word.contextSentence.isEmpty {
+            word.contextSentence = hit.sentence
+            word.contextSurface = hit.surface
+        }
+        lookedUpKeys.insert(hit.key)
+        wordStates[hit.key] = word.state
+        if isNew { vocabBadgePulse += 1 }
+        save()
+        track("capture_word_saved", props: ["surface": hit.surface, "new": String(isNew)])
+        return isNew
+    }
+
     func markVocabSaveCoachSeen() {
         guard !profile.didShowVocabSaveCoach else { return }
         profile.didShowVocabSaveCoach = true
@@ -520,6 +679,17 @@ final class AppModel {
     var minutesLeft: Int { max(0, Int(ceil((dailyGoalSeconds - todayWatchedSeconds) / 60))) }
     var totalWatchSeconds: Double { watchLog.values.reduce(0, +) }
 
+    /// Puts a finished clip behind ones the learner has not seen. Finishing it again keeps it at the back.
+    func markClipFinished(_ id: String) {
+        guard !id.isEmpty else { return }
+        var ids = profile.finishedClipIds
+        ids.removeAll { $0 == id }
+        ids.append(id)
+        guard ids != profile.finishedClipIds else { return }
+        profile.finishedClipIds = ids
+        save()
+    }
+
     func addWatch(seconds: Double) {
         let key = Self.dayKey(Date())
         let wasReached = isGoalReached
@@ -576,10 +746,47 @@ final class AppModel {
         save()
     }
 
-    func setAppearance(_ mode: AppearanceMode) {
-        JojoPalette.activate(mode)
-        profile.appearance = mode
+    /// Older builds stored the accent in `appearanceMode` (`sakura`, `plum`, `orange`, `system`).
+    /// Light and dark now apply to whichever accent is selected.
+    private func migrateAppearanceIfNeeded() {
+        switch profile.appearanceMode {
+        case "plum", "purple":
+            profile.accentTheme = AccentTheme.plum.rawValue
+            profile.appearanceMode = JojoScheme.dark.rawValue
+        case "orange":
+            profile.accentTheme = AccentTheme.orange.rawValue
+            profile.appearanceMode = JojoScheme.dark.rawValue
+        case "sakura", "system":
+            profile.accentTheme = AccentTheme.sakura.rawValue
+            profile.appearanceMode = JojoScheme.dark.rawValue
+        case "light", "dark":
+            if AccentTheme(rawValue: profile.accentTheme) == nil {
+                profile.accentTheme = AccentTheme.sakura.rawValue
+            }
+        default:
+            profile.appearanceMode = JojoScheme.dark.rawValue
+            if AccentTheme(rawValue: profile.accentTheme) == nil {
+                profile.accentTheme = AccentTheme.sakura.rawValue
+            }
+        }
+    }
+
+    func setTheme(_ theme: AccentTheme) {
+        profile.theme = theme
+        JojoPalette.activate(theme: theme, scheme: profile.scheme)
         save()
+    }
+
+    func setScheme(_ scheme: JojoScheme) {
+        profile.scheme = scheme
+        JojoPalette.activate(theme: profile.theme, scheme: scheme)
+        save()
+    }
+
+    /// Puts the saved theme back after a Sakura-only marketing demo.
+    func restorePalette() {
+        JojoPalette.activate(theme: profile.theme, scheme: profile.scheme)
+        paletteEpoch += 1
     }
 
     func setSubtitleMode(_ mode: SubtitleMode) {
@@ -876,7 +1083,7 @@ final class AppModel {
         context.delete(profile)
         context.insert(fresh)
         profile = fresh
-        JojoPalette.activate(.sakura)
+        JojoPalette.activateOnboarding()
         save()
         rebuildClips()
         track("account_data_deleted")

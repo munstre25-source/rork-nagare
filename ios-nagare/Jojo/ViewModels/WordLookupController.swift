@@ -128,11 +128,13 @@ final class WordLookupController {
         let token = selection.token
         let base = token.dictionaryForm
         var examples: [String] = []
-        for clip in app.clips {
+        for clip in app.clipsMentioning(base, limit: 8) {
             for line in clip.lines where line.tokens.contains(where: { $0.dictionaryForm == base }) {
                 let entry = "\(line.text)\n\(line.translation)"
                 if line.text != selection.sentence, !examples.contains(entry) { examples.append(entry) }
+                if examples.count == 3 { break }
             }
+            if examples.count == 3 { break }
         }
         let gloss = token.definitions.first ?? app.lexicon.entry(for: base)?.definitions.first ?? "this word"
         var explanation = "In “\(selection.sentence)”, \(token.surface) means “\(gloss)”."
@@ -143,12 +145,7 @@ final class WordLookupController {
             explanation += " Register: \(formality)."
         }
         explanation += " Line meaning: \(selection.translation)"
-        let related = app.clips
-            .flatMap { $0.lines.flatMap(\.tokens) }
-            .filter { $0.pos == token.pos && $0.dictionaryForm != base && $0.tappable && $0.jlpt == token.jlpt }
-            .map(\.dictionaryForm)
-        var seen = Set<String>()
-        let relatedUnique = related.filter { seen.insert($0).inserted }.prefix(4)
+        let relatedUnique = app.relatedForms(pos: token.pos, jlpt: token.jlpt, excluding: base)
         return ContextExplanation(
             contextualExplanation: explanation,
             examples: Array(examples.prefix(3)),

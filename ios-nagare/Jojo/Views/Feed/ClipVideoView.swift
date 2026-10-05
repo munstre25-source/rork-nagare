@@ -18,6 +18,8 @@ struct ClipVideoView: View {
     var onFullscreen: (() -> Void)?
     var onInfo: (() -> Void)?
     var onShadowing: (() -> Void)?
+    /// Shows the entire picture inside the frame, the way the maximized feed does.
+    var fitsFrame: Bool = false
     /// Feed focus: a tap on the video brings the chrome back instead of pausing.
     var watchChromeHidden: Bool = false
     var onRevealWatchChrome: () -> Void = {}
@@ -139,7 +141,7 @@ struct ClipVideoView: View {
         if let local = player as? LocalClipPlayer {
             ZStack {
                 ClipPosterView(clip: clip, showsSymbol: false)
-                LocalPlayerView(player: local)
+                LocalPlayerView(player: local, gravity: fitsFrame ? .resizeAspect : .resizeAspectFill)
                     // Keep a faint underlay until the first frame is ready so the surface never goes pure black.
                     .opacity(local.isReady ? 1 : 0.02)
             }

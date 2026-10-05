@@ -40,5 +40,7 @@
 	<string>Jojo listens while you shadow a line so it can tell you how close you were.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Jojo turns what you say into text and compares it with the line you just heard.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Jojo reads the Japanese in a photo so you can save those words.</string>
 </dict>
 </plist>

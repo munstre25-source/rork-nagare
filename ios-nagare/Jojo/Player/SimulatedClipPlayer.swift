@@ -13,12 +13,15 @@ final class SimulatedClipPlayer: ClipPlayer {
     private(set) var rate: Double = 1
     private(set) var isMuted = false
     private(set) var loopRange: ClosedRange<Double>?
+    private(set) var spokenLine: Int = 0
+    private(set) var spokenToken: Int?
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
 
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var lastSpokenLine: Int = -1
     @ObservationIgnored private var watchAccumulator: Double = 0
+    @ObservationIgnored private var clock: Double = 0
     @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
 
     var duration: Double { clip.durationSec }
@@ -29,7 +32,7 @@ final class SimulatedClipPlayer: ClipPlayer {
 
     func play() {
         guard !isPlaying else { return }
-        if currentTime >= duration - 0.05 { currentTime = 0 }
+        if currentTime >= duration - 0.05 { currentTime = 0; clock = 0 }
         isPlaying = true
         lastSpokenLine = -1
         startTicker()
@@ -43,7 +46,15 @@ final class SimulatedClipPlayer: ClipPlayer {
     }
 
     func seek(to time: Double) {
-        currentTime = min(max(0, time), duration)
+        PlaybackUI.jump(
+            to: time,
+            duration: duration,
+            clip: clip,
+            uiTime: &currentTime,
+            line: &spokenLine,
+            token: &spokenToken
+        )
+        clock = currentTime
         lastSpokenLine = -1
         synthesizer.stopSpeaking(at: .immediate)
     }
@@ -59,7 +70,7 @@ final class SimulatedClipPlayer: ClipPlayer {
 
     func setLoop(_ range: ClosedRange<Double>?) {
         loopRange = range
-        if let range, !range.contains(currentTime) { seek(to: range.lowerBound) }
+        if let range, !range.contains(clock) { seek(to: range.lowerBound) }
     }
 
     func teardown() {
@@ -74,7 +85,7 @@ final class SimulatedClipPlayer: ClipPlayer {
         ticker = Task { [weak self] in
             var last = Date()
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(33))
+                try? await Task.sleep(for: .milliseconds(100))
                 if Task.isCancelled { return }
                 guard let self, self.isPlaying else { return }
                 let now = Date()
@@ -91,13 +102,14 @@ final class SimulatedClipPlayer: ClipPlayer {
             onWatchTick?(watchAccumulator)
             watchAccumulator = 0
         }
-        var next = currentTime + dt * rate
+        var next = clock + dt * rate
         if let loopRange, next >= loopRange.upperBound {
             next = loopRange.lowerBound
             lastSpokenLine = -1
         }
         if next >= duration {
-            currentTime = duration
+            PlaybackUI.jump(to: duration, duration: duration, clip: clip, uiTime: &currentTime, line: &spokenLine, token: &spokenToken)
+            clock = currentTime
             isPlaying = false
             if let onFinished {
                 onFinished()
@@ -107,15 +119,22 @@ final class SimulatedClipPlayer: ClipPlayer {
             }
             return
         }
-        currentTime = next
+        clock = PlaybackUI.note(
+            time: next,
+            duration: duration,
+            clip: clip,
+            uiTime: &currentTime,
+            line: &spokenLine,
+            token: &spokenToken
+        )
         narrateIfNeeded()
     }
 
     private func narrateIfNeeded() {
         guard !isMuted else { return }
-        let index = clip.lineIndex(at: currentTime)
+        let index = spokenLine
         guard index != lastSpokenLine, let line = clip.lines[safe: index],
-              currentTime >= line.start, currentTime < line.start + 0.4 else { return }
+              clock >= line.start, clock < line.start + 0.4 else { return }
         lastSpokenLine = index
         let utterance = AVSpeechUtterance(string: line.text)
         utterance.voice = AVSpeechSynthesisVoice(language: "ja-JP")

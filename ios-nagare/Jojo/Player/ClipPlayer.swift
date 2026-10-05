@@ -14,6 +14,10 @@ protocol ClipPlayer: AnyObject {
     var onFinished: (() -> Void)? { get set }
     /// Called roughly once per second of real playback, with elapsed seconds.
     var onWatchTick: ((Double) -> Void)? { get set }
+    /// Line under the playhead. Changes only when the line changes.
+    var spokenLine: Int { get }
+    /// Token under the playhead. Changes only when the spoken word changes.
+    var spokenToken: Int? { get }
 
     func play()
     func pause()
@@ -29,14 +33,10 @@ extension ClipPlayer {
         isPlaying ? pause() : play()
     }
 
-    var currentLineIndex: Int { clip.lineIndex(at: currentTime) }
+    var currentLineIndex: Int { spokenLine }
 
     /// Index of the token currently being spoken in the current line.
-    var currentTokenIndex: Int? {
-        let line = clip.lines[safe: currentLineIndex]
-        guard let line, currentTime >= line.start, currentTime <= line.end + 0.2 else { return nil }
-        return line.tokens.lastIndex { $0.start <= currentTime && !$0.isPunctuation }
-    }
+    var currentTokenIndex: Int? { spokenToken }
 
     /// Cycles 1x → 0.75x → 0.5x → 1x.
     func cycleRate() {
@@ -54,6 +54,49 @@ extension ClipPlayer {
         } else if let line = clip.lines[safe: currentLineIndex] {
             setLoop(max(0, line.start - 0.3)...min(duration, line.end + 0.5))
         }
+    }
+}
+
+/// Publishes playhead state without notifying SwiftUI on every audio frame.
+@MainActor
+enum PlaybackUI {
+    /// Updates the karaoke markers when they change, and the clock about four times a second.
+    static func note(
+        time: Double,
+        duration: Double,
+        clip: Clip,
+        uiTime: inout Double,
+        line: inout Int,
+        token: inout Int?
+    ) -> Double {
+        let clock = min(max(0, time), duration)
+        let nextLine = clip.lineIndex(at: clock)
+        if nextLine != line { line = nextLine }
+        let nextToken = tokenIndex(clip: clip, line: nextLine, time: clock)
+        if nextToken != token { token = nextToken }
+        if abs(clock - uiTime) >= 0.25 {
+            uiTime = clock
+        }
+        return clock
+    }
+
+    static func jump(
+        to time: Double,
+        duration: Double,
+        clip: Clip,
+        uiTime: inout Double,
+        line: inout Int,
+        token: inout Int?
+    ) {
+        let clock = min(max(0, time), duration)
+        uiTime = clock
+        line = clip.lineIndex(at: clock)
+        token = tokenIndex(clip: clip, line: line, time: clock)
+    }
+
+    private static func tokenIndex(clip: Clip, line: Int, time: Double) -> Int? {
+        guard let row = clip.lines[safe: line], time >= row.start, time <= row.end + 0.2 else { return nil }
+        return row.tokens.lastIndex { $0.start <= time && !$0.isPunctuation }
     }
 }
 

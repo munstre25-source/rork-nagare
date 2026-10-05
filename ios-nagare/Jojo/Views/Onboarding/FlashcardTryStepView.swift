@@ -72,10 +72,17 @@ struct FlashcardTryStepView: View {
 
     @ViewBuilder
     private func flashcard(_ word: SavedWord) -> some View {
-        let defs = word.displayDefinitions(mode: app.profile.dictionary)
         ZStack {
-            cardFront(word).opacity(revealed ? 0 : 1)
-            cardBack(word, defs: defs)
+            FlashcardHero(
+                surface: word.surface,
+                reading: app.profile.showFurigana ? word.primaryReading : "",
+                romaji: app.profile.showRomaji ? word.romaji : "",
+                pos: word.pos,
+                jlpt: word.jlpt,
+                hint: "Tap to reveal"
+            )
+            .opacity(revealed ? 0 : 1)
+            KikuFlashcardBack(word: word, playsClip: false) { _ in }
                 .opacity(revealed ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
         }
@@ -86,67 +93,6 @@ struct FlashcardTryStepView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(revealed ? "Card: \(word.surface), meaning \(word.gloss)" : "Card: \(word.surface). Double tap to reveal the meaning.")
         .accessibilityAddTraits(.isButton)
-    }
-
-    private func cardFront(_ word: SavedWord) -> some View {
-        VStack(spacing: Spacing.m) {
-            cardLabel("YOUR FIRST CARD")
-            Text(word.primaryReading)
-                .font(JojoFont.jp(15, relativeTo: .footnote))
-                .foregroundStyle(Color.jojoInkSoft)
-                .opacity(app.profile.showFurigana ? 1 : 0)
-            Text(word.surface)
-                .font(JojoFont.jp(52, bold: true, relativeTo: .largeTitle))
-                .foregroundStyle(Color.jojoInk)
-            if app.profile.showRomaji, !word.romaji.isEmpty {
-                Text(word.romaji)
-                    .font(.system(.subheadline, design: .rounded))
-                    .foregroundStyle(Color.jojoInkFaint)
-            }
-            Label("Tap to flip", systemImage: "hand.tap.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.jojoVermilion)
-                .padding(.top, Spacing.s)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.xl)
-        .brandCard(padding: Spacing.l)
-    }
-
-    private func cardBack(_ word: SavedWord, defs: [String]) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
-            cardLabel("MEANING")
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
-                Text(word.surface)
-                    .font(JojoFont.jp(30, bold: true, relativeTo: .title))
-                    .foregroundStyle(Color.jojoInk)
-                WordPills(pos: word.pos, conjugationClass: word.conjugationClass, jlpt: word.jlpt)
-            }
-            ForEach(Array(defs.prefix(2).enumerated()), id: \.offset) { index, def in
-                DefinitionRow(number: index + 1, tag: word.conjugationClass ?? word.pos, text: def)
-            }
-            if !word.contextSentence.isEmpty {
-                Divider().overlay(Color.jojoPaperStroke)
-                Text("The sentence it came from")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.jojoInkFaint)
-                HighlightedSentence(
-                    sentence: word.contextSentence,
-                    target: word.contextSurface.isEmpty ? word.surface : word.contextSurface,
-                    size: 18,
-                    baseColor: .jojoInk
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .brandCard(padding: Spacing.l)
-    }
-
-    private func cardLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.weight(.heavy))
-            .tracking(1.6)
-            .foregroundStyle(Color.jojoOrange)
     }
 
     private var placeholder: some View {
@@ -190,12 +136,16 @@ struct FlashcardTryStepView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
         } else if revealed, let card {
-            HStack(spacing: Spacing.m) {
+            HStack(spacing: 12) {
                 Button { answer(card, good: false) } label: {
-                    TryAnswerLabel(title: "Again", interval: SRS.againLabel, symbol: "arrow.counterclockwise", fg: .againText, bg: .againBackground)
+                    ReviewGradeButton(title: "Again", interval: SRS.againLabel, good: false)
                 }
                 Button { answer(card, good: true) } label: {
-                    TryAnswerLabel(title: "Good", interval: SRS.label(SRS.goodInterval(fromStep: card.intervalStepIndex)), symbol: "checkmark", fg: .goodText, bg: .goodBackground)
+                    ReviewGradeButton(
+                        title: "Good",
+                        interval: SRS.label(SRS.goodInterval(fromStep: card.intervalStepIndex)),
+                        good: true
+                    )
                 }
             }
             .buttonStyle(PressableStyle())
@@ -244,29 +194,3 @@ struct FlashcardTryStepView: View {
     }
 }
 
-/// Again / Good button face, sized for the cream onboarding surface.
-private struct TryAnswerLabel: View {
-    let title: String
-    let interval: String
-    let symbol: String
-    let fg: Color
-    let bg: Color
-
-    var body: some View {
-        HStack(spacing: Spacing.s) {
-            Image(systemName: symbol)
-                .font(.system(size: 14, weight: .bold))
-                .frame(width: 30, height: 30)
-                .background(fg.opacity(0.18), in: Circle())
-            VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.headline.weight(.bold))
-                Text(interval).font(.footnote.weight(.medium)).opacity(0.85)
-            }
-        }
-        .foregroundStyle(fg)
-        .frame(maxWidth: .infinity, minHeight: 64)
-        .background(bg, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title), next review in \(interval)")
-    }
-}

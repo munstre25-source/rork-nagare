@@ -27,4 +27,18 @@ nonisolated enum SRS {
     }
 
     static var againLabel: String { "<1m" }
+
+    /// Spoken form of the next showing, as on the review card footer.
+    static func untilReview(_ interval: TimeInterval) -> String {
+        if interval < 3600 {
+            let minutes = max(1, Int(interval / 60))
+            return minutes == 1 ? "1 minute until review" : "\(minutes) minutes until review"
+        }
+        if interval < 86_400 {
+            let hours = max(1, Int(interval / 3600))
+            return hours == 1 ? "1 hour until review" : "\(hours) hours until review"
+        }
+        let days = max(1, Int(interval / 86_400))
+        return days == 1 ? "1 day until review" : "\(days) days until review"
+    }
 }

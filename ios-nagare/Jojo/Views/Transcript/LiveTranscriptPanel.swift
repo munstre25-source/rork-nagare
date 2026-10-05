@@ -68,7 +68,8 @@ struct LiveTranscriptPanel: View {
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
-                    raisedCard: index == currentLine
+                    raisedCard: index == currentLine,
+                    showsLineTools: true
                 )
                 .id(index)
                 .padding(.horizontal, index == currentLine ? 0 : Spacing.m)

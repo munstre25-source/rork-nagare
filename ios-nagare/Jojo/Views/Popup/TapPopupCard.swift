@@ -205,6 +205,16 @@ struct TapPopupCard: View {
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
                 DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: true)
             }
+            if let selection = lookup.selection {
+                let gloss = explanation.definitions.first ?? explanation.jaDefinitions.first ?? ""
+                if !gloss.isEmpty {
+                    Text("In this line, \(selection.token.surface) means “\(gloss)”.")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(3)
+                }
+            }
             if !compact {
                 HStack {
                     if defs.count > capped.count, !showAllDefinitions {
@@ -231,11 +241,7 @@ struct TapPopupCard: View {
 
     @ViewBuilder
     private func relatedClipsRail(for surface: String) -> some View {
-        let hits = app.clips.filter { clip in
-            clip.lines.contains { line in
-                line.tokens.contains { $0.dictionaryForm == surface || $0.surface == surface }
-            }
-        }.prefix(4)
+        let hits = app.clipsMentioning(surface, limit: 4)
         if hits.count > 1 {
             VStack(alignment: .leading, spacing: Spacing.s) {
                 Text("Also in")

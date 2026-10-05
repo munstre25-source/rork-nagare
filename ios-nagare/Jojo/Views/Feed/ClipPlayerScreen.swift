@@ -40,7 +40,7 @@ struct ClipQueueScreen: View {
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var currentId: String?
-    @State private var videoExpanded: Bool = true
+    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
     @State private var infoClip: Clip?
     @State private var appliedStart: Bool = false
 
@@ -74,6 +74,7 @@ struct ClipQueueScreen: View {
                             onToggleVideoSize: {
                                 Haptics.selection()
                                 withAnimation(.snappy) { videoExpanded.toggle() }
+                                VideoFramePreference.isExpanded = videoExpanded
                             },
                             onActivate: { show(clip.id) },
                             onInfo: { infoClip = clip }
@@ -109,6 +110,10 @@ struct ClipQueueScreen: View {
         .environment(lookup)
         .onAppear {
             coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
+            coordinator.onFinished = { [weak app, weak coordinator] in
+                guard !loopPlayback, let id = coordinator?.activeClipId else { return }
+                app?.markClipFinished(id)
+            }
             if currentId == nil { currentId = startId }
             if let currentId { show(currentId) }
         }

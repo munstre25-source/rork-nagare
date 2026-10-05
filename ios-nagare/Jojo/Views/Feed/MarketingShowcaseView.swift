@@ -3,46 +3,77 @@ import SwiftUI
 import SwiftData
 
 /// Which silent marketing walkthrough to screen-record.
+/// Each walkthrough has a light and a dark cut. Demos always paint the Sakura accent.
 nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
-    case forYou
-    case exploreVocab
+    case forYouLight
+    case forYouDark
+    case exploreVocabLight
+    case exploreVocabDark
 
     var id: String { rawValue }
 
-    var title: String {
+    enum Kind { case forYou, exploreVocab }
+
+    var kind: Kind {
         switch self {
-        case .forYou: "Video 1 · For You"
-        case .exploreVocab: "Video 2 · Explore & Vocab"
+        case .forYouLight, .forYouDark: .forYou
+        case .exploreVocabLight, .exploreVocabDark: .exploreVocab
+        }
+    }
+
+    var scheme: JojoScheme {
+        switch self {
+        case .forYouLight, .exploreVocabLight: .light
+        case .forYouDark, .exploreVocabDark: .dark
+        }
+    }
+
+    var videoLabel: String { kind == .forYou ? "Video 1" : "Video 2" }
+
+    var title: String {
+        let name = kind == .forYou ? "Video 1 · For You" : "Video 2 · Explore & Vocab"
+        return "\(name) · \(scheme.title)"
+    }
+
+    /// Same walkthrough, the other paper.
+    var flippedScheme: MarketingScript {
+        switch self {
+        case .forYouLight: .forYouDark
+        case .forYouDark: .forYouLight
+        case .exploreVocabLight: .exploreVocabDark
+        case .exploreVocabDark: .exploreVocabLight
         }
     }
 
     var subtitle: String {
-        switch self {
+        let page = scheme == .light ? "cream" : "black"
+        switch kind {
         case .forYou:
-            "Two clips play on the black For You page. Plum underlines stay bright, a known word is boxed in green, and the English line is white."
+            "Sakura theme. Two clips play on the \(page) For You page, then the review card: reading, meanings, the sentence, and Again / Good."
         case .exploreVocab:
-            "Explore opens Listening, two clips play on black with the same plum transcript, then Vocab and the flashcards."
+            "Sakura theme. Explore opens Listening, two clips play on \(page), then Vocab and the same review card."
         }
     }
 
     var beats: [String] {
-        switch self {
+        let page = scheme == .light ? "cream" : "black"
+        switch kind {
         case .forYou:
             [
-                "Channel name above the clip, plum underlines, white English",
+                "Channel name above the clip, sakura underlines, readable English",
                 "A word you know is boxed in green",
                 "Controls fade, then a touch brings them back",
                 "Tap a new word — the dictionary card opens",
                 "Swipe to the second clip",
-                "The review card shows the definition in full"
+                "Review card: reading, two meanings, the sentence, Again and Good"
             ]
         case .exploreVocab:
             [
                 "Explore’s learning paths",
                 "Open Listening",
-                "Two clips play on black — plum transcript, swipe to the next",
+                "Two clips play on \(page) — sakura transcript, swipe to the next",
                 "Vocab opens with how many words you know",
-                "Flashcards show the definition, the sentence, and the clip"
+                "Review card: the word, the sentence it came from, and when it returns"
             ]
         }
     }
@@ -52,7 +83,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
 /// DEBUG builds only — never shown in App Store / production UI.
 /// Two clean arcs matching Kiku-style ads: For You immersion, and Explore → Vocab → cards.
 struct MarketingShowcaseView: View {
-    var initialScript: MarketingScript = .forYou
+    var initialScript: MarketingScript = .forYouDark
     /// When true, skips the picker and starts the walkthrough immediately (launch play buttons).
     var autoBegin: Bool = false
 
@@ -60,7 +91,7 @@ struct MarketingShowcaseView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var phase: Phase = .prep
-    @State private var selectedScript: MarketingScript = .forYou
+    @State private var selectedScript: MarketingScript = .forYouDark
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var feedClips: [Clip] = []
@@ -99,9 +130,10 @@ struct MarketingShowcaseView: View {
         }
         .environment(coordinator)
         .environment(lookup)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(selectedScript.scheme.colorScheme)
         .onAppear {
             selectedScript = initialScript
+            JojoPalette.activate(theme: .sakura, scheme: initialScript.scheme)
             if autoBegin, !didAutoBegin {
                 didAutoBegin = true
                 // Let the cover present, then start.
@@ -111,10 +143,18 @@ struct MarketingShowcaseView: View {
                 }
             }
         }
+        .onChange(of: selectedScript) { _, script in
+            JojoPalette.activate(theme: .sakura, scheme: script.scheme)
+        }
         .onDisappear {
             scriptTask?.cancel()
             coordinator.stop()
             lookup.dismiss()
+            if app.profile.onboardingCompleted {
+                app.restorePalette()
+            } else {
+                JojoPalette.activateOnboarding()
+            }
         }
         .onChange(of: currentId) { _, newId in
             guard phase == .running, stage == .feed,
@@ -140,7 +180,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Two walkthroughs of the current app. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Sakura theme. Each walkthrough has a light and a dark version. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -159,7 +199,7 @@ struct MarketingShowcaseView: View {
                                     .foregroundStyle(.white)
                                 Spacer()
                                 Image(systemName: selectedScript == script ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(selectedScript == script ? Color.jojoOrange : .white.opacity(0.35))
+                                    .foregroundStyle(selectedScript == script ? Color(hex: "#FF7EB8") : .white.opacity(0.35))
                             }
                             Text(script.subtitle)
                                 .font(.caption)
@@ -169,12 +209,12 @@ struct MarketingShowcaseView: View {
                         .padding(Spacing.l)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
-                            selectedScript == script ? Color.sakuraPinkSoft : Color.white.opacity(0.06),
+                            selectedScript == script ? Color(hex: "#6A2458") : Color.white.opacity(0.06),
                             in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(selectedScript == script ? Color.sakuraPink : Color.white.opacity(0.08), lineWidth: 1.5)
+                                .strokeBorder(selectedScript == script ? Color(hex: "#FF7EB8") : Color.white.opacity(0.08), lineWidth: 1.5)
                         )
                     }
                     .buttonStyle(.plain)
@@ -198,7 +238,7 @@ struct MarketingShowcaseView: View {
                 Haptics.medium()
                 beginShowcase(selectedScript)
             } label: {
-                Label("Begin \(selectedScript == .forYou ? "Video 1" : "Video 2")", systemImage: "play.fill")
+                Label("Begin \(selectedScript.videoLabel) · \(selectedScript.scheme.title)", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
@@ -349,75 +389,79 @@ struct MarketingShowcaseView: View {
 
     private func flashcardBeat(_ word: SavedWord) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: Spacing.m) {
-                Image(systemName: "xmark")
-                    .foregroundStyle(.white.opacity(0.85))
-                    .frame(width: 44, height: 44)
-                GeometryReader { proxy in
-                    let progress = flashWords.isEmpty ? 0.2 : Double(flashIndex + 1) / Double(max(flashWords.count, 1))
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.12))
-                        Capsule().fill(Color.jojoOrange)
-                            .frame(width: proxy.size.width * progress)
+            VStack(spacing: 10) {
+                ZStack {
+                    ReviewWordmark()
+                    HStack {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(FlashcardInk.ink)
+                            .frame(width: 44, height: 44)
+                        Spacer()
                     }
                 }
-                .frame(height: 6)
-                Text("\(flashIndex + 1)/\(max(flashWords.count, 1))")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.6))
+                HStack(spacing: 10) {
+                    GeometryReader { proxy in
+                        let progress = flashWords.isEmpty ? 0.2 : Double(flashIndex + 1) / Double(max(flashWords.count, 1))
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(FlashcardInk.ink.opacity(0.14))
+                            Capsule().fill(Color.sakuraButton)
+                                .frame(width: proxy.size.width * progress)
+                        }
+                    }
+                    .frame(height: 8)
+                    Text("\(flashIndex + 1)/\(max(flashWords.count, 1))")
+                        .font(.subheadline.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(FlashcardInk.muted)
+                }
             }
             .padding(.horizontal, Spacing.l)
             .padding(.top, Spacing.s)
 
-            if !flashRevealed {
-                Spacer(minLength: Spacing.s)
-                VStack(spacing: Spacing.l) {
-                    Text(word.surface)
-                        .font(JojoFont.jp(44, bold: true, relativeTo: .largeTitle))
-                        .foregroundStyle(.white)
-                    Text("Tap to reveal")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.8))
+            ZStack {
+                if !flashRevealed {
+                    FlashcardHero(
+                        surface: word.surface,
+                        reading: word.primaryReading,
+                        romaji: word.romaji,
+                        pos: word.pos,
+                        jlpt: word.jlpt,
+                        hint: "Tap to reveal"
+                    )
+                    .padding(.horizontal, Spacing.l)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(Spacing.l)
-                .background(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1.5)
-                )
-                .padding(.horizontal, Spacing.l)
-                Spacer(minLength: Spacing.s)
-                Color.clear.frame(height: 8)
-            } else {
-                FittedFlashcard {
-                    KikuFlashcardBack(word: word, dark: true) { _ in }
-                        .environment(\.colorScheme, .dark)
+                if flashRevealed {
+                    VStack(spacing: 0) {
+                        FittedFlashcard {
+                            KikuFlashcardBack(word: word) { _ in }
+                                .padding(.horizontal, Spacing.l)
+                                .padding(.top, Spacing.s)
+                                .padding(.bottom, Spacing.s)
+                                .allowsHitTesting(false)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                ReviewGradeButton(title: "Again", interval: SRS.againLabel, good: false)
+                                ReviewGradeButton(
+                                    title: "Good",
+                                    interval: SRS.label(SRS.goodInterval(fromStep: word.intervalStepIndex)),
+                                    good: true
+                                )
+                            }
+                            ReviewUntilFooter(text: SRS.untilReview(SRS.goodInterval(fromStep: word.intervalStepIndex)))
+                        }
                         .padding(.horizontal, Spacing.l)
-                        .padding(.top, Spacing.s)
-                        .padding(.bottom, Spacing.s)
-                        .allowsHitTesting(false)
+                        .padding(.bottom, Spacing.l)
+                    }
+                    .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                HStack(spacing: Spacing.m) {
-                    answerChip(title: "Again", subtitle: "<1m", color: .againBackground, fg: .againText)
-                    answerChip(title: "Good", subtitle: "<10m", color: .goodBackground, fg: .goodText)
-                }
-                .padding(.horizontal, Spacing.l)
-                .padding(.bottom, Spacing.l)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            .rotation3DEffect(.degrees(flashRevealed ? 180 : 0), axis: (x: 0, y: 1, z: 0), perspective: 0.65)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color.bgPlayer.ignoresSafeArea())
-    }
-
-    private func answerChip(title: String, subtitle: String, color: Color, fg: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(title).font(.headline.weight(.bold))
-            Text(subtitle).font(.caption.weight(.semibold))
-        }
-        .foregroundStyle(fg)
-        .frame(maxWidth: .infinity, minHeight: 64)
-        .background(color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background { ReviewStageBackground() }
     }
 
     // MARK: Done
@@ -437,8 +481,8 @@ struct MarketingShowcaseView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.xl)
             Spacer()
-            Button("Record the other video") {
-                selectedScript = selectedScript == .forYou ? .exploreVocab : .forYou
+            Button("Record the \(selectedScript.flippedScheme.scheme.title.lowercased()) version") {
+                selectedScript = selectedScript.flippedScheme
                 phase = .prep
                 resetShowcaseState()
             }
@@ -499,7 +543,7 @@ struct MarketingShowcaseView: View {
         currentId = first.id
         flashWords = demoVocabFallback()
         app.markVocabSaveCoachSeen()
-        stage = script == .forYou ? .feed : .explore
+        stage = script.kind == .forYou ? .feed : .explore
         tabHighlight = .feed
         watchChromeVisible = true
         phase = .running
@@ -509,7 +553,8 @@ struct MarketingShowcaseView: View {
         ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            switch script {
+            JojoPalette.activate(theme: .sakura, scheme: script.scheme)
+            switch script.kind {
             case .forYou:
                 await runForYouScript(clips: clips, first: first)
             case .exploreVocab:
@@ -539,7 +584,8 @@ struct MarketingShowcaseView: View {
         var savedFromTap: SavedWord?
         if let line = first.lines.first {
             let candidates = line.tokens.enumerated().filter { $0.element.tappable && $0.element.containsKanji }
-            let pick = candidates.first { $0.element.surface != known?.surface } ?? candidates.first
+            let rich = candidates.filter { $0.element.surface != known?.surface && $0.element.jlpt != nil && $0.element.definitions.count > 1 }
+            let pick = rich.first ?? candidates.first { $0.element.surface != known?.surface } ?? candidates.first
             if let pick {
                 let token = pick.element
                 lookup.previewOnly = false
@@ -610,8 +656,10 @@ struct MarketingShowcaseView: View {
             guard !Task.isCancelled else { return }
         }
 
+        var savedFromClip: SavedWord?
         if let line = pick.lines.first,
-           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
+           let idx = line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable && ($0.jlpt != nil) && $0.definitions.count > 1 })
+            ?? line.tokens.firstIndex(where: { $0.containsKanji && $0.tappable })
             ?? line.tokens.firstIndex(where: \.tappable) {
             let token = line.tokens[idx]
             lookup.previewOnly = false
@@ -623,6 +671,10 @@ struct MarketingShowcaseView: View {
             )
             try? await Task.sleep(for: .milliseconds(3000))
             guard !Task.isCancelled else { return }
+            let key = AppModel.wordKey(for: token)
+            savedFromClip = (try? app.context.fetch(
+                FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
+            ))?.first
             withAnimation(Motion.popupSpring) { lookup.dismiss() }
             bornCard = nil
             lookup.previewOnly = true
@@ -652,7 +704,7 @@ struct MarketingShowcaseView: View {
         try? await Task.sleep(for: .milliseconds(2600))
         guard !Task.isCancelled else { return }
 
-        await playFlashcardSequence(startingWith: flashWords.first, count: 3)
+        await playFlashcardSequence(startingWith: savedFromClip ?? flashWords.first, count: 2)
     }
 
     /// Same fade the live feed uses once a clip has the learner's attention.
@@ -685,11 +737,11 @@ struct MarketingShowcaseView: View {
                 showFlashcard = true
                 tabHighlight = .vocab
             }
-            try? await Task.sleep(for: .milliseconds(1400))
+            try? await Task.sleep(for: .milliseconds(1100))
             guard !Task.isCancelled else { return }
 
             withAnimation(Motion.cardFlip) { flashRevealed = true }
-            try? await Task.sleep(for: .milliseconds(3200))
+            try? await Task.sleep(for: .milliseconds(4800))
             guard !Task.isCancelled else { return }
 
             try? await Task.sleep(for: .milliseconds(450))

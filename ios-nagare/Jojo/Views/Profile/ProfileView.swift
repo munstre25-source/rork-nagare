@@ -224,11 +224,19 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             settingsHeader("Appearance")
             Menu {
-                ForEach(AppearanceMode.allCases) { mode in
-                    Button(mode.title) { app.setAppearance(mode) }
+                ForEach(AccentTheme.allCases) { theme in
+                    Button(theme.title) { app.setTheme(theme) }
                 }
             } label: {
-                SettingsRowLabel(symbol: "circle.lefthalf.filled", title: "Theme", value: app.profile.appearance.title)
+                SettingsRowLabel(symbol: "paintpalette", title: "Theme", value: app.profile.theme.title)
+            }
+            Divider().padding(.leading, 52)
+            Menu {
+                ForEach(JojoScheme.allCases) { scheme in
+                    Button(scheme.title) { app.setScheme(scheme) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "circle.lefthalf.filled", title: "Appearance", value: app.profile.scheme.title)
             }
             Divider().padding(.leading, 52)
 
@@ -283,12 +291,20 @@ struct ProfileView: View {
 
             #if DEBUG
             settingsHeader("Debug · Marketing")
-            SettingsRow(symbol: "play.circle", title: "Play For You demo") {
-                marketingScript = .forYou
+            SettingsRow(symbol: "play.circle", title: "For You · Light") {
+                marketingScript = .forYouLight
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "play.circle", title: "Play Explore & Vocab demo") {
-                marketingScript = .exploreVocab
+            SettingsRow(symbol: "play.circle", title: "For You · Dark") {
+                marketingScript = .forYouDark
+            }
+            Divider().padding(.leading, 52)
+            SettingsRow(symbol: "play.circle", title: "Explore & Vocab · Light") {
+                marketingScript = .exploreVocabLight
+            }
+            Divider().padding(.leading, 52)
+            SettingsRow(symbol: "play.circle", title: "Explore & Vocab · Dark") {
+                marketingScript = .exploreVocabDark
             }
             Divider().padding(.leading, 52)
             #endif

@@ -1,38 +1,41 @@
 import Foundation
 import SwiftUI
 
-/// Appearance for the main app. Light is cream paper. The other three are dark pages
-/// with a different accent: sakura pink, plum, or orange.
-nonisolated enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
-    case light
-    case sakura
-    case plum
-    case orange
+/// The three accents. Light and dark are versions of whichever one is selected.
+nonisolated enum AccentTheme: String, CaseIterable, Identifiable, Sendable {
+    case sakura, plum, orange
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .light: "Light"
         case .sakura: "Sakura"
         case .plum: "Purple"
         case .orange: "Orange"
         }
     }
+}
 
-    var colorScheme: ColorScheme {
-        self == .light ? .light : .dark
-    }
+/// Light or dark paper for the selected accent.
+nonisolated enum JojoScheme: String, CaseIterable, Identifiable, Sendable {
+    case light, dark
 
-    /// Older installs stored `system` or `dark`. Those open on the sakura night theme.
-    static func resolve(_ raw: String) -> AppearanceMode {
-        switch raw {
-        case "light": .light
-        case "plum", "purple": .plum
-        case "orange": .orange
-        case "sakura", "dark", "system", "": .sakura
-        default: AppearanceMode(rawValue: raw) ?? .sakura
+    var id: String { rawValue }
+
+    var title: String { self == .light ? "Light" : "Dark" }
+
+    var colorScheme: ColorScheme { self == .light ? .light : .dark }
+}
+
+/// Whether the feed video is the large Kiku frame or the small one. Shared by For You and Explore.
+enum VideoFramePreference {
+    private static let key = "jojo.videoExpanded"
+
+    static var isExpanded: Bool {
+        get {
+            UserDefaults.standard.object(forKey: key) as? Bool ?? true
         }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
     }
 }
 

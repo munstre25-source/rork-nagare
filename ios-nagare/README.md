@@ -60,7 +60,7 @@ Run all Supabase CLI commands from the **`ios-nagare/`** directory (not the repo
 ```bash
 cd ios-nagare
 supabase db push
-supabase functions deploy explain-word youtube-search analyze-clip publish-clip
+supabase functions deploy explain-word youtube-search analyze-clip publish-clip fill-catalog
 supabase secrets set \
   GEMINI_API_KEY=… \
   GEMINI_MODEL_EXPLAIN=… \
@@ -140,7 +140,28 @@ curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"id":"clip-id","action":"unpublish"}'
+
+# fill-catalog (admin) — one new published clip. The app plays it from YouTube; nothing is downloaded.
+curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -H "x-admin-token: $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
+
+## Keeping the feed stocked
+
+You do not download clips. `fill-catalog` searches the YouTube Data API for a short public Japanese video, asks Gemini for a transcript of about 40 seconds, and inserts that YouTube id plus the lines into `clips` with `published = true`. The iOS app syncs those rows and plays them with the YouTube player.
+
+A pg_cron job runs that function every 3 hours. It only succeeds after these Vault secrets exist (same admin token as the Edge Function secret, never committed):
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+select vault.create_secret('<ADMIN_TOKEN>', 'admin_token');
+```
+
+The job picks whichever category and level has the fewest published clips. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new rows show up on the next sync.
 
 ## RevenueCat setup
 - Entitlement: `nagare_learn_japanese_pro`

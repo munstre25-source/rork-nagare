@@ -51,7 +51,12 @@ struct VocabView: View {
     }
 
     private var dueWords: [SavedWord] {
-        words.filter { $0.dueAt <= Date() }.sorted { $0.dueAt < $1.dueAt }
+        words.filter { $0.dueAt <= Date() }.sorted { lhs, rhs in
+            if lhs.occurrenceCount != rhs.occurrenceCount {
+                return lhs.occurrenceCount > rhs.occurrenceCount
+            }
+            return lhs.dueAt < rhs.dueAt
+        }
     }
 
     private var channels: [String] {

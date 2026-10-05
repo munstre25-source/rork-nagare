@@ -60,6 +60,8 @@ final class UserProfile {
     var remindersEnabled: Bool = false
     var notificationsAsked: Bool = false
     var favoriteClipIds: [String] = []
+    /// Clip ids the learner has played through. For You keeps these behind clips they have not finished.
+    var finishedClipIds: [String] = []
     /// Channel names the user follows (For You / Following split).
     var followedChannelNames: [String] = []
     var lastGoalCelebratedDay: String = ""
@@ -67,7 +69,9 @@ final class UserProfile {
     var firstClipId: String?
 
     // Learning preferences (defaults keep existing behaviour).
-    var appearanceMode: String = AppearanceMode.sakura.rawValue
+    var accentTheme: String = AccentTheme.sakura.rawValue
+    /// `light` or `dark`. Older installs stored the accent name here; `AppModel` migrates those.
+    var appearanceMode: String = JojoScheme.dark.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     var showRomaji: Bool = false
@@ -105,8 +109,13 @@ final class UserProfile {
 
     init() {}
 
-    var appearance: AppearanceMode {
-        get { AppearanceMode.resolve(appearanceMode) }
+    var theme: AccentTheme {
+        get { AccentTheme(rawValue: accentTheme) ?? .sakura }
+        set { accentTheme = newValue.rawValue }
+    }
+
+    var scheme: JojoScheme {
+        get { JojoScheme(rawValue: appearanceMode) ?? .dark }
         set { appearanceMode = newValue.rawValue }
     }
 

@@ -28,10 +28,13 @@ struct BornFlashcard: View {
             }
         }
         .padding(18)
-        .frame(maxWidth: 240, minHeight: 140)
-        .background(Color(hex: "#1C1C1E"), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.white.opacity(0.12)))
-        .shadow(color: .black.opacity(0.35), radius: 18, y: 10)
+        .frame(maxWidth: 260, minHeight: 150)
+        .background(FlashcardInk.plate, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(0.9), lineWidth: 1.5)
+        )
+        .shadow(color: Color.sakuraPink.opacity(0.45), radius: 16, y: 6)
         .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .scaleEffect(flying ? 0.15 : (appeared ? 1 : 0.4))
         .offset(y: flying ? 280 : (appeared ? 0 : 40))
@@ -54,18 +57,19 @@ struct BornFlashcard: View {
         VStack(spacing: 8) {
             Text(surface)
                 .font(JojoFont.jp(34, bold: true, relativeTo: .largeTitle))
-                .foregroundStyle(.white)
+                .foregroundStyle(FlashcardInk.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             if let detail, !detail.isEmpty {
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.65))
+                Text(detail.uppercased())
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .tracking(1.4)
+                    .foregroundStyle(FlashcardInk.ink.opacity(0.9))
                     .lineLimit(1)
             }
             Text(title)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(detail == nil ? .white.opacity(0.7) : Color.designOrange)
+                .foregroundStyle(detail == nil ? FlashcardInk.muted : Color.sakuraPink)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }

@@ -11,7 +11,16 @@ struct ExploreHomeView: View {
 
     @Environment(AppModel.self) private var app
     @State private var showGoal: Bool = false
+    @State private var showCapture: Bool = false
     @State private var path = NavigationPath()
+    @State private var dueKeys: [String] = []
+    @State private var reviewSession: ReviewSessionConfig?
+    @State private var playing: Clip?
+    @State private var practiceClip: Clip?
+    @State private var reviewDone = false
+    @State private var watchDone = false
+    @State private var speakDone = false
+    @State private var speakCoordinator = PlaybackCoordinator()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -30,6 +39,8 @@ struct ExploreHomeView: View {
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    todayPlan
+                    captureRow
                     VStack(spacing: 12) {
                         ForEach(LearningPath.allCases) { path in
                             NavigationLink(value: path) {
@@ -56,7 +67,23 @@ struct ExploreHomeView: View {
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
             }
+            .sheet(isPresented: $showCapture) {
+                CaptureJapaneseView()
+            }
+            .fullScreenCover(item: $reviewSession, onDismiss: reloadPlan) { config in
+                ReviewSessionView(config: config)
+            }
+            .fullScreenCover(item: $playing, onDismiss: reloadPlan) { clip in
+                ClipPlayerScreen(clip: clip, queue: app.studyLibrary)
+                    .environment(app)
+            }
+            .sheet(item: $practiceClip, onDismiss: reloadPlan) { clip in
+                ShadowingOverlay(clip: clip)
+                    .environment(speakCoordinator)
+                    .environment(app)
+            }
         }
+        .onAppear { reloadPlan() }
         .onChange(of: scriptedPath) { _, newPath in
             guard let newPath else { return }
             path.append(newPath)
@@ -86,6 +113,112 @@ struct ExploreHomeView: View {
                 .accessibilityLabel("Daily goal")
             }
         }
+    }
+
+    private var suggestedClip: Clip? { app.recommendedClip(preferShort: true) }
+
+    private var todayPlan: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Today")
+                .font(.headline)
+            if dueKeys.isEmpty {
+                planRow(symbol: "checkmark.circle.fill", title: "Review", subtitle: "You're caught up", done: true) {}
+                    .disabled(true)
+            } else {
+                planRow(
+                    symbol: "rectangle.stack",
+                    title: "Review \(dueKeys.count)",
+                    subtitle: "Words you keep meeting",
+                    done: reviewDone
+                ) {
+                    DailyPlanProgress.mark(.review)
+                    reviewDone = true
+                    reviewSession = ReviewSessionConfig(title: "Today", keys: dueKeys)
+                }
+            }
+            if let clip = suggestedClip {
+                planRow(symbol: "play.fill", title: "Watch a clip", subtitle: clip.title, done: watchDone) {
+                    DailyPlanProgress.mark(.watch)
+                    watchDone = true
+                    playing = clip
+                }
+                planRow(symbol: "mic.fill", title: "Say a line", subtitle: "Listen, then speak it back", done: speakDone) {
+                    DailyPlanProgress.mark(.speak)
+                    speakDone = true
+                    practiceClip = clip
+                }
+            }
+        }
+    }
+
+    private var captureRow: some View {
+        Button {
+            Haptics.selection()
+            showCapture = true
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.72))
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.designOrangeDeep)
+                }
+                .frame(width: 64, height: 64)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("From a photo")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Text("Signs, menus, manga, and screenshots")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(12)
+            .background(Color.adaptive(light: "#E7F8F2", dark: "#1A332C"), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Read Japanese from a photo")
+    }
+
+    private func planRow(symbol: String, title: String, subtitle: String, done: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: done ? "checkmark.circle.fill" : symbol)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(done ? Color.spokenGreen : Color.designOrange)
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+            }
+            .padding(12)
+            .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func reloadPlan() {
+        dueKeys = app.relevantDueKeys()
+        reviewDone = DailyPlanProgress.isDone(.review)
+        watchDone = DailyPlanProgress.isDone(.watch)
+        speakDone = DailyPlanProgress.isDone(.speak)
     }
 }
 

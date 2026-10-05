@@ -15,6 +15,8 @@ struct TranscriptLineView: View {
     var forceDenseAids: Bool = false
     /// Kiku raised card behind the current karaoke line.
     var raisedCard: Bool = false
+    /// Time range and a speaker, the way the feed lines are labeled.
+    var showsLineTools: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
@@ -59,6 +61,26 @@ struct TranscriptLineView: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                if showsLineTools {
+                    HStack(spacing: 8) {
+                        Text("\(formatClock(line.start)) – \(formatClock(line.end))")
+                            .font(.caption.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 8)
+                        Button {
+                            Haptics.selection()
+                            SpeechService.shared.speak(line.text)
+                        } label: {
+                            Image(systemName: "speaker.wave.2")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Color.designOrange)
+                                .frame(width: 36, height: 36)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Hear this line")
+                    }
                 }
             }
             .padding(raisedCard ? Spacing.m : 0)

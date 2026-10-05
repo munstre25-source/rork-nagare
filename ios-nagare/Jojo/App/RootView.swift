@@ -21,7 +21,7 @@ struct RootView: View {
                 .transition(.opacity)
             } else {
                 MainTabView()
-                    .id(app.profile.appearance.rawValue)
+                    .id("\(app.profile.accentTheme)-\(app.profile.appearanceMode)-\(app.paletteEpoch)")
                     .transition(.opacity)
             }
         }
@@ -95,8 +95,8 @@ struct MainTabView: View {
                     .accessibilityHidden(focusCapsuleHidden)
             }
         }
-        .preferredColorScheme(app.profile.appearance.colorScheme)
-        .onAppear { JojoPalette.activate(app.profile.appearance) }
+        .preferredColorScheme(app.profile.scheme.colorScheme)
+        .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }
         }

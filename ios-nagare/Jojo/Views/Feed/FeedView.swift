@@ -14,7 +14,7 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
-    @State private var videoExpanded: Bool = true
+    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
     @State private var chromeHideTask: Task<Void, Never>?
@@ -88,6 +88,7 @@ struct FeedView: View {
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
+        .onChange(of: app.catalogGeneration) { _, _ in absorbNewClips() }
         .onChange(of: lookup.isPresented) { _, presented in
             if presented { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
@@ -182,6 +183,7 @@ struct FeedView: View {
                         onToggleVideoSize: {
                             Haptics.selection()
                             withAnimation(.snappy) { videoExpanded.toggle() }
+                            VideoFramePreference.isExpanded = videoExpanded
                         },
                         onActivate: { coordinator.activate(clip) },
                         onFullscreen: {
@@ -221,6 +223,17 @@ struct FeedView: View {
         resumeIfPossible()
     }
 
+    private func absorbNewClips() {
+        let known = Set(clips.map(\.id))
+        let newcomers = app.forYouClips.filter { !known.contains($0.id) }
+        guard !newcomers.isEmpty else { return }
+        if let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) {
+            clips.insert(contentsOf: newcomers, at: index + 1)
+        } else {
+            clips.append(contentsOf: newcomers)
+        }
+    }
+
     private func reloadClips() {
         clips = app.forYouClips
         currentId = clips.first(where: { $0.id == currentId })?.id ?? clips.first?.id
@@ -232,8 +245,9 @@ struct FeedView: View {
         coordinator.activate(clip)
     }
 
-    /// End of clip → micro-quiz, then advance.
+    /// End of clip → remember it, then a micro-quiz, then advance.
     private func handleClipFinished() {
+        if let id = currentId { app.markClipFinished(id) }
         guard quizClip == nil,
               let id = currentId,
               let clip = clips.first(where: { $0.id == id }),

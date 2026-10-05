@@ -15,6 +15,8 @@ final class LocalClipPlayer: ClipPlayer {
     private(set) var isMuted = false
     private(set) var loopRange: ClosedRange<Double>?
     private(set) var isReady = false
+    private(set) var spokenLine: Int = 0
+    private(set) var spokenToken: Int?
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
 
@@ -25,6 +27,7 @@ final class LocalClipPlayer: ClipPlayer {
     @ObservationIgnored private var watchAccumulator: Double = 0
     @ObservationIgnored private var didFinish = false
     @ObservationIgnored private var lastTickWall = Date()
+    @ObservationIgnored private var clock: Double = 0
 
     var duration: Double { clip.durationSec }
 
@@ -55,7 +58,15 @@ final class LocalClipPlayer: ClipPlayer {
             guard let self else { return }
             let seconds = time.seconds
             guard seconds.isFinite else { return }
-            self.currentTime = min(max(0, seconds), self.duration)
+            let clock = PlaybackUI.note(
+                time: seconds,
+                duration: self.duration,
+                clip: self.clip,
+                uiTime: &self.currentTime,
+                line: &self.spokenLine,
+                token: &self.spokenToken
+            )
+            self.clock = clock
 
             let now = Date()
             let dt = now.timeIntervalSince(self.lastTickWall)
@@ -68,10 +79,10 @@ final class LocalClipPlayer: ClipPlayer {
                 }
             }
 
-            if let loopRange = self.loopRange, self.currentTime >= loopRange.upperBound {
+            if let loopRange = self.loopRange, clock >= loopRange.upperBound {
                 self.seek(to: loopRange.lowerBound)
                 if self.isPlaying { self.avPlayer.play() }
-            } else if self.currentTime >= self.duration - 0.05 {
+            } else if clock >= self.duration - 0.05 {
                 self.handleClipEnd()
             }
         }
@@ -94,7 +105,7 @@ final class LocalClipPlayer: ClipPlayer {
             if isPlaying { avPlayer.play() }
             return
         }
-        if currentTime < duration - 0.5 {
+        if clock < duration - 0.5 {
             seek(to: 0)
             if isPlaying { avPlayer.play() }
             return
@@ -129,9 +140,16 @@ final class LocalClipPlayer: ClipPlayer {
     }
 
     func seek(to time: Double) {
-        let clamped = min(max(0, time), duration)
-        currentTime = clamped
-        let cm = CMTime(seconds: clamped, preferredTimescale: 600)
+        PlaybackUI.jump(
+            to: time,
+            duration: duration,
+            clip: clip,
+            uiTime: &currentTime,
+            line: &spokenLine,
+            token: &spokenToken
+        )
+        clock = currentTime
+        let cm = CMTime(seconds: currentTime, preferredTimescale: 600)
         avPlayer.seek(to: cm, toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
@@ -147,7 +165,7 @@ final class LocalClipPlayer: ClipPlayer {
 
     func setLoop(_ range: ClosedRange<Double>?) {
         loopRange = range
-        if let range, !range.contains(currentTime) { seek(to: range.lowerBound) }
+        if let range, !range.contains(clock) { seek(to: range.lowerBound) }
     }
 
     func teardown() {

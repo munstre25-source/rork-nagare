@@ -16,6 +16,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private(set) var isReady = false
     /// True after the IFrame API reports an embed/playability error.
     private(set) var embedFailed = false
+    private(set) var spokenLine: Int = 0
+    private(set) var spokenToken: Int?
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
 
@@ -24,6 +26,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var watchAccumulator: Double = 0
     @ObservationIgnored private var didFinish = false
     @ObservationIgnored private var didRetryNocookie = false
+    @ObservationIgnored private var clock: Double = 0
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
 
     var duration: Double { clip.durationSec }
@@ -109,7 +112,15 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     }
 
     func seek(to time: Double) {
-        currentTime = min(max(0, time), duration)
+        PlaybackUI.jump(
+            to: time,
+            duration: duration,
+            clip: clip,
+            uiTime: &currentTime,
+            line: &spokenLine,
+            token: &spokenToken
+        )
+        clock = currentTime
         run("player&&player.seekTo(\(currentTime),true)")
     }
 
@@ -125,7 +136,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     func setLoop(_ range: ClosedRange<Double>?) {
         loopRange = range
-        if let range, !range.contains(currentTime) { seek(to: range.lowerBound) }
+        if let range, !range.contains(clock) { seek(to: range.lowerBound) }
     }
 
     func teardown() {
@@ -144,11 +155,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         poller?.cancel()
         poller = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(150))
+                try? await Task.sleep(for: .milliseconds(200))
                 guard let self else { return }
                 self.webView.evaluateJavaScript("nTime()", completionHandler: nil)
                 if self.isPlaying {
-                    self.watchAccumulator += 0.15
+                    self.watchAccumulator += 0.2
                     if self.watchAccumulator >= 1 {
                         self.onWatchTick?(self.watchAccumulator)
                         self.watchAccumulator = 0
@@ -177,10 +188,18 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if wantsPlay { play() }
         case "time":
             guard let value else { return }
-            currentTime = value
-            if let loopRange, value >= loopRange.upperBound {
+            let clock = PlaybackUI.note(
+                time: value,
+                duration: duration,
+                clip: clip,
+                uiTime: &currentTime,
+                line: &spokenLine,
+                token: &spokenToken
+            )
+            self.clock = clock
+            if let loopRange, clock >= loopRange.upperBound {
                 seek(to: loopRange.lowerBound)
-            } else if value >= duration - 0.1, !didFinish, loopRange == nil {
+            } else if clock >= duration - 0.1, !didFinish, loopRange == nil {
                 finish()
             }
         case "state":
