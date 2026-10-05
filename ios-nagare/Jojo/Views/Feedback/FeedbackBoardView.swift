@@ -461,56 +461,67 @@ private struct FeedbackComposer: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("What should we build, or what broke?")
-                    .font(.title3.weight(.bold))
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { item in
-                        Button {
-                            Haptics.selection()
-                            category = item
-                        } label: {
-                            Text(item.capitalized)
-                                .font(.subheadline.weight(.semibold))
-                                .padding(.horizontal, 14)
-                                .frame(minHeight: 36)
-                                .foregroundStyle(category == item ? Color.white : Color.primary)
-                                .background(category == item ? Color.sakuraFill : Color.fieldFill, in: Capsule())
-                        }
-                        .buttonStyle(.plain)
+            composer
+                .padding(20)
+                .background(Color.studyPage.ignoresSafeArea())
+                .navigationTitle("New request")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
                     }
-                    Spacer(minLength: 0)
                 }
-                TextField("Short title", text: $title)
-                    .padding(12)
-                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                TextField("It would be cool if… / I ran into a bug when…", text: $bodyText, axis: .vertical)
-                    .lineLimit(4...8)
-                    .padding(12)
-                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                if let errorText {
-                    Text(errorText).font(.footnote).foregroundStyle(.red)
-                }
-                Spacer(minLength: 0)
-                Button(isSending ? "Sending…" : "Give Feedback!") {
-                    Task { await submit() }
-                }
-                .buttonStyle(PrimaryButtonStyle(isEnabled: canSend))
-                .disabled(!canSend)
-            }
-            .padding(20)
-            .background(Color.studyPage.ignoresSafeArea())
-            .navigationTitle("New request")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
         }
         .environment(\.colorScheme, .light)
         .presentationDetents([.large])
+    }
+
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("What should we build, or what broke?")
+                .font(.title3.weight(.bold))
+                .fixedSize(horizontal: false, vertical: true)
+            categoryPills
+            titleField
+            messageField
+            if let errorText {
+                Text(errorText).font(.footnote).foregroundStyle(.red)
+            }
+            Spacer(minLength: 0)
+            submitButton
+        }
+    }
+
+    private var categoryPills: some View {
+        HStack(spacing: 8) {
+            ForEach(categories, id: \.self) { item in
+                FeedbackCategoryPill(title: item.capitalized, selected: category == item) {
+                    category = item
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var titleField: some View {
+        TextField("Short title", text: $title)
+            .padding(12)
+            .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var messageField: some View {
+        TextField("It would be cool if… / I ran into a bug when…", text: $bodyText, axis: .vertical)
+            .lineLimit(4...8)
+            .padding(12)
+            .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var submitButton: some View {
+        Button(isSending ? "Sending…" : "Give Feedback!") {
+            Task { await submit() }
+        }
+        .buttonStyle(PrimaryButtonStyle(isEnabled: canSend))
+        .disabled(!canSend)
     }
 
     private var canSend: Bool {
@@ -534,5 +545,26 @@ private struct FeedbackComposer: View {
         }
         onPosted(post)
         dismiss()
+    }
+}
+
+private struct FeedbackCategoryPill: View {
+    let title: String
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: {
+            Haptics.selection()
+            action()
+        }) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .foregroundStyle(selected ? Color.white : Color.primary)
+                .background(selected ? Color.sakuraFill : Color.fieldFill, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
