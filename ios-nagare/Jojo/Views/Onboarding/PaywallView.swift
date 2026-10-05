@@ -14,6 +14,11 @@ struct PaywallView: View {
     @State private var plan: PlanChoice = .yearly
     @State private var errorMessage: String?
     @State private var didTrackView: Bool = false
+    @State private var appeared = false
+    @State private var strokeProgress: CGFloat = 0
+    @State private var showPlans = false
+    @State private var peekIn = false
+    @State private var kenBurns = false
 
     private var purchases: PurchaseManager { app.purchases }
 
@@ -28,6 +33,14 @@ struct PaywallView: View {
                 ])
                 if purchases.offering == nil { Task { await purchases.loadOffering() } }
                 if purchases.isSubscribed { onSubscribed() }
+                withAnimation(.easeOut(duration: 0.35)) { appeared = true }
+                withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { strokeProgress = 1 }
+                withAnimation(.spring(response: 0.7, dampingFraction: 0.78).delay(0.15)) { peekIn = true }
+                withAnimation(.easeInOut(duration: 14).repeatForever(autoreverses: true)) { kenBurns = true }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(700))
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) { showPlans = true }
+                }
             }
             .onChange(of: purchases.isSubscribed) { _, subscribed in
                 if subscribed { onSubscribed() }
@@ -35,8 +48,11 @@ struct PaywallView: View {
     }
 
     private var nativePaywall: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             paywallBackdrop
+            BrandPetalField(tint: PaywallInk.pink, density: .lush)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     wordmark
@@ -53,6 +69,8 @@ struct PaywallView: View {
                             .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     purchaseButton
+                        .opacity(showPlans ? 1 : 0)
+                        .offset(y: showPlans ? 0 : 24)
                     Text(trialCaption)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.9))
@@ -63,7 +81,7 @@ struct PaywallView: View {
                     legalRow
                     Text(subscriptionDisclosure)
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(.white.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
@@ -71,27 +89,40 @@ struct PaywallView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
+            .scaleEffect(appeared ? 1 : 0.96)
+            .opacity(appeared ? 1 : 0)
+
+            JojoMascot(height: 150, pose: .peek, floats: false)
+                .offset(x: peekIn ? 36 : 150, y: peekIn ? 24 : 70)
+                .opacity(peekIn ? 1 : 0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var paywallBackdrop: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(hex: "#3A1458"), Color(hex: "#6B2A78"), Color(hex: "#140818")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            if UIImage(named: BrandScene.templeDusk.rawValue) != nil {
-                Image(BrandScene.templeDusk.rawValue)
-                    .resizable()
-                    .scaledToFill()
+        GeometryReader { proxy in
+            ZStack {
+                LinearGradient(
+                    colors: [Color(hex: "#4A2A78"), Color(hex: "#6B2A58"), Color(hex: "#1A1028")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                if UIImage(named: BrandScene.templeDusk.rawValue) != nil {
+                    Image(BrandScene.templeDusk.rawValue)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .scaleEffect(kenBurns ? 1.08 : 1.0)
+                        .clipped()
+                }
+                LinearGradient(
+                    colors: [Color.black.opacity(0.12), Color.black.opacity(0.05), Color.black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             }
-            LinearGradient(
-                colors: [Color.black.opacity(0.18), Color.black.opacity(0.08), Color.black.opacity(0.62)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -100,9 +131,11 @@ struct PaywallView: View {
     private var wordmark: some View {
         HStack(spacing: 8) {
             JojoMascotAvatar(size: 42, showsRing: true)
+                .offset(x: peekIn ? 0 : -24)
+                .opacity(peekIn ? 1 : 0)
             Text("JOJO")
                 .font(.system(size: 18, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.sakuraPink)
+                .foregroundStyle(PaywallInk.pink)
             Text("PRO")
                 .font(.system(size: 18, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
@@ -122,10 +155,16 @@ struct PaywallView: View {
                 Text("\(lead)\n")
                     .foregroundStyle(.white)
                 + Text("Tap any word.")
-                    .foregroundStyle(Color.sakuraPink)
+                    .foregroundStyle(PaywallInk.pink)
             )
             .font(.system(size: 34, weight: .bold, design: .rounded))
             .lineSpacing(1)
+            AccentUnderline()
+                .trim(from: 0, to: strokeProgress)
+                .stroke(PaywallInk.pink, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .frame(width: 168, height: 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .offset(y: -6)
             Text("Scroll real Japanese. The dictionary opens on the word you tap, and that word becomes a flashcard.")
                 .font(.body)
                 .foregroundStyle(.white.opacity(0.88))
@@ -146,10 +185,10 @@ struct PaywallView: View {
         VStack(spacing: 6) {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.sakuraPink)
+                .foregroundStyle(PaywallInk.pink)
                 .frame(width: 46, height: 46)
-                .background(Color.sakuraPinkSoft, in: Circle())
-                .overlay(Circle().strokeBorder(Color.sakuraPink, lineWidth: 1.5))
+                .background(PaywallInk.pink.opacity(0.22), in: Circle())
+                .overlay(Circle().strokeBorder(PaywallInk.pink, lineWidth: 1.5))
             Text(title)
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.white)
@@ -211,29 +250,31 @@ struct PaywallView: View {
                 HStack(alignment: .center) {
                     Image(systemName: plan == .yearly ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
-                        .foregroundStyle(plan == .yearly ? Color.white : Color.sakuraPinkSoft)
+                        .foregroundStyle(plan == .yearly ? PaywallInk.pink : PaywallInk.ink.opacity(0.35))
                     Text("Yearly")
                         .font(.system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(PaywallInk.ink)
                     Spacer(minLength: 8)
                     if let saveBadge {
                         Text(saveBadge)
                             .font(.caption.weight(.heavy))
-                            .foregroundStyle(Color.sakuraPink)
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Color.white, in: Capsule())
+                            .background(PaywallInk.pink, in: Capsule())
                     }
                 }
                 if let yearlyPrice, let period = purchases.periodSuffix(purchases.yearly) {
                     Text("\(yearlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(PaywallInk.ink)
                 } else {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(PaywallInk.pink)
                 }
                 if let perMonthLine {
                     Text(perMonthLine)
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(PaywallInk.ink.opacity(0.72))
                 }
                 HStack(spacing: 0) {
                     planMeta("play.rectangle.fill", "Whole feed")
@@ -244,14 +285,21 @@ struct PaywallView: View {
             }
             .padding(16)
             .padding(.top, 8)
-            .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(
+                LinearGradient(colors: [Color.white, PaywallInk.card], startPoint: .top, endPoint: .bottom),
+                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(PaywallInk.pink, lineWidth: plan == .yearly ? 2.5 : 1)
+            )
             .overlay(alignment: .topTrailing) {
                 Label("Most Popular", systemImage: "crown.fill")
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(Color.sakuraPink)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.white, in: Capsule())
+                    .background(PaywallInk.pink, in: Capsule())
                     .offset(y: -12)
                     .padding(.trailing, 14)
             }
@@ -265,13 +313,15 @@ struct PaywallView: View {
                 HStack {
                     Image(systemName: plan == .monthly ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
-                        .foregroundStyle(plan == .monthly ? Color.sakuraPink : Color.sakuraPinkSoft)
+                        .foregroundStyle(plan == .monthly ? PaywallInk.pink : Color.white.opacity(0.55))
                     Text("Monthly")
                         .font(.system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
                 }
                 if let monthlyPrice, let period = purchases.periodSuffix(purchases.monthly) {
                     Text("\(monthlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
                 } else {
                     ProgressView().tint(.white)
                 }
@@ -287,10 +337,10 @@ struct PaywallView: View {
                 .padding(.top, 2)
             }
             .padding(16)
-            .background(Color.black.opacity(0.38), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(PaywallInk.monthly, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(plan == .monthly ? Color.sakuraPink : Color.white.opacity(0.16), lineWidth: plan == .monthly ? 2 : 1)
+                    .strokeBorder(plan == .monthly ? PaywallInk.pink : Color.white.opacity(0.16), lineWidth: plan == .monthly ? 2.5 : 1)
             )
         }
     }
@@ -301,7 +351,6 @@ struct PaywallView: View {
             withAnimation(.snappy) { plan = choice }
         } label: {
             label()
-                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(PressableStyle())
@@ -312,9 +361,10 @@ struct PaywallView: View {
         VStack(spacing: 4) {
             Image(systemName: symbol)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(Color.sakuraPink)
+                .foregroundStyle(PaywallInk.pink)
             Text(title)
                 .font(.caption2.weight(.semibold))
+                .foregroundStyle(PaywallInk.ink)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -385,7 +435,7 @@ struct PaywallView: View {
         Text("♥  一緒にがんばろう  ♥")
             .font(.system(size: 22, weight: .medium, design: .serif))
             .italic()
-            .foregroundStyle(Color.sakuraPink)
+            .foregroundStyle(PaywallInk.pink)
             .frame(maxWidth: .infinity)
             .padding(.top, 4)
             .accessibilityLabel("Let's do this together")
@@ -453,14 +503,30 @@ struct PaywallView: View {
     }
 }
 
+private enum PaywallInk {
+    static let pink = Color(hex: "#FC45A5")
+    static let pinkHot = Color(hex: "#FD4FA7")
+    static let pinkDeep = Color(hex: "#E21888")
+    static let card = Color(hex: "#FDECF8")
+    static let monthly = Color(hex: "#3C2644")
+    static let ink = Color(hex: "#3A1848")
+}
+
 private struct PaywallCTAStyle: ButtonStyle {
     func makeBody(configuration: ButtonStyleConfiguration) -> some View {
         configuration.label
             .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 58)
-            .background(Color.sakuraFill, in: Capsule())
-            .shadow(color: Color.black.opacity(0.28), radius: 16, y: 8)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "#FF8EC4"), PaywallInk.pinkHot, PaywallInk.pinkDeep],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: Capsule()
+            )
+            .shadow(color: PaywallInk.pinkDeep.opacity(0.35), radius: 16, y: 8)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }

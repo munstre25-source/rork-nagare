@@ -21,6 +21,40 @@ extension UIColor {
     }
 }
 
+/// Which accent the main app is painting. Read by the brand colors at draw time.
+enum JojoPalette: String {
+    case light, sakura, plum, orange
+
+    private static let storageKey = "jojo.palette"
+
+    static func activate(_ mode: AppearanceMode) {
+        UserDefaults.standard.set(mode.rawValue, forKey: storageKey)
+    }
+
+    static var current: JojoPalette {
+        switch UserDefaults.standard.string(forKey: storageKey) {
+        case "light": .light
+        case "plum": .plum
+        case "orange": .orange
+        default: .sakura
+        }
+    }
+
+    /// A color that follows the theme chosen in Settings, not only light and dark.
+    static func color(light: String, sakura: String, plum: String, orange: String) -> Color {
+        Color(uiColor: UIColor { _ in
+            let hex: String
+            switch JojoPalette.current {
+            case .light: hex = light
+            case .sakura: hex = sakura
+            case .plum: hex = plum
+            case .orange: hex = orange
+            }
+            return UIColor(hex: hex)
+        })
+    }
+}
+
 extension Color {
     init(hex: String) {
         self.init(uiColor: UIColor(hex: hex))
@@ -53,15 +87,14 @@ extension Color {
     static let activeLineGlow = Color(hex: "#2A1452").opacity(0.22)
 
     // MARK: Brand accent
-    /// Plum sakura marks. Deep on cream, light wisteria on black so underlines and icons stay readable.
-    static let sakuraPink = Color.adaptive(light: "#7A4684", dark: "#E8D0F2")
-    /// Same mark color. Fills that carry white type use `sakuraButton` instead.
+    /// Marks, underlines, and icons. Each theme picks a shade that stays readable on its page.
+    static let sakuraPink = JojoPalette.color(light: "#C2186A", sakura: "#FF7EB8", plum: "#E8D0F2", orange: "#FFB020")
     static let sakuraPinkDeep = sakuraPink
-    /// Wisteria petal. Pale on cream, a solid mid plum on black so white type still reads.
-    static let sakuraPinkLight = Color.adaptive(light: "#E3D2E8", dark: "#6B4580")
+    /// Soft chips behind type. Pale on cream, a solid dark tint on night pages so white type still reads.
+    static let sakuraPinkLight = JojoPalette.color(light: "#F8D0E4", sakura: "#6A2458", plum: "#5C3A72", orange: "#6B3A12")
     static let sakuraPinkSoft = sakuraPinkLight
-    /// Button and badge fills. Deep plum in both appearances so the white label stays clear.
-    static let sakuraButton = Color(hex: "#7A4684")
+    /// Fills that carry a white label. Dark enough in every theme for that label.
+    static let sakuraButton = JojoPalette.color(light: "#E21888", sakura: "#E21888", plum: "#7A4684", orange: "#D35400")
 
     /// Interactive chrome (tabs, toggles, selection, charts) — sakura, not orange.
     static let brandAccent = sakuraPink
@@ -110,7 +143,7 @@ extension Color {
     static let nightIndigo = Color(hex: "#140C2E")
     static let nightViolet = Color(hex: "#2A1452")
     static let nightPlum = Color(hex: "#4A1D6B")
-    static let neonMagenta = Color.adaptive(light: "#7A4684", dark: "#E8D0F2")
+    static let neonMagenta = JojoPalette.color(light: "#C2186A", sakura: "#FF7EB8", plum: "#E8D0F2", orange: "#FFB020")
     static let lanternAmber = Color(hex: "#FFB347")
 
     // MARK: Readable secondary (light theme was washing out on cream/white)

@@ -72,6 +72,7 @@ final class AppModel {
         if let data = profile.watchLogData, let log = try? JSONDecoder().decode([String: Double].self, from: data) {
             watchLog = log
         }
+        JojoPalette.activate(profile.onboardingCompleted ? profile.appearance : .sakura)
         rebuildClips()
         reloadLookedUpKeys()
         preloadCaches()
@@ -576,6 +577,7 @@ final class AppModel {
     }
 
     func setAppearance(_ mode: AppearanceMode) {
+        JojoPalette.activate(mode)
         profile.appearance = mode
         save()
     }
@@ -874,6 +876,7 @@ final class AppModel {
         context.delete(profile)
         context.insert(fresh)
         profile = fresh
+        JojoPalette.activate(.sakura)
         save()
         rebuildClips()
         track("account_data_deleted")

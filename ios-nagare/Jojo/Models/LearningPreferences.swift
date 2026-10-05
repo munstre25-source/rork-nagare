@@ -1,22 +1,37 @@
 import Foundation
 import SwiftUI
 
-/// Appearance preference for the whole app (Feed, Vocab, and Profile share one scheme).
+/// Appearance for the main app. Light is cream paper. The other three are dark pages
+/// with a different accent: sakura pink, plum, or orange.
 nonisolated enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
-    case system, light, dark
+    case light
+    case sakura
+    case plum
+    case orange
+
     var id: String { rawValue }
+
     var title: String {
         switch self {
-        case .system: "System"
         case .light: "Light"
-        case .dark: "Dark"
+        case .sakura: "Sakura"
+        case .plum: "Purple"
+        case .orange: "Orange"
         }
     }
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .system: nil
-        case .light: .light
-        case .dark: .dark
+
+    var colorScheme: ColorScheme {
+        self == .light ? .light : .dark
+    }
+
+    /// Older installs stored `system` or `dark`. Those open on the sakura night theme.
+    static func resolve(_ raw: String) -> AppearanceMode {
+        switch raw {
+        case "light": .light
+        case "plum", "purple": .plum
+        case "orange": .orange
+        case "sakura", "dark", "system", "": .sakura
+        default: AppearanceMode(rawValue: raw) ?? .sakura
         }
     }
 }

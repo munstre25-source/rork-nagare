@@ -67,7 +67,7 @@ final class UserProfile {
     var firstClipId: String?
 
     // Learning preferences (defaults keep existing behaviour).
-    var appearanceMode: String = AppearanceMode.system.rawValue
+    var appearanceMode: String = AppearanceMode.sakura.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     var showRomaji: Bool = false
@@ -106,7 +106,7 @@ final class UserProfile {
     init() {}
 
     var appearance: AppearanceMode {
-        get { AppearanceMode(rawValue: appearanceMode) ?? .system }
+        get { AppearanceMode.resolve(appearanceMode) }
         set { appearanceMode = newValue.rawValue }
     }
 

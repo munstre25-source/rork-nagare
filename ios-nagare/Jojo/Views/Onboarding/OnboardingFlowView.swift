@@ -43,6 +43,7 @@ struct OnboardingFlowView: View {
         .environment(\.colorScheme, activeSurface == .cream ? .light : .dark)
         .animation(.easeInOut(duration: 0.35), value: activeSurface)
         .onAppear {
+            JojoPalette.activate(.sakura)
             guard !didLoad else { return }
             didLoad = true
             step = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash

@@ -21,6 +21,7 @@ struct RootView: View {
                 .transition(.opacity)
             } else {
                 MainTabView()
+                    .id(app.profile.appearance.rawValue)
                     .transition(.opacity)
             }
         }
@@ -95,6 +96,7 @@ struct MainTabView: View {
             }
         }
         .preferredColorScheme(app.profile.appearance.colorScheme)
+        .onAppear { JojoPalette.activate(app.profile.appearance) }
         .onChange(of: app.vocabBadgePulse) { _, _ in
             if tab != .vocab { newVocabSinceVisit += 1 }
         }
