@@ -22,16 +22,16 @@ import {
 type Lane = { category: string; difficulty: string; query: string };
 
 const LANES: Lane[] = [
-  { category: "anime", difficulty: "Beginner", query: "日本語 アニメ 会話 初心者" },
-  { category: "anime", difficulty: "Intermediate", query: "アニメ セリフ 日本語" },
-  { category: "drama", difficulty: "Beginner", query: "日本語 日常会話 ショート" },
-  { category: "drama", difficulty: "Advanced", query: "日本語 ドラマ セリフ" },
-  { category: "variety", difficulty: "Intermediate", query: "日本語 バラエティ トーク ショート" },
+  { category: "interview", difficulty: "Beginner", query: "日本語 街頭インタビュー ショート" },
+  { category: "interview", difficulty: "Advanced", query: "日本語 インタビュー 会話 ショート" },
+  { category: "drama", difficulty: "Beginner", query: "コンビニ カフェ 注文 日本語 会話 ショート" },
+  { category: "drama", difficulty: "Advanced", query: "日本語 ドラマ セリフ ショート" },
+  { category: "variety", difficulty: "Intermediate", query: "日本語 あるある トーク ショート" },
+  { category: "kids", difficulty: "Beginner", query: "子供向け 日本語 あいさつ 会話 ショート" },
+  { category: "anime", difficulty: "Beginner", query: "日本語 アニメ 日常会話 ショート" },
+  { category: "anime", difficulty: "Intermediate", query: "アニメ セリフ 日本語 ショート" },
   { category: "vtuber", difficulty: "Intermediate", query: "日本語 VTuber 雑談 ショート" },
-  { category: "interview", difficulty: "Beginner", query: "日本語 街頭インタビュー" },
-  { category: "interview", difficulty: "Advanced", query: "日本語 インタビュー" },
-  { category: "kids", difficulty: "Beginner", query: "子供向け 日本語 アニメ ショート" },
-  { category: "gaming", difficulty: "Intermediate", query: "日本語 ゲーム実況 ショート" },
+  { category: "gaming", difficulty: "Intermediate", query: "日本語 ゲーム実況 会話 ショート" },
 ];
 
 const GRADIENTS = [
@@ -48,6 +48,7 @@ Rules:
 - Tokenize into learner-friendly units (particles separate). Punctuation may be tokens with pos "punctuation" and tappable false.
 - definitions required for tappable tokens.
 - Japanese dialogue only; no English in surface.
+- Transcribe speech you can actually hear. If the clip is mostly music, silence, or has no Japanese speech, return {"lines":[]}.
 - No markdown.`;
 
 type SearchItem = { id?: { videoId?: string } };
@@ -67,38 +68,42 @@ Deno.serve(async (req) => {
     if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
 
     const supabase = serviceClient();
-    const lane = await leastFilledLane(supabase);
-    const enums = validateEnums(lane.category, lane.difficulty);
-    if (!enums.ok) return errorResponse(500, "Server misconfigured");
-
-    const found = await searchFresh(supabase, lane.query);
-    if (!found.ok) return jsonResponse({ published: false, reason: found.reason, lane });
-    if (found.videos.length === 0) {
-      return jsonResponse({ published: false, reason: "no-new-videos", lane });
-    }
-
+    const lanes = await lanesByEmptiness(supabase);
     let attempts = 0;
     let lastError = "no-candidate";
-    for (const video of found.videos) {
-      if (attempts >= 2) break;
-      const window = clipWindow(video.durationSec);
-      if (!window) continue;
-      attempts += 1;
-      const published = await analyzeAndPublish(supabase, video, lane, window);
-      if (published.ok) {
-        return jsonResponse({
-          published: true,
-          id: published.id,
-          videoId: video.videoId,
-          lane,
-          startSec: window.start,
-          endSec: window.end,
-        });
+    let lastLane = lanes[0];
+    for (const lane of lanes.slice(0, 3)) {
+      lastLane = lane;
+      const enums = validateEnums(lane.category, lane.difficulty);
+      if (!enums.ok) continue;
+      const found = await searchFresh(supabase, lane.query);
+      if (!found.ok) {
+        lastError = found.reason;
+        if (found.reason === "youtube-quota") break;
+        continue;
       }
-      lastError = published.reason;
+      for (const video of found.videos) {
+        if (attempts >= 3) break;
+        const window = clipWindow(video.durationSec);
+        if (!window) continue;
+        attempts += 1;
+        const published = await analyzeAndPublish(supabase, video, lane, window);
+        if (published.ok) {
+          return jsonResponse({
+            published: true,
+            id: published.id,
+            videoId: video.videoId,
+            lane,
+            startSec: window.start,
+            endSec: window.end,
+          });
+        }
+        lastError = published.reason;
+      }
+      if (attempts >= 3) break;
     }
 
-    return jsonResponse({ published: false, reason: lastError, lane, attempts });
+    return jsonResponse({ published: false, reason: lastError, lane: lastLane, attempts });
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message.startsWith("Missing required env")) return errorResponse(500, "Server misconfigured");
@@ -106,19 +111,19 @@ Deno.serve(async (req) => {
   }
 });
 
-async function leastFilledLane(
+async function lanesByEmptiness(
   supabase: ReturnType<typeof serviceClient>,
-): Promise<Lane> {
+): Promise<Lane[]> {
   const { data } = await supabase.from("clips").select("category, difficulty").eq("published", true);
   const counts = new Map<string, number>();
   for (const row of data ?? []) {
     const key = `${row.category}|${row.difficulty}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return LANES.reduce((best, lane) => {
-    const bestCount = counts.get(`${best.category}|${best.difficulty}`) ?? 0;
-    const laneCount = counts.get(`${lane.category}|${lane.difficulty}`) ?? 0;
-    return laneCount < bestCount ? lane : best;
+  return [...LANES].sort((a, b) => {
+    const aCount = counts.get(`${a.category}|${a.difficulty}`) ?? 0;
+    const bCount = counts.get(`${b.category}|${b.difficulty}`) ?? 0;
+    return aCount - bCount;
   });
 }
 
@@ -139,6 +144,7 @@ async function searchFresh(
     maxResults: "8",
     videoEmbeddable: "true",
     videoDuration: "short",
+    order: "viewCount",
     regionCode: "JP",
     relevanceLanguage: "ja",
     key: ytKey,
@@ -212,7 +218,11 @@ async function analyzeAndPublish(
       endSec: window.end,
     });
     text = result.text;
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    if (message.startsWith("Gemini HTTP")) {
+      return { ok: false, reason: message.slice(0, 96) };
+    }
     return { ok: false, reason: "gemini-failed" };
   }
 

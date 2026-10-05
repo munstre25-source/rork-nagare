@@ -32,6 +32,16 @@ export function promptVersion(): string {
   return envOr("PROMPT_VERSION", "3");
 }
 
+/** Backup for text generation when Gemini is unavailable. Never log the value. */
+export function openRouterKey(): string | null {
+  const value = Deno.env.get("OPENROUTER_API_KEY")?.trim() ?? "";
+  return value === "" ? null : value;
+}
+
+export function openRouterModel(): string {
+  return envOr("OPENROUTER_MODEL", "thinkingmachines/inkling:free");
+}
+
 export function utcDayString(d = new Date()): string {
   return d.toISOString().slice(0, 10);
 }

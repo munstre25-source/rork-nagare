@@ -64,7 +64,8 @@ supabase secrets set \
   GEMINI_MODEL_ANALYZE=… \
   YOUTUBE_API_KEY=… \
   ADMIN_TOKEN=… \
-  REVENUECAT_SECRET_API_KEY=…
+  REVENUECAT_SECRET_API_KEY=… \
+  OPENROUTER_API_KEY=…
 ```
 
 ### Secrets you must set
@@ -77,6 +78,7 @@ supabase secrets set \
 | `YOUTUBE_API_KEY` | yes | YouTube Data API for `youtube-search` |
 | `ADMIN_TOKEN` | yes | Admin functions (`x-admin-token`, compared constant-time) |
 | `REVENUECAT_SECRET_API_KEY` | yes | Entitlement checks for `explain-word` |
+| `OPENROUTER_API_KEY` | no | Backup for word explanations when Gemini fails |
 
 Platform-provided (usually already present in Edge Functions): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`.
 
@@ -89,7 +91,8 @@ Optional limit / version envs:
 | `GEMINI_GLOBAL_DAILY_CAP` | `2000` | Global Gemini calls / UTC day |
 | `YOUTUBE_QUOTA_DAILY_CAP` | `8000` | YouTube quota units / UTC day |
 | `REVENUECAT_CACHE_TTL_SEC` | `300` | Entitlement cache TTL (positive and negative) |
-| `PROMPT_VERSION` | `1` | Bumped into explanation cache keys |
+| `PROMPT_VERSION` | `3` | Bumped into explanation cache keys |
+| `OPENROUTER_MODEL` | `thinkingmachines/inkling:free` | OpenRouter model used when a word explanation cannot reach Gemini |
 | `EXPLAIN_INGRESS_IP_PER_MINUTE` | `60` | Pre-RC per-IP requests / minute |
 | `EXPLAIN_INGRESS_JWT_PER_MINUTE` | `30` | Pre-RC per authenticated JWT sub / minute |
 
