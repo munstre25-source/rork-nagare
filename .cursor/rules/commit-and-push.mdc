@@ -1,0 +1,8 @@
+---
+description: After finishing requested code changes, commit and push them to main.
+alwaysApply: true
+---
+
+- After a requested code change is finished, commit it and push to `main`. Do not wait to be asked again.
+- Leave secrets, local env files, recordings, design dumps, and temp folders untracked.
+- Do not force-push, skip hooks, or change git config.
