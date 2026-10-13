@@ -23,7 +23,9 @@ Rules:
 
 export function hearSystemCatalog(language: CatalogLanguage): string {
   return `${hearSystem(language)}
-- If the clip is mostly music, silence, or has no ${languageName(language)} speech, return {"lines":[]}.`;
+- Return 2 to 4 short lines that form one complete everyday exchange (a greeting, an order, a question and its answer). Skip music, titles, and silence.
+- If this window has no such exchange, return {"lines":[]}.
+- Also include "difficulty": "Beginner" or "Intermediate" or "Advanced", judged only from the words and grammar you heard.`;
 }
 
 export const HEAR_SYSTEM = hearSystem("ja");

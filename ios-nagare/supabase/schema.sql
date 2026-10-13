@@ -67,6 +67,59 @@ create index if not exists sori_clips_video_id_idx on public.sori_clips (video_i
 revoke all on table public.sori_clips from public, anon, authenticated;
 grant select on table public.sori_clips to anon, authenticated;
 
+-- Remembers which YouTube search page each catalog lane is on, so fill-catalog
+-- walks past videos it already published.
+create table if not exists public.catalog_search_cursors (
+  lane_key text primary key,
+  page_token text,
+  variant int not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.catalog_fill_state (
+  id int primary key check (id = 1),
+  paused_until timestamptz,
+  pause_reason text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.catalog_fill_state enable row level security;
+revoke all on table public.catalog_fill_state from public, anon, authenticated;
+
+alter table public.catalog_search_cursors enable row level security;
+revoke all on table public.catalog_search_cursors from public, anon, authenticated;
+
+-- Service role stores the catalog cron URL and token. The function never returns them.
+create or replace function public.upsert_vault_secret(secret_name text, secret_value text)
+returns void
+language plpgsql
+security definer
+set search_path = vault, public
+as $$
+declare
+  existing uuid;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'forbidden';
+  end if;
+  if secret_name is null or secret_name !~ '^[a-z_]{3,40}$' then
+    raise exception 'invalid name';
+  end if;
+  if secret_value is null or length(secret_value) < 8 or length(secret_value) > 4000 then
+    raise exception 'invalid value';
+  end if;
+  select id into existing from vault.secrets where name = secret_name limit 1;
+  if existing is null then
+    perform vault.create_secret(secret_value, secret_name);
+  else
+    perform vault.update_secret(existing, secret_value, secret_name);
+  end if;
+end;
+$$;
+
+revoke all on function public.upsert_vault_secret(text, text) from public, anon, authenticated;
+grant execute on function public.upsert_vault_secret(text, text) to service_role;
+
 -- Shared explanation cache (service role only; no anon policies)
 create table if not exists public.word_explanations (
   cache_key text primary key,

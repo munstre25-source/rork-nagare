@@ -1,4 +1,5 @@
--- Publish one new YouTube clip every 3 hours.
+-- Keep publishing short lessons. Each run stops at the time budget;
+-- the next run continues until the YouTube or Gemini daily cap.
 -- The video file stays on YouTube. This job only stores the id and the transcript.
 --
 -- Before the job can authenticate, store these once in Vault (SQL editor):
@@ -22,13 +23,14 @@ end $$;
 
 select cron.schedule(
   'fill-jojo-catalog',
-  '0 */3 * * *',
+  '*/10 * * * *',
   $$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
       || '/functions/v1/fill-catalog',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'catalog_bearer'),
       'x-admin-token', (select decrypted_secret from vault.decrypted_secrets where name = 'admin_token')
     ),
     body := '{}'::jsonb,

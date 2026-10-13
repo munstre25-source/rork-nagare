@@ -1,6 +1,6 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { geminiModelAnalyze, requireEnv } from "../_shared/env.ts";
-import { requireAdmin } from "../_shared/admin.ts";
+import { requireAdmin, timingSafeEqualString } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
@@ -73,54 +73,152 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
 
   try {
-    const adminToken = requireEnv("ADMIN_TOKEN");
-    if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
+    if (!isCatalogAdmin(req)) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<{ language?: string }>(req);
     const language = parseLanguage(body.language);
     const supabase = serviceClient();
-    const lanes = await lanesByEmptiness(supabase, language);
-    let attempts = 0;
-    let lastError = "no-candidate";
-    let lastLane = lanes[0];
-    for (const lane of lanes.slice(0, 3)) {
-      lastLane = lane;
-      const enums = validateEnums(lane.category, lane.difficulty);
-      if (!enums.ok) continue;
-      const found = await searchFresh(supabase, lane.query, language);
-      if (!found.ok) {
-        lastError = found.reason;
-        if (found.reason === "youtube-quota") break;
-        continue;
-      }
-      for (const video of found.videos) {
-        if (attempts >= 3) break;
-        const window = clipWindow(video.durationSec);
-        if (!window) continue;
-        attempts += 1;
-        const published = await analyzeAndPublish(supabase, video, lane, window, language);
-        if (published.ok) {
-          return jsonResponse({
-            published: true,
-            id: published.id,
-            videoId: video.videoId,
-            lane,
-            startSec: window.start,
-            endSec: window.end,
-          });
+    const cronReady = await rememberCronAccess(supabase);
+    const published: Array<{ id: string; videoId: string; difficulty: string; category: string }> = [];
+    const pause = await fillPause(supabase);
+    if (pause) return jsonResponse(summary(published, pause, cronReady));
+    const started = Date.now();
+    const seenVideos = new Set<string>();
+    let stopped = "time-budget";
+
+    while (Date.now() - started < RUN_BUDGET_MS) {
+      const lanes = await lanesByEmptiness(supabase, language);
+      let moved = false;
+      for (const lane of lanes) {
+        if (Date.now() - started >= RUN_BUDGET_MS) break;
+        const laneKey = `${language}|${lane.category}|${lane.difficulty}`;
+        const found = await searchFresh(supabase, lane, language, laneKey);
+        if (!found.ok) {
+          stopped = found.reason;
+          if (found.reason === "youtube-quota") {
+            return jsonResponse(summary(published, stopped, cronReady));
+          }
+          continue;
         }
-        lastError = published.reason;
+        if (found.videos.length === 0) {
+          await advanceCursor(supabase, laneKey, found.nextPageToken);
+          moved = true;
+          continue;
+        }
+        let pagePublished = false;
+        for (const video of found.videos) {
+          if (seenVideos.has(video.videoId) || Date.now() - started >= RUN_BUDGET_MS) continue;
+          seenVideos.add(video.videoId);
+          for (const window of lessonWindows(video.durationSec)) {
+            const result = await analyzeAndPublish(supabase, video, lane, window, language);
+            if (result.ok) {
+              published.push({
+                id: result.id,
+                videoId: video.videoId,
+                difficulty: result.difficulty,
+                category: lane.category,
+              });
+              pagePublished = true;
+              moved = true;
+              break;
+            }
+            if (result.reason === "gemini-cap" || result.reason === "youtube-quota" || result.reason.includes("402")) {
+              if (result.reason.includes("402")) await pauseFill(supabase, "gemini-payment");
+              return jsonResponse(summary(published, result.reason, cronReady));
+            }
+          }
+        }
+        if (!pagePublished) {
+          await advanceCursor(supabase, laneKey, found.nextPageToken);
+          moved = true;
+        }
       }
-      if (attempts >= 3) break;
+      if (!moved) {
+        stopped = "no-candidate";
+        break;
+      }
     }
 
-    return jsonResponse({ published: false, reason: lastError, lane: lastLane, attempts });
+    return jsonResponse(summary(published, stopped, cronReady));
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     if (message.startsWith("Missing required env")) return errorResponse(500, "Server misconfigured");
     return errorResponse(500, "Catalog fill failed");
   }
 });
+
+const RUN_BUDGET_MS = 40_000;
+const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
+  ja: ["", "日常会話", "2024", "2025"],
+  ko: ["", "일상회화", "2024", "2025"],
+};
+
+function isCatalogAdmin(req: Request): boolean {
+  const adminToken = requireEnv("ADMIN_TOKEN");
+  if (requireAdmin(req, adminToken)) return true;
+  const cronToken = Deno.env.get("CRON_FILL_TOKEN")?.trim() ?? "";
+  if (cronToken.length < 16) return false;
+  const provided = req.headers.get("x-admin-token") ?? "";
+  return timingSafeEqualString(provided, cronToken);
+}
+
+async function rememberCronAccess(
+  supabase: ReturnType<typeof serviceClient>,
+): Promise<boolean> {
+  const cronToken = Deno.env.get("CRON_FILL_TOKEN")?.trim() ?? "";
+  const projectUrl = (Deno.env.get("SUPABASE_URL") ?? "").trim().replace(/\/$/, "");
+  const bearer = (Deno.env.get("SUPABASE_ANON_KEY") ?? "").trim();
+  if (cronToken.length < 16 || projectUrl.length < 12 || bearer.length < 16) return false;
+  const names = [
+    ["project_url", projectUrl],
+    ["admin_token", cronToken],
+    ["catalog_bearer", bearer],
+  ] as const;
+  for (const [secretName, secretValue] of names) {
+    const { error } = await supabase.rpc("upsert_vault_secret", {
+      secret_name: secretName,
+      secret_value: secretValue,
+    });
+    if (error) return false;
+  }
+  return true;
+}
+
+async function fillPause(supabase: ReturnType<typeof serviceClient>): Promise<string | null> {
+  const { data } = await supabase
+    .from("catalog_fill_state")
+    .select("paused_until, pause_reason")
+    .eq("id", 1)
+    .maybeSingle();
+  const row = data as { paused_until?: string | null; pause_reason?: string | null } | null;
+  if (!row?.paused_until) return null;
+  if (Date.parse(row.paused_until) <= Date.now()) return null;
+  return row.pause_reason || "paused";
+}
+
+async function pauseFill(supabase: ReturnType<typeof serviceClient>, reason: string): Promise<void> {
+  const until = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  await supabase.from("catalog_fill_state").upsert({
+    id: 1,
+    paused_until: until,
+    pause_reason: reason,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+function summary(
+  published: Array<{ id: string; videoId: string; difficulty: string; category: string }>,
+  stopped: string,
+  cronReady: boolean,
+) {
+  return {
+    published: published.length > 0,
+    count: published.length,
+    stopped,
+    cronReady,
+    clips: published,
+  };
+}
 
 async function lanesByEmptiness(
   supabase: ReturnType<typeof serviceClient>,
@@ -131,44 +229,57 @@ async function lanesByEmptiness(
   for (const row of data ?? []) {
     const key = `${row.category}|${row.difficulty}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
+    const levelKey = `level|${row.difficulty}`;
+    counts.set(levelKey, (counts.get(levelKey) ?? 0) + 1);
   }
-  return [...lanesFor(language)].sort((a, b) => {
-    const aCount = counts.get(`${a.category}|${a.difficulty}`) ?? 0;
-    const bCount = counts.get(`${b.category}|${b.difficulty}`) ?? 0;
-    return aCount - bCount;
-  });
+  return [...lanesFor(language)].sort((a, b) => laneRank(a, counts) - laneRank(b, counts));
+}
+
+function laneRank(lane: Lane, counts: Map<string, number>): number {
+  const level = counts.get(`level|${lane.difficulty}`) ?? 0;
+  const cell = counts.get(`${lane.category}|${lane.difficulty}`) ?? 0;
+  return level * 100 + cell;
 }
 
 type FreshVideo = { videoId: string; title: string; channelTitle: string; durationSec: number };
 
 async function searchFresh(
   supabase: ReturnType<typeof serviceClient>,
-  query: string,
+  lane: Lane,
   language: CatalogLanguage,
-): Promise<{ ok: true; videos: FreshVideo[] } | { ok: false; reason: string }> {
+  laneKey: string,
+): Promise<
+  | { ok: true; videos: FreshVideo[]; nextPageToken: string | null }
+  | { ok: false; reason: string }
+> {
   if (!(await tryConsumeYoutubeQuota(supabase, 100))) {
     return { ok: false, reason: "youtube-quota" };
   }
+  const cursor = await loadCursor(supabase, laneKey);
+  const variants = QUERY_VARIANTS[language];
+  const variant = variants[cursor.variant % variants.length] ?? "";
   const ytKey = requireEnv("YOUTUBE_API_KEY");
   const searchParams = new URLSearchParams({
     part: "snippet",
     type: "video",
-    q: query,
+    q: `${lane.query} ${variant}`.trim(),
     maxResults: "8",
     videoEmbeddable: "true",
     videoDuration: "short",
-    order: "viewCount",
+    order: "date",
     relevanceLanguage: language,
     regionCode: language === "ko" ? "KR" : "JP",
     key: ytKey,
   });
+  if (cursor.pageToken) searchParams.set("pageToken", cursor.pageToken);
   const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?${searchParams}`);
   if (!searchRes.ok) return { ok: false, reason: "youtube-search-failed" };
-  const searchJson = await searchRes.json() as { items?: SearchItem[] };
+  const searchJson = await searchRes.json() as { items?: SearchItem[]; nextPageToken?: string };
   const ids = (searchJson.items ?? [])
     .map((item) => item.id?.videoId)
     .filter((id): id is string => typeof id === "string" && id.length === 11);
-  if (ids.length === 0) return { ok: true, videos: [] };
+  const nextPageToken = searchJson.nextPageToken ?? null;
+  if (ids.length === 0) return { ok: true, videos: [], nextPageToken };
 
   if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
     return { ok: false, reason: "youtube-quota" };
@@ -182,7 +293,10 @@ async function searchFresh(
   if (!videosRes.ok) return { ok: false, reason: "youtube-videos-failed" };
   const videosJson = await videosRes.json() as { items?: VideoItem[] };
 
-  const { data: existing } = await supabase.from(catalogTable(language)).select("video_id");
+  const { data: existing } = await supabase
+    .from(catalogTable(language))
+    .select("video_id")
+    .in("video_id", ids);
   const existingIds = new Set((existing ?? []).map((row: { video_id: string }) => row.video_id));
 
   const videos: FreshVideo[] = [];
@@ -199,14 +313,90 @@ async function searchFresh(
       durationSec,
     });
   }
-  return { ok: true, videos };
+  return { ok: true, videos, nextPageToken };
 }
 
-function clipWindow(durationSec: number): { start: number; end: number } | null {
-  const start = durationSec > 30 ? 5 : 0;
-  const end = Math.min(durationSec, start + 40);
-  if (end - start < 12 || end - start > 180) return null;
-  return { start, end };
+type SearchCursor = { pageToken: string | null; variant: number };
+
+async function loadCursor(
+  supabase: ReturnType<typeof serviceClient>,
+  laneKey: string,
+): Promise<SearchCursor> {
+  const { data } = await supabase
+    .from("catalog_search_cursors")
+    .select("page_token, variant")
+    .eq("lane_key", laneKey)
+    .maybeSingle();
+  const row = data as { page_token?: string | null; variant?: number } | null;
+  return {
+    pageToken: row?.page_token ?? null,
+    variant: typeof row?.variant === "number" ? row.variant : 0,
+  };
+}
+
+async function advanceCursor(
+  supabase: ReturnType<typeof serviceClient>,
+  laneKey: string,
+  nextPageToken: string | null,
+): Promise<void> {
+  const current = await loadCursor(supabase, laneKey);
+  const variant = nextPageToken ? current.variant : current.variant + 1;
+  await supabase.from("catalog_search_cursors").upsert({
+    lane_key: laneKey,
+    page_token: nextPageToken,
+    variant,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+function lessonWindows(durationSec: number): Array<{ start: number; end: number }> {
+  const windows: Array<{ start: number; end: number }> = [];
+  let start = durationSec > 25 ? 4 : 0;
+  while (windows.length < 3 && start + 8 < durationSec) {
+    const end = Math.min(durationSec, start + 18);
+    if (end - start >= 8 && end - start <= 22) windows.push({ start, end });
+    start += 14;
+  }
+  return windows;
+}
+
+function isLesson(lines: LineLike[]): boolean {
+  if (lines.length < 2 || lines.length > 5) return false;
+  const start = Number(lines[0]?.start);
+  const end = Number(lines[lines.length - 1]?.end);
+  const span = end - start;
+  if (!Number.isFinite(span) || span < 6 || span > 24) return false;
+  let defined = 0;
+  for (const line of lines) {
+    const tokens = Array.isArray(line.tokens) ? line.tokens : [];
+    for (const token of tokens) {
+      const definitions = (token as { definitions?: unknown }).definitions;
+      if (Array.isArray(definitions) && definitions.length > 0) defined += 1;
+    }
+  }
+  return defined >= 2;
+}
+
+function gradeDifficulty(modelValue: unknown, lines: LineLike[]): string {
+  if (typeof modelValue === "string" && validateEnums("drama", modelValue).ok) return modelValue;
+  const rank: Record<string, number> = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
+  let score = 0;
+  let counted = 0;
+  for (const line of lines) {
+    const tokens = Array.isArray(line.tokens) ? line.tokens : [];
+    for (const token of tokens) {
+      const jlpt = (token as { jlpt?: unknown }).jlpt;
+      if (typeof jlpt === "string" && rank[jlpt]) {
+        score += rank[jlpt];
+        counted += 1;
+      }
+    }
+  }
+  if (counted === 0) return "Intermediate";
+  const average = score / counted;
+  if (average < 2.2) return "Beginner";
+  if (average < 3.4) return "Intermediate";
+  return "Advanced";
 }
 
 async function analyzeAndPublish(
@@ -215,7 +405,7 @@ async function analyzeAndPublish(
   lane: Lane,
   window: { start: number; end: number },
   language: CatalogLanguage,
-): Promise<{ ok: true; id: string } | { ok: false; reason: string }> {
+): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
   if (!(await tryIncrementGeminiUsage(supabase))) {
     return { ok: false, reason: "gemini-cap" };
   }
@@ -250,13 +440,15 @@ async function analyzeAndPublish(
   const validated = validateLines(raw.lines, window.start, window.end);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
   const lines = await enrichHeardLines(raw.lines, supabase, language) as LineLike[];
+  if (!isLesson(lines)) return { ok: false, reason: "not-a-lesson" };
+  const difficulty = gradeDifficulty(raw.difficulty, lines);
   const row = {
     id,
     video_id: video.videoId,
     title: video.title.slice(0, 140),
     channel_name: video.channelTitle.slice(0, 80),
     category: lane.category,
-    difficulty: lane.difficulty,
+    difficulty,
     duration_sec: durationFromLines(lines, window.end - window.start),
     lines,
     published: true,
@@ -265,7 +457,7 @@ async function analyzeAndPublish(
   };
   const { error } = await supabase.from(catalogTable(language)).upsert(row);
   if (error) return { ok: false, reason: "insert-failed" };
-  return { ok: true, id };
+  return { ok: true, id, difficulty };
 }
 
 function parseDurationSec(iso: string): number | null {
