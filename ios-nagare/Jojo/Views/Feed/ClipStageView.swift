@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition matching kiku demo2 For You:
-/// video → action row → karaoke, dictionary card centered over the stage.
+/// Reusable clip composition matching kiku demo2 For You / ULTIMATE Explore watch:
+/// video → Kiku action strip (… maximize box) → karaoke. Dictionary card centered over the stage.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -15,7 +15,6 @@ struct ClipStageView: View {
     /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
     /// Maximized fills the page with the video and lays the words on that picture.
-    /// The resting size is the original full-width frame, with the transcript underneath.
     var videoExpanded: Bool = false
     var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
@@ -43,16 +42,15 @@ struct ClipStageView: View {
     /// Feed pages pass a resize control. Fullscreen and previews keep the fixed aspect.
     private var usesFlexibleVideo: Bool { immersiveFeed && onToggleVideoSize != nil }
 
-    /// Video, controls, and the transcript card share this centered column.
     private func columnWidth(in size: CGSize) -> CGFloat {
-        min(max(0, size.width - 36), 560)
+        min(max(0, size.width - 24), 560)
     }
 
-    /// Resting feed size: the original full-width 16:9 frame. Maximize replaces this with a full-page picture.
+    /// Resting feed size: full-width 16:9, capped so karaoke keeps the lower half (kikufeedlayout).
     private func videoSize(in size: CGSize) -> CGSize {
         let column = columnWidth(in: size)
         let naturalHeight = column * 9 / 16
-        let height = min(naturalHeight, max(200, size.height * 0.42))
+        let height = min(naturalHeight, max(180, size.height * 0.38))
         return CGSize(width: column, height: height)
     }
 
@@ -106,7 +104,7 @@ struct ClipStageView: View {
         }
     }
 
-    /// Video fills the page. The line sits on the picture, the way Kiku's maximized feed does.
+    /// Video fills the page. Words sit on the picture — Kiku maximized feed.
     private func maximizedStage(player: (any ClipPlayer)?) -> some View {
         ZStack {
             ClipVideoView(
@@ -133,7 +131,7 @@ struct ClipStageView: View {
                     .allowsHitTesting(false)
                 Spacer(minLength: 0)
                 LinearGradient(colors: [.clear, .black.opacity(0.82)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 220)
+                    .frame(height: 240)
                     .allowsHitTesting(false)
             }
 
@@ -152,20 +150,13 @@ struct ClipStageView: View {
                     clip: clip,
                     player: player,
                     onInfo: onInfo,
-                    onShadowing: onShadowing
+                    videoExpanded: true,
+                    onToggleVideoSize: isPopupHere ? nil : onToggleVideoSize
                 )
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 12)
                 transcript(player: player, onVideo: true)
                     .padding(.horizontal, 12)
-                    .padding(.bottom, 2)
-                if let onToggleVideoSize, !isPopupHere {
-                    HStack {
-                        Spacer(minLength: 0)
-                        videoSizeButton(action: onToggleVideoSize)
-                    }
-                    .padding(.trailing, 10)
                     .padding(.bottom, 4)
-                }
             }
             .environment(\.colorScheme, .dark)
         }
@@ -182,11 +173,12 @@ struct ClipStageView: View {
                     showsFollow: !immersiveFeed,
                     emphasizesTitle: false
                 )
-                .padding(.vertical, immersiveFeed ? 4 : 10)
+                .padding(.vertical, immersiveFeed ? 2 : 10)
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity)
             }
 
+            // Video — max/min box lives on the bottom-trailing corner of the frame (kikufeedlayout).
             ZStack(alignment: .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
@@ -204,6 +196,11 @@ struct ClipStageView: View {
                     onSkip: onSkip
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+
+                if immersiveFeed, let onToggleVideoSize, !isPopupHere {
+                    VideoSizeBox(expanded: false, action: onToggleVideoSize)
+                        .padding(8)
+                }
             }
             .frame(maxWidth: .infinity)
 
@@ -212,8 +209,9 @@ struct ClipStageView: View {
                     clip: clip,
                     player: player,
                     onInfo: onInfo,
-                    onShadowing: onShadowing,
-                    onToggleVideoSize: isPopupHere ? nil : onToggleVideoSize
+                    videoExpanded: false,
+                    // Corner box on the video owns resize; keep strip free of a second control.
+                    onToggleVideoSize: nil
                 )
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity)
@@ -224,23 +222,6 @@ struct ClipStageView: View {
                 .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
                 .clipped()
         }
-    }
-
-    /// The boxed expand control at the bottom right of the feed, matching the Kiku player.
-    private func videoSizeButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 36, height: 36)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.9), lineWidth: 1.5)
-                )
-        }
-        .frame(width: 44, height: 44)
-        .accessibilityLabel(videoExpanded ? "Minimize video" : "Maximize video")
-        .accessibilityHint(videoExpanded ? "Returns the video to its usual size, with the words underneath" : "Enlarges the video so the words sit on the picture")
     }
 
     private func savedBanner(_ word: String) -> some View {
@@ -283,7 +264,6 @@ struct ClipStageView: View {
         )
     }
 
-    /// Centered mid-stage like kiku demo2 (~6s); never cropped to the video bounds.
     private var popupLayer: some View {
         ZStack {
             Color.black.opacity(0.18)
@@ -319,6 +299,39 @@ struct ClipStageView: View {
     }
 }
 
+/// Kiku boxed maximize / minimize — four corner brackets in a rounded square.
+struct VideoSizeBox: View {
+    var expanded: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: {
+            Haptics.selection()
+            action()
+        }) {
+            Image(systemName: expanded
+                  ? "arrow.down.right.and.arrow.up.left"
+                  : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.85), lineWidth: 1.6)
+                )
+        }
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .accessibilityLabel(expanded ? "Minimize video" : "Maximize video")
+        .accessibilityHint(
+            expanded
+                ? "Returns the video to its usual size, with the words underneath"
+                : "Enlarges the video so the words sit on the picture"
+        )
+    }
+}
+
 /// Fixed aspect, or an explicit size when the feed video is minimized or maximized.
 private struct ClipVideoFrame: ViewModifier {
     var width: CGFloat?
@@ -341,17 +354,18 @@ private struct ClipVideoFrame: ViewModifier {
     }
 }
 
-/// Speed / bookmark / replay-line / info row under the video (Kiku action chrome).
+/// Kiku action chrome under the video: time · 1x · bookmark · play · info · (optional size box).
 struct ClipActionRow: View {
     let clip: Clip
     let player: (any ClipPlayer)?
     var onInfo: (() -> Void)?
     var onShadowing: (() -> Void)?
-    /// Resting feed only. Maximized keeps the corner control on the picture.
+    var videoExpanded: Bool = false
     var onToggleVideoSize: (() -> Void)? = nil
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
+    @State private var showFeatureRequest = false
 
     private var rateLabel: String {
         switch coordinator.preferredRate {
@@ -361,124 +375,108 @@ struct ClipActionRow: View {
         }
     }
 
+    private var progress: Double {
+        let duration = max(player?.duration ?? clip.durationSec, 0.001)
+        return min(1, max(0, (player?.currentTime ?? 0) / duration))
+    }
+
     var body: some View {
-        HStack(spacing: 2) {
-            Text("\(formatClock(player?.currentTime ?? 0)) / \(formatClock(player?.duration ?? clip.durationSec))")
-                .font(.caption.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: Spacing.s)
-            Button {
-                Haptics.selection()
-                coordinator.cycleRate()
-            } label: {
-                Text(rateLabel)
-                    .font(.footnote.weight(.bold))
+        VStack(spacing: 4) {
+            // Thin scrub track under the picture (kikuforyou).
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.12))
+                    Capsule()
+                        .fill(Color.sakuraPink)
+                        .frame(width: max(4, proxy.size.width * progress))
+                }
+            }
+            .frame(height: 3)
+            .padding(.horizontal, 2)
+
+            HStack(spacing: 4) {
+                Text("\(formatClock(player?.currentTime ?? 0)) / \(formatClock(player?.duration ?? clip.durationSec))")
+                    .font(.caption2.weight(.semibold))
                     .monospacedDigit()
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
-                    .frame(minHeight: 32)
-                    .background(Color.fieldFill, in: Capsule())
-                    .frame(minHeight: 44)
-            }
-            .accessibilityLabel("Playback speed \(rateLabel)")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
-            Button {
-                Haptics.light()
-                withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
-            } label: {
-                rowIcon(app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark", tint: app.isFavorite(clip.id) ? Color.designOrange : .secondary)
-            }
-            .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
+                Spacer(minLength: 4)
 
-            Button {
-                Haptics.selection()
-                if player == nil { coordinator.activate(clip) }
-                else { player?.togglePlay() }
-            } label: {
-                Image(systemName: player?.isPlaying == true ? "pause.fill" : "play.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 28, height: 28)
-                    .background(Color.fieldFill, in: Circle())
-                    .frame(width: 34, height: 44)
-            }
-            .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
-
-            Button {
-                Haptics.selection()
-                if player == nil { coordinator.activate(clip) }
-                player?.toggleLoopCurrentLine()
-            } label: {
-                rowIcon("repeat", tint: player?.loopRange != nil ? Color.designOrange : .secondary)
-            }
-            .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
-
-            if let onShadowing, onToggleVideoSize == nil {
-                Button(action: onShadowing) {
-                    rowIcon("mic.fill", tint: .secondary)
+                Button {
+                    Haptics.selection()
+                    coordinator.cycleRate()
+                } label: {
+                    Text(rateLabel)
+                        .font(.caption.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 8)
+                        .frame(minHeight: 28)
+                        .background(Color.fieldFill, in: Capsule())
+                        .frame(minHeight: 44)
                 }
-                .accessibilityLabel("Shadowing practice")
-            }
+                .accessibilityLabel("Playback speed \(rateLabel)")
 
-            if let onInfo {
-                Button(action: onInfo) {
-                    rowIcon("info.circle", tint: .secondary)
+                Button {
+                    Haptics.light()
+                    withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
+                } label: {
+                    rowIcon(app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
+                            tint: app.isFavorite(clip.id) ? Color.designOrange : .secondary)
                 }
-                .accessibilityLabel("Clip info")
-            }
+                .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
 
-            if let onToggleVideoSize {
-                Button(action: onToggleVideoSize) {
-                    rowIcon("arrow.up.left.and.arrow.down.right", tint: .primary)
+                Button {
+                    Haptics.selection()
+                    if player == nil { coordinator.activate(clip) }
+                    else { player?.togglePlay() }
+                } label: {
+                    Image(systemName: player?.isPlaying == true ? "pause.fill" : "play.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.fieldFill, in: Circle())
+                        .frame(width: 34, height: 44)
                 }
-                .accessibilityLabel("Maximize video")
-                .accessibilityHint("Enlarges the video so the words sit on the picture")
+                .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
+
+                if let onInfo {
+                    Button(action: onInfo) {
+                        rowIcon("info.circle", tint: .secondary)
+                    }
+                    .accessibilityLabel("Clip info")
+                }
+
+                Button {
+                    Haptics.selection()
+                    coordinator.pauseForPopup()
+                    showFeatureRequest = true
+                } label: {
+                    rowIcon("lightbulb.fill", tint: Color.designOrange)
+                }
+                .accessibilityLabel("Request a feature")
+
+                if let onToggleVideoSize {
+                    VideoSizeBox(expanded: videoExpanded, action: onToggleVideoSize)
+                }
             }
         }
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 4)
         .padding(.vertical, 2)
+        .sheet(isPresented: $showFeatureRequest, onDismiss: {
+            coordinator.resumeAfterPopupIfNeeded()
+        }) {
+            ClipFeatureRequestSheet(contextNote: "While watching “\(clip.title)”.")
+        }
     }
 
-    private func rowIcon(_ systemName: String, tint: Color) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 16, weight: .semibold))
+    private func rowIcon(_ system: String, tint: Color) -> some View {
+        Image(systemName: system)
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(tint)
             .frame(width: 34, height: 44)
-    }
-}
-
-/// Reads the player's time and feeds the transcript panel; isolated so only this subtree updates at playback rate.
-struct TranscriptSection: View {
-    let clip: Clip
-    let player: (any ClipPlayer)?
-    var onlyCurrentLine: Bool = false
-    var pulseTokenIndex: Int?
-    var isPulsing: Bool = false
-    var tooltip: String?
-    var forceDenseAids: Bool = false
-    /// Kiku window: current line plus the lines after it, no nested scroll.
-    var windowMode: Bool = false
-    /// How many lines after the current one stay on screen.
-    var followingLines: Int = 1
-    /// Words paint directly on the picture instead of on a card under the video.
-    var sitsOnVideo: Bool = false
-
-    var body: some View {
-        LiveTranscriptPanel(
-            clip: clip,
-            currentLine: player?.currentLineIndex ?? 0,
-            spokenToken: player?.isPlaying == true ? player?.currentTokenIndex : nil,
-            pulseTokenIndex: pulseTokenIndex,
-            isPulsing: isPulsing,
-            tooltip: tooltip,
-            onlyCurrentLine: onlyCurrentLine,
-            forceDenseAids: forceDenseAids,
-            windowMode: windowMode,
-            followingLines: followingLines,
-            sitsOnVideo: sitsOnVideo
-        )
+            .contentShape(Rectangle())
     }
 }

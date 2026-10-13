@@ -33,6 +33,7 @@ struct ClipVideoView: View {
     @State private var saveBurst: Bool = false
     @State private var savedWordLabel: String?
     @State private var holdHint: Bool = false
+    @State private var showFeatureRequest = false
 
     var body: some View {
         ZStack {
@@ -121,7 +122,18 @@ struct ClipVideoView: View {
         .overlay(alignment: .bottom) {
             if showsControls { controls }
         }
+        .sheet(isPresented: $showFeatureRequest, onDismiss: {
+            coordinator.resumeAfterPopupIfNeeded()
+        }) {
+            ClipFeatureRequestSheet(contextNote: "While watching “\(clip.title)”.")
+        }
         .clipped()
+    }
+
+    private func openFeatureRequest() {
+        Haptics.selection()
+        coordinator.pauseForPopup()
+        showFeatureRequest = true
     }
 
     private func doubleTapSave() {
@@ -227,6 +239,9 @@ struct ClipVideoView: View {
             if let onInfo {
                 RailButton(systemImage: "info.circle", label: "Clip info", action: onInfo)
             }
+            RailButton(systemImage: "lightbulb.fill", tint: .jojoOrange, label: "Request a feature") {
+                openFeatureRequest()
+            }
             if !compactChrome, let onFullscreen {
                 RailButton(systemImage: "arrow.up.left.and.arrow.down.right", label: "Fullscreen", action: onFullscreen)
             }
@@ -320,11 +335,13 @@ struct ClipVideoView: View {
     }
 
     private var shareText: String {
+        if let line = clip.lines.first {
+            return UnderstoodLineShare.text(line: line, clip: clip, surface: nil)
+        }
         if let url = clip.youtubeURL {
             return "Learning Japanese with “\(clip.title)” on Jojo 流れ \(url.absoluteString)"
         }
-        let line = clip.lines.first.map { "\($0.text) — \($0.translation)" } ?? ""
-        return "Learning Japanese with “\(clip.title)” on Jojo 流れ\n\(line)"
+        return "Learning Japanese with “\(clip.title)” on Jojo 流れ"
     }
 }
 

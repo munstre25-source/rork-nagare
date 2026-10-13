@@ -2,6 +2,9 @@ import SwiftUI
 
 /// Public request board: post what you want, upvote what other people asked for.
 struct FeedbackBoardView: View {
+    /// When set, the leading control returns to the previous screen instead of closing the sheet.
+    var onBack: (() -> Void)? = nil
+
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
 
@@ -76,7 +79,11 @@ struct FeedbackBoardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    if let onBack {
+                        Button("Back", action: onBack)
+                    } else {
+                        Button("Close") { dismiss() }
+                    }
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -105,7 +112,6 @@ struct FeedbackBoardView: View {
             .refreshable { await load() }
             .task { await load() }
         }
-        .environment(\.colorScheme, .light)
     }
 
     @ViewBuilder
@@ -446,6 +452,23 @@ private struct FeedbackInboxView: View {
     }
 }
 
+/// Request sheet opened from a clip. Posting or cancelling returns to that clip.
+struct ClipFeatureRequestSheet: View {
+    var contextNote: String?
+    @Environment(\.dismiss) private var dismiss
+    @State private var showBoard = false
+
+    var body: some View {
+        if showBoard {
+            FeedbackBoardView(onBack: { showBoard = false })
+        } else {
+            FeedbackComposer(contextNote: contextNote, onBrowse: { showBoard = true }) { _ in
+                dismiss()
+            }
+        }
+    }
+}
+
 private struct FeedbackComposer: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -455,6 +478,8 @@ private struct FeedbackComposer: View {
     @State private var bodyText = ""
     @State private var isSending = false
     @State private var errorText: String?
+    var contextNote: String? = nil
+    var onBrowse: (() -> Void)? = nil
     var onPosted: (FeedbackPost) -> Void
 
     private let categories = ["bug", "feature", "general"]
@@ -470,9 +495,13 @@ private struct FeedbackComposer: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") { dismiss() }
                     }
+                    if let onBrowse {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Board", action: onBrowse)
+                        }
+                    }
                 }
         }
-        .environment(\.colorScheme, .light)
         .presentationDetents([.large])
     }
 
@@ -481,6 +510,12 @@ private struct FeedbackComposer: View {
             Text("What should we build, or what broke?")
                 .font(.title3.weight(.bold))
                 .fixedSize(horizontal: false, vertical: true)
+            if contextNote != nil {
+                Text("This posts to the feedback board. Cancel returns you to the clip.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             categoryPills
             titleField
             messageField
@@ -534,10 +569,17 @@ private struct FeedbackComposer: View {
         isSending = true
         defer { isSending = false }
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        var message = String(text.prefix(1000))
+        if let contextNote, !contextNote.isEmpty, !message.contains(contextNote) {
+            let suffix = "\n\n" + contextNote
+            if message.count + suffix.count <= 1000 {
+                message += suffix
+            }
+        }
         guard let post = await InsightsService.shared.createFeedbackPost(
             category: category,
             title: String(trimmedTitle.prefix(80)),
-            body: String(text.prefix(1000)),
+            body: message,
             appUserId: app.purchases.appUserId
         ) else {
             errorText = "Couldn't send — try again in a moment."
