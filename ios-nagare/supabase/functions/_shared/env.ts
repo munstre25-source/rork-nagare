@@ -20,38 +20,29 @@ export function envInt(name: string, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-/** Primary key, then GEMINI_API_KEY2, then GEMINI_API_KEY3 when a key is overloaded. Never log these. */
-export function geminiApiKeys(): string[] {
-  const names = ["GEMINI_API_KEY", "GEMINI_API_KEY2", "GEMINI_API_KEY3"];
-  const keys = names
-    .map((name) => Deno.env.get(name)?.trim() ?? "")
-    .filter((key) => key !== "");
-  if (keys.length === 0) {
-    throw new Error("Missing required env: GEMINI_API_KEY");
-  }
-  return keys;
+/**
+ * The only model key for transcription, translation, enrichment, and word explanations.
+ * An OpenRouter key (`sk-or-`) calls Gemini through OpenRouter. A Google AI Studio key
+ * calls Gemini directly. Never log the value.
+ */
+export function geminiApiKey(): string {
+  const value = Deno.env.get("GEMINI_API_KEY")?.trim() ?? "";
+  if (!value) throw new Error("Missing required env: GEMINI_API_KEY");
+  return value;
 }
 
+const DEFAULT_GEMINI_MODEL = "google/gemini-2.5-flash";
+
 export function geminiModelExplain(): string {
-  return requireEnv("GEMINI_MODEL_EXPLAIN");
+  return envOr("GEMINI_MODEL_EXPLAIN", DEFAULT_GEMINI_MODEL);
 }
 
 export function geminiModelAnalyze(): string {
-  return requireEnv("GEMINI_MODEL_ANALYZE");
+  return envOr("GEMINI_MODEL_ANALYZE", DEFAULT_GEMINI_MODEL);
 }
 
 export function promptVersion(): string {
   return envOr("PROMPT_VERSION", "3");
-}
-
-/** OpenRouter key for word explanations. Never log the value. */
-export function openRouterKey(): string | null {
-  const value = Deno.env.get("OPENROUTER_API_KEY")?.trim() ?? "";
-  return value === "" ? null : value;
-}
-
-export function openRouterModel(): string {
-  return envOr("OPENROUTER_MODEL", "thinkingmachines/inkling:free");
 }
 
 export function utcDayString(d = new Date()): string {

@@ -226,7 +226,7 @@ async function analyzeAndPublish(
   }
   const validated = validateLines(raw.lines, window.start, window.end);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
-  const lines = await enrichHeardLines(raw.lines) as LineLike[];
+  const lines = await enrichHeardLines(raw.lines, supabase) as LineLike[];
   const row = {
     id,
     video_id: video.videoId,

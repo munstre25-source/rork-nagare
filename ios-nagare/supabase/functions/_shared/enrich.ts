@@ -1,5 +1,7 @@
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { geminiModelExplain } from "./env.ts";
-import { geminiGenerateJson, openRouterTextJson, parseJsonObject } from "./gemini.ts";
+import { geminiGenerateJson, parseJsonObject } from "./gemini.ts";
+import { tryIncrementGeminiUsage } from "./limits.ts";
 
 /** Gemini's job: hear the clip. Dictionary fields are added afterwards. */
 export const HEAR_SYSTEM = `You transcribe a short Japanese YouTube video segment for language learners.
@@ -36,10 +38,13 @@ type HeardToken = {
 
 /**
  * Fills reading, meaning, and JLPT on words Gemini already heard.
- * Surfaces and timestamps stay exactly as heard. OpenRouter does this;
- * Gemini text is only used when OpenRouter is unavailable.
+ * Surfaces and timestamps stay exactly as heard. Uses the same Gemini key as transcription.
+ * Returns the heard lines unchanged when the daily cap is spent or the model call fails.
  */
-export async function enrichHeardLines(lines: unknown): Promise<unknown> {
+export async function enrichHeardLines(
+  lines: unknown,
+  supabase?: SupabaseClient,
+): Promise<unknown> {
   if (!Array.isArray(lines) || lines.length === 0) return lines;
   const sketch = lines.map((line, lineIndex) => {
     const row = line as HeardLine;
@@ -57,25 +62,20 @@ export async function enrichHeardLines(lines: unknown): Promise<unknown> {
     };
   });
 
+  if (supabase && !(await tryIncrementGeminiUsage(supabase))) return lines;
+
   const user = JSON.stringify(sketch);
-  const viaOpenRouter = await openRouterTextJson({
-    system: ENRICH_SYSTEM,
-    user,
-    timeoutMs: 25_000,
-  });
-  let text = viaOpenRouter?.text ?? null;
-  if (!text) {
-    try {
-      const viaGemini = await geminiGenerateJson({
-        model: geminiModelExplain(),
-        system: ENRICH_SYSTEM,
-        user,
-        timeoutMs: 20_000,
-      });
-      text = viaGemini.text;
-    } catch {
-      return lines;
-    }
+  let text: string;
+  try {
+    const viaGemini = await geminiGenerateJson({
+      model: geminiModelExplain(),
+      system: ENRICH_SYSTEM,
+      user,
+      timeoutMs: 25_000,
+    });
+    text = viaGemini.text;
+  } catch {
+    return lines;
   }
 
   try {

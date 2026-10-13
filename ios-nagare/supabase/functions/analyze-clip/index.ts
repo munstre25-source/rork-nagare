@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     const raw = parseJsonObject(text);
     const validated = validateLines(raw.lines, startSec, endSec);
     if (!validated.ok) return errorResponse(422, validated.error);
-    const heard = await enrichHeardLines(raw.lines);
+    const heard = await enrichHeardLines(raw.lines, supabase);
 
     const durationSec = durationFromLines(heard as LineLike[], endSec - startSec);
     const gradient = GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length];

@@ -16,11 +16,11 @@ nonisolated struct SupabaseAPI: Sendable {
         anonKey: Secrets.supabaseAnonKey
     )
 
-    /// Session with a hard 2.5s budget for word explanations.
+    /// Session budget for Gemini word explanations. Local dictionary still answers first.
     private static let explainSession: URLSession = {
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 2.5
-        config.timeoutIntervalForResource = 2.5
+        config.timeoutIntervalForRequest = 12
+        config.timeoutIntervalForResource = 12
         config.waitsForConnectivity = false
         return URLSession(configuration: config)
     }()

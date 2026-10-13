@@ -24,7 +24,7 @@ nonisolated struct LiveCallStats: Sendable {
     let averageMs: Int
 }
 
-/// Resolves word explanations: seed/local dictionary → local cache → Supabase Edge Function (2.5s) → static fallback.
+/// Resolves word explanations: seed/local dictionary → local cache → Supabase Edge Function (12s) → static fallback.
 /// Never throws and never surfaces errors to the UI.
 actor WordExplainService {
     private let api: SupabaseAPI

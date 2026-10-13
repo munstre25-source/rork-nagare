@@ -1,11 +1,24 @@
-import { geminiApiKeys, openRouterKey, openRouterModel } from "./env.ts";
+import { geminiApiKey } from "./env.ts";
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const ANALYZE_TIMEOUT_MS = 90_000;
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export type GeminiJsonResult = {
   text: string;
   model: string;
+};
+
+type GeminiCall = {
+  model: string;
+  system: string;
+  user: string;
+  timeoutMs: number;
+  youtube?: {
+    url: string;
+    startSec: number;
+    endSec: number;
+  };
 };
 
 function extractText(data: unknown): string {
@@ -24,127 +37,45 @@ function stripFence(text: string): string {
   return text.trim();
 }
 
-const MODEL_FALLBACKS = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-3.5-flash"];
-
-async function callGemini(opts: {
-  model: string;
-  body: Record<string, unknown>;
-  timeoutMs: number;
-}): Promise<GeminiJsonResult> {
-  const models = [opts.model, ...MODEL_FALLBACKS.filter((model) => model !== opts.model)];
-  let lastError: Error | null = null;
-  for (const model of models) {
-    try {
-      return await callGeminiOnce({ ...opts, model });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      lastError = err instanceof Error ? err : new Error("Gemini failed");
-      const overloaded = message.includes("Gemini HTTP 503") || message.includes("Gemini HTTP 429");
-      if (!overloaded) throw lastError;
-    }
-  }
-  throw lastError ?? new Error("Gemini empty response");
+function isOpenRouterKey(apiKey: string): boolean {
+  return apiKey.startsWith("sk-or-");
 }
 
-async function callGeminiOnce(opts: {
-  model: string;
-  body: Record<string, unknown>;
-  timeoutMs: number;
-}): Promise<GeminiJsonResult> {
-  const keys = geminiApiKeys();
-  let lastError: Error | null = null;
-  for (const apiKey of keys) {
-    try {
-      return await callGeminiWithKey(apiKey, opts);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      lastError = err instanceof Error ? err : new Error("Gemini failed");
-      const overloaded = message.includes("Gemini HTTP 503") || message.includes("Gemini HTTP 429");
-      if (!overloaded || apiKey === keys[keys.length - 1]) throw lastError;
-    }
-  }
-  throw lastError ?? new Error("Gemini empty response");
+/** OpenRouter slugs look like `google/gemini-2.5-flash`. Google's API wants the bare id. */
+function modelForTransport(model: string, openRouter: boolean): string {
+  if (openRouter) return model.includes("/") ? model : `google/${model}`;
+  return model.startsWith("google/") ? model.slice("google/".length) : model;
 }
 
-async function callGeminiWithKey(apiKey: string, opts: {
-  model: string;
-  body: Record<string, unknown>;
-  timeoutMs: number;
-}): Promise<GeminiJsonResult> {
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(opts.model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+async function callGemini(opts: GeminiCall): Promise<GeminiJsonResult> {
+  const apiKey = geminiApiKey();
+  if (isOpenRouterKey(apiKey)) return await callOpenRouter(apiKey, opts);
+  return await callGoogleGemini(apiKey, opts);
+}
+
+async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
+  const model = modelForTransport(opts.model, true);
+  const userContent = opts.youtube
+    ? [
+      {
+        type: "text",
+        text:
+          `${opts.user}\nOnly transcribe speech between ${opts.youtube.startSec}s and ${opts.youtube.endSec}s. Ignore the rest of the video.`,
+      },
+      {
+        type: "video_url",
+        video_url: {
+          url: opts.youtube.url,
+          processing: "agentic",
+        },
+      },
+    ]
+    : opts.user;
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(opts.body),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const detail = redactSecrets(await res.text(), [apiKey]).slice(0, 240);
-      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
-    }
-    const data = await res.json();
-    const text = stripFence(extractText(data));
-    if (!text) throw new Error("Gemini empty response");
-    return { text, model: opts.model };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** Gemini fallback for a word explanation when OpenRouter is unavailable. */
-export async function geminiGenerateJson(opts: {
-  model: string;
-  system: string;
-  user: string;
-  timeoutMs?: number;
-}): Promise<GeminiJsonResult> {
-  return await callGemini({
-    model: opts.model,
-    timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    body: {
-      systemInstruction: { parts: [{ text: opts.system }] },
-      contents: [{ role: "user", parts: [{ text: opts.user }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-      },
-    },
-  });
-}
-
-/** Free text model. Returns null when the key is missing or the call fails. */
-export async function openRouterTextJson(opts: {
-  system: string;
-  user: string;
-  timeoutMs?: number;
-}): Promise<GeminiJsonResult | null> {
-  try {
-    return await openRouterGenerateJson(opts);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Text tasks. This model accepts text and images, not a YouTube link, so clip
- * watching stays on Gemini.
- */
-async function openRouterGenerateJson(opts: {
-  system: string;
-  user: string;
-  timeoutMs?: number;
-}): Promise<GeminiJsonResult | null> {
-  const apiKey = openRouterKey();
-  if (!apiKey) return null;
-  const model = openRouterModel();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,46 +85,97 @@ async function openRouterGenerateJson(opts: {
       body: JSON.stringify({
         model,
         temperature: 0.2,
+        max_tokens: opts.youtube ? 8192 : 4096,
         response_format: { type: "json_object" },
+        reasoning: { effort: opts.youtube ? "low" : "minimal", exclude: true },
+        provider: { only: ["google-ai-studio"], allow_fallbacks: false },
         messages: [
           { role: "system", content: opts.system },
-          { role: "user", content: opts.user },
+          { role: "user", content: userContent },
         ],
       }),
       signal: controller.signal,
     });
     if (!res.ok) {
-      const detail = redactSecrets(await res.text(), [apiKey]).slice(0, 240);
-      throw new Error(`OpenRouter HTTP ${res.status}: ${detail}`);
+      const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
+      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json() as {
       choices?: Array<{ message?: { content?: string } }>;
     };
     const text = stripFence(data.choices?.[0]?.message?.content ?? "");
-    if (!text) throw new Error("OpenRouter empty response");
+    if (!text) throw new Error("Gemini empty response");
     return { text, model };
   } finally {
     clearTimeout(timer);
   }
 }
 
-function redactSecrets(text: string, secrets: string[] = []): string {
-  let redacted = text;
-  for (const secret of secrets) {
-    if (secret) redacted = redacted.split(secret).join("redacted");
+async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
+  const model = modelForTransport(opts.model, false);
+  const userParts: Array<Record<string, unknown>> = [];
+  if (opts.youtube) {
+    userParts.push({
+      fileData: {
+        fileUri: opts.youtube.url,
+        mimeType: "video/*",
+      },
+      videoMetadata: {
+        startOffset: `${Math.max(0, opts.youtube.startSec)}s`,
+        endOffset: `${Math.max(opts.youtube.startSec, opts.youtube.endSec)}s`,
+      },
+    });
   }
-  for (const secret of geminiApiKeys()) {
-    redacted = redacted.split(secret).join("redacted");
+  userParts.push({ text: opts.user });
+
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
+        contents: [{ role: "user", parts: userParts }],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: opts.youtube ? 1024 : 0 },
+        },
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
+      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
+    }
+    const data = await res.json();
+    const text = stripFence(extractText(data));
+    if (!text) throw new Error("Gemini empty response");
+    return { text, model };
+  } finally {
+    clearTimeout(timer);
   }
-  const openRouter = openRouterKey();
-  if (openRouter) redacted = redacted.split(openRouter).join("redacted");
-  return redacted
-    .replace(/key=[^&\s"]+/gi, "key=redacted")
-    .replace(/AIza[0-9A-Za-z_-]+/g, "redacted")
-    .replace(/sk-or-[A-Za-z0-9_-]+/g, "redacted");
 }
 
-/** Send a YouTube URL as video input with start/end offsets (seconds). */
+/** Text JSON from the single Gemini key. Used for word explanations and dictionary enrichment. */
+export async function geminiGenerateJson(opts: {
+  model: string;
+  system: string;
+  user: string;
+  timeoutMs?: number;
+}): Promise<GeminiJsonResult> {
+  return await callGemini({
+    model: opts.model,
+    system: opts.system,
+    user: opts.user,
+    timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  });
+}
+
+/** Watch a YouTube segment and return JSON. Same key as text tasks. */
 export async function geminiAnalyzeYouTubeSegment(opts: {
   model: string;
   system: string;
@@ -204,31 +186,24 @@ export async function geminiAnalyzeYouTubeSegment(opts: {
 }): Promise<GeminiJsonResult> {
   return await callGemini({
     model: opts.model,
+    system: opts.system,
+    user: opts.user,
     timeoutMs: ANALYZE_TIMEOUT_MS,
-    body: {
-      systemInstruction: { parts: [{ text: opts.system }] },
-      contents: [{
-        role: "user",
-        parts: [
-          {
-            fileData: {
-              fileUri: opts.youtubeUrl,
-              mimeType: "video/*",
-            },
-            videoMetadata: {
-              startOffset: `${Math.max(0, opts.startSec)}s`,
-              endOffset: `${Math.max(opts.startSec, opts.endSec)}s`,
-            },
-          },
-          { text: opts.user },
-        ],
-      }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-      },
+    youtube: {
+      url: opts.youtubeUrl,
+      startSec: opts.startSec,
+      endSec: opts.endSec,
     },
   });
+}
+
+function redactSecrets(text: string, apiKey: string): string {
+  return text
+    .split(apiKey).join("redacted")
+    .replace(/key=[^&\s"]+/gi, "key=redacted")
+    .replace(/keys\/[0-9a-f]{8,}/gi, "keys/redacted")
+    .replace(/AIza[0-9A-Za-z_-]+/g, "redacted")
+    .replace(/sk-or-[A-Za-z0-9_-]+/g, "redacted");
 }
 
 export function parseJsonObject(text: string): Record<string, unknown> {

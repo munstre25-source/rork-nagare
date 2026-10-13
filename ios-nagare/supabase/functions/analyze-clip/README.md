@@ -18,4 +18,4 @@ Content-Type: application/json
 }
 ```
 
-Does **not** scrape YouTube captions. Gemini watches the YouTube URL and writes the words and timestamps. OpenRouter then adds readings, meanings, and JLPT. Those fields never replace the heard surfaces or times. Always inserts with `published=false`.
+Does **not** scrape YouTube captions. Gemini watches the YouTube URL and writes the words and timestamps, then the same `GEMINI_API_KEY` adds readings, meanings, and JLPT. Those fields never replace the heard surfaces or times. Always inserts with `published=false`.
