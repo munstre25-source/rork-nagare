@@ -37,7 +37,7 @@ function enrichSystem(language: CatalogLanguage): string {
     ? "reading (Revised Romanization; omit when the surface is already plain hangul with no hanja)"
     : "reading (hiragana when the surface has kanji; omit when the surface is already kana)";
   const level = language === "ko"
-    ? "topik (\"1\"|\"2\"|\"3\"|\"4\"|\"5\"|\"6\", omit if unknown). Do not invent a JLPT level."
+    ? "jlpt (\"TOPIK1\"|\"TOPIK2\"|\"TOPIK3\"|\"TOPIK4\"|\"TOPIK5\"|\"TOPIK6\", omit if unknown). Do not use N1–N5."
     : "jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
   return `You add dictionary fields to a ${languageName(language)} transcript that was already heard.
 Do not change surfaces. Do not add, remove, or reorder tokens or lines.
@@ -48,6 +48,7 @@ No markdown.`;
 }
 
 const JLPT = new Set(["N5", "N4", "N3", "N2", "N1"]);
+const TOPIK = new Set(["TOPIK1", "TOPIK2", "TOPIK3", "TOPIK4", "TOPIK5", "TOPIK6"]);
 
 type HeardLine = {
   tokens?: unknown;
@@ -104,13 +105,13 @@ export async function enrichHeardLines(
 
   try {
     const parsed = parseJsonObject(text);
-    return mergeEnrichment(lines, parsed.lines);
+    return mergeEnrichment(lines, parsed.lines, language);
   } catch {
     return lines;
   }
 }
 
-function mergeEnrichment(lines: unknown[], extra: unknown): unknown[] {
+function mergeEnrichment(lines: unknown[], extra: unknown, language: CatalogLanguage): unknown[] {
   if (!Array.isArray(extra)) return lines;
   const byLine = new Map<number, unknown>();
   for (const row of extra) {
@@ -135,13 +136,19 @@ function mergeEnrichment(lines: unknown[], extra: unknown): unknown[] {
         const heard = token as HeardToken;
         const added = byToken.get(tokenIndex);
         if (!added || typeof added !== "object") return token;
-        return { ...heard, ...linguisticFields(added as Record<string, unknown>) };
+        return { ...heard, ...linguisticFields(added as Record<string, unknown>, language) };
       }),
     };
   });
 }
 
-function linguisticFields(raw: Record<string, unknown>): Record<string, unknown> {
+function topikLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().toUpperCase().replace(/\s+/g, "").match(/^(?:TOPIK)?([1-6])$/);
+  return match ? `TOPIK${match[1]}` : null;
+}
+
+function linguisticFields(raw: Record<string, unknown>, language: CatalogLanguage): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const reading = cleanString(raw.reading, 40);
   if (reading) out.reading = reading;
@@ -159,7 +166,12 @@ function linguisticFields(raw: Record<string, unknown>): Record<string, unknown>
   if (baseReading) out.baseReading = baseReading;
   const baseRomaji = cleanString(raw.baseRomaji, 60);
   if (baseRomaji) out.baseRomaji = baseRomaji;
-  if (typeof raw.jlpt === "string" && JLPT.has(raw.jlpt)) out.jlpt = raw.jlpt;
+  if (language === "ko") {
+    const level = topikLabel(raw.jlpt) ?? topikLabel(raw.topik);
+    if (level && TOPIK.has(level)) out.jlpt = level;
+  } else if (typeof raw.jlpt === "string" && JLPT.has(raw.jlpt)) {
+    out.jlpt = raw.jlpt;
+  }
   if (typeof raw.tappable === "boolean") out.tappable = raw.tappable;
   const definitions = stringList(raw.definitions, 3, 80);
   if (definitions.length > 0) out.definitions = definitions;

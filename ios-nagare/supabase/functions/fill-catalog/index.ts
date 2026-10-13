@@ -377,26 +377,41 @@ function isLesson(lines: LineLike[]): boolean {
   return defined >= 2;
 }
 
-function gradeDifficulty(modelValue: unknown, lines: LineLike[]): string {
+function gradeDifficulty(modelValue: unknown, lines: LineLike[], language: CatalogLanguage): string {
   if (typeof modelValue === "string" && validateEnums("drama", modelValue).ok) return modelValue;
-  const rank: Record<string, number> = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
+  const rank: Record<string, number> = language === "ko"
+    ? { TOPIK1: 1, TOPIK2: 2, TOPIK3: 3, TOPIK4: 4, TOPIK5: 5, TOPIK6: 6 }
+    : { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
   let score = 0;
   let counted = 0;
   for (const line of lines) {
     const tokens = Array.isArray(line.tokens) ? line.tokens : [];
     for (const token of tokens) {
       const jlpt = (token as { jlpt?: unknown }).jlpt;
-      if (typeof jlpt === "string" && rank[jlpt]) {
-        score += rank[jlpt];
+      const topik = (token as { topik?: unknown }).topik;
+      const label = language === "ko" ? topikLabel(topik) ?? topikLabel(jlpt) : (typeof jlpt === "string" ? jlpt : "");
+      if (label && rank[label]) {
+        score += rank[label];
         counted += 1;
       }
     }
   }
   if (counted === 0) return "Intermediate";
   const average = score / counted;
+  if (language === "ko") {
+    if (average < 2.5) return "Beginner";
+    if (average < 4.5) return "Intermediate";
+    return "Advanced";
+  }
   if (average < 2.2) return "Beginner";
   if (average < 3.4) return "Intermediate";
   return "Advanced";
+}
+
+function topikLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().toUpperCase().replace(/\s+/g, "").match(/^(?:TOPIK)?([1-6])$/);
+  return match ? `TOPIK${match[1]}` : null;
 }
 
 async function analyzeAndPublish(
@@ -437,11 +452,11 @@ async function analyzeAndPublish(
   } catch {
     return { ok: false, reason: "invalid-transcript" };
   }
-  const validated = validateLines(raw.lines, window.start, window.end);
+  const validated = validateLines(raw.lines, window.start, window.end, language);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
   const lines = await enrichHeardLines(raw.lines, supabase, language) as LineLike[];
   if (!isLesson(lines)) return { ok: false, reason: "not-a-lesson" };
-  const difficulty = gradeDifficulty(raw.difficulty, lines);
+  const difficulty = gradeDifficulty(raw.difficulty, lines, language);
   const row = {
     id,
     video_id: video.videoId,

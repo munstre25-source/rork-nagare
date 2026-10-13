@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
         startSec
       : Number(clip.duration_sec) || 0;
 
-    const validated = validateLines(lines, startSec, endSec);
+    const validated = validateLines(lines, startSec, endSec, language);
     if (!validated.ok) {
       return errorResponse(422, `Refuse to publish: ${validated.error}`);
     }

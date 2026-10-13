@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     });
 
     const raw = parseJsonObject(text);
-    const validated = validateLines(raw.lines, startSec, endSec);
+    const validated = validateLines(raw.lines, startSec, endSec, language);
     if (!validated.ok) return errorResponse(422, validated.error);
     const heard = await enrichHeardLines(raw.lines, supabase, language);
 

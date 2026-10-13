@@ -38,3 +38,34 @@ select cron.schedule(
   );
   $$
 );
+
+-- Korean catalog. Offset by five minutes so it does not start in the same minute as Japanese.
+-- Both share the YouTube and Gemini daily caps. Body language=ko writes sori_clips.
+
+do $$
+declare
+  existing bigint;
+begin
+  select jobid into existing from cron.job where jobname = 'fill-sori-catalog';
+  if existing is not null then
+    perform cron.unschedule(existing);
+  end if;
+end $$;
+
+select cron.schedule(
+  'fill-sori-catalog',
+  '5-59/10 * * * *',
+  $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
+      || '/functions/v1/fill-catalog',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'catalog_bearer'),
+      'x-admin-token', (select decrypted_secret from vault.decrypted_secrets where name = 'admin_token')
+    ),
+    body := '{"language":"ko"}'::jsonb,
+    timeout_milliseconds := 150000
+  );
+  $$
+);

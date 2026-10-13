@@ -59,6 +59,25 @@ export function mostlyJapanese(text: string, minRatio = 0.55): boolean {
   return jp / chars.length >= minRatio;
 }
 
+/** Hangul syllables, jamo, hanja, and CJK punctuation. */
+function isKoreanChar(ch: string): boolean {
+  const cp = ch.codePointAt(0) ?? 0;
+  return (
+    (cp >= 0xac00 && cp <= 0xd7a3) ||
+    (cp >= 0x1100 && cp <= 0x11ff) ||
+    (cp >= 0x3130 && cp <= 0x318f) ||
+    (cp >= 0x4e00 && cp <= 0x9fff) ||
+    (cp >= 0x3000 && cp <= 0x303f)
+  );
+}
+
+export function mostlyKorean(text: string, minRatio = 0.55): boolean {
+  const chars = [...text].filter((c) => !/\s/.test(c));
+  if (chars.length === 0) return false;
+  const ko = chars.filter(isKoreanChar).length;
+  return ko / chars.length >= minRatio;
+}
+
 export function validateEnums(
   category: string,
   difficulty: string,
@@ -76,13 +95,14 @@ export function validateEnums(
  * Validate lines JSON:
  * - non-empty lines and tokens with non-empty surfaces
  * - timestamps strictly increasing and clamped to [startSec, endSec]
- * - joined surfaces mostly Japanese
+ * - joined surfaces mostly Japanese, or mostly Korean when language is "ko"
  * - enums checked separately by callers when present
  */
 export function validateLines(
   lines: unknown,
   startSec: number,
   endSec: number,
+  language: "ja" | "ko" = "ja",
 ): ValidationResult {
   if (!Array.isArray(lines) || lines.length === 0) {
     return { ok: false, error: "lines must be a non-empty array" };
@@ -163,7 +183,11 @@ export function validateLines(
   }
 
   const joined = surfaces.join("");
-  if (!mostlyJapanese(joined)) {
+  if (language === "ko") {
+    if (!mostlyKorean(joined)) {
+      return { ok: false, error: "transcript text must be mostly Korean" };
+    }
+  } else if (!mostlyJapanese(joined)) {
     return { ok: false, error: "transcript text must be mostly Japanese" };
   }
 
