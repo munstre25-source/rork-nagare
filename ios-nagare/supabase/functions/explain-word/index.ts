@@ -1,5 +1,6 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { geminiModelExplain, promptVersion } from "../_shared/env.ts";
+import { parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient, buildCacheKey } from "../_shared/supabase.ts";
 import { hasProEntitlement } from "../_shared/revenuecat.ts";
 import {
@@ -21,16 +22,28 @@ type Body = {
   sentence?: string;
 };
 
-const LOOKUP_SYSTEM = `You are a Japanese language tutor for learners. Respond with a single JSON object only.
-Keys: word (string), readings (string[] kana), romaji (string), pos (string), conjugation_class (string|null), definitions (string[] English glosses, 1-5), ja_definitions (string[] Japanese-to-Japanese glosses, 1-5, short 国語辞典 style), formality_note (string|null), audio_hint (string|null).
+function lookupSystem(language: "ja" | "ko"): string {
+  const name = language === "ko" ? "Korean" : "Japanese";
+  const reading = language === "ko"
+    ? "readings (string[] Revised Romanization)"
+    : "readings (string[] kana)";
+  const jaGloss = language === "ko"
+    ? "ja_definitions (string[] Korean-to-Korean glosses, 1-5, short dictionary style)"
+    : "ja_definitions (string[] Japanese-to-Japanese glosses, 1-5, short 国語辞典 style)";
+  return `You are a ${name} language tutor for learners. Respond with a single JSON object only.
+Keys: word (string), ${reading}, romaji (string), pos (string), conjugation_class (string|null), definitions (string[] English glosses, 1-5), ${jaGloss}, formality_note (string|null), audio_hint (string|null).
 Keep definitions short. No markdown.`;
+}
 
-const CONTEXT_SYSTEM = `You are a Japanese language tutor. Respond with a single JSON object only.
+function contextSystem(language: "ja" | "ko"): string {
+  const name = language === "ko" ? "Korean" : "Japanese";
+  return `You are a ${name} language tutor. Respond with a single JSON object only.
 Keys: contextual_explanation (string), examples (string[]), related_words (string[]).
 contextual_explanation is 2-3 short English sentences about THIS sentence only. Start with "In this sentence, 「word」 (reading) means ...". Then say what the speaker is doing with the word. Do not list dictionary senses.
-examples: up to 2 short Japanese sentences that use the word the same way, each followed by " — " and an English translation.
-related_words: up to 4 short Japanese words (synonym, polite form, or same family).
+examples: up to 2 short ${name} sentences that use the word the same way, each followed by " — " and an English translation.
+related_words: up to 4 short ${name} words (synonym, polite form, or same family).
 No markdown.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
@@ -60,7 +73,8 @@ Deno.serve(async (req) => {
     if (!binding.ok) return errorResponse(binding.status, binding.message);
 
     // 3) Entitlement (positive + negative results cached for a few minutes).
-    const entitled = await hasProEntitlement(supabase, appUserId);
+    const language = parseLanguage(req.headers.get("x-app-language"));
+    const entitled = await hasProEntitlement(supabase, appUserId, language);
     if (!entitled) return errorResponse(403, "Pro entitlement required");
 
     const version = promptVersion();
@@ -71,6 +85,7 @@ Deno.serve(async (req) => {
       sentence,
       version,
       includeSentence,
+      language,
     );
 
     const { data: cached } = await supabase
@@ -89,7 +104,7 @@ Deno.serve(async (req) => {
     if (!underGlobal) return errorResponse(429, "Global Gemini cap exceeded");
 
     const model = geminiModelExplain();
-    const system = kind === "lookup" ? LOOKUP_SYSTEM : CONTEXT_SYSTEM;
+    const system = kind === "lookup" ? lookupSystem(language) : contextSystem(language);
     const userPrompt = kind === "lookup"
       ? `Word: ${word}\nSentence: ${sentence || "(none)"}`
       : `Explain how 「${word}」 is used in this sentence:\n${sentence}`;

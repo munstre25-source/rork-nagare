@@ -4,7 +4,8 @@ import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
-import { enrichHeardLines, HEAR_SYSTEM } from "../_shared/enrich.ts";
+import { catalogTable, languageName, parseLanguage } from "../_shared/catalog.ts";
+import { enrichHeardLines, hearSystem } from "../_shared/enrich.ts";
 import {
   durationFromLines,
   LineLike,
@@ -21,6 +22,7 @@ type Body = {
   startSec?: number;
   endSec?: number;
   id?: string;
+  language?: string;
 };
 
 const GRADIENTS = [
@@ -28,8 +30,6 @@ const GRADIENTS = [
   ["#10261A", "#2E7D4F", "#F6E27F"],
   ["#2B1405", "#9C3D10", "#F2B134"],
 ];
-
-const SYSTEM = HEAR_SYSTEM;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
@@ -63,8 +63,10 @@ Deno.serve(async (req) => {
     const channelName =
       (typeof body.channelName === "string" && body.channelName.trim()) ||
       "Unknown";
+    const language = parseLanguage(body.language);
+    const spoken = languageName(language);
     const id = (typeof body.id === "string" && body.id.trim()) ||
-      `${videoId}-${Math.floor(startSec)}-${Math.floor(endSec)}`;
+      `${language === "ko" ? "sori-" : ""}${videoId}-${Math.floor(startSec)}-${Math.floor(endSec)}`;
 
     const supabase = serviceClient();
     if (!(await tryIncrementGeminiUsage(supabase))) {
@@ -75,9 +77,9 @@ Deno.serve(async (req) => {
     const model = geminiModelAnalyze();
     const { text } = await geminiAnalyzeYouTubeSegment({
       model,
-      system: SYSTEM,
+      system: hearSystem(language),
       user:
-        `Segment window: startSec=${startSec}, endSec=${endSec}. Produce lines JSON for this Japanese clip.`,
+        `Segment window: startSec=${startSec}, endSec=${endSec}. Produce lines JSON for this ${spoken} clip.`,
       youtubeUrl,
       startSec,
       endSec,
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
     const raw = parseJsonObject(text);
     const validated = validateLines(raw.lines, startSec, endSec);
     if (!validated.ok) return errorResponse(422, validated.error);
-    const heard = await enrichHeardLines(raw.lines, supabase);
+    const heard = await enrichHeardLines(raw.lines, supabase, language);
 
     const durationSec = durationFromLines(heard as LineLike[], endSec - startSec);
     const gradient = GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length];
@@ -105,7 +107,7 @@ Deno.serve(async (req) => {
       thumbnail_gradient: gradient,
     };
 
-    const { data, error } = await supabase.from("clips").upsert(row).select("*")
+    const { data, error } = await supabase.from(catalogTable(language)).upsert(row).select("*")
       .single();
     if (error) return errorResponse(500, "Failed to insert clip");
 

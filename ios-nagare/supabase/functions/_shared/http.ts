@@ -3,7 +3,7 @@
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-app-user-id, x-admin-token",
+    "authorization, x-client-info, apikey, content-type, x-app-user-id, x-admin-token, x-app-language",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
 };
 

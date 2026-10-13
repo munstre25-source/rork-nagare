@@ -1,10 +1,11 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { requireAdmin } from "../_shared/admin.ts";
+import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryConsumeYoutubeQuota } from "../_shared/limits.ts";
 
-type Body = { query?: string; maxResults?: number };
+type Body = { query?: string; maxResults?: number; language?: string };
 
 type SearchItem = {
   id?: { videoId?: string };
@@ -64,6 +65,7 @@ Deno.serve(async (req) => {
       return errorResponse(429, "YouTube daily quota exceeded");
     }
 
+    const language = parseLanguage(body.language);
     const ytKey = requireEnv("YOUTUBE_API_KEY");
     const searchParams = new URLSearchParams({
       part: "snippet",
@@ -72,8 +74,8 @@ Deno.serve(async (req) => {
       maxResults: String(maxResults),
       videoEmbeddable: "true",
       videoDuration: "short",
-      regionCode: "JP",
-      relevanceLanguage: "ja",
+      regionCode: language === "ko" ? "KR" : "JP",
+      relevanceLanguage: language,
       key: ytKey,
     });
 
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
     if (!videosRes.ok) return errorResponse(502, "YouTube videos.list failed");
     const videosJson = await videosRes.json() as { items?: VideoItem[] };
 
-    const { data: existing } = await supabase.from("clips").select("video_id");
+    const { data: existing } = await supabase.from(catalogTable(language)).select("video_id");
     const existingIds = new Set(
       (existing ?? []).map((r: { video_id: string }) => r.video_id),
     );

@@ -25,19 +25,21 @@ export async function buildCacheKey(
   sentence: string,
   promptVersion: string,
   includeSentence: boolean,
+  language: "ja" | "ko" = "ja",
 ): Promise<{ cacheKey: string; sentenceHash: string | null }> {
   const normalized = normalizeSentence(sentence);
   const sentenceHash = includeSentence || kind === "context"
     ? await sha1Hex(normalized)
     : null;
+  const scope = language === "ko" ? "ko|" : "";
   if (sentenceHash) {
     return {
-      cacheKey: `${promptVersion}|${kind}|${word}|${sentenceHash}`,
+      cacheKey: `${scope}${promptVersion}|${kind}|${word}|${sentenceHash}`,
       sentenceHash,
     };
   }
   return {
-    cacheKey: `${promptVersion}|${kind}|${word}`,
+    cacheKey: `${scope}${promptVersion}|${kind}|${word}`,
     sentenceHash: null,
   };
 }

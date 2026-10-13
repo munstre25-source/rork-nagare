@@ -1,12 +1,14 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { requireAdmin } from "../_shared/admin.ts";
+import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { LineLike, validateEnums, validateLines } from "../_shared/validate.ts";
 
 type Body = {
   id?: string;
   action?: string;
+  language?: string;
 };
 
 Deno.serve(async (req) => {
@@ -26,9 +28,11 @@ Deno.serve(async (req) => {
       return errorResponse(400, 'id and action ("publish"|"unpublish") required');
     }
 
+    const language = parseLanguage(body.language);
+    const table = catalogTable(language);
     const supabase = serviceClient();
     const { data: clip, error } = await supabase
-      .from("clips")
+      .from(table)
       .select("*")
       .eq("id", id)
       .maybeSingle();
@@ -37,7 +41,7 @@ Deno.serve(async (req) => {
 
     if (action === "unpublish") {
       const { data, error: upErr } = await supabase
-        .from("clips")
+        .from(table)
         .update({ published: false })
         .eq("id", id)
         .select("*")
@@ -66,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     const { data, error: pubErr } = await supabase
-      .from("clips")
+      .from(table)
       .update({ published: true })
       .eq("id", id)
       .select("*")

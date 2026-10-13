@@ -1,10 +1,11 @@
-import { corsPreflight, errorResponse, jsonResponse } from "../_shared/http.ts";
+import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { geminiModelAnalyze, requireEnv } from "../_shared/env.ts";
 import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
-import { enrichHeardLines, HEAR_SYSTEM_CATALOG } from "../_shared/enrich.ts";
+import { catalogTable, languageName, parseLanguage, type CatalogLanguage } from "../_shared/catalog.ts";
+import { enrichHeardLines, hearSystemCatalog } from "../_shared/enrich.ts";
 import {
   durationFromLines,
   LineLike,
@@ -13,16 +14,17 @@ import {
 } from "../_shared/validate.ts";
 
 /**
- * One scheduled pass: search YouTube for a short public Japanese video the catalog
+ * One scheduled pass: search YouTube for a short public video the catalog
  * does not have yet, ask Gemini for a learner transcript, and publish it when the
- * lines validate. The phone never downloads the file. It plays the YouTube id.
+ * lines validate. Body {"language":"ko"} writes sori_clips. Anything else writes
+ * clips. The phone never downloads the file. It plays the YouTube id.
  *
  * Admin only. A pg_cron job calls this with x-admin-token.
  */
 
 type Lane = { category: string; difficulty: string; query: string };
 
-const LANES: Lane[] = [
+const JAPANESE_LANES: Lane[] = [
   { category: "interview", difficulty: "Beginner", query: "日本語 街頭インタビュー ショート" },
   { category: "interview", difficulty: "Advanced", query: "日本語 インタビュー 会話 ショート" },
   { category: "drama", difficulty: "Beginner", query: "コンビニ カフェ 注文 日本語 会話 ショート" },
@@ -35,13 +37,28 @@ const LANES: Lane[] = [
   { category: "gaming", difficulty: "Intermediate", query: "日本語 ゲーム実況 会話 ショート" },
 ];
 
+const KOREAN_LANES: Lane[] = [
+  { category: "interview", difficulty: "Beginner", query: "한국어 길거리 인터뷰 쇼츠" },
+  { category: "interview", difficulty: "Advanced", query: "한국어 인터뷰 대화 쇼츠" },
+  { category: "drama", difficulty: "Beginner", query: "편의점 카페 주문 한국어 회화 쇼츠" },
+  { category: "drama", difficulty: "Advanced", query: "한국어 드라마 대사 쇼츠" },
+  { category: "variety", difficulty: "Intermediate", query: "한국어 예능 토크 쇼츠" },
+  { category: "kids", difficulty: "Beginner", query: "어린이 한국어 인사 회화 쇼츠" },
+  { category: "anime", difficulty: "Beginner", query: "한국어 애니메이션 일상 회화 쇼츠" },
+  { category: "anime", difficulty: "Intermediate", query: "한국 애니 대사 쇼츠" },
+  { category: "vtuber", difficulty: "Intermediate", query: "한국어 버튜버 잡담 쇼츠" },
+  { category: "gaming", difficulty: "Intermediate", query: "한국어 게임 실황 대화 쇼츠" },
+];
+
+function lanesFor(language: CatalogLanguage): Lane[] {
+  return language === "ko" ? KOREAN_LANES : JAPANESE_LANES;
+}
+
 const GRADIENTS = [
   ["#0B1030", "#2B2F7A", "#F29E4C"],
   ["#10261A", "#2E7D4F", "#F6E27F"],
   ["#2B1405", "#9C3D10", "#F2B134"],
 ];
-
-const SYSTEM = HEAR_SYSTEM_CATALOG;
 
 type SearchItem = { id?: { videoId?: string } };
 type VideoItem = {
@@ -59,8 +76,10 @@ Deno.serve(async (req) => {
     const adminToken = requireEnv("ADMIN_TOKEN");
     if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
 
+    const body = await readJson<{ language?: string }>(req);
+    const language = parseLanguage(body.language);
     const supabase = serviceClient();
-    const lanes = await lanesByEmptiness(supabase);
+    const lanes = await lanesByEmptiness(supabase, language);
     let attempts = 0;
     let lastError = "no-candidate";
     let lastLane = lanes[0];
@@ -68,7 +87,7 @@ Deno.serve(async (req) => {
       lastLane = lane;
       const enums = validateEnums(lane.category, lane.difficulty);
       if (!enums.ok) continue;
-      const found = await searchFresh(supabase, lane.query);
+      const found = await searchFresh(supabase, lane.query, language);
       if (!found.ok) {
         lastError = found.reason;
         if (found.reason === "youtube-quota") break;
@@ -79,7 +98,7 @@ Deno.serve(async (req) => {
         const window = clipWindow(video.durationSec);
         if (!window) continue;
         attempts += 1;
-        const published = await analyzeAndPublish(supabase, video, lane, window);
+        const published = await analyzeAndPublish(supabase, video, lane, window, language);
         if (published.ok) {
           return jsonResponse({
             published: true,
@@ -105,14 +124,15 @@ Deno.serve(async (req) => {
 
 async function lanesByEmptiness(
   supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
 ): Promise<Lane[]> {
-  const { data } = await supabase.from("clips").select("category, difficulty").eq("published", true);
+  const { data } = await supabase.from(catalogTable(language)).select("category, difficulty").eq("published", true);
   const counts = new Map<string, number>();
   for (const row of data ?? []) {
     const key = `${row.category}|${row.difficulty}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return [...LANES].sort((a, b) => {
+  return [...lanesFor(language)].sort((a, b) => {
     const aCount = counts.get(`${a.category}|${a.difficulty}`) ?? 0;
     const bCount = counts.get(`${b.category}|${b.difficulty}`) ?? 0;
     return aCount - bCount;
@@ -124,6 +144,7 @@ type FreshVideo = { videoId: string; title: string; channelTitle: string; durati
 async function searchFresh(
   supabase: ReturnType<typeof serviceClient>,
   query: string,
+  language: CatalogLanguage,
 ): Promise<{ ok: true; videos: FreshVideo[] } | { ok: false; reason: string }> {
   if (!(await tryConsumeYoutubeQuota(supabase, 100))) {
     return { ok: false, reason: "youtube-quota" };
@@ -137,8 +158,8 @@ async function searchFresh(
     videoEmbeddable: "true",
     videoDuration: "short",
     order: "viewCount",
-    regionCode: "JP",
-    relevanceLanguage: "ja",
+    relevanceLanguage: language,
+    regionCode: language === "ko" ? "KR" : "JP",
     key: ytKey,
   });
   const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?${searchParams}`);
@@ -161,7 +182,7 @@ async function searchFresh(
   if (!videosRes.ok) return { ok: false, reason: "youtube-videos-failed" };
   const videosJson = await videosRes.json() as { items?: VideoItem[] };
 
-  const { data: existing } = await supabase.from("clips").select("video_id");
+  const { data: existing } = await supabase.from(catalogTable(language)).select("video_id");
   const existingIds = new Set((existing ?? []).map((row: { video_id: string }) => row.video_id));
 
   const videos: FreshVideo[] = [];
@@ -193,18 +214,20 @@ async function analyzeAndPublish(
   video: FreshVideo,
   lane: Lane,
   window: { start: number; end: number },
+  language: CatalogLanguage,
 ): Promise<{ ok: true; id: string } | { ok: false; reason: string }> {
   if (!(await tryIncrementGeminiUsage(supabase))) {
     return { ok: false, reason: "gemini-cap" };
   }
-  const id = `immersion-${video.videoId}-${Math.floor(window.start)}-${Math.floor(window.end)}`;
+  const prefix = language === "ko" ? "sori" : "immersion";
+  const id = `${prefix}-${video.videoId}-${Math.floor(window.start)}-${Math.floor(window.end)}`;
   const model = geminiModelAnalyze();
   let text = "";
   try {
     const result = await geminiAnalyzeYouTubeSegment({
       model,
-      system: SYSTEM,
-      user: `Segment window: startSec=${window.start}, endSec=${window.end}. Produce lines JSON for this Japanese clip.`,
+      system: hearSystemCatalog(language),
+      user: `Segment window: startSec=${window.start}, endSec=${window.end}. Produce lines JSON for this ${languageName(language)} clip.`,
       youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
       startSec: window.start,
       endSec: window.end,
@@ -226,7 +249,7 @@ async function analyzeAndPublish(
   }
   const validated = validateLines(raw.lines, window.start, window.end);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
-  const lines = await enrichHeardLines(raw.lines, supabase) as LineLike[];
+  const lines = await enrichHeardLines(raw.lines, supabase, language) as LineLike[];
   const row = {
     id,
     video_id: video.videoId,
@@ -240,7 +263,7 @@ async function analyzeAndPublish(
     channel_avatar_color: "#FF6B00",
     thumbnail_gradient: GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length],
   };
-  const { error } = await supabase.from("clips").upsert(row);
+  const { error } = await supabase.from(catalogTable(language)).upsert(row);
   if (error) return { ok: false, reason: "insert-failed" };
   return { ok: true, id };
 }

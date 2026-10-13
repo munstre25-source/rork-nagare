@@ -1,7 +1,8 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { envInt, requireEnv } from "./env.ts";
+import { CatalogLanguage } from "./catalog.ts";
+import { envInt, envOr, requireEnv } from "./env.ts";
 
-const ENTITLEMENT_ID = "nagare_learn_japanese_pro";
+const JAPANESE_ENTITLEMENT_ID = "nagare_learn_japanese_pro";
 const RC_TIMEOUT_MS = 2000;
 
 type CacheRow = { entitled: boolean; checked_at: string };
@@ -15,12 +16,14 @@ type CacheRow = { entitled: boolean; checked_at: string };
 export async function hasProEntitlement(
   supabase: SupabaseClient,
   appUserId: string,
+  language: CatalogLanguage = "ja",
 ): Promise<boolean> {
   const ttlSec = envInt("REVENUECAT_CACHE_TTL_SEC", 300);
+  const cacheId = language === "ko" ? `ko:${appUserId}` : appUserId;
   const { data: cached } = await supabase
     .from("revenuecat_entitlement_cache")
     .select("entitled, checked_at")
-    .eq("app_user_id", appUserId)
+    .eq("app_user_id", cacheId)
     .maybeSingle();
 
   if (cached) {
@@ -32,7 +35,19 @@ export async function hasProEntitlement(
     }
   }
 
-  const secret = requireEnv("REVENUECAT_SECRET_API_KEY");
+  const soriSecret = Deno.env.get("SORI_REVENUECAT_SECRET_API_KEY")?.trim() ?? "";
+  const secret = language === "ko" && soriSecret !== ""
+    ? soriSecret
+    : requireEnv("REVENUECAT_SECRET_API_KEY");
+  const entitlementId = language === "ko"
+    ? envOr("SORI_ENTITLEMENT_ID", "sori_pro")
+    : JAPANESE_ENTITLEMENT_ID;
+  const productIds = language === "ko"
+    ? envOr(
+      "SORI_PRODUCT_IDS",
+      "socialreporthq.supportlog.monthly,socialreporthq.supportlog.annual",
+    ).split(",").map((id) => id.trim()).filter((id) => id !== "")
+    : [];
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), RC_TIMEOUT_MS);
   let entitled = false;
@@ -52,15 +67,16 @@ export async function hasProEntitlement(
       const body = await res.json() as {
         subscriber?: {
           entitlements?: Record<string, { expires_date?: string | null }>;
+          subscriptions?: Record<string, { expires_date?: string | null }>;
         };
       };
-      const ent = body.subscriber?.entitlements?.[ENTITLEMENT_ID];
-      if (ent) {
-        if (!ent.expires_date) {
-          entitled = true;
-        } else {
-          entitled = new Date(ent.expires_date).getTime() > Date.now();
-        }
+      const ent = body.subscriber?.entitlements?.[entitlementId];
+      entitled = ent !== undefined && isCurrent(ent.expires_date);
+      if (!entitled && productIds.length > 0) {
+        const subscriptions = body.subscriber?.subscriptions ?? {};
+        entitled = productIds.some((id) =>
+          subscriptions[id] !== undefined && isCurrent(subscriptions[id].expires_date)
+        );
       }
     }
   } catch {
@@ -71,10 +87,15 @@ export async function hasProEntitlement(
 
   // Persist negative results too (unentitled / RC errors) for the TTL window.
   await supabase.from("revenuecat_entitlement_cache").upsert({
-    app_user_id: appUserId,
+    app_user_id: cacheId,
     entitled,
     checked_at: new Date().toISOString(),
   });
 
   return entitled;
+}
+
+function isCurrent(expires: string | null | undefined): boolean {
+  if (!expires) return true;
+  return new Date(expires).getTime() > Date.now();
 }

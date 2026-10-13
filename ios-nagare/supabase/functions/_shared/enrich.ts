@@ -1,28 +1,49 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { CatalogLanguage, languageName } from "./catalog.ts";
 import { geminiModelExplain } from "./env.ts";
 import { geminiGenerateJson, parseJsonObject } from "./gemini.ts";
 import { tryIncrementGeminiUsage } from "./limits.ts";
 
 /** Gemini's job: hear the clip. Dictionary fields are added afterwards. */
-export const HEAR_SYSTEM = `You transcribe a short Japanese YouTube video segment for language learners.
+export function hearSystem(language: CatalogLanguage): string {
+  const name = languageName(language);
+  const script = language === "ko"
+    ? "Hangul only in surface. No Japanese."
+    : "Japanese dialogue only; no English in surface.";
+  return `You transcribe a short ${name} YouTube video segment for language learners.
 Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number } ] } ] }.
 Rules:
 - Transcribe speech you can actually hear. Do not invent dialogue.
 - Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
 - Tokenize into learner-friendly units, with particles as their own tokens. Punctuation may be its own token.
-- Japanese dialogue only; no English in surface.
+- ${script}
 - Do not add readings, romaji, part of speech, JLPT, or definitions.
 - No markdown.`;
+}
 
-export const HEAR_SYSTEM_CATALOG = `${HEAR_SYSTEM}
-- If the clip is mostly music, silence, or has no Japanese speech, return {"lines":[]}.`;
+export function hearSystemCatalog(language: CatalogLanguage): string {
+  return `${hearSystem(language)}
+- If the clip is mostly music, silence, or has no ${languageName(language)} speech, return {"lines":[]}.`;
+}
 
-const ENRICH_SYSTEM = `You add dictionary fields to a Japanese transcript that was already heard.
+export const HEAR_SYSTEM = hearSystem("ja");
+
+export const HEAR_SYSTEM_CATALOG = hearSystemCatalog("ja");
+
+function enrichSystem(language: CatalogLanguage): string {
+  const reading = language === "ko"
+    ? "reading (Revised Romanization; omit when the surface is already plain hangul with no hanja)"
+    : "reading (hiragana when the surface has kanji; omit when the surface is already kana)";
+  const level = language === "ko"
+    ? "topik (\"1\"|\"2\"|\"3\"|\"4\"|\"5\"|\"6\", omit if unknown). Do not invent a JLPT level."
+    : "jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
+  return `You add dictionary fields to a ${languageName(language)} transcript that was already heard.
 Do not change surfaces. Do not add, remove, or reorder tokens or lines.
 Return { "lines": [ { "i": number, "tokens": [ Token ] } ] }.
-Each Token keeps the same "i" and adds: reading (hiragana when the surface has kanji; omit when the surface is already kana), romaji, pos, jlpt ("N5"|"N4"|"N3"|"N2"|"N1", omit if unknown), definitions (one to three short English glosses), tappable (false for punctuation), formality (optional), conjugationClass (optional), baseForm/baseReading/baseRomaji (optional, for conjugated stems), altReadings (optional string[]).
+Each Token keeps the same "i" and adds: ${reading}, romaji, pos, ${level}, definitions (one to three short English glosses), tappable (false for punctuation), formality (optional), conjugationClass (optional), baseForm/baseReading/baseRomaji (optional, for conjugated stems), altReadings (optional string[]).
 Every tappable token needs at least one definition.
 No markdown.`;
+}
 
 const JLPT = new Set(["N5", "N4", "N3", "N2", "N1"]);
 
@@ -44,6 +65,7 @@ type HeardToken = {
 export async function enrichHeardLines(
   lines: unknown,
   supabase?: SupabaseClient,
+  language: CatalogLanguage = "ja",
 ): Promise<unknown> {
   if (!Array.isArray(lines) || lines.length === 0) return lines;
   const sketch = lines.map((line, lineIndex) => {
@@ -69,7 +91,7 @@ export async function enrichHeardLines(
   try {
     const viaGemini = await geminiGenerateJson({
       model: geminiModelExplain(),
-      system: ENRICH_SYSTEM,
+      system: enrichSystem(language),
       user,
       timeoutMs: 25_000,
     });
