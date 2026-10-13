@@ -14,8 +14,9 @@ Content-Type: application/json
   "startSec": 10,
   "endSec": 40,
   "title": "Test",
-  "channelName": "Test"
+  "channelName": "Test",
+  "language": "ja"
 }
 ```
 
-Does **not** scrape YouTube captions. Gemini watches the YouTube URL and writes the words and timestamps, then the same `GEMINI_API_KEY` adds readings, meanings, and JLPT. Those fields never replace the heard surfaces or times. Always inserts with `published=false`.
+`language` is `ja` (default, table `clips`) or `ko` (table `sori_clips`). Does **not** scrape YouTube captions. Gemini watches the YouTube URL and writes the words and timestamps, then the same `GEMINI_API_KEY` adds readings, meanings, and a level (`N5`–`N1`, or `TOPIK1`–`TOPIK6` for Korean). Those fields never replace the heard surfaces or times. Japanese text must be mostly Japanese; Korean text must be mostly Hangul. Always inserts with `published=false`.

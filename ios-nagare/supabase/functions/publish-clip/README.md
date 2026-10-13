@@ -7,7 +7,7 @@ Authorization: Bearer <SUPABASE_ANON_KEY>
 x-admin-token: <ADMIN_TOKEN>
 Content-Type: application/json
 
-{ "id": "clip-id", "action": "publish" | "unpublish" }
+{ "id": "clip-id", "action": "publish" | "unpublish", "language": "ja" | "ko" }
 ```
 
-`publish` refuses (422) if `lines` fail validation. `unpublish` sets `published=false`.
+`language` selects `clips` or `sori_clips`. `publish` refuses (422) if `lines` fail validation for that language. `unpublish` sets `published=false`.

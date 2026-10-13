@@ -13,25 +13,27 @@ synchronized target folder), then fill in:
 
 Any value still starting with `YOUR_` is treated as not configured, and the app runs fully offline.
 
-## Record a marketing video (screen recording)
-From a fresh install / reset: **Splash → Play marketing demo**.
-Or in the app: **Profile → Record marketing demo**.
+## Record marketing videos (screen recording)
+DEBUG only. From splash debug buttons, or **Profile → Debug · Marketing**.
 
-1. Start iOS / Simulator screen recording (Control Center or Simulator → File → Record Screen).
-2. Tap **Begin showcase** (3-2-1 countdown).
-3. Jojo autoplays a silent scripted arc (no caption overlays — add those in edit):
-   - Anime clip in For You + karaoke
-   - Auto word tap + centered lookup card
-   - Scroll down to the Minecraft clip (real feed swipe)
-   - Flashcard with context still / clip art
-4. Stop recording when **Showcase finished** appears. Trim the countdown if you want.
+**Five scripts** (record each as its own cut):
+
+1. **Sakura dark neon** — core For You story  
+2. **Sakura dark** (glow off) — same story  
+3. **Amber dark neon** — same story  
+4. **Amber dark** (glow off) — same story  
+5. **Full app tour** — onboarding → For You → Vocab → Explore → Library → Profile, then every look (Sakura/Amber × dark neon / dark / light)
+
+Core story beats (videos 1–4): For You scrolls **3 clips**, normal→maximum video, word tap → dictionary + paint ladder → save fly animation → flashcard Again/Good.
+
+1. Start Simulator/device screen recording.
+2. Open the script and tap **Begin …**.
+3. Stop when **Showcase finished** appears. Trim outside the app.
 
 ## Adding clips
 The study feed only plays clips whose transcript was taken from the video (`id` starts with `immersion-`).
 `Tools/generate_seed.py` refreshes the dictionary and debug vocab. It does not rewrite `SeedClips.json`.
-New clips come from the `fill-catalog` function: it finds a short public Japanese YouTube video, asks Gemini
-for the lines in that segment, and publishes the YouTube id plus that transcript. The phone plays YouTube.
-It does not download the file.
+New clips come from `fill-catalog`. Each published row is one short exchange: 2–4 spoken lines, about 6–24 seconds, an English translation, and at least two words with definitions. Gemini grades it Beginner, Intermediate, or Advanced. The phone plays the YouTube id. It does not download the file.
 
 ## Optional local clip overrides
 You can place `Jojo/Resources/Clips/{clip.id}.mp4` to force AVPlayer for a specific clip (useful if
@@ -43,11 +45,9 @@ Everything else uses `SimulatedClipPlayer` (animated gradient poster, karaoke cu
 YouTube video is never re-hosted.
 
 ## Supabase
-- Clip library: apply migrations from **`ios-nagare/`** (see below). The app GETs `/rest/v1/clips?published=eq.true&select=*` in the
-  background at launch and every 30 minutes, then merges rows by `id` into SwiftData. Bundled verified clips stay available offline.
-  A remote row replaces the bundle when the id matches. Rows that are no longer published are dropped on the next sync.
+- Clip library: apply migrations from **`ios-nagare/`** (see below). Jojo GETs `/rest/v1/clips?published=eq.true&select=*`. The Korean app reads `/rest/v1/sori_clips` on the same project. Each app syncs in the background at launch and every 30 minutes, then merges rows by `id` into SwiftData. Bundled verified clips stay available offline. A remote row replaces the bundle when the id matches. Rows that are no longer published are dropped on the next sync.
 - Word explanations: `POST /functions/v1/explain-word`. See `supabase/functions/explain-word/README.md`.
-  Lookup order: seed token → local dictionary → SwiftData cache → Edge Function (2.5 s timeout) → static fallback.
+  Lookup order: seed token → local dictionary → SwiftData cache → Edge Function (12 s timeout) → static fallback.
   Live calls are logged locally (`WordExplainService.stats()`: today/total count, average latency).
 
 ## Backend Edge Functions
@@ -60,31 +60,22 @@ supabase db push
 supabase functions deploy explain-word youtube-search analyze-clip publish-clip fill-catalog
 supabase secrets set \
   GEMINI_API_KEY=… \
-  GEMINI_API_KEY2=… \
-  GEMINI_API_KEY3=… \
-  GEMINI_MODEL_EXPLAIN=… \
-  GEMINI_MODEL_ANALYZE=… \
   YOUTUBE_API_KEY=… \
   ADMIN_TOKEN=… \
-  REVENUECAT_SECRET_API_KEY=… \
-  OPENROUTER_API_KEY=… \
-  OPENROUTER_MODEL=thinkingmachines/inkling:free
+  REVENUECAT_SECRET_API_KEY=…
 ```
 
 ### Secrets you must set
 
 | Name | Required | Purpose |
 |------|----------|---------|
-| `GEMINI_API_KEY` | yes | Gemini key for watching YouTube clips |
-| `GEMINI_API_KEY2` | no | Second Gemini key, used when the first is overloaded |
-| `GEMINI_API_KEY3` | no | Third Gemini key, used when the second is overloaded |
-| `GEMINI_MODEL_EXPLAIN` | yes | Fallback model if OpenRouter cannot explain a word |
-| `GEMINI_MODEL_ANALYZE` | yes | Model id for `analyze-clip` and `fill-catalog` |
+| `GEMINI_API_KEY` | yes | Only model key. Transcription, translation, dictionary enrichment, and word explanations all use it. An `sk-or-` value calls Gemini through OpenRouter (Google AI Studio only). Any other value calls Gemini directly. |
 | `YOUTUBE_API_KEY` | yes | YouTube Data API for `youtube-search` |
 | `ADMIN_TOKEN` | yes | Admin functions (`x-admin-token`, compared constant-time) |
 | `REVENUECAT_SECRET_API_KEY` | yes | Entitlement checks for `explain-word` |
-| `OPENROUTER_API_KEY` | no | Free OpenRouter key for word explanations |
-| `OPENROUTER_MODEL` | no | Text model, default `thinkingmachines/inkling:free` |
+| `CRON_FILL_TOKEN` | for the timer | Alternate admin header the catalog jobs send. The first successful `fill-catalog` call stores it in Vault. |
+| `SORI_REVENUECAT_SECRET_API_KEY` | no | Korean entitlement secret. Falls back to `REVENUECAT_SECRET_API_KEY`. |
+| `SORI_ENTITLEMENT_ID` | no | Korean entitlement id. Default `sori_pro`. |
 
 Platform-provided (usually already present in Edge Functions): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`.
 
@@ -98,7 +89,8 @@ Optional limit / version envs:
 | `YOUTUBE_QUOTA_DAILY_CAP` | `8000` | YouTube quota units / UTC day |
 | `REVENUECAT_CACHE_TTL_SEC` | `300` | Entitlement cache TTL (positive and negative) |
 | `PROMPT_VERSION` | `3` | Bumped into explanation cache keys |
-| `OPENROUTER_MODEL` | `thinkingmachines/inkling:free` | OpenRouter model used when a word explanation cannot reach Gemini |
+| `GEMINI_MODEL_EXPLAIN` | `google/gemini-2.5-flash` | Model for word explanations and dictionary enrichment |
+| `GEMINI_MODEL_ANALYZE` | `google/gemini-2.5-flash` | Model for `analyze-clip` and `fill-catalog` |
 | `EXPLAIN_INGRESS_IP_PER_MINUTE` | `60` | Pre-RC per-IP requests / minute |
 | `EXPLAIN_INGRESS_JWT_PER_MINUTE` | `30` | Pre-RC per authenticated JWT sub / minute |
 
@@ -123,13 +115,14 @@ curl -sS "$SUPABASE_URL/functions/v1/youtube-search" \
   -H "Content-Type: application/json" \
   -d '{"query":"日本語 会話","maxResults":5}'
 
-# analyze-clip (admin) — sends YouTube URL to Gemini as video with start/end offsets; always published=false
+# analyze-clip (admin) — Gemini watches the YouTube window; always published=false.
+# Add "language":"ko" to write sori_clips. Anything else writes clips.
 curl -sS "$SUPABASE_URL/functions/v1/analyze-clip" \
   -H "apikey: $SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"videoId":"xxxxxxxxxxx","category":"drama","difficulty":"Beginner","startSec":10,"endSec":40,"title":"Test","channelName":"Test"}'
+  -d '{"videoId":"xxxxxxxxxxx","category":"drama","difficulty":"Beginner","startSec":10,"endSec":28,"title":"Test","channelName":"Test"}'
 
 # publish-clip (admin) — refuses publish if lines fail validation
 curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
@@ -137,7 +130,7 @@ curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"id":"clip-id","action":"publish"}'
+  -d '{"id":"clip-id","action":"publish","language":"ja"}'
 
 # unpublish
 curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
@@ -147,7 +140,8 @@ curl -sS "$SUPABASE_URL/functions/v1/publish-clip" \
   -H "Content-Type: application/json" \
   -d '{"id":"clip-id","action":"unpublish"}'
 
-# fill-catalog (admin) — one new published clip. The app plays it from YouTube; nothing is downloaded.
+# fill-catalog (admin) — publish lesson clips until the time budget or a daily cap.
+# {} writes Japanese clips. {"language":"ko"} writes sori_clips.
 curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
   -H "apikey: $SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
@@ -158,16 +152,11 @@ curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
 
 ## Keeping the feed stocked
 
-You do not download clips. `fill-catalog` searches the YouTube Data API for a short public Japanese video, asks Gemini for a transcript of about 40 seconds, and inserts that YouTube id plus the lines into `clips` with `published = true`. The iOS app syncs those rows and plays them with the YouTube player.
+`fill-catalog` searches YouTube for a short public video the catalog does not have, asks Gemini for one everyday exchange inside an ~18 second window, adds readings and definitions, grades the difficulty, and publishes when the lines are a real lesson. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
 
-A pg_cron job runs that function every 3 hours. It only succeeds after these Vault secrets exist (same admin token as the Edge Function secret, never committed):
+Two pg_cron jobs call it: `fill-jojo-catalog` every 10 minutes with `{}`, and `fill-sori-catalog` at minutes 5, 15, 25, 35, 45, and 55 with `{"language":"ko"}`. The first authorized call stores `project_url`, `admin_token` (the `CRON_FILL_TOKEN`), and `catalog_bearer` in Vault. Do not commit those values.
 
-```sql
-select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
-select vault.create_secret('<ADMIN_TOKEN>', 'admin_token');
-```
-
-The job picks whichever category and level has the fewest published clips. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new rows show up on the next sync.
+The job prefers the level with the fewest published clips and remembers the YouTube page so the next run walks forward. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new rows show up on the next sync.
 
 ## RevenueCat setup
 - Entitlement: `nagare_learn_japanese_pro`
