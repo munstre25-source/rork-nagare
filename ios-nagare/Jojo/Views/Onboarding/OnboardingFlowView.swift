@@ -178,7 +178,7 @@ struct OnboardingFlowView: View {
         case .acquisition:
             AcquisitionStepView { next() }
         case .paywall:
-            PaywallView(allowsDebugBypass: false) {
+            PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {
                 go(to: .welcome)
             }
         case .welcome:

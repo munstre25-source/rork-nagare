@@ -9,13 +9,6 @@ nonisolated struct DayMinutes: Identifiable, Sendable {
     var id: Date { date }
 }
 
-/// A word that just became a card, flying toward the Vocab tab.
-struct WordFlight: Equatable {
-    var id: Int
-    var surface: String
-    var reading: String
-}
-
 /// Destinations opened from the home-screen widget or `jojo://` URLs.
 nonisolated enum DeepLink: String, Equatable, Sendable {
     case feed
@@ -26,6 +19,7 @@ nonisolated enum DeepLink: String, Equatable, Sendable {
 @Observable
 @MainActor
 final class AppModel {
+    static let firstReviewDelay: TimeInterval = 10 * 60
     let container: ModelContainer
     /// Bumped after a marketing demo restores the user's accent, so the open tabs re-resolve colors.
     var paletteEpoch: Int = 0
@@ -51,12 +45,10 @@ final class AppModel {
     var hidesMainTabBar: Bool = false
     /// Feed focus: the capsule is faded while a clip plays. FeedView owns the timer.
     var feedChromeHidden: Bool = false
+    /// Bumps when a future first review becomes due, so the dock and Feed prompt refresh on time.
+    private(set) var reviewAvailabilityRevision: Int = 0
     /// Bumps when follow list changes so the Following feed can refresh.
     private(set) var followRevision: Int = 0
-    /// The newest saved word, so the feed can pop it and fly it to Vocab.
-    var rewardFlight: WordFlight?
-    /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.
-    private(set) var vocabBadgePulse: Int = 0
     /// Toast payload when a saved word reappears in the spoken line.
     var cameBackToast: CameBackPayload?
     /// First-session coach step mirrored for the Feed overlay (`nil` when finished/skipped).
@@ -75,6 +67,7 @@ final class AppModel {
     @ObservationIgnored private var lastCameBackProbeKey: String = ""
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var reviewAvailabilityTask: Task<Void, Never>?
     @ObservationIgnored private var clipsById: [String: Clip] = [:]
     /// Dictionary form or surface form → clip ids that contain it.
     @ObservationIgnored private var clipIdsByWord: [String: [String]] = [:]
@@ -118,6 +111,7 @@ final class AppModel {
         refreshStreakFreezeIfNeeded()
         ensureWeeklyStatsBucket()
         save()
+        scheduleReviewAvailabilityRefresh()
     }
 
     // MARK: Persistence
@@ -706,7 +700,7 @@ final class AppModel {
             word.contextSurface = token.surface
             word.contextClipId = clip.id
             word.contextLineIndex = lineIndex
-            word.dueAt = Date()
+            word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
             context.insert(word)
         }
         word.occurrenceCount += 1
@@ -719,19 +713,14 @@ final class AppModel {
         lookedUpKeys.insert(key)
         wordStates[key] = word.state
         if isNew {
-            vocabBadgePulse += 1
             noteWeeklyWordSaved()
             noteFirstSessionTap()
-            let reading = word.primaryReading
-            rewardFlight = WordFlight(
-                id: vocabBadgePulse,
-                surface: word.surface,
-                reading: reading == word.surface ? "" : reading
-            )
         }
         if persist {
             rememberTaste("save", clip: clip)
             save()
+            refreshFirstReviewReminder()
+            scheduleReviewAvailabilityRefresh()
         }
         return word.occurrenceCount
     }
@@ -765,15 +754,17 @@ final class AppModel {
         case .learning:
             word.state = .learning
             word.intervalStepIndex = 0
-            word.dueAt = Date()
+            word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
         case .new:
             word.state = .new
             word.intervalStepIndex = 0
-            word.dueAt = Date()
+            word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
         }
         word.lastReviewedAt = Date()
         wordStates[word.key] = word.state
         save()
+        refreshFirstReviewReminder()
+        scheduleReviewAvailabilityRefresh()
     }
 
     /// Due cards the learner actually meets, most-seen first.
@@ -789,6 +780,25 @@ final class AppModel {
             }
             .prefix(limit)
             .map(\.key)
+    }
+
+    /// Re-evaluates when the next new card reaches its ten-minute first review.
+    private func scheduleReviewAvailabilityRefresh() {
+        reviewAvailabilityTask?.cancel()
+        let now = Date()
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        guard let nextDue = words
+            .filter({ $0.state == .new && $0.dueAt > now })
+            .map(\.dueAt)
+            .min() else { return }
+        let wait = max(1, nextDue.timeIntervalSince(now))
+        reviewAvailabilityTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled, let self else { return }
+            self.reviewAvailabilityRevision += 1
+            self.refreshAllReminders()
+            self.scheduleReviewAvailabilityRefresh()
+        }
     }
 
     /// POS / JLPT pockets with the most struggling cards.
@@ -1022,7 +1032,7 @@ final class AppModel {
             word.contextSurface = hit.surface
             word.contextClipId = ""
             word.contextLineIndex = 0
-            word.dueAt = Date()
+            word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
             context.insert(word)
         }
         word.occurrenceCount += 1
@@ -1032,8 +1042,11 @@ final class AppModel {
         }
         lookedUpKeys.insert(hit.key)
         wordStates[hit.key] = word.state
-        if isNew { vocabBadgePulse += 1 }
         save()
+        if isNew {
+            refreshFirstReviewReminder()
+            scheduleReviewAvailabilityRefresh()
+        }
         track("capture_word_saved", props: ["surface": hit.surface, "new": String(isNew)])
         return isNew
     }
@@ -1340,6 +1353,24 @@ final class AppModel {
             NotificationService.scheduleStreakAtRisk(streak: currentStreak, clipTitle: teaser?.title, clipId: teaser?.clipId)
         }
         refreshTrialReminder()
+        refreshFirstReviewReminder()
+    }
+
+    /// A new dictionary card becomes reviewable after ten minutes, not mid-immersion.
+    private func refreshFirstReviewReminder() {
+        guard profile.remindersEnabled else {
+            NotificationService.cancelFirstReviewReminder()
+            return
+        }
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        let now = Date()
+        guard let first = words
+            .filter({ $0.state == .new && $0.dueAt > now })
+            .min(by: { $0.dueAt < $1.dueAt }) else {
+            NotificationService.cancelFirstReviewReminder()
+            return
+        }
+        NotificationService.scheduleFirstReviewReminder(dueAt: first.dueAt)
     }
 
     /// Trial-end nudge from the entitlement expiration, including when reminders are turned on after purchase.
@@ -1363,7 +1394,7 @@ final class AppModel {
     var dueWordCount: Int {
         let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
         let now = Date()
-        return words.filter { $0.dueAt <= now }.count
+        return words.filter { $0.state != .known && $0.dueAt <= now }.count
     }
 
     // MARK: Onboarding

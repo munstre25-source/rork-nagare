@@ -1,8 +1,10 @@
 import SwiftUI
+import SwiftData
 
 /// The heart of the app: one clip per page, Kiku-style, with a control to shrink or grow the video.
 struct FeedView: View {
     @Environment(AppModel.self) private var app
+    @Query private var savedWords: [SavedWord]
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var clips: [Clip] = []
@@ -10,6 +12,8 @@ struct FeedView: View {
     @State private var infoClip: Clip?
     @State private var fullscreenClip: Clip?
     @State private var showSearch: Bool = false
+    @State private var showLibrary: Bool = false
+    @State private var reviewSession: ReviewSessionConfig?
     @State private var reportClip: Clip?
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
@@ -49,6 +53,11 @@ struct FeedView: View {
                 )
             }
             header
+            if !dueReviewKeys.isEmpty {
+                dueReviewPrompt
+                    .padding(.horizontal, Spacing.l)
+                    .padding(.bottom, Spacing.s)
+            }
             ZStack {
                 feedPager
                 if let quizClip {
@@ -190,6 +199,12 @@ struct FeedView: View {
         .sheet(isPresented: $showSearch) {
             SearchView()
         }
+        .fullScreenCover(isPresented: $showLibrary) {
+            LibraryView(presentedModally: true)
+        }
+        .fullScreenCover(item: $reviewSession) { config in
+            ReviewSessionView(config: config)
+        }
         .sheet(item: $shadowingClip, onDismiss: resumeIfPossible) { clip in
             ShadowingOverlay(clip: clip)
                 .environment(coordinator)
@@ -202,7 +217,16 @@ struct FeedView: View {
     /// Kiku For You chrome: centered For You / Explore + flag. Goal bar sits above.
     private var header: some View {
         HStack(spacing: 0) {
-            Color.clear.frame(width: 40, height: 40)
+            Button {
+                Haptics.selection()
+                showLibrary = true
+            } label: {
+                Image(systemName: "books.vertical")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, height: 40)
+            }
+            .accessibilityLabel("Library")
             Spacer(minLength: 0)
             CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: onOpenExplore)
             Spacer(minLength: 0)
@@ -233,6 +257,51 @@ struct FeedView: View {
         .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
         .padding(.horizontal, 8)
         .padding(.bottom, 2)
+    }
+
+    /// A due-review invitation belongs beside the Feed, never in front of the next clip.
+    private var dueReviewPrompt: some View {
+        let count = dueReviewCount
+        return Button {
+            reviewSession = ReviewSessionConfig(title: "Review", keys: dueReviewKeys)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "rectangle.stack.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(count == 1 ? "1 card is ready" : "\(count) cards are ready")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.primary)
+                    Text("A quick review will help them stick.")
+                        .font(.caption)
+                        .foregroundStyle(Color.studyMuted)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text("Review")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.sakuraButton)
+            }
+            .padding(10)
+            .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(count == 1 ? "1 card ready to review" : "\(count) cards ready to review")
+    }
+
+    private var dueReviewKeys: [String] {
+        _ = app.reviewAvailabilityRevision
+        let due = Set(app.relevantDueKeys(limit: 10))
+        return savedWords.map(\.key).filter { due.contains($0) }
+    }
+
+    private var dueReviewCount: Int {
+        _ = app.reviewAvailabilityRevision
+        return savedWords.count { $0.state != .known && $0.dueAt <= Date() }
     }
 
     private var feedPager: some View {
@@ -368,7 +437,21 @@ struct FeedView: View {
     }
 
     private func reloadClips() {
-        clips = app.forYouClips
+        let ranked = app.forYouClips
+        #if DEBUG
+        // A bypassed debug session always begins with three verified, playable clips. The
+        // remainder stays personalized, so paging behaves exactly like the live For You feed.
+        if app.purchases.debugBypassActive {
+            let verified = app.showcaseClips(limit: 3)
+            clips = verified + ranked.filter { candidate in
+                !verified.contains(where: { $0.id == candidate.id })
+            }
+        } else {
+            clips = ranked
+        }
+        #else
+        clips = ranked
+        #endif
         currentId = clips.first(where: { $0.id == currentId })?.id ?? clips.first?.id
     }
 

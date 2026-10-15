@@ -44,6 +44,23 @@ struct PaywallView: View {
                 nativePaywall
             }
         }
+        #if DEBUG
+        .overlay(alignment: .bottom) {
+            if allowsDebugBypass {
+                Button("DEBUG · Skip paywall") {
+                    purchases.activateDebugBypass()
+                    onSubscribed()
+                }
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.78))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(Color.black.opacity(0.48), in: Capsule())
+                .padding(.bottom, 14)
+                .accessibilityHint("Available only in DEBUG builds")
+            }
+        }
+        #endif
             .alert("Restore Purchases", isPresented: Binding(
                 get: { restoreAlert != nil },
                 set: { if !$0 { restoreAlert = nil } }

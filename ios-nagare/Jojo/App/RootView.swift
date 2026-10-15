@@ -14,7 +14,7 @@ struct RootView: View {
                 // Returning user whose subscription lapsed: hard paywall, no tabs.
                 ZStack {
                     JojoBrandBackground(scene: .templeDusk, showsHills: false)
-                    PaywallView(allowsDebugBypass: false) {}
+                    PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {}
                         .frame(maxWidth: 560)
                 }
                 .environment(\.brandSurface, .night)
@@ -45,7 +45,6 @@ struct MainTabView: View {
     @Query private var savedWords: [SavedWord]
     @State private var showingExplore = false
     @State private var welcome: (due: Int, streak: Int)?
-    @State private var flight: WordFlight?
 
     /// True only on For You, once the learner has settled into a playing clip.
     private var focusCapsuleHidden: Bool {
@@ -137,21 +136,8 @@ struct MainTabView: View {
                     WelcomeHomeBurst(due: welcome.due, streak: welcome.streak)
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
-                if let flight {
-                    WordFlightView(surface: flight.surface, reading: flight.reading)
-                        .id(flight.id)
-                        .transition(.opacity)
-                }
             }
             .allowsHitTesting(false)
-        }
-        .onChange(of: app.rewardFlight) { _, next in
-            guard let next else { return }
-            flight = next
-            Task {
-                try? await Task.sleep(for: .milliseconds(1100))
-                if flight?.id == next.id { flight = nil }
-            }
         }
         .onAppear {
             if let home = app.claimWelcomeHome() {

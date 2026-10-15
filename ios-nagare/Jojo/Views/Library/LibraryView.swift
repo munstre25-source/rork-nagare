@@ -3,6 +3,9 @@ import SwiftUI
 /// Watched / Saved / Later shelves — Yomi-style Library separate from the infinite feed.
 struct LibraryView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+    /// Feed presents Library as a focused destination; a standalone tab does not need a close button.
+    var presentedModally: Bool = false
     @State private var shelf: LibraryShelf = .watched
     @State private var playing: Clip?
 
@@ -29,6 +32,19 @@ struct LibraryView: View {
             .background(Color.canvas.ignoresSafeArea())
             .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                if presentedModally {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.body.weight(.semibold))
+                        }
+                        .accessibilityLabel("Close Library")
+                    }
+                }
+            }
             .fullScreenCover(item: $playing) { clip in
                 ClipPlayerScreen(clip: clip)
             }

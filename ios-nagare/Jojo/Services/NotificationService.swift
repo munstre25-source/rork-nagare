@@ -5,6 +5,7 @@ import UserNotifications
 enum NotificationService {
     private static let dailyId = "nagare.daily"
     private static let reviewId = "nagare.review.due"
+    private static let firstReviewId = "nagare.review.first"
     private static let atRiskId = "nagare.streak.atrisk"
     private static let trialId = "nagare.trial.reminder"
 
@@ -79,6 +80,28 @@ enum NotificationService {
         }
     }
 
+    /// One immediate, local nudge when the first dictionary card becomes reviewable.
+    static func scheduleFirstReviewReminder(dueAt: Date) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [firstReviewId])
+        let interval = dueAt.timeIntervalSinceNow
+        guard interval > 1 else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Your new card is ready"
+        content.body = "A quick review will help this word stick."
+        content.sound = .default
+        content.userInfo = ["deepLink": "jojo://review"]
+        add(UNNotificationRequest(
+            identifier: firstReviewId,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        ))
+    }
+
+    static func cancelFirstReviewReminder() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [firstReviewId])
+    }
+
     /// Gentle streak-at-risk nudge at 21:30 today if the goal hasn't been met yet.
     static func scheduleStreakAtRisk(streak: Int, clipTitle: String? = nil, clipId: String? = nil) {
         let center = UNUserNotificationCenter.current()
@@ -136,7 +159,7 @@ enum NotificationService {
     }
 
     static func cancelReminders() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, atRiskId, trialId])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, firstReviewId, atRiskId, trialId])
     }
 
     static func cancelAll() {
