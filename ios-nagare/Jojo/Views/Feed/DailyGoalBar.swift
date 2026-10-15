@@ -42,13 +42,19 @@ struct DailyGoalBar: View {
 
     var body: some View {
         HStack(spacing: Spacing.m) {
-            Text(app.isGoalReached ? "Goal done" : "\(app.minutesLeft) min left")
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(.primary.opacity(0.9))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .contentTransition(.numericText())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(app.isGoalReached ? "Goal done" : "\(app.minutesLeft) min left")
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary.opacity(0.9))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .contentTransition(.numericText())
+                Text(app.isGoalReached ? "Nice work today" : "\(app.clipsLeftToday) clip\(app.clipsLeftToday == 1 ? "" : "s") left")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Color.sakuraPink)
+                    .textCase(.uppercase)
+            }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.1))
@@ -80,7 +86,11 @@ struct DailyGoalBar: View {
         .padding(.horizontal, Spacing.l)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Daily goal")
-        .accessibilityValue(app.isGoalReached ? "Completed" : "\(app.minutesLeft) minutes left of \(app.profile.dailyGoalMinutes)")
+        .accessibilityValue(
+            app.isGoalReached
+                ? "Completed"
+                : "\(app.minutesLeft) minutes left, about \(app.clipsLeftToday) clips, of \(app.profile.dailyGoalMinutes)"
+        )
         .onChange(of: app.goalCelebrationCount) { _, _ in celebrate() }
     }
 

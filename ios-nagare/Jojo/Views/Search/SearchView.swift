@@ -71,11 +71,13 @@ struct SearchView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Search.")
                     .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(LearningInk.japanese)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Text("See a word, a grammar point, or a phrase used in real clips.")
+                    .textGlow(LearningInk.glow, level: app.profile.glow)
+                Text("Search a word, then hear it in a real clip.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.studyMuted)
                     .lineLimit(2)
                 DesignSearchField(text: $query, placeholder: "Search kanji, kana or romaji", focused: $isFocused)
                 if isFocused {
@@ -94,7 +96,6 @@ struct SearchView: View {
         .scrollDismissesKeyboard(.interactively)
         .scrollIndicators(.hidden)
         .background(Color.studyPage.ignoresSafeArea())
-        .environment(\.colorScheme, .light)
     }
 
     @ViewBuilder
@@ -111,6 +112,20 @@ struct SearchView: View {
                 .padding(.top, 12)
         } else {
             resultSummary
+            if scope == .all || scope == .words, !wordHits.isEmpty {
+                resultSection(
+                    title: "Words (\(wordHits.count))",
+                    expanded: showAllWords,
+                    canExpand: wordHits.count > 4,
+                    expandTitle: "See all words"
+                ) {
+                    showAllWords.toggle()
+                } content: {
+                    ForEach(visibleWords) { hit in
+                        DictionaryResultRow(hit: hit)
+                    }
+                }
+            }
             if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
                 resultSection(
                     title: "Clips (\(sentenceHits.count))",
@@ -131,20 +146,6 @@ struct SearchView: View {
                     }
                 }
             }
-            if scope == .all || scope == .words, !wordHits.isEmpty {
-                resultSection(
-                    title: "Words (\(wordHits.count))",
-                    expanded: showAllWords,
-                    canExpand: wordHits.count > 4,
-                    expandTitle: "See all words"
-                ) {
-                    showAllWords.toggle()
-                } content: {
-                    ForEach(visibleWords) { hit in
-                        DictionaryResultRow(hit: hit)
-                    }
-                }
-            }
             if scope == .all || scope == .grammar, !grammarHits.isEmpty {
                 resultSection(
                     title: "Grammar (\(grammarHits.count))",
@@ -162,11 +163,11 @@ struct SearchView: View {
 
     private var resultSummary: some View {
         var parts: [String] = []
-        if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
-            parts.append(sentenceHits.count == 1 ? "1 clip" : "\(sentenceHits.count) clips")
-        }
         if scope == .all || scope == .words, !wordHits.isEmpty {
             parts.append(wordHits.count == 1 ? "1 word" : "\(wordHits.count) words")
+        }
+        if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
+            parts.append(sentenceHits.count == 1 ? "1 clip" : "\(sentenceHits.count) clips")
         }
         if scope == .all || scope == .grammar, !grammarHits.isEmpty {
             parts.append(grammarHits.count == 1 ? "1 grammar point" : "\(grammarHits.count) grammar")

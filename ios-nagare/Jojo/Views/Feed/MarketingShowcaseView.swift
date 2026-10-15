@@ -2,107 +2,99 @@
 import SwiftUI
 import SwiftData
 
-/// Which silent marketing walkthrough to screen-record.
-/// Each walkthrough has a light and a dark cut. Videos 1 and 2 use the accent picked on the prep screen. Video 3 visits Sakura, Lavender, and Orange.
+/// Silent marketing walkthroughs for screen-recording.
+/// Four core cuts tell the same For You story on Sakura/Amber × neon/non-neon dark.
+/// One full tour walks onboarding → core tabs → every appearance (dark neon, non-neon, light).
 nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
-    case forYouLight
-    case forYouDark
-    case exploreVocabLight
-    case exploreVocabDark
-    case themeTourLight
-    case themeTourDark
+    case coreSakuraDarkNeon
+    case coreSakuraDarkOff
+    case coreAmberDarkNeon
+    case coreAmberDarkOff
+    case fullTour
 
     var id: String { rawValue }
 
-    enum Kind { case forYou, exploreVocab, themeTour }
+    enum Kind { case core, fullTour }
 
     var kind: Kind {
         switch self {
-        case .forYouLight, .forYouDark: .forYou
-        case .exploreVocabLight, .exploreVocabDark: .exploreVocab
-        case .themeTourLight, .themeTourDark: .themeTour
+        case .fullTour: .fullTour
+        default: .core
         }
     }
 
     var scheme: JojoScheme {
         switch self {
-        case .forYouLight, .exploreVocabLight, .themeTourLight: .light
-        case .forYouDark, .exploreVocabDark, .themeTourDark: .dark
+        case .fullTour: .dark
+        default: .dark
+        }
+    }
+
+    /// Locked accent for core cuts. Full tour cycles accents itself.
+    var accent: AccentTheme {
+        switch self {
+        case .coreSakuraDarkNeon, .coreSakuraDarkOff, .fullTour: .sakura
+        case .coreAmberDarkNeon, .coreAmberDarkOff: .amber
+        }
+    }
+
+    /// Neon = `.glow`; non-neon = `.off`.
+    var glow: GlowLevel {
+        switch self {
+        case .coreSakuraDarkNeon, .coreAmberDarkNeon: .glow
+        case .coreSakuraDarkOff, .coreAmberDarkOff: .off
+        case .fullTour: .glow
         }
     }
 
     var videoLabel: String {
-        switch kind {
-        case .forYou: return "Video 1"
-        case .exploreVocab: return "Video 2"
-        case .themeTour: return "Video 3"
+        switch self {
+        case .coreSakuraDarkNeon: return "Video 1"
+        case .coreSakuraDarkOff: return "Video 2"
+        case .coreAmberDarkNeon: return "Video 3"
+        case .coreAmberDarkOff: return "Video 4"
+        case .fullTour: return "Video 5"
         }
     }
 
     var title: String {
-        let name: String
-        switch kind {
-        case .forYou: name = "Video 1 · For You"
-        case .exploreVocab: name = "Video 2 · Explore & Vocab"
-        case .themeTour: name = "Video 3 · Themes"
-        }
-        return "\(name) · \(scheme.title)"
-    }
-
-    /// Same walkthrough, the other paper.
-    var flippedScheme: MarketingScript {
         switch self {
-        case .forYouLight: .forYouDark
-        case .forYouDark: .forYouLight
-        case .exploreVocabLight: .exploreVocabDark
-        case .exploreVocabDark: .exploreVocabLight
-        case .themeTourLight: .themeTourDark
-        case .themeTourDark: .themeTourLight
+        case .coreSakuraDarkNeon: return "Video 1 · Sakura dark neon"
+        case .coreSakuraDarkOff: return "Video 2 · Sakura dark"
+        case .coreAmberDarkNeon: return "Video 3 · Amber dark neon"
+        case .coreAmberDarkOff: return "Video 4 · Amber dark"
+        case .fullTour: return "Video 5 · Full app tour"
         }
     }
 
-    func subtitle(accent: AccentTheme) -> String {
-        let page = scheme == .light ? "white" : "black"
+    var subtitle: String {
         switch kind {
-        case .forYou:
-            return "\(accent.title) colors. The convenience-store order and the Genki dialogue play on the \(page) For You page, with the words those videos actually say."
-        case .exploreVocab:
-            return "\(accent.title) colors. Explore opens Listening on \(page), then Vocab’s known count, clip search, and the review card."
-        case .themeTour:
-            return "Profile’s theme and text glow, then Sakura, Lavender, and Orange on Feed, Vocab, and Profile. \(scheme.title) paper."
+        case .core:
+            let neon = glow == .off ? "glow off" : "neon glow"
+            return "Same core story on \(accent.title) dark (\(neon)): For You scrolls 3 clips, word tap → dictionary → save animation → flashcards."
+        case .fullTour:
+            return "Onboarding → For You → dictionary → Vocab → Explore → Profile/settings, then every look: dark neon, dark non-neon, and light (Sakura + Amber)."
         }
     }
 
-    func beats(accent: AccentTheme) -> [String] {
-        let page = scheme == .light ? "white" : "black"
-        let ink = accent.title
+    var beats: [String] {
         switch kind {
-        case .forYou:
+        case .core:
             return [
-                "The usual video, then the control enlarges it so the words sit on the picture",
-                "\(ink) underlines, with the text glow on the words",
-                "A known word uses the \(ink) known color",
-                "Controls fade, then a touch brings them back",
-                "Tap a word — the dictionary card opens in \(ink)",
-                "Swipe to the second clip",
-                "Review card uses the same \(ink) word, reading, and meaning colors"
+                "For You opens in \(accent.title) dark\(glow == .off ? "" : " neon")",
+                "Normal → maximum video so karaoke sits on the picture",
+                "Scroll through three clips",
+                "Tap a word — dictionary card, conjugation, paint ladder",
+                "Flashcard is born and flies to Vocab",
+                "Review cards: reveal, Again / Good"
             ]
-        case .exploreVocab:
+        case .fullTour:
             return [
-                "Explore’s learning paths, in \(ink)",
-                "Open Listening",
-                "Two clips play on \(page), karaoke glowing in \(ink)",
-                "Vocab opens on words you know, what’s due, and how often each word was met",
-                "Search opens the clips where that word is said, with the show and its JLPT level",
-                "Review card: \(ink) word, sentence, and the clip it came from"
-            ]
-        case .themeTour:
-            return [
-                "Profile opens on the theme control",
-                "Text glow steps from Soft to Liquid, with 光 breathing",
-                "Sakura across Feed, Vocab, and Profile",
-                "Switch to Lavender and visit the three tabs",
-                "Switch to Orange and visit the three tabs"
+                "Onboarding look: name the product, then pick a look",
+                "For You core: scroll, tap, save, flashcards",
+                "Vocab, Explore, and Profile / settings",
+                "Sakura dark neon → dark glow-off → light",
+                "Amber dark neon → dark glow-off → light"
             ]
         }
     }
@@ -110,10 +102,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
 
 /// Full-screen scripted product showcase for screen-recording Jojo marketing clips.
 /// DEBUG builds only — never shown in App Store / production UI.
-/// Two clean arcs matching Kiku-style ads: For You immersion, and Explore → Vocab → cards.
 struct MarketingShowcaseView: View {
-    var initialScript: MarketingScript = .forYouDark
-    /// Accent painted for this recording. Profile passes the theme the learner has selected.
+    var initialScript: MarketingScript = .coreSakuraDarkNeon
+    /// Accent hint from Profile. Core scripts lock their own accent; full tour starts here.
     var accent: AccentTheme = .sakura
     /// When true, skips the picker and starts the walkthrough immediately (launch play buttons).
     var autoBegin: Bool = false
@@ -122,8 +113,9 @@ struct MarketingShowcaseView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var phase: Phase = .prep
-    @State private var selectedScript: MarketingScript = .forYouDark
+    @State private var selectedScript: MarketingScript = .coreSakuraDarkNeon
     @State private var demoAccent: AccentTheme = .sakura
+    @State private var demoScheme: JojoScheme = .dark
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var feedClips: [Clip] = []
@@ -158,9 +150,11 @@ struct MarketingShowcaseView: View {
     @State private var profileAnchor: String?
     /// Word the clip-search beat looks up.
     @State private var demoSearchQuery: String = ""
+    /// Full-tour onboarding panel index.
+    @State private var onboardingBeat: Int = 0
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case feed, explore, watching, vocab, search, analytics, flashcard }
+    private enum Stage { case onboarding, feed, explore, watching, vocab, search, analytics, flashcard, library }
 
     var body: some View {
         ZStack {
@@ -170,26 +164,25 @@ struct MarketingShowcaseView: View {
                 prepScreen
             case .running:
                 showcaseStage
-                    .id("\(demoAccent.rawValue)-\(selectedScript.scheme.rawValue)")
+                    .id("\(demoAccent.rawValue)-\(demoScheme.rawValue)")
             case .done:
                 doneScreen
             }
         }
         .environment(coordinator)
         .environment(lookup)
-        .preferredColorScheme(selectedScript.scheme.colorScheme)
+        .preferredColorScheme(demoScheme.colorScheme)
         .onAppear {
             selectedScript = initialScript
-            demoAccent = accent
+            demoAccent = initialScript.kind == .core ? initialScript.accent : accent
             if parkedAccent == nil {
                 parkedAccent = app.profile.theme
                 parkedScheme = app.profile.scheme
                 parkedGlow = app.profile.glow
             }
-            JojoPalette.activate(theme: accent, scheme: initialScript.scheme)
+            applyLook(accent: demoAccent, scheme: initialScript.scheme, glow: initialScript.glow)
             if autoBegin, !didAutoBegin {
                 didAutoBegin = true
-                // Let the cover present, then start.
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(350))
                     beginShowcase(initialScript)
@@ -197,7 +190,8 @@ struct MarketingShowcaseView: View {
             }
         }
         .onChange(of: selectedScript) { _, script in
-            JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
+            demoAccent = script.kind == .core ? script.accent : demoAccent
+            applyLook(accent: demoAccent, scheme: script.scheme, glow: script.glow)
         }
         .onDisappear {
             scriptTask?.cancel()
@@ -240,32 +234,11 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Pick Sakura, Lavender, or Orange, then a light or dark walkthrough. Video 3 visits all three themes. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Four theme cuts of the same For You story, plus one full-app tour. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.s)
-
-            HStack(spacing: Spacing.s) {
-                ForEach(AccentTheme.allCases) { accent in
-                    Button {
-                        Haptics.selection()
-                        demoAccent = accent
-                        JojoPalette.activate(theme: accent, scheme: selectedScript.scheme)
-                    } label: {
-                        Text(accent.title)
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(demoAccent == accent ? .white : .white.opacity(0.7))
-                            .frame(maxWidth: .infinity, minHeight: 40)
-                            .background(
-                                demoAccent == accent ? Color.sakuraButton : Color.white.opacity(0.08),
-                                in: Capsule()
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, Spacing.l)
 
             ScrollView {
             VStack(spacing: Spacing.m) {
@@ -273,6 +246,7 @@ struct MarketingShowcaseView: View {
                     Button {
                         Haptics.selection()
                         selectedScript = script
+                        demoAccent = script.accent
                     } label: {
                         VStack(alignment: .leading, spacing: Spacing.s) {
                             HStack {
@@ -283,7 +257,7 @@ struct MarketingShowcaseView: View {
                                 Image(systemName: selectedScript == script ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(selectedScript == script ? Color(hex: "#FF7EB8") : .white.opacity(0.35))
                             }
-                            Text(script.subtitle(accent: demoAccent))
+                            Text(script.subtitle)
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
                                 .multilineTextAlignment(.leading)
@@ -305,7 +279,7 @@ struct MarketingShowcaseView: View {
             .padding(.horizontal, Spacing.l)
 
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(selectedScript.beats(accent: demoAccent).enumerated()), id: \.offset) { i, beat in
+                ForEach(Array(selectedScript.beats.enumerated()), id: \.offset) { i, beat in
                     scriptBeatRow("\(i + 1)", beat)
                 }
             }
@@ -314,7 +288,6 @@ struct MarketingShowcaseView: View {
             .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .padding(.horizontal, Spacing.l)
             .animation(.snappy, value: selectedScript)
-            .animation(.snappy, value: demoAccent)
             }
             .scrollIndicators(.hidden)
 
@@ -323,7 +296,7 @@ struct MarketingShowcaseView: View {
                 Haptics.medium()
                 beginShowcase(selectedScript)
             } label: {
-                Label("Begin \(selectedScript.videoLabel) · \(selectedScript.kind == .themeTour ? "All themes" : demoAccent.title) · \(selectedScript.scheme.title)", systemImage: "play.fill")
+                Label("Begin \(selectedScript.title)", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, Spacing.l)
@@ -352,14 +325,16 @@ struct MarketingShowcaseView: View {
         VStack(spacing: 0) {
             Group {
                 switch stage {
+                case .onboarding:
+                    onboardingChrome
                 case .feed:
                     feedChrome
                 case .explore:
-                    ExploreHomeView(onOpenFeed: {}, scriptedPath: explorePath, featuredClips: feedPair)
+                    ExploreHomeView(onOpenFeed: {}, scriptedPath: explorePath, featuredClips: feedReel)
                 case .watching:
-                    if let first = feedPair.first {
+                    if let first = feedReel.first {
                         ClipQueueScreen(
-                            clips: feedPair,
+                            clips: feedReel,
                             startId: first.id,
                             startLine: richestLine(on: first).index,
                             loopLine: true,
@@ -374,6 +349,8 @@ struct MarketingShowcaseView: View {
                     VocabView()
                 case .search:
                     SearchView(initialQuery: demoSearchQuery, embedded: true)
+                case .library:
+                    LibraryView()
                 case .analytics:
                     ProfileView()
                         .environment(\.marketingScrollsToTheme, themeMenu != nil)
@@ -393,7 +370,7 @@ struct MarketingShowcaseView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(.easeInOut(duration: 0.4), value: stage)
 
-            if stage != .flashcard && stage != .watching {
+            if stage != .flashcard && stage != .watching && stage != .onboarding {
                 showcaseTabBar
                     .opacity(stage == .feed && !watchChromeVisible ? 0 : 1)
                     .offset(y: stage == .feed && !watchChromeVisible ? 14 : 0)
@@ -431,7 +408,8 @@ struct MarketingShowcaseView: View {
     }
 
     private var showcaseTabBar: some View {
-        KikuTabBar(selection: $tabHighlight, vocabBadge: flashWords.count)
+        JojoDock(selection: $tabHighlight, vocabBadge: flashWords.count)
+            .padding(.horizontal, 16)
             .padding(.bottom, 6)
     }
 
@@ -495,7 +473,7 @@ struct MarketingShowcaseView: View {
             GeometryReader { geo in
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(spacing: 0) {
-                        ForEach(feedPair) { clip in
+                        ForEach(feedReel) { clip in
                             ClipStageView(
                                 clip: clip,
                                 showsChannelRow: true,
@@ -519,9 +497,46 @@ struct MarketingShowcaseView: View {
         .background(Color.canvas.ignoresSafeArea())
     }
 
-    /// The two verified clips. Their lines are the words the video says.
-    private var feedPair: [Clip] {
-        Array(feedClips.prefix(2))
+    /// Up to three verified clips for the For You reel.
+    private var feedReel: [Clip] {
+        Array(feedClips.prefix(3))
+    }
+
+    /// Full-tour onboarding panels (silent, for screen recording).
+    private var onboardingChrome: some View {
+        let panels: [(title: String, detail: String)] = [
+            ("Jojo 流れ", "Scroll, listen, and flow into Japanese."),
+            ("Tap any word", "The dictionary opens on the clip. Paint how well you know it."),
+            ("Flashcards grow", "Every tap becomes a card. Review keeps words sticky."),
+            ("Pick your look", "Sakura or Amber. Neon glow or clean ink. Light or dark.")
+        ]
+        let panel = panels[min(onboardingBeat, panels.count - 1)]
+        return ZStack {
+            JojoBrandBackground(scene: .templeDusk, showsHills: true)
+            VStack(spacing: 18) {
+                JojoMascot(height: 140, floats: true, pose: .cheer)
+                Text(panel.title)
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                Text(panel.detail)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.82))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+                HStack(spacing: 8) {
+                    ForEach(0..<panels.count, id: \.self) { i in
+                        Capsule()
+                            .fill(i == onboardingBeat ? Color.sakuraPink : Color.white.opacity(0.25))
+                            .frame(width: i == onboardingBeat ? 22 : 8, height: 6)
+                    }
+                }
+                .padding(.top, 8)
+            }
+            .padding(24)
+        }
+        .environment(\.brandSurface, .night)
+        .environment(\.colorScheme, .dark)
     }
 
     // MARK: Flashcard
@@ -620,13 +635,16 @@ struct MarketingShowcaseView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Spacing.xl)
             Spacer()
-            Button("Record the \(selectedScript.flippedScheme.scheme.title.lowercased()) version") {
-                selectedScript = selectedScript.flippedScheme
-                phase = .prep
-                resetShowcaseState()
+            if let next = nextCoreScript(after: selectedScript) {
+                Button("Record \(next.title)") {
+                    selectedScript = next
+                    demoAccent = next.accent
+                    phase = .prep
+                    resetShowcaseState()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, Spacing.l)
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .padding(.horizontal, Spacing.l)
             Button("Run again") {
                 phase = .prep
                 resetShowcaseState()
@@ -645,7 +663,22 @@ struct MarketingShowcaseView: View {
     // MARK: Scripts
 
     private func demoFeedClips() -> [Clip] {
-        app.showcaseClips(limit: 2)
+        app.showcaseClips(limit: 3)
+    }
+
+    private func applyLook(accent: AccentTheme, scheme: JojoScheme, glow: GlowLevel) {
+        demoAccent = accent
+        demoScheme = scheme
+        app.setScheme(scheme)
+        app.setTheme(accent)
+        app.setGlowLevel(glow)
+        JojoPalette.activate(theme: accent, scheme: scheme)
+    }
+
+    private func nextCoreScript(after script: MarketingScript) -> MarketingScript? {
+        let core: [MarketingScript] = [.coreSakuraDarkNeon, .coreSakuraDarkOff, .coreAmberDarkNeon, .coreAmberDarkOff]
+        guard let idx = core.firstIndex(of: script), idx + 1 < core.count else { return nil }
+        return core[idx + 1]
     }
 
     private func demoVocabFallback() -> [SavedWord] {
@@ -693,27 +726,28 @@ struct MarketingShowcaseView: View {
         currentId = first.id
         flashWords = demoVocabFallback()
         app.markVocabSaveCoachSeen()
-        stage = script.kind == .themeTour ? .analytics : (script.kind == .forYou ? .feed : .explore)
-        tabHighlight = script.kind == .themeTour ? .profile : .feed
+        onboardingBeat = 0
+        demoAccent = script.accent
+        applyLook(accent: script.accent, scheme: script.scheme, glow: script.glow)
+        stage = script.kind == .fullTour ? .onboarding : .feed
+        tabHighlight = .feed
         watchChromeVisible = true
         demoVideoExpanded = false
-        JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
         phase = .running
         track("marketing_showcase_started", props: [
             "script": script.rawValue,
-            "accent": demoAccent.rawValue,
+            "accent": script.accent.rawValue,
+            "glow": script.glow.rawValue,
             "clips": clips.map(\.id).joined(separator: ","),
         ])
         scriptTask?.cancel()
         scriptTask = Task { @MainActor in
-            JojoPalette.activate(theme: demoAccent, scheme: script.scheme)
+            applyLook(accent: script.accent, scheme: script.scheme, glow: script.glow)
             switch script.kind {
-            case .forYou:
-                await runForYouScript(clips: clips, first: first)
-            case .exploreVocab:
-                await runExploreVocabScript(clips: clips, first: first)
-            case .themeTour:
-                await runThemeTour(first: first)
+            case .core:
+                await runCoreForYouScript(clips: clips, first: first, glow: script.glow, restoreGlow: true)
+            case .fullTour:
+                await runFullTour(clips: clips, first: first)
             }
             guard !Task.isCancelled else { return }
             coordinator.stop()
@@ -722,246 +756,197 @@ struct MarketingShowcaseView: View {
         }
     }
 
-    /// Video 1: For You immersion → tap → swipe → flashcard reveal.
-    private func runForYouScript(clips: [Clip], first: Clip) async {
+    /// Core marketing cut: For You scroll (3) → tap/dictionary/save → flashcards.
+    private func runCoreForYouScript(clips: [Clip], first: Clip, glow: GlowLevel, restoreGlow: Bool) async {
         tabHighlight = .feed
         stage = .feed
+        app.setGlowLevel(glow)
         let focus = richestLine(on: first)
         let known = markDemoKnown(on: first, lineIndex: focus.index)
-        app.setGlowLevel(.glow)
         coordinator.activate(first, startLine: focus.index, loopLine: true)
-        try? await Task.sleep(for: .milliseconds(1600))
+        try? await Task.sleep(for: .milliseconds(1500))
         guard !Task.isCancelled else { return }
+
+        // Normal → maximum so karaoke sits on the picture.
         withAnimation(.snappy) { demoVideoExpanded = true }
-        try? await Task.sleep(for: .milliseconds(1800))
+        try? await Task.sleep(for: .milliseconds(1700))
         guard !Task.isCancelled else { return }
         await fadeDemoChrome()
-        try? await Task.sleep(for: .milliseconds(1400))
+        try? await Task.sleep(for: .milliseconds(1200))
         guard !Task.isCancelled else { return }
         await revealDemoChrome()
 
-        // Tap a different word so the green box and the new card are both on screen.
         var savedFromTap: SavedWord?
         let line = focus.line
         let candidates = line.tokens.enumerated().filter { $0.element.tappable && !$0.element.definitions.isEmpty }
-        let rich = candidates.filter { $0.element.surface != known?.surface && !$0.element.definitions.isEmpty }
-        let pick = rich.first { $0.element.surface != known?.surface } ?? candidates.first
+        let rich = candidates.filter { $0.element.surface != known?.surface }
+        let pick = rich.first ?? candidates.first
         if let pick {
             let token = pick.element
             lookup.previewOnly = false
             withAnimation(Motion.popupSpring) {
                 lookup.select(token: token, tokenIndex: pick.offset, lineIndex: focus.index, clip: first, app: app)
             }
-                bornCard = BornCardPayload(
-                    surface: token.surface,
-                    romaji: token.romaji,
-                    gloss: token.definitions.first ?? ""
-                )
-                try? await Task.sleep(for: .milliseconds(3000))
-                guard !Task.isCancelled else { return }
-                let key = AppModel.wordKey(for: token)
-                savedFromTap = (try? app.context.fetch(
-                    FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
-                ))?.first
-                withAnimation(Motion.popupSpring) { lookup.dismiss() }
-                lookup.previewOnly = true
-                try? await Task.sleep(for: .milliseconds(450))
-                guard !Task.isCancelled else { return }
-        }
-
-        // Swipe to next clip
-        if let second = clips.dropFirst().first {
-            let secondFocus = richestLine(on: second)
-            withAnimation(.easeInOut(duration: 0.55)) { currentId = second.id }
-            try? await Task.sleep(for: .milliseconds(700))
-            guard !Task.isCancelled else { return }
-            coordinator.activate(second, startLine: secondFocus.index, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(800))
-            guard !Task.isCancelled else { return }
-            await fadeDemoChrome()
-            try? await Task.sleep(for: .milliseconds(1600))
-            guard !Task.isCancelled else { return }
-            await revealDemoChrome()
-        }
-
-        // Flashcard ending
-        let word = savedFromTap ?? flashWords.first
-        await playFlashcardSequence(startingWith: word, count: 2)
-        restoreParkedGlow()
-    }
-
-    /// Video 2: Explore home → Listening → two clips → Vocab → flashcards.
-    private func runExploreVocabScript(clips: [Clip], first: Clip) async {
-        tabHighlight = .feed
-        explorePath = nil
-        app.setGlowLevel(.glow)
-        let focusClip = feedPair.first ?? first
-        let focus = richestLine(on: focusClip)
-        _ = markDemoKnown(on: focusClip, lineIndex: focus.index)
-        withAnimation(.easeInOut(duration: 0.35)) { stage = .explore }
-        try? await Task.sleep(for: .milliseconds(2200))
-        guard !Task.isCancelled else { return }
-
-        withAnimation(.easeInOut(duration: 0.45)) { explorePath = .listening }
-        try? await Task.sleep(for: .milliseconds(2200))
-        guard !Task.isCancelled else { return }
-
-        let source = feedPair.isEmpty ? clips : feedPair
-        let pair = source.isEmpty ? [first] : Array(source.prefix(2))
-        let pick = pair[0]
-        watchId = pick.id
-        withAnimation(.easeInOut(duration: 0.4)) { stage = .watching }
-        try? await Task.sleep(for: .milliseconds(2400))
-        guard !Task.isCancelled else { return }
-
-        if pair.count > 1 {
-            withAnimation(.easeInOut(duration: 0.55)) { watchId = pair[1].id }
-            try? await Task.sleep(for: .milliseconds(700))
-            guard !Task.isCancelled else { return }
-            let other = richestLine(on: pair[1])
-            coordinator.activate(pair[1], startLine: other.index, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(1900))
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.45)) { watchId = pick.id }
-        }
-
-        var savedFromClip: SavedWord?
-        let spoken = richestLine(on: pick)
-        coordinator.activate(pick, startLine: spoken.index, loopLine: true)
-        let line = spoken.line
-        if let idx = line.tokens.firstIndex(where: { $0.tappable && !$0.definitions.isEmpty && $0.surface != line.tokens.first(where: \.tappable)?.surface })
-            ?? line.tokens.firstIndex(where: { $0.tappable && !$0.definitions.isEmpty }) {
-            let token = line.tokens[idx]
-            lookup.previewOnly = false
-            lookup.select(token: token, tokenIndex: idx, lineIndex: spoken.index, clip: pick, app: app)
             bornCard = BornCardPayload(
                 surface: token.surface,
                 romaji: token.romaji,
                 gloss: token.definitions.first ?? ""
             )
-            try? await Task.sleep(for: .milliseconds(3000))
+            try? await Task.sleep(for: .milliseconds(2800))
+            guard !Task.isCancelled else { return }
+            // Paint ladder beat on the open card.
+            app.paint(token: token, explanation: lookup.explanation, clip: first, lineIndex: focus.index, mark: .learning)
+            try? await Task.sleep(for: .milliseconds(900))
+            guard !Task.isCancelled else { return }
+            app.paint(token: token, explanation: lookup.explanation, clip: first, lineIndex: focus.index, mark: .familiar)
+            try? await Task.sleep(for: .milliseconds(900))
             guard !Task.isCancelled else { return }
             let key = AppModel.wordKey(for: token)
-            savedFromClip = (try? app.context.fetch(
+            savedFromTap = (try? app.context.fetch(
                 FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
             ))?.first
             withAnimation(Motion.popupSpring) { lookup.dismiss() }
-            bornCard = nil
             lookup.previewOnly = true
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
+            bornCard = nil
+        }
+
+        // Scroll through remaining clips (2nd and 3rd).
+        for clip in clips.dropFirst().prefix(2) {
+            guard !Task.isCancelled else { return }
+            let nextFocus = richestLine(on: clip)
+            withAnimation(.easeInOut(duration: 0.55)) { currentId = clip.id }
+            try? await Task.sleep(for: .milliseconds(650))
+            guard !Task.isCancelled else { return }
+            coordinator.activate(clip, startLine: nextFocus.index, loopLine: true)
+            try? await Task.sleep(for: .milliseconds(1100))
+            guard !Task.isCancelled else { return }
+            await fadeDemoChrome()
+            try? await Task.sleep(for: .milliseconds(1400))
+            guard !Task.isCancelled else { return }
+            await revealDemoChrome()
         }
 
         flashWords = demoVocabFallback()
+        await playFlashcardSequence(startingWith: savedFromTap ?? flashWords.first, count: 2)
+        if restoreGlow { restoreParkedGlow() }
+    }
 
+    /// Full product tour: onboarding → core → Vocab/Explore/Library/Profile → every theme look.
+    private func runFullTour(clips: [Clip], first: Clip) async {
+        // Onboarding panels
+        withAnimation(.easeInOut(duration: 0.35)) { stage = .onboarding }
+        for beat in 0..<4 {
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy) { onboardingBeat = beat }
+            try? await Task.sleep(for: .milliseconds(beat == 0 ? 1800 : 1600))
+        }
+
+        // Core For You story on Sakura dark neon
+        applyLook(accent: .sakura, scheme: .dark, glow: .glow)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            themeCaption = "Sakura · Dark neon"
+            stage = .feed
+            tabHighlight = .feed
+            demoVideoExpanded = false
+        }
+        try? await Task.sleep(for: .milliseconds(700))
+        withAnimation(.easeOut(duration: 0.25)) { themeCaption = nil }
+        await runCoreForYouScript(clips: clips, first: first, glow: .glow, restoreGlow: false)
+        guard !Task.isCancelled else { return }
+
+        // Vocab
         withAnimation(.easeInOut(duration: 0.4)) {
             stage = .vocab
             tabHighlight = .vocab
         }
-        try? await Task.sleep(for: .milliseconds(2800))
-        guard !Task.isCancelled else { return }
-
-        demoSearchQuery = savedFromClip?.surface
-            ?? pick.lines.first?.tokens.first(where: \.tappable)?.surface
-            ?? "好き"
-        withAnimation(.easeInOut(duration: 0.4)) { stage = .search }
-        try? await Task.sleep(for: .milliseconds(3200))
-        guard !Task.isCancelled else { return }
-
-        withAnimation(.easeInOut(duration: 0.4)) {
-            stage = .analytics
-            tabHighlight = .profile
-        }
         try? await Task.sleep(for: .milliseconds(2600))
         guard !Task.isCancelled else { return }
 
-        await playFlashcardSequence(startingWith: savedFromClip ?? flashWords.first, count: 2)
-        restoreParkedGlow()
-    }
-
-    /// Video 3: open the theme menu, then show Feed, Vocab, and Profile in Sakura, Lavender, and Orange.
-    private func runThemeTour(first: Clip) async {
-        app.setScheme(selectedScript.scheme)
-        watchChromeVisible = true
-        let tourLine = richestLine(on: first)
-        _ = markDemoKnown(on: first, lineIndex: tourLine.index)
-        await playGlowOnProfile()
+        // Explore
+        explorePath = nil
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .explore
+            tabHighlight = .feed
+        }
+        try? await Task.sleep(for: .milliseconds(1800))
         guard !Task.isCancelled else { return }
-        for theme in [AccentTheme.sakura, .plum, .orange] {
+        withAnimation(.easeInOut(duration: 0.4)) { explorePath = .listening }
+        try? await Task.sleep(for: .milliseconds(1800))
+        guard !Task.isCancelled else { return }
+
+        // Library
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .library
+            tabHighlight = .library
+        }
+        try? await Task.sleep(for: .milliseconds(2000))
+        guard !Task.isCancelled else { return }
+
+        // Profile / settings
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .analytics
+            tabHighlight = .profile
+            profileAnchor = "text-glow"
+        }
+        try? await Task.sleep(for: .milliseconds(2000))
+        guard !Task.isCancelled else { return }
+
+        // Appearance matrix: each accent × dark neon / dark off / light
+        let looks: [(AccentTheme, JojoScheme, GlowLevel, String)] = [
+            (.sakura, .dark, .glow, "Sakura · Dark neon"),
+            (.sakura, .dark, .off, "Sakura · Dark"),
+            (.sakura, .light, .soft, "Sakura · Light"),
+            (.amber, .dark, .glow, "Amber · Dark neon"),
+            (.amber, .dark, .off, "Amber · Dark"),
+            (.amber, .light, .soft, "Amber · Light"),
+        ]
+        let tourLine = richestLine(on: first)
+        for look in looks {
             guard !Task.isCancelled else { return }
             coordinator.stop()
-            lookup.dismiss()
-            withAnimation(.easeInOut(duration: 0.35)) {
-                demoAccent = theme
-                themeMenu = theme
+            applyLook(accent: look.0, scheme: look.1, glow: look.2)
+            withAnimation(.easeInOut(duration: 0.3)) {
+                themeMenu = look.0
+                themeCaption = look.3
                 profileAnchor = nil
-                themeCaption = nil
                 stage = .analytics
                 tabHighlight = .profile
             }
-            app.setTheme(theme)
-            try? await Task.sleep(for: .milliseconds(1800))
+            try? await Task.sleep(for: .milliseconds(1100))
             guard !Task.isCancelled else { return }
-
-            withAnimation(.easeInOut(duration: 0.25)) {
-                themeMenu = nil
-                themeCaption = theme.title
-            }
+            withAnimation(.easeInOut(duration: 0.25)) { themeMenu = nil }
             withAnimation(.easeInOut(duration: 0.4)) {
                 stage = .feed
                 tabHighlight = .feed
+                demoVideoExpanded = true
+                currentId = first.id
             }
             coordinator.activate(first, startLine: tourLine.index, loopLine: true)
-            try? await Task.sleep(for: .milliseconds(2400))
+            try? await Task.sleep(for: .milliseconds(2000))
             guard !Task.isCancelled else { return }
-
             coordinator.stop()
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(.easeInOut(duration: 0.35)) {
                 stage = .vocab
                 tabHighlight = .vocab
             }
-            try? await Task.sleep(for: .milliseconds(2800))
+            try? await Task.sleep(for: .milliseconds(1600))
             guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) { themeCaption = nil }
+        }
 
-            withAnimation(.easeInOut(duration: 0.4)) {
-                stage = .analytics
-                tabHighlight = .profile
-            }
-            try? await Task.sleep(for: .milliseconds(1800))
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.2)) { themeCaption = nil }
-        }
         if let parkedAccent, let parkedScheme {
-            demoAccent = parkedAccent
-            app.setScheme(parkedScheme)
-            app.setTheme(parkedAccent)
+            applyLook(accent: parkedAccent, scheme: parkedScheme, glow: parkedGlow ?? .glow)
+        } else {
+            restoreParkedGlow()
         }
-        restoreParkedGlow()
     }
 
     private func restoreParkedGlow() {
         if let parkedGlow {
             app.setGlowLevel(parkedGlow)
         }
-    }
-
-    /// Profile already owns text glow. Step Soft → Glow → Liquid so the 光 preview breathes on camera.
-    private func playGlowOnProfile() async {
-        withAnimation(.easeInOut(duration: 0.35)) {
-            stage = .analytics
-            tabHighlight = .profile
-            themeMenu = nil
-            themeCaption = nil
-            profileAnchor = "text-glow"
-        }
-        for level in [GlowLevel.soft, .glow, .liquid] {
-            guard !Task.isCancelled else { return }
-            app.setGlowLevel(level)
-            try? await Task.sleep(for: .milliseconds(1100))
-        }
-        guard !Task.isCancelled else { return }
-        app.setGlowLevel(.glow)
-        try? await Task.sleep(for: .milliseconds(400))
     }
 
     /// Same fade the live feed uses once a clip has the learner's attention.
@@ -1030,6 +1015,7 @@ struct MarketingShowcaseView: View {
         themeCaption = nil
         themeMenu = nil
         profileAnchor = nil
+        onboardingBeat = 0
     }
 }
 

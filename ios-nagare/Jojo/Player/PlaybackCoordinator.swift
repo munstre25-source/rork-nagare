@@ -7,10 +7,12 @@ import Observation
 @MainActor
 final class PlaybackCoordinator {
     private(set) var player: (any ClipPlayer)?
-    private(set) var preferredRate: Double = 1
+    private(set) var preferredRate: Double = PlaybackDefaults.storedRate
     private(set) var isMuted: Bool = false
     /// True while the user is hold-to-slow practicing.
     private(set) var isHoldSlowActive: Bool = false
+    /// Learner manually cycled rate this session — category defaults stop overriding.
+    private(set) var hasManualRate: Bool = false
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
     @ObservationIgnored private var resumeAfterPopup = false
@@ -23,9 +25,20 @@ final class PlaybackCoordinator {
         player?.clip.id == clip.id ? player : nil
     }
 
-    func activate(_ clip: Clip, autoplay: Bool = true, startLine: Int? = nil, loopLine: Bool = false) {
+    func activate(_ clip: Clip, autoplay: Bool = true, startLine: Int? = nil, loopLine: Bool = false, seekTime: Double? = nil) {
+        let defaults = PlaybackDefaults.applyCategoryDefaults(for: clip, hasManualRate: hasManualRate)
+        if !hasManualRate {
+            preferredRate = defaults.rate
+        }
+        let shouldLoop = loopLine || (!hasManualRate && defaults.preferLineLoop && startLine != nil)
+
         if let player, player.clip.id == clip.id {
-            if let startLine { position(player, line: startLine, loop: loopLine) }
+            if let seekTime {
+                player.seek(to: max(0, seekTime))
+            } else if let startLine {
+                position(player, line: startLine, loop: shouldLoop)
+            }
+            player.setRate(preferredRate)
             if autoplay { player.play() }
             return
         }
@@ -37,7 +50,11 @@ final class PlaybackCoordinator {
             newPlayer.onFinished = { [weak self] in self?.onFinished?() }
         }
         newPlayer.onWatchTick = { [weak self] seconds in self?.onWatchTick?(seconds) }
-        if let startLine { position(newPlayer, line: startLine, loop: loopLine) }
+        if let seekTime {
+            newPlayer.seek(to: max(0, seekTime))
+        } else if let startLine {
+            position(newPlayer, line: startLine, loop: shouldLoop)
+        }
         player = newPlayer
         if autoplay { newPlayer.play() }
     }
@@ -51,6 +68,8 @@ final class PlaybackCoordinator {
     func cycleRate() {
         let next: Double = preferredRate == 1 ? 0.75 : (preferredRate == 0.75 ? 0.5 : 1)
         preferredRate = next
+        hasManualRate = true
+        PlaybackDefaults.storedRate = next
         player?.setRate(next)
     }
 
@@ -100,5 +119,15 @@ final class PlaybackCoordinator {
     func stop() {
         player?.teardown()
         player = nil
+    }
+
+    /// Persist resume point for cold start.
+    func persistResumePoint() {
+        guard let player else { return }
+        ResumePlaybackStore.save(
+            clip: player.clip,
+            time: player.currentTime,
+            lineIndex: player.currentLineIndex
+        )
     }
 }

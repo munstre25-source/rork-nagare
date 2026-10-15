@@ -1,36 +1,42 @@
 import SwiftUI
 
-/// Full-screen Kiku-style player: black canvas, channel header, centered video,
-/// right rail, karaoke transcript, share / YouTube footer.
+/// Explore single-clip player (ULTIMATE APP layout): back + Explore title, video with
+/// boxed max/min, karaoke underneath. Matches ClipQueueScreen chrome.
 struct ImmersivePlayerScreen: View {
     let clip: Clip
     var startLine: Int?
     var loopLine: Bool = false
+    /// Shown in the top bar — Explore by default.
+    var chromeTitle: String = "Explore"
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var infoClip: Clip?
+    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
+                .opacity(videoExpanded ? 0 : 1)
+                .allowsHitTesting(!videoExpanded)
             ClipStageView(
                 clip: clip,
                 videoAspect: 16 / 9,
                 showsChannelRow: false,
                 showsRail: false,
                 immersiveFeed: true,
+                videoExpanded: videoExpanded,
+                onToggleVideoSize: {
+                    Haptics.selection()
+                    withAnimation(.snappy) { videoExpanded.toggle() }
+                    VideoFramePreference.isExpanded = videoExpanded
+                },
                 onActivate: { coordinator.activate(clip, startLine: startLine, loopLine: loopLine) },
                 onInfo: { infoClip = clip }
             )
-            .overlay(alignment: .trailing) {
-                immersiveRail
-                    .padding(.trailing, Spacing.s)
-                    .padding(.bottom, 120)
-            }
-            footer
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
@@ -49,6 +55,24 @@ struct ImmersivePlayerScreen: View {
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(clip: clip)
         }
+        .overlay(alignment: .topLeading) {
+            if videoExpanded {
+                Button {
+                    Haptics.selection()
+                    withAnimation(.snappy) { videoExpanded = false }
+                    VideoFramePreference.isExpanded = false
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(.black.opacity(0.45), in: Circle())
+                }
+                .padding(.leading, Spacing.m)
+                .padding(.top, Spacing.s)
+                .accessibilityLabel("Minimize")
+            }
+        }
     }
 
     private var topBar: some View {
@@ -61,21 +85,15 @@ struct ImmersivePlayerScreen: View {
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
-                    .background(Color.white.opacity(0.12), in: Circle())
             }
             .accessibilityLabel("Back")
-            ChannelAvatar(clip: clip, size: 36)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(clip.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                Text(clip.channelName)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(1)
-            }
+
+            Text(chromeTitle)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+
             Spacer(minLength: 0)
+
             Button {
                 infoClip = clip
             } label: {
@@ -88,103 +106,5 @@ struct ImmersivePlayerScreen: View {
         }
         .padding(.horizontal, Spacing.l)
         .padding(.vertical, Spacing.s)
-    }
-
-    private var immersiveRail: some View {
-        VStack(spacing: Spacing.s) {
-            Button {
-                Haptics.light()
-                withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
-            } label: {
-                Image(systemName: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(app.isFavorite(clip.id) ? Color.jojoOrange : .white)
-                    .frame(width: 44, height: 44)
-                    .background(.black.opacity(0.35), in: Circle())
-            }
-            .accessibilityLabel(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip")
-
-            Button {
-                infoClip = clip
-            } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.black.opacity(0.35), in: Circle())
-            }
-            .accessibilityLabel("Clip info")
-
-            Button {
-                Haptics.selection()
-                cycleSubtitles()
-            } label: {
-                Image(systemName: "captions.bubble")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.black.opacity(0.35), in: Circle())
-            }
-            .accessibilityLabel("Cycle subtitles")
-
-            Button {
-                coordinator.stop()
-                dismiss()
-            } label: {
-                Image(systemName: "arrow.down.right.and.arrow.up.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.black.opacity(0.35), in: Circle())
-            }
-            .accessibilityLabel("Collapse")
-        }
-    }
-
-    private var footer: some View {
-        HStack(spacing: Spacing.m) {
-            ShareLink(item: shareText) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel("Share clip")
-
-            Spacer(minLength: 0)
-
-            ClipPosterView(clip: clip, showsSymbol: false)
-                .frame(width: 56, height: 36)
-                .clipShape(.rect(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                )
-
-            if clip.hasRealVideo {
-                Image(systemName: "play.rectangle.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color(hex: "#FF0033"))
-                    .accessibilityLabel("Source: YouTube")
-            }
-        }
-        .padding(.horizontal, Spacing.l)
-        .padding(.vertical, Spacing.s)
-        .background(Color.bgPlayer)
-    }
-
-    private var shareText: String {
-        if let url = clip.youtubeURL {
-            return "Learning Japanese with “\(clip.title)” on Jojo 流れ \(url.absoluteString)"
-        }
-        let line = clip.lines.first.map { "\($0.text) — \($0.translation)" } ?? ""
-        return "Learning Japanese with “\(clip.title)” on Jojo 流れ\n\(line)"
-    }
-
-    private func cycleSubtitles() {
-        let modes = SubtitleMode.allCases
-        let current = app.profile.subtitles
-        let next = modes[(modes.firstIndex(of: current)! + 1) % modes.count]
-        app.setSubtitleMode(next)
     }
 }

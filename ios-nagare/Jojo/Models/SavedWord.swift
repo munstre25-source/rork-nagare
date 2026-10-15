@@ -2,14 +2,30 @@ import Foundation
 import SwiftData
 
 nonisolated enum SRSState: String, Codable, Sendable, CaseIterable {
-    case new, learning, familiar, known
+    /// Yomi-style ladder: New → Learning → Familiar → Easy → Known.
+    case new, learning, familiar, easy, known
 
     var title: String {
         switch self {
         case .new: "New"
         case .learning: "Learning"
         case .familiar: "Familiar"
+        case .easy: "Easy"
         case .known: "Known"
+        }
+    }
+
+    /// Marks the learner can paint from the dictionary card (excludes raw `.new`).
+    static var paintMarks: [SRSState] { [.learning, .familiar, .easy, .known] }
+
+    /// Progress 0…1 used by the ripen timeline.
+    var ripenProgress: Double {
+        switch self {
+        case .new: 0
+        case .learning: 0.25
+        case .familiar: 0.5
+        case .easy: 0.75
+        case .known: 1
         }
     }
 }

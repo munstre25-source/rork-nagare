@@ -7,7 +7,9 @@ struct ClipInfoSheet: View {
     var onFullscreen: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(AppModel.self) private var app
     @State private var reported: Bool = false
+    @State private var showSpeaking = false
 
     var body: some View {
         NavigationStack {
@@ -22,28 +24,43 @@ struct ClipInfoSheet: View {
                     }
                     .padding(.vertical, 4)
                     FollowChannelButton(channelName: clip.channelName)
+                    Button {
+                        Haptics.light()
+                        _ = app.toggleWatchLater(clip.id)
+                    } label: {
+                        Label(
+                            app.isWatchLater(clip.id) ? "Remove from Later" : "Watch later",
+                            systemImage: app.isWatchLater(clip.id) ? "bookmark.fill" : "bookmark"
+                        )
+                    }
                 }
-                if onShadowing != nil || onFullscreen != nil {
-                    Section("Practice") {
-                        if let onShadowing {
-                            Button {
-                                dismiss()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onShadowing() }
-                            } label: {
-                                Label("Shadowing practice", systemImage: "mic.fill")
-                            }
+                Section("Practice") {
+                    if let onShadowing {
+                        Button {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onShadowing() }
+                        } label: {
+                            Label("Shadowing practice", systemImage: "mic.fill")
                         }
-                        if let onFullscreen {
-                            Button {
-                                dismiss()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onFullscreen() }
-                            } label: {
-                                Label("Watch fullscreen", systemImage: "arrow.up.left.and.arrow.down.right")
-                            }
+                    }
+                    Button {
+                        showSpeaking = true
+                    } label: {
+                        Label("Speaking scenes", systemImage: "bubble.left.and.bubble.right.fill")
+                    }
+                    if let onFullscreen {
+                        Button {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onFullscreen() }
+                        } label: {
+                            Label("Watch fullscreen", systemImage: "arrow.up.left.and.arrow.down.right")
                         }
                     }
                 }
                 Section("Details") {
+                    if let jlpt = clip.dominantJLPT {
+                        LabeledContent("JLPT est.", value: jlpt)
+                    }
                     LabeledContent("Category", value: clip.categoryKind.displayName)
                     LabeledContent("Difficulty", value: clip.difficulty)
                     LabeledContent("Length", value: formatClock(clip.durationSec))
@@ -83,6 +100,9 @@ struct ClipInfoSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showSpeaking) {
+                SpeakingScenesView()
             }
         }
         .presentationDetents([.medium, .large])

@@ -1,17 +1,16 @@
 import Foundation
 import SwiftUI
 
-/// The three accents. Light and dark are versions of whichever one is selected.
+/// The two accents. Light and dark are versions of whichever one is selected.
 nonisolated enum AccentTheme: String, CaseIterable, Identifiable, Sendable {
-    case sakura, plum, orange
+    case sakura, amber
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .sakura: "Sakura"
-        case .plum: "Lavender"
-        case .orange: "Orange"
+        case .amber: "Amber"
         }
     }
 }
@@ -132,5 +131,15 @@ nonisolated enum StudyPosFilter: String, CaseIterable, Identifiable, Sendable {
             return p != "verb" && p != "noun" && p != "pronoun"
                 && !p.contains("adjective") && p != "particle"
         }
+    }
+
+    /// Human label for radar pockets (not the `.all` filter).
+    static func normalizedLabel(for pos: String) -> String {
+        let p = pos.lowercased()
+        if p == "verb" { return "Verbs" }
+        if p == "noun" || p == "pronoun" { return "Nouns" }
+        if p.contains("adjective") { return "Adjectives" }
+        if p == "particle" { return "Particles" }
+        return "Other"
     }
 }

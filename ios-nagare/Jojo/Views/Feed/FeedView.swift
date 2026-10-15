@@ -18,6 +18,8 @@ struct FeedView: View {
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
     @State private var chromeHideTask: Task<Void, Never>?
+    @State private var resumeSnapshot: (clipId: String, time: Double, line: Int, title: String, channel: String)?
+    @State private var showResumeChip: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -33,6 +35,19 @@ struct FeedView: View {
                 DailyGoalBar()
                     .padding(.top, 2)
             }
+            if showResumeChip, let resumeSnapshot {
+                ResumeChip(
+                    title: resumeSnapshot.title,
+                    channel: resumeSnapshot.channel,
+                    time: resumeSnapshot.time,
+                    onResume: { resumeFromSnapshot() },
+                    onDismiss: {
+                        showResumeChip = false
+                        ResumePlaybackStore.clear()
+                        self.resumeSnapshot = nil
+                    }
+                )
+            }
             header
             ZStack {
                 feedPager
@@ -43,6 +58,35 @@ struct FeedView: View {
                     }
                     .transition(.opacity)
                     .zIndex(2)
+                }
+                if let toast = app.cameBackToast {
+                    VStack {
+                        CameBackToast(
+                            surface: toast.surface,
+                            gloss: toast.gloss,
+                            onReview: {
+                                app.dismissCameBackToast()
+                                app.pendingDeepLink = .review
+                            }
+                        )
+                        .padding(.top, 8)
+                        Spacer()
+                    }
+                    .zIndex(3)
+                    .onAppear {
+                        Task {
+                            try? await Task.sleep(for: .seconds(4.5))
+                            if app.cameBackToast?.id == toast.id {
+                                withAnimation(.snappy) { app.dismissCameBackToast() }
+                            }
+                        }
+                    }
+                }
+                if let step = app.firstSessionCoach {
+                    FirstSessionWinOverlay(step: step) {
+                        app.skipFirstSessionCoach()
+                    }
+                    .zIndex(4)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -63,6 +107,7 @@ struct FeedView: View {
         .onAppear {
             setup()
             scheduleWatchChromeHide()
+            loadResumeChip()
         }
         .onChange(of: isActiveTab) { _, active in
             if active {
@@ -77,6 +122,7 @@ struct FeedView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
+                coordinator.persistResumePoint()
                 coordinator.pause()
                 coordinator.endHoldSlow()
                 app.persistWatchLog()
@@ -153,34 +199,38 @@ struct FeedView: View {
         }
     }
 
+    /// Kiku For You chrome: centered For You / Explore + flag. Goal bar sits above.
     private var header: some View {
-        ZStack {
+        HStack(spacing: 0) {
+            Color.clear.frame(width: 40, height: 40)
+            Spacer(minLength: 0)
             CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: onOpenExplore)
-                .opacity(watchChromeVisible ? 1 : 0)
-                .allowsHitTesting(watchChromeVisible)
-                .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                Button {
-                    reportClip = clips.first(where: { $0.id == currentId })
-                } label: {
-                    Image(systemName: "flag")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40, height: 40)
-                }
-                .accessibilityLabel("Report clip")
+            Spacer(minLength: 0)
+            Button {
+                reportClip = clips.first(where: { $0.id == currentId })
+            } label: {
+                Image(systemName: "flag")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, height: 40)
+            }
+            .accessibilityLabel("Clip info & report")
+            .contextMenu {
                 Button {
                     showSearch = true
                 } label: {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40, height: 40)
+                    Label("Search clips", systemImage: "magnifyingglass")
                 }
-                .accessibilityLabel("Search clips")
+                Button {
+                    reportClip = clips.first(where: { $0.id == currentId })
+                } label: {
+                    Label("Clip info & report", systemImage: "flag")
+                }
             }
         }
+        .opacity(watchChromeVisible ? 1 : 0)
+        .allowsHitTesting(watchChromeVisible)
+        .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
         .padding(.horizontal, 8)
         .padding(.bottom, 2)
     }
@@ -238,11 +288,21 @@ struct FeedView: View {
         let playback = coordinator
         coordinator.onWatchTick = { [weak app, weak playback] seconds in
             app?.addWatch(seconds: seconds)
-            guard let app, let playback, let clip = playback.player?.clip else { return }
+            guard let app, let playback, let player = playback.player else { return }
+            let clip = player.clip
+            if Int(player.currentTime) % 8 == 0 {
+                playback.persistResumePoint()
+            }
+            if let tokenIdx = player.spokenToken,
+               let line = clip.lines[safe: player.spokenLine],
+               let token = line.tokens[safe: tokenIdx],
+               token.tappable {
+                app.noteSpokenWordCameBack(token: token, clipId: clip.id)
+            }
             ImmersionIsland.note(
                 clip: clip,
-                lineIndex: playback.player?.spokenLine ?? 0,
-                tokenIndex: playback.player?.spokenToken,
+                lineIndex: player.spokenLine,
+                tokenIndex: player.spokenToken,
                 minutesLeft: app.minutesLeft,
                 goalProgress: app.goalProgress,
                 accent: app.profile.theme.rawValue
@@ -254,6 +314,33 @@ struct FeedView: View {
             openPendingClip()
         }
         resumeIfPossible()
+    }
+
+    private func loadResumeChip() {
+        guard let snap = ResumePlaybackStore.snapshot else {
+            showResumeChip = false
+            resumeSnapshot = nil
+            return
+        }
+        // Don't nag if already on that clip near the saved time.
+        if currentId == snap.clipId { return }
+        resumeSnapshot = snap
+        showResumeChip = true
+    }
+
+    private func resumeFromSnapshot() {
+        guard let snap = resumeSnapshot else { return }
+        showResumeChip = false
+        if !clips.contains(where: { $0.id == snap.clipId }), let clip = app.clip(id: snap.clipId) {
+            clips.insert(clip, at: 0)
+        }
+        withAnimation { currentId = snap.clipId }
+        if let clip = clips.first(where: { $0.id == snap.clipId }) {
+            coordinator.activate(clip, seekTime: snap.time)
+        }
+        ResumePlaybackStore.clear()
+        resumeSnapshot = nil
+        track("resume_chip_tapped")
     }
 
     private func absorbNewClips() {

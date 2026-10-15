@@ -20,7 +20,7 @@ struct LookStepView: View {
                 VStack(alignment: .leading, spacing: Spacing.l) {
                     OnboardingTitle(
                         title: "Make it yours",
-                        subtitle: "Six looks. Four glows. This is the Jojo you'll open instead of another scroll.",
+                        subtitle: "Four looks. Four glows. This is the Jojo you'll open instead of another scroll.",
                         accent: "yours"
                     )
                     LookStage(paint: paint, glow: app.profile.glow, breath: breath)
@@ -118,12 +118,11 @@ struct LookStepView: View {
 private enum LookStepMetrics {
     static let columns = [
         GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10),
         GridItem(.flexible(), spacing: 10)
     ]
 }
 
-/// One of the six paints: Sakura, Lavender, and Orange, each in light and dark.
+/// One of the four paints: Sakura and Amber, each in light and dark.
 private struct LookPaint: Identifiable, Hashable {
     let theme: AccentTheme
     let scheme: JojoScheme
@@ -141,11 +140,9 @@ private struct LookPaint: Identifiable, Hashable {
 
     static let all: [LookPaint] = [
         LookPaint(theme: .sakura, scheme: .light, paper: Color(hex: "#FFF5F8"), accent: Color(hex: "#FF4D8D"), ink: Color(hex: "#2A1A22"), muted: Color(hex: "#8A6574"), chip: Color(hex: "#FFE4EF")),
-        LookPaint(theme: .plum, scheme: .light, paper: Color(hex: "#F6F1FF"), accent: Color(hex: "#8B5CF6"), ink: Color(hex: "#241A33"), muted: Color(hex: "#7A6A8A"), chip: Color(hex: "#EDE4FF")),
-        LookPaint(theme: .orange, scheme: .light, paper: Color(hex: "#FFF8F3"), accent: Color(hex: "#FF7A00"), ink: Color(hex: "#2A1C12"), muted: Color(hex: "#8A7364"), chip: Color(hex: "#FFE4CC")),
+        LookPaint(theme: .amber, scheme: .light, paper: Color(hex: "#FFF8F3"), accent: Color(hex: "#FF7A00"), ink: Color(hex: "#2A1C12"), muted: Color(hex: "#8A7364"), chip: Color(hex: "#FFE4CC")),
         LookPaint(theme: .sakura, scheme: .dark, paper: Color(hex: "#0B0816"), accent: Color(hex: "#FF7EB8"), ink: Color.white, muted: Color(hex: "#E7C3D6"), chip: Color(hex: "#6A2458")),
-        LookPaint(theme: .plum, scheme: .dark, paper: Color(hex: "#0B0816"), accent: Color(hex: "#C4B5FD"), ink: Color.white, muted: Color(hex: "#D4C8EE"), chip: Color(hex: "#4C3A72")),
-        LookPaint(theme: .orange, scheme: .dark, paper: Color(hex: "#0B0816"), accent: Color(hex: "#FFB020"), ink: Color.white, muted: Color(hex: "#F0D7B0"), chip: Color(hex: "#6B3A12"))
+        LookPaint(theme: .amber, scheme: .dark, paper: Color(hex: "#100C08"), accent: Color(hex: "#FFB020"), ink: Color.white, muted: Color(hex: "#F0D7B0"), chip: Color(hex: "#6B3A12"))
     ]
 }
 

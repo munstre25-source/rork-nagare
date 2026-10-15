@@ -122,7 +122,6 @@ struct VocabView: View {
             }
             .scrollIndicators(.hidden)
             .background(Color.studyPage.ignoresSafeArea())
-            .environment(\.colorScheme, .light)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { key in
@@ -152,26 +151,29 @@ struct VocabView: View {
         .onChange(of: app.pendingDeepLink) { _, _ in openPendingReviewIfNeeded() }
     }
 
-    /// Known count is the page. The due line says what the review button will actually open.
+    /// Title, subtitle, known count, and the cheer mascot — matching the design boards.
     private var vocabHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(knownCount)")
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Vocab")
+                    .font(.system(size: 34, weight: .bold))
                     .foregroundStyle(LearningInk.japanese)
-                    .contentTransition(.numericText(value: Double(knownCount)))
-                    .animation(.snappy, value: knownCount)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text(knownCount == 1 ? "Japanese word you know" : "Japanese words you know")
+                    .minimumScaleFactor(0.7)
+                    .textGlow(LearningInk.glow, level: app.profile.glow)
+                Text("Grow your vocabulary, one word at a time.")
                     .font(.subheadline)
                     .foregroundStyle(Color.studyMuted)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+                Text(knownCount == 1 ? "1 word you know" : "\(knownCount) words you know")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.studyAccent)
+                    .lineLimit(1)
                 if !words.isEmpty {
                     Text(dueWords.isEmpty ? "Nothing due right now" : "\(dueWords.count) due")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.studyAccent)
+                        .foregroundStyle(Color.studyMuted)
                         .lineLimit(1)
                 }
             }
@@ -184,9 +186,17 @@ struct VocabView: View {
 
     private var learnSection: some View {
         VStack(alignment: .leading, spacing: 14) {
+            RipenTimelineView()
+
             if words.isEmpty {
                 emptyVocab
             } else {
+                WeakWordRadarView(pockets: app.weakWordPockets()) { pocket in
+                    startReviewKeys(pocket.keys, title: pocket.title)
+                }
+                if let next = reviewPool.first {
+                    todaysFocusCard(next)
+                }
                 Button {
                     startReview(reviewPool, title: "Review")
                 } label: {
@@ -197,13 +207,6 @@ struct VocabView: View {
                         .background(Color.sakuraButton, in: Capsule())
                 }
                 .buttonStyle(ChunkyPressStyle())
-                if let next = reviewPool.first {
-                    let gloss = next.displayDefinitions(mode: app.profile.dictionary).first ?? next.gloss
-                    Text("Next · \(next.surface)\(gloss.isEmpty ? "" : " · \(gloss)")")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.studyMuted)
-                        .lineLimit(1)
-                }
                 Button {
                     Haptics.selection()
                     section = .mine
@@ -230,6 +233,9 @@ struct VocabView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
                 }
                 .buttonStyle(.plain)
+                Text("All Vocabulary")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
                 if filtered.isEmpty {
                     Text("No words match this search.")
                         .font(.subheadline)
@@ -240,6 +246,75 @@ struct VocabView: View {
                 }
             }
         }
+    }
+
+    /// Real next due word with session progress — never sample copy from the mock.
+    private func todaysFocusCard(_ word: SavedWord) -> some View {
+        let gloss = word.displayDefinitions(mode: app.profile.dictionary).first ?? word.gloss
+        let total = max(reviewPool.count, 1)
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Today's focus")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.studyAccent)
+                HStack(spacing: 8) {
+                    Text(word.surface)
+                        .font(JojoFont.jp(36, bold: true, relativeTo: .largeTitle))
+                        .foregroundStyle(LearningInk.japanese)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .textGlow(LearningInk.glow, level: app.profile.glow)
+                    Button {
+                        SpeechService.shared.speak(word.surface)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.body.weight(.bold))
+                            .foregroundStyle(Color.studyAccent)
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Play \(word.surface)")
+                }
+                if app.profile.showRomaji, !word.romaji.isEmpty {
+                    Text(word.romaji)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.studyMuted)
+                        .lineLimit(1)
+                }
+                Text(gloss)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.primary.opacity(0.12))
+                        Capsule().fill(Color.sakuraButton)
+                            .frame(width: proxy.size.width * (1 / CGFloat(total)))
+                    }
+                }
+                .frame(height: 6)
+                Text("1/\(total)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.studyMuted)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: 4)
+            JojoMascot(height: 96, floats: false, pose: .peek)
+                .accessibilityHidden(true)
+        }
+        .padding(16)
+        .background(Color.studyFocus, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(app.profile.glow == .off ? 0.28 : 0.7), lineWidth: 1.4)
+        )
+        .chromeGlow(Color.sakuraPink, level: app.profile.glow, radius: 12)
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .onTapGesture {
+            startReview(reviewPool, title: "Review")
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Today's focus, \(word.surface), \(gloss)")
     }
 
     private var myWordsSection: some View {
@@ -255,9 +330,9 @@ struct VocabView: View {
 
     private func wordList(_ words: [SavedWord]) -> some View {
         VStack(spacing: 10) {
-            ForEach(words, id: \.key) { word in
+            ForEach(Array(words.enumerated()), id: \.element.key) { index, word in
                 NavigationLink(value: word.key) {
-                    VocabStatusRow(word: word)
+                    VocabStatusRow(word: word, index: index + 1)
                 }
                 .buttonStyle(.plain)
             }
@@ -341,10 +416,14 @@ struct VocabView: View {
     }
 
     private func startReview(_ source: [SavedWord], title: String) {
-        let keys = Array(source.prefix(10).map(\.key))
-        guard !keys.isEmpty else { return }
+        startReviewKeys(Array(source.prefix(10).map(\.key)), title: title)
+    }
+
+    private func startReviewKeys(_ keys: [String], title: String) {
+        let capped = Array(keys.prefix(10))
+        guard !capped.isEmpty else { return }
         Haptics.medium()
-        reviewSession = ReviewSessionConfig(title: title, keys: keys)
+        reviewSession = ReviewSessionConfig(title: title, keys: capped)
     }
 }
 
@@ -468,6 +547,7 @@ struct CustomDeckBuilder: View {
 /// Known words wear a check. Every other word shows how many times it has been met.
 struct VocabStatusRow: View {
     let word: SavedWord
+    var index: Int? = nil
     @Environment(AppModel.self) private var app
 
     private var gloss: String {
@@ -479,7 +559,14 @@ struct VocabStatusRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Group {
-                if known {
+                if let index {
+                    Text("\(index)")
+                        .font(.caption.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else if known {
                     Image(systemName: "checkmark")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.white)
@@ -493,8 +580,8 @@ struct VocabStatusRow: View {
                 }
             }
             .frame(width: 28, height: 28)
-            .background(known ? Color.spokenGreen : Color.studyAccent, in: Circle())
-            .accessibilityLabel(known ? "Known" : "Met \(word.occurrenceCount) times")
+            .background(known && index == nil ? Color.spokenGreen : Color.studyAccent, in: Circle())
+            .accessibilityLabel(index.map { "Number \($0)" } ?? (known ? "Known" : "Met \(word.occurrenceCount) times"))
             VStack(alignment: .leading, spacing: 2) {
                 Text(word.surface)
                     .font(JojoFont.jp(20, bold: true, relativeTo: .title3))
@@ -502,7 +589,10 @@ struct VocabStatusRow: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 HStack(spacing: 6) {
-                    if !word.primaryReading.isEmpty {
+                    if !word.romaji.isEmpty {
+                        Text(word.romaji)
+                            .lineLimit(1)
+                    } else if !word.primaryReading.isEmpty {
                         Text(word.primaryReading)
                             .lineLimit(1)
                     }

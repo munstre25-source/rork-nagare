@@ -26,10 +26,52 @@ struct CenteredModeSwitch: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Capsule()
-                    .fill(selected ? AnyShapeStyle(Color.sakuraFill) : AnyShapeStyle(Color.clear))
-                    .frame(width: 28, height: 2)
+                    .fill(selected ? Color.sakuraPink : Color.clear)
+                    .frame(width: 36, height: 3)
             }
             .frame(minHeight: 40)
+        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Explore home segments from the design boards: For You, Explore, My Path.
+struct ExploreSegmentBar: View {
+    enum Segment: Hashable {
+        case forYou, explore, myPath
+    }
+
+    var selection: Segment
+    var onForYou: () -> Void
+    var onExplore: () -> Void
+    var onMyPath: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            chip("For You", selected: selection == .forYou, action: onForYou)
+            chip("Explore", selected: selection == .explore, action: onExplore)
+            chip("My Path", selected: selection == .myPath, action: onMyPath)
+        }
+        .padding(4)
+        .background(Color.card.opacity(0.9), in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.cardStroke, lineWidth: 1))
+    }
+
+    private func chip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.72))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, minHeight: 36)
+                .background {
+                    if selected { Capsule().fill(Color.sakuraFill) }
+                }
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

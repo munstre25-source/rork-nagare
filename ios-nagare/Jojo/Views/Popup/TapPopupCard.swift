@@ -19,66 +19,15 @@ struct TapPopupCard: View {
 
     var body: some View {
         if let selection = lookup.selection, let explanation = lookup.explanation {
-            VStack(alignment: .leading, spacing: compact ? Spacing.s : Spacing.m) {
-                header(selection: selection, explanation: explanation)
-                HStack(spacing: Spacing.s) {
-                    WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: onDark)
-                    Spacer(minLength: 0)
-                    Button {
-                        SpeechService.shared.speak(selection.token.surface)
-                    } label: {
-                        Image(systemName: "speaker.wave.2")
-                            .font(compact ? .body : .title3)
-                            .foregroundStyle(LearningInk.dictionaryReading)
-                            .frame(width: compact ? 36 : 44, height: compact ? 36 : 44)
-                    }
-                    .accessibilityLabel("Play pronunciation")
+            Group {
+                if compact {
+                    compactBody(selection: selection, explanation: explanation)
+                } else {
+                    fullBody(selection: selection, explanation: explanation)
                 }
-                tabRow
-                paintRow(selection: selection)
-                Group {
-                    switch lookup.tab {
-                    case .dictionary: dictionaryTab(explanation, limit: compact ? 2 : (showAllDefinitions ? 99 : 2))
-                    case .flashcard: flashcardTab(selection: selection, explanation: explanation)
-                    case .examples: examplesTab
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .transition(.opacity)
-                pageDots
-                Capsule()
-                    .fill(onDark ? Color.white.opacity(0.35) : Color.primary.opacity(0.2))
-                    .frame(width: 36, height: 4)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 2)
             }
             .padding(compact ? Spacing.m : Spacing.l)
-            .background(
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(LearningInk.dictionaryPlate)
-                    .shadow(
-                        color: LearningInk.dictionaryWord.opacity(0.45 * app.profile.glow.intensity),
-                        radius: 10 + app.profile.glow.radius,
-                        y: 10
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .strokeBorder(LearningInk.dictionaryWord.opacity(0.7), lineWidth: 1.5)
-            )
-            .overlay {
-                if app.profile.glow == .liquid {
-                    RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.22), Color.white.opacity(0.05), .clear],
-                                startPoint: .top,
-                                endPoint: .center
-                            )
-                        )
-                        .allowsHitTesting(false)
-                }
-            }
+            .background(cardBackground)
             .onChange(of: lookup.tapPulse) { _, _ in
                 showAllDefinitions = false
                 badgeBump = true
@@ -87,40 +36,221 @@ struct TapPopupCard: View {
                     badgeBump = false
                 }
             }
-            .gesture(
-                DragGesture(minimumDistance: 24)
-                    .onEnded { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                        let tabs = PopupTab.allCases
-                        guard let idx = tabs.firstIndex(of: lookup.tab) else { return }
-                        if value.translation.width < -40, idx + 1 < tabs.count {
-                            Haptics.selection()
-                            withAnimation(.snappy) {
-                                lookup.tab = tabs[idx + 1]
-                                if tabs[idx + 1] == .examples { lookup.loadContextIfNeeded(app: app) }
-                            }
-                        } else if value.translation.width > 40, idx > 0 {
-                            Haptics.selection()
-                            withAnimation(.snappy) { lookup.tab = tabs[idx - 1] }
-                        }
-                    }
-            )
+            .gesture(swipeTabs)
         }
+    }
+
+    /// Feed card: word → reading → one gloss first. Paint and tabs stay secondary.
+    private func compactBody(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
+        let gloss = explanation.displayDefinitions(mode: app.profile.dictionary).first
+            ?? explanation.definitions.first
+            ?? explanation.jaDefinitions.first
+            ?? ""
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if lookup.occurrenceCount <= 1 {
+                        Text("NEW")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(LearningInk.selected)
+                            .accessibilityLabel("New flashcard")
+                    }
+                    Text(explanation.word)
+                        .font(JojoFont.jp(30, bold: true, relativeTo: .title))
+                        .foregroundStyle(ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                        .textGlow(LearningInk.selected, level: app.profile.glow)
+                    if !explanation.readings.isEmpty {
+                        Text(explanation.readings.joined(separator: ", "))
+                            .font(JojoFont.jp(14, relativeTo: .subheadline))
+                            .foregroundStyle(inkSoft)
+                            .lineLimit(1)
+                    }
+                    if app.profile.showRomaji, !explanation.romaji.isEmpty {
+                        Text(explanation.romaji)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(inkSoft.opacity(0.85))
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                VStack(spacing: 8) {
+                    OccurrenceBadge(count: lookup.occurrenceCount, size: 28)
+                        .scaleEffect(badgeBump ? 1.2 : 1)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                    Button {
+                        SpeechService.shared.speak(selection.token.surface)
+                        app.noteFirstSessionHeard()
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(inkSoft)
+                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel("Play pronunciation")
+                }
+            }
+
+            if !gloss.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("1")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(onDark ? Color.black : Color.white)
+                        .frame(width: 20, height: 20)
+                        .background(Circle().fill(LearningInk.selected))
+                    if !explanation.pos.isEmpty {
+                        Text(explanation.pos)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(inkSoft)
+                    }
+                    Text(gloss)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(3)
+                }
+            }
+
+            pitchChip(for: selection.token)
+            conjugationStrip(for: selection.token)
+
+            // Contextual “in this sentence” only — skip the fallback line that repeats the gloss.
+            if lookup.context != nil || lookup.isLoadingContext {
+                sentenceMeaning(fallbackGloss: gloss)
+            }
+
+            quietTabRow
+            if lookup.tab == .flashcard {
+                flashcardTab(selection: selection, explanation: explanation)
+                    .transition(.opacity)
+            } else if lookup.tab == .examples {
+                examplesTab
+                    .transition(.opacity)
+            }
+            paintRow(selection: selection)
+            if let line = selection.clip.lines[safe: selection.lineIndex] {
+                UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
+            }
+            pageDots
+        }
+    }
+
+    private func fullBody(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.m) {
+            header(selection: selection, explanation: explanation)
+            HStack(spacing: Spacing.s) {
+                WordPills(pos: explanation.pos, conjugationClass: explanation.conjugationClass, jlpt: explanation.jlpt, dark: onDark)
+                Spacer(minLength: 0)
+                Button {
+                    SpeechService.shared.speak(selection.token.surface)
+                    app.noteFirstSessionHeard()
+                } label: {
+                    Image(systemName: "speaker.wave.2")
+                        .font(.title3)
+                        .foregroundStyle(LearningInk.dictionaryReading)
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Play pronunciation")
+            }
+            pitchChip(for: selection.token)
+            conjugationStrip(for: selection.token)
+            tabRow
+            paintRow(selection: selection)
+            Group {
+                switch lookup.tab {
+                case .dictionary: dictionaryTab(explanation, limit: showAllDefinitions ? 99 : 2)
+                case .flashcard: flashcardTab(selection: selection, explanation: explanation)
+                case .examples: examplesTab
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transition(.opacity)
+            pageDots
+            Capsule()
+                .fill(onDark ? Color.white.opacity(0.35) : Color.primary.opacity(0.2))
+                .frame(width: 36, height: 4)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 2)
+        }
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+            .fill(onDark && compact ? Color.black.opacity(0.92) : LearningInk.dictionaryPlate)
+            .shadow(
+                color: LearningInk.selected.opacity(0.35 * app.profile.glow.intensity),
+                radius: 8 + app.profile.glow.radius * 0.6,
+                y: 8
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .strokeBorder(
+                        LearningInk.selected.opacity(app.profile.glow == .off ? 0.28 : 0.65),
+                        lineWidth: compact ? 1.2 : 1.5
+                    )
+            )
+            .chromeGlow(LearningInk.selected, level: compact ? (app.profile.glow == .liquid ? .glow : app.profile.glow) : app.profile.glow, radius: compact ? 10 : 14)
+            .overlay(alignment: .top) {
+                if app.profile.glow == .liquid, !compact {
+                    RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.28), Color.white.opacity(0.06), .clear],
+                                startPoint: .top,
+                                endPoint: .init(x: 0.5, y: 0.22)
+                            )
+                        )
+                        .frame(height: 28)
+                        .allowsHitTesting(false)
+                }
+            }
+    }
+
+    private var swipeTabs: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                let tabs = PopupTab.allCases
+                guard let idx = tabs.firstIndex(of: lookup.tab) else { return }
+                if value.translation.width < -40, idx + 1 < tabs.count {
+                    Haptics.selection()
+                    withAnimation(.snappy) {
+                        lookup.tab = tabs[idx + 1]
+                        if tabs[idx + 1] == .examples { lookup.loadContextIfNeeded(app: app) }
+                    }
+                } else if value.translation.width > 40, idx > 0 {
+                    Haptics.selection()
+                    withAnimation(.snappy) { lookup.tab = tabs[idx - 1] }
+                }
+            }
     }
 
     private func header(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
         HStack(alignment: .top, spacing: Spacing.m) {
             VStack(alignment: .leading, spacing: 4) {
+                if lookup.occurrenceCount <= 1 {
+                    Text("NEW")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Color.sakuraPink)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(Color.sakuraPink.opacity(0.85), lineWidth: 1)
+                        )
+                        .accessibilityLabel("New flashcard")
+                }
                 HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
                     Text(explanation.word)
-                        .font(JojoFont.jp(compact ? 28 : 38, bold: true, relativeTo: .largeTitle))
+                        .font(JojoFont.jp(38, bold: true, relativeTo: .largeTitle))
                         .foregroundStyle(LearningInk.dictionaryWord)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                        .textGlow(LearningInk.dictionaryWord, level: app.profile.glow)
+                        .textGlow(LearningInk.selected, level: app.profile.glow)
                     if app.profile.showFurigana, !explanation.readings.isEmpty {
                         Text(explanation.readings.joined(separator: ", "))
-                            .font(JojoFont.jp(compact ? 13 : 15, relativeTo: .subheadline))
+                            .font(JojoFont.jp(15, relativeTo: .subheadline))
                             .foregroundStyle(LearningInk.dictionaryReading)
                             .lineLimit(1)
                     }
@@ -128,53 +258,126 @@ struct TapPopupCard: View {
                 if app.profile.showRomaji, !explanation.romaji.isEmpty {
                     Text(explanation.romaji)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(LearningInk.dictionaryGloss)
+                        .foregroundStyle(LearningInk.dictionaryReading)
                 }
-                if !compact, let base = selection.token.baseForm {
+                if let base = selection.token.baseForm {
                     Text("from \(base)")
                         .font(JojoFont.jp(13, relativeTo: .footnote))
                         .foregroundStyle(inkSoft)
                 }
-                if !compact {
-                    Label("In Vocab", systemImage: "bookmark.fill")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.jojoOrange)
-                        .padding(.top, 2)
-                        .accessibilityLabel("Saved to Vocab as a flashcard")
+                Label("Saved to vocab", systemImage: "bookmark.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.jojoOrange)
+                    .padding(.top, 2)
+                    .accessibilityLabel("Saved to Vocab as a flashcard")
+                if let line = selection.clip.lines[safe: selection.lineIndex] {
+                    UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
+                        .padding(.top, 4)
                 }
             }
             Spacer(minLength: 0)
-            OccurrenceBadge(count: lookup.occurrenceCount, size: compact ? 30 : 38)
+            OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
                 .scaleEffect(badgeBump ? 1.25 : 1)
                 .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
                 .animation(.snappy, value: lookup.occurrenceCount)
         }
     }
 
+    /// Compact feed tabs — icons only, no heavy selected fill.
+    private var quietTabRow: some View {
+        HStack(spacing: 4) {
+            ForEach(PopupTab.allCases, id: \.self) { tab in
+                Button {
+                    Haptics.selection()
+                    withAnimation(.snappy) { lookup.tab = tab }
+                    if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                } label: {
+                    Image(systemName: tab.symbol)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(lookup.tab == tab ? LearningInk.selected : inkSoft.opacity(0.7))
+                        .frame(width: 36, height: 32)
+                }
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
     private func paintRow(selection: WordLookupController.Selection) -> some View {
         let current = app.wordState(for: selection.token)
-        return HStack(spacing: 6) {
-            paintButton("Learning", mark: .learning, current: current, selection: selection)
-            paintButton("Familiar", mark: .familiar, current: current, selection: selection)
-            paintButton("Known", mark: .known, current: current, selection: selection)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("How well do you know it?")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(inkSoft)
+                .textCase(.uppercase)
+            HStack(spacing: 5) {
+                ForEach(SRSState.paintMarks, id: \.self) { mark in
+                    paintButton(mark.title, mark: mark, current: current, selection: selection)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pitchChip(for token: Token) -> some View {
+        let reading = token.reading ?? token.baseReading ?? token.surface
+        if let accent = PitchAccent.resolve(explicit: token.pitchAccent, reading: reading, surface: token.surface) {
+            Text(PitchAccent.chip(accent))
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(inkSoft)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(chip, in: Capsule())
+                .accessibilityLabel(PitchAccent.label(accent, moraCount: JapaneseText.hiragana(reading).count))
+        }
+    }
+
+    @ViewBuilder
+    private func conjugationStrip(for token: Token) -> some View {
+        let rows = ConjugationForms.rows(for: token)
+        if !rows.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(rows) { row in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(row.label)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(inkSoft)
+                            Text(row.surface)
+                                .font(JojoFont.jp(14, bold: true, relativeTo: .subheadline))
+                                .foregroundStyle(ink)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(chip, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Conjugation forms")
         }
     }
 
     private func paintButton(_ title: String, mark: SRSState, current: SRSState?, selection: WordLookupController.Selection) -> some View {
         let selected = current == mark || (mark == .learning && current == .new)
+        let tint = LearningInk.mastery(mark)
         return Button {
             Haptics.selection()
             app.paint(token: selection.token, explanation: lookup.explanation, clip: selection.clip, lineIndex: selection.lineIndex, mark: mark)
         } label: {
             Text(title)
-                .font(.caption.weight(.bold))
+                .font(.caption2.weight(.bold))
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .foregroundStyle(selected ? Color.white : inkSoft)
-                .frame(maxWidth: .infinity, minHeight: 32)
+                .minimumScaleFactor(0.65)
+                .foregroundStyle(selected ? Color.black.opacity(0.85) : inkSoft)
+                .frame(maxWidth: .infinity, minHeight: compact ? 28 : 32)
                 .background {
-                    if selected { Capsule().fill(Color.sakuraFill) }
+                    if selected { Capsule().fill(tint) }
                     else { Capsule().fill(chip) }
+                }
+                .overlay {
+                    Capsule().strokeBorder(selected ? tint : Color.clear, lineWidth: 1)
                 }
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -211,12 +414,12 @@ struct TapPopupCard: View {
         HStack(spacing: 5) {
             ForEach(PopupTab.allCases, id: \.self) { tab in
                 Circle()
-                    .fill(lookup.tab == tab ? Color.jojoOrange : (onDark ? Color.white.opacity(0.3) : Color.primary.opacity(0.2)))
-                    .frame(width: 6, height: 6)
+                    .fill(lookup.tab == tab ? LearningInk.selected : (onDark ? Color.white.opacity(0.28) : Color.primary.opacity(0.2)))
+                    .frame(width: compact ? 5 : 6, height: compact ? 5 : 6)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 4)
+        .padding(.top, compact ? 2 : 4)
         .accessibilityHidden(true)
     }
 
@@ -403,15 +606,15 @@ struct DefinitionRow: View {
         HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
             Text("\(number)")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(dark ? LearningInk.dictionaryPlate : Color.translationText)
+                .foregroundStyle(dark ? Color.black : Color.translationText)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(dark ? LearningInk.dictionaryWord : Color.primary.opacity(0.08)))
+                .background(Circle().fill(dark ? LearningInk.selected : Color.primary.opacity(0.08)))
             if let tag {
                 PillView(text: tag, style: dark ? .neutralDark : .pos)
             }
             Text(text)
                 .font(.body.weight(.semibold))
-                .foregroundStyle(dark ? Color.white : Color.translationText)
+                .foregroundStyle(dark ? LearningInk.dictionaryGloss : Color.translationText)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }

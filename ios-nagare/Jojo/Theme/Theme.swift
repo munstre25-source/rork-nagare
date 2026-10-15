@@ -42,20 +42,17 @@ enum JojoPalette {
     }
 
     /// A color for the accent and appearance that are active right now.
-    /// Resolved immediately so switching Sakura, Lavender, or Orange repaints every screen.
+    /// Resolved immediately so switching Sakura or Amber repaints every screen.
     static func color(
         sakuraLight: String, sakuraDark: String,
-        plumLight: String, plumDark: String,
-        orangeLight: String, orangeDark: String
+        amberLight: String, amberDark: String
     ) -> Color {
         let hex: String
         switch (theme, scheme) {
         case (.sakura, .light): hex = sakuraLight
         case (.sakura, .dark): hex = sakuraDark
-        case (.plum, .light): hex = plumLight
-        case (.plum, .dark): hex = plumDark
-        case (.orange, .light): hex = orangeLight
-        case (.orange, .dark): hex = orangeDark
+        case (.amber, .light): hex = amberLight
+        case (.amber, .dark): hex = amberDark
         }
         return Color(hex: hex)
     }
@@ -82,11 +79,10 @@ extension Color {
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     static let hairlineDark = Color.adaptive(light: "#E5E5EA", dark: "#2A2A2A")
-    /// App page background — white in light; deep night (icon sky) in dark.
+    /// App page background — cream in light; night indigo (Sakura) or warm black (Amber) in dark.
     static var canvas: Color { JojoPalette.color(
         sakuraLight: "#FFF5F8", sakuraDark: "#0B0816",
-        plumLight: "#F6F1FF", plumDark: "#0B0816",
-        orangeLight: "#FFF8F3", orangeDark: "#0B0816"
+        amberLight: "#FFF8F3", amberDark: "#100C08"
     ) }
     static let card = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
     /// Hairline on cards. Follows the theme paper, and the color scheme of the screen that draws it.
@@ -94,9 +90,8 @@ extension Color {
         Color(uiColor: UIColor { traits in
             let dark = traits.userInterfaceStyle == .dark
             switch JojoPalette.theme {
-            case .sakura: return UIColor(hex: dark ? "#2A2A2A" : "#F3D0E0")
-            case .plum: return UIColor(hex: dark ? "#2A2A2A" : "#E4D4F5")
-            case .orange: return UIColor(hex: dark ? "#2A2A2A" : "#F3E4D4")
+            case .sakura: return UIColor(hex: dark ? "#3A2448" : "#F3D0E0")
+            case .amber: return UIColor(hex: dark ? "#3A2A16" : "#F3E4D4")
             }
         })
     }
@@ -105,9 +100,8 @@ extension Color {
         Color(uiColor: UIColor { traits in
             let dark = traits.userInterfaceStyle == .dark
             switch JojoPalette.theme {
-            case .sakura: return UIColor(hex: dark ? "#1C1C1E" : "#FFF0F5")
-            case .plum: return UIColor(hex: dark ? "#1C1C1E" : "#F3ECFF")
-            case .orange: return UIColor(hex: dark ? "#1C1C1E" : "#FFF3E8")
+            case .sakura: return UIColor(hex: dark ? "#1C1428" : "#FFF0F5")
+            case .amber: return UIColor(hex: dark ? "#1C140E" : "#FFF3E8")
             }
         })
     }
@@ -115,8 +109,7 @@ extension Color {
     static var accentDisabled: Color {
         switch JojoPalette.theme {
         case .sakura: Color(hex: "#C45A80")
-        case .plum: Color(hex: "#8B74B8")
-        case .orange: Color(hex: "#E08A4A")
+        case .amber: Color(hex: "#E08A4A")
         }
     }
     /// Active karaoke line card (Kiku-style raised surface).
@@ -128,58 +121,51 @@ extension Color {
     /// Marks, underlines, and icons. Each theme picks a shade that stays readable on its page.
     static var sakuraPink: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF7EB8",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FFB020"
+        amberLight: "#FF7A00", amberDark: "#FFB020"
     ) }
     static var sakuraPinkDeep: Color { sakuraPink }
     /// Soft chips. Pale on white, a solid dark tint at night so white type still reads.
     static var sakuraPinkLight: Color { JojoPalette.color(
         sakuraLight: "#FFE4EF", sakuraDark: "#6A2458",
-        plumLight: "#EDE4FF", plumDark: "#4C3A72",
-        orangeLight: "#FFE4CC", orangeDark: "#6B3A12"
+        amberLight: "#FFE4CC", amberDark: "#6B3A12"
     ) }
     static var sakuraPinkSoft: Color { sakuraPinkLight }
     /// Fills that carry a white label.
     static var sakuraButton: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF4D8D",
-        plumLight: "#8B5CF6", plumDark: "#8B5CF6",
-        orangeLight: "#FF7A00", orangeDark: "#FF7A00"
+        amberLight: "#FF7A00", amberDark: "#FF7A00"
     ) }
 
-    /// Accent fill on the light study screens. Follows Sakura, Lavender, or Orange.
+    /// Accent fill on study screens. Follows Sakura or Amber.
     static var studyAccent: Color {
         switch JojoPalette.theme {
         case .sakura: Color(hex: "#FF4D8D")
-        case .plum: Color(hex: "#8B5CF6")
-        case .orange: Color(hex: "#FF7A00")
+        case .amber: Color(hex: "#FF7A00")
         }
     }
 
-    /// Page wash behind Explore, Vocab, and Search.
-    static var studyPage: Color {
-        switch JojoPalette.theme {
-        case .sakura: Color(hex: "#FFF5F8")
-        case .plum: Color(hex: "#F6F1FF")
-        case .orange: Color(hex: "#FFF8F3")
-        }
-    }
+    /// Page wash behind Explore, Vocab, and Search. Cream in light, night paper in dark.
+    static var studyPage: Color { JojoPalette.color(
+        sakuraLight: "#FFF5F8", sakuraDark: "#0B0816",
+        amberLight: "#FFF8F3", amberDark: "#100C08"
+    ) }
 
-    /// Today's-focus card.
-    static var studyFocus: Color {
-        switch JojoPalette.theme {
-        case .sakura: Color(hex: "#FFE4EF")
-        case .plum: Color(hex: "#F0E6FF")
-        case .orange: Color(hex: "#FFF1E4")
-        }
-    }
+    /// Today's-focus card and selected chips.
+    static var studyFocus: Color { JojoPalette.color(
+        sakuraLight: "#FFE4EF", sakuraDark: "#2A1838",
+        amberLight: "#FFF1E4", amberDark: "#2A1C12"
+    ) }
 
-    static var studyMuted: Color {
-        switch JojoPalette.theme {
-        case .sakura: Color(hex: "#8A6574")
-        case .plum: Color(hex: "#7A6A8A")
-        case .orange: Color(hex: "#8A7364")
-        }
-    }
+    static var studyMuted: Color { JojoPalette.color(
+        sakuraLight: "#8A6574", sakuraDark: "#C7A8B8",
+        amberLight: "#8A7364", amberDark: "#C8A88A"
+    ) }
+
+    /// Dock fill. Deep indigo for Sakura night, warm black for Amber night.
+    static var dockFill: Color { JojoPalette.color(
+        sakuraLight: "#1A1028", sakuraDark: "#140C2E",
+        amberLight: "#1C140E", amberDark: "#100C08"
+    ) }
 
     /// Interactive chrome (tabs, toggles, selection, charts). Follows the selected accent.
     static var brandAccent: Color { sakuraPink }
@@ -193,7 +179,7 @@ extension Color {
     static var jojoOrangeLight: Color { brandAccentLight }
     static var jojoVermilion: Color { brandAccentDeep }
 
-    /// Main-app chrome. Follows Sakura, Lavender, or Orange with the light or dark page.
+    /// Main-app chrome. Follows Sakura or Amber with the light or dark page.
     static var designOrange: Color { sakuraPink }
     static var designOrangeDeep: Color { sakuraPinkDeep }
 
@@ -233,8 +219,7 @@ extension Color {
     static let nightPlum = Color(hex: "#4A1D6B")
     static var neonMagenta: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF7EB8",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FFB020"
+        amberLight: "#FF7A00", amberDark: "#FFB020"
     ) }
     static let lanternAmber = Color(hex: "#FFB347")
 
@@ -247,7 +232,7 @@ extension Color {
 
     // MARK: Word states / POS underlines
     static var tappableBlue: Color { LearningInk.content }
-    static var spokenGreen: Color { LearningInk.known }
+    static var spokenGreen: Color { LearningInk.spoken }
     static var lookedUpOrange: Color { LearningInk.familiar }
     /// Content words (noun, verb, adjective).
     static var posContentBlue: Color { LearningInk.content }
@@ -275,88 +260,106 @@ extension Color {
 }
 
 /// Jewel colors for Japanese, karaoke, and the dictionary. Each accent has a white-page set and a night set.
+/// Feed hierarchy (Kiku-style): white Japanese, muted readings, POS underlines, green spoken cursor, accent tap.
 enum LearningInk {
     /// Kanji and kana at rest. Near-black on white, white on night, for every accent.
     static var japanese: Color { JojoPalette.color(
         sakuraLight: "#1A1020", sakuraDark: "#FFFFFF",
-        plumLight: "#1A1024", plumDark: "#FFFFFF",
-        orangeLight: "#1C1208", orangeDark: "#FFFFFF"
+        amberLight: "#1C1208", amberDark: "#FFFFFF"
     ) }
-    /// Reading above a word.
+    /// Reading above a word. Quiet so underlines carry the grammar color.
     static var furigana: Color { JojoPalette.color(
-        sakuraLight: "#FF4D8D", sakuraDark: "#FFB7D8",
-        plumLight: "#8B5CF6", plumDark: "#DDD6FE",
-        orangeLight: "#FF7A00", orangeDark: "#FFD7A1"
+        sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
+        amberLight: "#6B5E52", amberDark: "#C7C7CC"
     ) }
-    /// Romaji under a word.
+    /// Romaji under a word. One step quieter than furigana.
     static var romaji: Color { JojoPalette.color(
-        sakuraLight: "#8A3A62", sakuraDark: "#F3C6DC",
-        plumLight: "#5C3A72", plumDark: "#D4B8EE",
-        orangeLight: "#8A4E12", orangeDark: "#F6C48A"
+        sakuraLight: "#8A7A82", sakuraDark: "#8E8E93",
+        amberLight: "#8A7A6E", amberDark: "#8E8E93"
     ) }
-    /// Nouns, verbs, and adjectives.
+    /// Nouns, verbs, and adjectives — underline / POS only.
     static var content: Color { JojoPalette.color(
         sakuraLight: "#007EA8", sakuraDark: "#5CEBFF",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FFB020"
+        amberLight: "#007EA8", amberDark: "#5CEBFF"
     ) }
-    /// Particles and other function words.
+    /// Particles and other function words — underline / POS only.
     static var particle: Color { JojoPalette.color(
-        sakuraLight: "#E21888", sakuraDark: "#FF5CAA",
-        plumLight: "#C43B86", plumDark: "#FF7AD9",
-        orangeLight: "#C2186A", orangeDark: "#FF6B8A"
+        sakuraLight: "#E21888", sakuraDark: "#FF8A3D",
+        amberLight: "#E21888", amberDark: "#FF8A3D"
     ) }
-    /// The word currently being spoken.
+    /// Karaoke cursor: the word being spoken right now (lime green, like Kiku).
     static var spoken: Color { JojoPalette.color(
-        sakuraLight: "#C45C00", sakuraDark: "#FFE14A",
-        plumLight: "#A15C00", plumDark: "#F6E27F",
-        orangeLight: "#0B6E8A", orangeDark: "#5CEBFF"
+        sakuraLight: "#0B8A4C", sakuraDark: "#7CFF6B",
+        amberLight: "#0B8A4C", amberDark: "#7CFF6B"
     ) }
-    /// A word the learner marked known.
+    /// A word the learner marked known — fully green.
     static var known: Color { JojoPalette.color(
         sakuraLight: "#0B8A4C", sakuraDark: "#5DFFB0",
-        plumLight: "#0E7A45", plumDark: "#7DFFC3",
-        orangeLight: "#0E7A45", orangeDark: "#6DFFB0"
+        amberLight: "#0E7A45", amberDark: "#5DFFB0"
     ) }
-    /// Saved or familiar, quieter than the spoken word.
+    /// Almost known — soft green, one step before Known.
+    static var easy: Color { JojoPalette.color(
+        sakuraLight: "#2FA86A", sakuraDark: "#8AFFB0",
+        amberLight: "#2FA86A", amberDark: "#8AFFB0"
+    ) }
+    /// Still learning — amber wall (Yomi-style “new” heat).
+    static var learning: Color { JojoPalette.color(
+        sakuraLight: "#D97706", sakuraDark: "#FFB020",
+        amberLight: "#C2410C", amberDark: "#FFB020"
+    ) }
+    /// Brand-new / never painted — warm amber so the line reads as a wall of work.
+    static var unlearned: Color { JojoPalette.color(
+        sakuraLight: "#B45309", sakuraDark: "#FF9F1A",
+        amberLight: "#9A3412", amberDark: "#FF9F1A"
+    ) }
+    /// Tapped / selected word — accent rim, separate from the green spoken cursor.
+    static var selected: Color { JojoPalette.color(
+        sakuraLight: "#FF4D8D", sakuraDark: "#FF7EB8",
+        amberLight: "#FF7A00", amberDark: "#FFB020"
+    ) }
+    /// Saved or familiar — accent ink between learning amber and easy green.
     static var familiar: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF8AD4",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FF8A3D"
+        amberLight: "#FF7A00", amberDark: "#FF8A3D"
     ) }
-    /// English under a karaoke line. Dark on white for Sakura, Lavender, and Orange.
+
+    /// Ink for a mastery mark on karaoke / ripen demos.
+    static func mastery(_ state: SRSState?) -> Color {
+        switch state {
+        case .known: return known
+        case .easy: return easy
+        case .familiar: return familiar
+        case .learning: return learning
+        case .new, .none: return unlearned
+        }
+    }
+    /// English under a karaoke line. Quiet white on night so Japanese stays primary.
     static var english: Color { JojoPalette.color(
-        sakuraLight: "#3A2A32", sakuraDark: "#FFD0E6",
-        plumLight: "#3A2A44", plumDark: "#EBD6FF",
-        orangeLight: "#4A3828", orangeDark: "#FFE0C2"
+        sakuraLight: "#3A2A32", sakuraDark: "#E5E5EA",
+        amberLight: "#4A3828", amberDark: "#E5E5EA"
     ) }
-    /// Glow behind the active line and the spoken pulse.
+    /// Glow behind spoken / selected words only.
     static var glow: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF4FA3",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FFB020"
+        amberLight: "#FF7A00", amberDark: "#FFB020"
     ) }
 
     /// Dictionary plate. White in light mode, a night plate in dark mode, for every accent.
     static var dictionaryPlate: Color { JojoPalette.color(
         sakuraLight: "#FFFFFF", sakuraDark: "#140C18",
-        plumLight: "#FFFFFF", plumDark: "#120C1C",
-        orangeLight: "#FFFFFF", orangeDark: "#1A1008"
+        amberLight: "#FFFFFF", amberDark: "#1A1008"
     ) }
-    static var dictionaryWord: Color { JojoPalette.color(
-        sakuraLight: "#FF4D8D", sakuraDark: "#FF7EB8",
-        plumLight: "#8B5CF6", plumDark: "#C4B5FD",
-        orangeLight: "#FF7A00", orangeDark: "#FFB020"
-    ) }
+    /// Headword on the dictionary card — same as karaoke Japanese so accent stays on the rim / selection.
+    static var dictionaryWord: Color { japanese }
+    /// Reading on the dictionary card — muted so the headword and gloss lead.
     static var dictionaryReading: Color { JojoPalette.color(
-        sakuraLight: "#8A3A62", sakuraDark: "#FFB7D8",
-        plumLight: "#6D28D9", plumDark: "#C4B5FD",
-        orangeLight: "#8A4E12", orangeDark: "#FFD7A1"
+        sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
+        amberLight: "#6B5E52", amberDark: "#C7C7CC"
     ) }
+    /// Primary gloss — readable white/ink, not a competing neon.
     static var dictionaryGloss: Color { JojoPalette.color(
-        sakuraLight: "#3A2A32", sakuraDark: "#FFE14A",
-        plumLight: "#3A2A44", plumDark: "#F6E27F",
-        orangeLight: "#4A3828", orangeDark: "#FFD7A1"
+        sakuraLight: "#1A1020", sakuraDark: "#F5F5F7",
+        amberLight: "#1C1208", amberDark: "#F5F5F7"
     ) }
 }
 
@@ -379,6 +382,14 @@ struct TextGlowModifier: ViewModifier {
 extension View {
     func textGlow(_ color: Color, level: GlowLevel, boosted: Bool = false) -> some View {
         modifier(TextGlowModifier(color: color, level: level, boosted: boosted))
+    }
+
+    /// Accent rim glow for cards and the dock. Off removes it.
+    func chromeGlow(_ color: Color, level: GlowLevel, radius: CGFloat = 12) -> some View {
+        let alpha = level.intensity
+        return self
+            .shadow(color: color.opacity(alpha * 0.55), radius: radius * (level == .liquid ? 1.4 : 1))
+            .shadow(color: color.opacity(level == .liquid ? alpha * 0.35 : 0), radius: radius * 2.2)
     }
 }
 
@@ -417,7 +428,7 @@ enum JojoFont {
 }
 
 extension Token {
-    /// Kiku-style underline: blue for content words, orange for particles / auxiliaries / copula.
+    /// Kiku-style underline: blue for content words, amber for particles / auxiliaries / copula.
     var underlineColor: Color {
         let key = pos.lowercased()
         switch key {

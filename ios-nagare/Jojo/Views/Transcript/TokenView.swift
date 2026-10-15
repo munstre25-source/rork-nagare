@@ -6,6 +6,8 @@ nonisolated enum TokenVisualState: Sendable {
 }
 
 /// A three-tier word: furigana (only above kanji), surface, romaji. Always at least 44pt tall and wide.
+/// Hierarchy: mastery-coloured Japanese (amber→green), muted readings, POS underlines,
+/// green spoken cursor, accent tap selection. Glow only on spoken/selected.
 struct TokenView: View {
     let token: Token
     let state: TokenVisualState
@@ -49,7 +51,7 @@ struct TokenView: View {
             if showFurigana {
                 Text(token.furigana ?? " ")
                     .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(state == .selected || state == .spoken ? LearningInk.spoken : LearningInk.furigana)
+                    .foregroundStyle(readingColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
@@ -63,18 +65,18 @@ struct TokenView: View {
                 .background { wordBackground }
                 .overlay { spokenOutline }
                 .overlay(alignment: .bottom) { underline }
-                .textGlow(glowColor, level: app.profile.glow, boosted: state == .spoken || pulse)
+                .textGlow(activeGlowColor, level: activeGlowLevel, boosted: state == .spoken || pulse)
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize))
-                    .foregroundStyle(state == .selected || state == .spoken ? LearningInk.spoken : LearningInk.romaji)
+                    .foregroundStyle(readingColor.opacity(0.85))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
         }
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
-        .scaleEffect(pulse || tapBounce ? 1.08 : 1)
+        .scaleEffect(pulse || tapBounce || state == .spoken ? 1.06 : 1)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -93,6 +95,14 @@ struct TokenView: View {
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: state)
+        .animation(.easeOut(duration: 0.2), value: familiarity)
+    }
+
+    /// Effective mastery for colouring — looked-up-but-unpainted reads as Learning.
+    private var mastery: SRSState? {
+        if let familiarity { return familiarity }
+        if isLookedUp { return .learning }
+        return token.tappable ? .new : nil
     }
 
     @ViewBuilder
@@ -100,43 +110,53 @@ struct TokenView: View {
         switch state {
         case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(LearningInk.spoken, lineWidth: 2.5)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(LearningInk.spoken.opacity(0.22))
-                )
+                .fill(LearningInk.selected.opacity(0.18))
         case .spoken:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(LearningInk.spoken.opacity(0.22))
+                .fill(LearningInk.spoken.opacity(0.16))
         case .normal:
-            if familiarity == .known {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(LearningInk.known, lineWidth: 2)
-            } else if isLookedUp {
-                // Saved / looked-up words get an orange fill like Kiku's 石炭.
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.sakuraPinkSoft)
+            if mastery == .known || mastery == .easy {
+                Color.clear
             } else if highlight {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.sakuraPinkSoft)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(LearningInk.selected.opacity(0.12))
+            } else if let mastery, mastery != .new {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(LearningInk.mastery(mastery).opacity(0.12))
             }
         }
     }
 
     @ViewBuilder
     private var spokenOutline: some View {
-        if state == .spoken, let ns = spokenNamespace {
+        switch state {
+        case .spoken:
+            if let ns = spokenNamespace {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+                    .matchedGeometryEffect(id: "spokenOutline", in: ns)
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+            }
+        case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(LearningInk.spoken, lineWidth: 2)
-                .matchedGeometryEffect(id: "spokenOutline", in: ns)
-        } else if state == .spoken {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(LearningInk.spoken, lineWidth: 2)
+                .strokeBorder(LearningInk.selected, lineWidth: 2.4)
+        case .normal:
+            if mastery == .known {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(LearningInk.known, lineWidth: 2)
+            } else if mastery == .easy {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(LearningInk.easy, lineWidth: 1.6)
+            }
         }
     }
 
     @ViewBuilder
     private var underline: some View {
-        if token.tappable, state != .selected, familiarity != .known {
+        // Underlines carry POS when still New; mastery ink otherwise. Hidden under boxes / known.
+        if token.tappable, state == .normal, mastery != .known, mastery != .easy {
             Capsule()
                 .fill(underlineColor)
                 .frame(height: 3)
@@ -147,10 +167,38 @@ struct TokenView: View {
 
     private var japaneseColor: Color {
         switch state {
-        case .selected, .spoken: return LearningInk.spoken
+        case .spoken: return LearningInk.spoken
+        case .selected: return LearningInk.selected
         case .normal:
-            if familiarity == .known { return LearningInk.known }
-            return LearningInk.japanese
+            guard token.tappable else { return LearningInk.japanese }
+            return LearningInk.mastery(mastery)
+        }
+    }
+
+    private var readingColor: Color {
+        switch state {
+        case .spoken: return LearningInk.spoken.opacity(0.9)
+        case .selected: return LearningInk.selected.opacity(0.9)
+        case .normal:
+            if token.tappable, let mastery, mastery != .new {
+                return LearningInk.mastery(mastery).opacity(0.75)
+            }
+            return LearningInk.furigana
+        }
+    }
+
+    private var activeGlowLevel: GlowLevel {
+        switch state {
+        case .spoken, .selected: return app.profile.glow
+        case .normal: return pulse ? app.profile.glow : .off
+        }
+    }
+
+    private var activeGlowColor: Color {
+        switch state {
+        case .spoken: return LearningInk.spoken
+        case .selected: return LearningInk.selected
+        case .normal: return pulse ? LearningInk.spoken : .clear
         }
     }
 
@@ -158,24 +206,17 @@ struct TokenView: View {
         var parts = [token.surface]
         if let reading = token.reading { parts.append(reading) }
         if let meaning = token.definitions.first { parts.append(meaning) }
-        if isLookedUp { parts.append("looked up before") }
-        if familiarity == .known { parts.append("known") }
-        if familiarity == .familiar { parts.append("familiar") }
+        if let mastery { parts.append(mastery.title) }
         return parts.joined(separator: ", ")
     }
 
-    private var glowColor: Color {
-        switch state {
-        case .selected, .spoken: return LearningInk.spoken
-        case .normal: return familiarity == .known ? LearningInk.known : LearningInk.glow
-        }
-    }
-
     private var underlineColor: Color {
-        switch familiarity {
+        switch mastery {
         case .known: return LearningInk.known
+        case .easy: return LearningInk.easy
         case .familiar: return LearningInk.familiar
-        default: return isLookedUp ? LearningInk.familiar : token.underlineColor
+        case .learning: return LearningInk.learning
+        case .new, .none: return token.underlineColor
         }
     }
 }

@@ -20,18 +20,21 @@ nonisolated struct Token: Codable, Hashable, Sendable {
     var baseForm: String?
     var baseReading: String?
     var baseRomaji: String?
+    /// Optional NHK-style pitch accent drop index when the lexicon provides it.
+    var pitchAccent: Int?
 
     enum CodingKeys: String, CodingKey {
-        case surface, reading, altReadings, romaji, start, end, pos, conjugationClass, jlpt, definitions, jaDefinitions, formality, tappable, baseForm, baseReading, baseRomaji
+        case surface, reading, altReadings, romaji, start, end, pos, conjugationClass, jlpt, definitions, jaDefinitions, formality, tappable, baseForm, baseReading, baseRomaji, pitchAccent
         case altReadingsSnake = "alt_readings"
         case conjugationSnake = "conjugation_class"
         case jaDefinitionsSnake = "ja_definitions"
+        case pitchAccentSnake = "pitch_accent"
     }
 
     init(surface: String, reading: String? = nil, altReadings: [String] = [], romaji: String, start: Double, end: Double,
          pos: String, conjugationClass: String? = nil, jlpt: String? = nil, definitions: [String] = [],
          jaDefinitions: [String] = [], formality: String? = nil, tappable: Bool = true,
-         baseForm: String? = nil, baseReading: String? = nil, baseRomaji: String? = nil) {
+         baseForm: String? = nil, baseReading: String? = nil, baseRomaji: String? = nil, pitchAccent: Int? = nil) {
         self.surface = surface
         self.reading = reading
         self.altReadings = altReadings
@@ -48,6 +51,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         self.baseForm = baseForm
         self.baseReading = baseReading
         self.baseRomaji = baseRomaji
+        self.pitchAccent = pitchAccent
     }
 
     init(from decoder: Decoder) throws {
@@ -71,6 +75,8 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         baseForm = try c.decodeIfPresent(String.self, forKey: .baseForm)
         baseReading = try c.decodeIfPresent(String.self, forKey: .baseReading)
         baseRomaji = try c.decodeIfPresent(String.self, forKey: .baseRomaji)
+        pitchAccent = try c.decodeIfPresent(Int.self, forKey: .pitchAccent)
+            ?? c.decodeIfPresent(Int.self, forKey: .pitchAccentSnake)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -91,6 +97,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         try c.encodeIfPresent(baseForm, forKey: .baseForm)
         try c.encodeIfPresent(baseReading, forKey: .baseReading)
         try c.encodeIfPresent(baseRomaji, forKey: .baseRomaji)
+        try c.encodeIfPresent(pitchAccent, forKey: .pitchAccent)
     }
 
     var containsKanji: Bool {
@@ -142,6 +149,16 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
 
     var categoryKind: ClipCategory { ClipCategory(rawValue: category) ?? .drama }
     var difficultyKind: Difficulty { Difficulty(rawValue: difficulty) ?? .beginner }
+
+    /// Most common JLPT tag across tappable tokens — for feed chrome chips.
+    var dominantJLPT: String? {
+        var counts: [String: Int] = [:]
+        for token in lines.flatMap(\.tokens) where token.tappable {
+            guard let level = token.jlpt?.uppercased(), !level.isEmpty else { continue }
+            counts[level, default: 0] += 1
+        }
+        return counts.max(by: { $0.value < $1.value })?.key
+    }
 
     /// True when `videoId` looks like a real 11-character YouTube ID.
     var hasRealVideo: Bool {

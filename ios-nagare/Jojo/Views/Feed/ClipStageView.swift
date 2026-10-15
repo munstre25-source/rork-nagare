@@ -480,3 +480,36 @@ struct ClipActionRow: View {
             .contentShape(Rectangle())
     }
 }
+
+/// Reads the player's time and feeds the transcript panel; isolated so only this subtree updates at playback rate.
+struct TranscriptSection: View {
+    let clip: Clip
+    let player: (any ClipPlayer)?
+    var onlyCurrentLine: Bool = false
+    var pulseTokenIndex: Int?
+    var isPulsing: Bool = false
+    var tooltip: String?
+    var forceDenseAids: Bool = false
+    /// Kiku window: current line plus the lines after it, no nested scroll.
+    var windowMode: Bool = false
+    /// How many lines after the current one stay on screen.
+    var followingLines: Int = 1
+    /// Words paint directly on the picture instead of on a card under the video.
+    var sitsOnVideo: Bool = false
+
+    var body: some View {
+        LiveTranscriptPanel(
+            clip: clip,
+            currentLine: player?.currentLineIndex ?? 0,
+            spokenToken: player?.isPlaying == true ? player?.currentTokenIndex : nil,
+            pulseTokenIndex: pulseTokenIndex,
+            isPulsing: isPulsing,
+            tooltip: tooltip,
+            onlyCurrentLine: onlyCurrentLine,
+            forceDenseAids: forceDenseAids,
+            windowMode: windowMode,
+            followingLines: followingLines,
+            sitsOnVideo: sitsOnVideo
+        )
+    }
+}

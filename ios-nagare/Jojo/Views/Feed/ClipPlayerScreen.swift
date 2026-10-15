@@ -97,18 +97,44 @@ struct ClipQueueScreen: View {
             .background(Color.watchBackground)
             .clipped()
 
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(.black.opacity(0.45), in: Circle())
+            // ULTIMATE Explore chrome: back + title + flag.
+            HStack(spacing: 10) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(videoExpanded ? .black.opacity(0.45) : .clear, in: Circle())
+                }
+                .accessibilityLabel("Back")
+
+                if !videoExpanded {
+                    Text("Explore")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+
+                Spacer(minLength: 0)
+
+                if !videoExpanded {
+                    Button {
+                        if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
+                            infoClip = clip
+                        }
+                    } label: {
+                        Image(systemName: "flag")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .frame(width: 40, height: 40)
+                    }
+                    .accessibilityLabel("Report clip")
+                }
             }
             .padding(.leading, Spacing.m)
+            .padding(.trailing, Spacing.m)
             .padding(.top, Spacing.s)
-            .accessibilityLabel("Back")
         }
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)

@@ -22,11 +22,21 @@ enum NotificationService {
         return settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
     }
 
-    /// Daily streak / study nudge at 19:00.
-    static func scheduleDailyReminder() {
+    /// Daily streak / study nudge at 19:00 — cites a real clip when available.
+    static func scheduleDailyReminder(clipTitle: String? = nil, channel: String? = nil, clipId: String? = nil) {
         let content = UNMutableNotificationContent()
-        content.title = "Your daily flow is waiting"
-        content.body = "A couple of clips keeps your streak alive. 流れに乗ろう!"
+        if let clipTitle, !clipTitle.isEmpty {
+            content.title = channel.map { "Continue \($0)" } ?? "Your clip is waiting"
+            content.body = "“\(clipTitle)” — a couple of minutes keeps words sticky."
+            if let clipId {
+                content.userInfo = ["deepLink": "jojo://feed?clipId=\(clipId)"]
+            } else {
+                content.userInfo = ["deepLink": "jojo://feed"]
+            }
+        } else {
+            content.title = "Your daily flow is waiting"
+            content.body = "A couple of clips keeps your streak alive. 流れに乗ろう!"
+        }
         content.sound = .default
         var components = DateComponents()
         components.hour = 19
@@ -35,16 +45,24 @@ enum NotificationService {
     }
 
     /// Morning review nudge when flashcards are due.
-    static func scheduleReviewReminder(dueCount: Int) {
+    static func scheduleReviewReminder(dueCount: Int, clipTitle: String? = nil, clipId: String? = nil) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [reviewId])
         guard dueCount > 0 else { return }
 
         let content = UNMutableNotificationContent()
         content.title = dueCount == 1 ? "1 card is due" : "\(dueCount) cards are due"
-        content.body = "Quick review keeps words sticky. Open Vocab to practice."
+        if let clipTitle, !clipTitle.isEmpty {
+            content.body = "Words from “\(clipTitle)” are ready — quick review keeps them sticky."
+        } else {
+            content.body = "Quick review keeps words sticky. Open Vocab to practice."
+        }
         content.sound = .default
-        content.userInfo = ["deepLink": "jojo://review"]
+        if let clipId {
+            content.userInfo = ["deepLink": "jojo://review?clipId=\(clipId)"]
+        } else {
+            content.userInfo = ["deepLink": "jojo://review"]
+        }
 
         var components = DateComponents()
         components.hour = 10
@@ -62,7 +80,7 @@ enum NotificationService {
     }
 
     /// Gentle streak-at-risk nudge at 21:30 today if the goal hasn't been met yet.
-    static func scheduleStreakAtRisk(streak: Int) {
+    static func scheduleStreakAtRisk(streak: Int, clipTitle: String? = nil, clipId: String? = nil) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [atRiskId])
         guard streak > 0 else { return }
@@ -72,8 +90,17 @@ enum NotificationService {
         guard let fire = Calendar.current.date(from: components), fire > Date() else { return }
         let content = UNMutableNotificationContent()
         content.title = "Your \(streak)-day streak is at risk"
-        content.body = "One short clip is all it takes tonight."
+        if let clipTitle, !clipTitle.isEmpty {
+            content.body = "One short pass of “\(clipTitle)” is all it takes tonight."
+        } else {
+            content.body = "One short clip is all it takes tonight."
+        }
         content.sound = .default
+        if let clipId {
+            content.userInfo = ["deepLink": "jojo://feed?clipId=\(clipId)"]
+        } else {
+            content.userInfo = ["deepLink": "jojo://feed"]
+        }
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         add(UNNotificationRequest(identifier: atRiskId, content: content, trigger: trigger))
     }

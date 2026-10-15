@@ -110,10 +110,20 @@ struct ChannelRow: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
-                    Text("\(clip.categoryKind.displayName) · \(clip.difficulty)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        if let jlpt = clip.dominantJLPT {
+                            Text("\(jlpt) est.")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(Color.sakuraPink)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Color.sakuraPink.opacity(0.16), in: Capsule())
+                        }
+                        Text("\(clip.categoryKind.displayName) · \(clip.difficulty)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
             Spacer(minLength: 0)

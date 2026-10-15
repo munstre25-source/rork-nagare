@@ -356,28 +356,24 @@ struct ProfileView: View {
 
             #if DEBUG
             settingsHeader("Debug · Marketing")
-            SettingsRow(symbol: "play.circle", title: "For You · Light") {
-                marketingScript = .forYouLight
+            SettingsRow(symbol: "play.circle", title: "1 · Sakura dark neon") {
+                marketingScript = .coreSakuraDarkNeon
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "play.circle", title: "For You · Dark") {
-                marketingScript = .forYouDark
+            SettingsRow(symbol: "play.circle", title: "2 · Sakura dark") {
+                marketingScript = .coreSakuraDarkOff
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "play.circle", title: "Explore & Vocab · Light") {
-                marketingScript = .exploreVocabLight
+            SettingsRow(symbol: "play.circle", title: "3 · Amber dark neon") {
+                marketingScript = .coreAmberDarkNeon
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "play.circle", title: "Explore & Vocab · Dark") {
-                marketingScript = .exploreVocabDark
+            SettingsRow(symbol: "play.circle", title: "4 · Amber dark") {
+                marketingScript = .coreAmberDarkOff
             }
             Divider().padding(.leading, 52)
-            SettingsRow(symbol: "paintpalette", title: "Themes · Light") {
-                marketingScript = .themeTourLight
-            }
-            Divider().padding(.leading, 52)
-            SettingsRow(symbol: "paintpalette", title: "Themes · Dark") {
-                marketingScript = .themeTourDark
+            SettingsRow(symbol: "film", title: "5 · Full app tour") {
+                marketingScript = .fullTour
             }
             Divider().padding(.leading, 52)
             SettingsRow(symbol: "arrow.uturn.backward", title: "Reset demo data", tint: .red, iconTint: .red) { confirmReset = true }

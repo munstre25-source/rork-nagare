@@ -62,6 +62,8 @@ final class UserProfile {
     var favoriteClipIds: [String] = []
     /// Clip ids the learner has played through. For You keeps these behind clips they have not finished.
     var finishedClipIds: [String] = []
+    /// Want-to-watch shelf in Library (Save for later).
+    var watchLaterClipIds: [String] = []
     /// Recent watch, skip, save, and favorite marks. For You clusters the next clips around these.
     var tasteTrace: [String] = []
     /// Channel names the user follows (For You / Following split).
@@ -72,12 +74,12 @@ final class UserProfile {
     var didSeedDemoData: Bool = false
     var firstClipId: String?
 
-    // Learning preferences (defaults keep existing behaviour).
-    var accentTheme: String = AccentTheme.orange.rawValue
+    // Learning preferences. New installs open on Sakura dark with neon glow.
+    var accentTheme: String = AccentTheme.sakura.rawValue
     /// `light` or `dark`. Older installs stored the accent name here; `AppModel` migrates those.
-    var appearanceMode: String = JojoScheme.light.rawValue
+    var appearanceMode: String = JojoScheme.dark.rawValue
     /// `off`, `soft`, `glow`, or `liquid`. Controls the halo on karaoke and dictionary words.
-    var glowLevel: String = GlowLevel.soft.rawValue
+    var glowLevel: String = GlowLevel.glow.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     var showRomaji: Bool = false
@@ -96,6 +98,22 @@ final class UserProfile {
     var didTryFlashcard: Bool = false
     /// One-shot coach after the first word tap that explains flashcards.
     var didShowVocabSaveCoach: Bool = false
+    /// First-session win coach: tap → hear → Good. `-1` skipped, `0…2` in progress, `3` done.
+    var firstSessionStep: Int = 0
+    /// Soft streak freeze remaining this week (0 or 1).
+    var streakFreezeRemaining: Int = 1
+    /// ISO week key (`yyyy-ww`) when the freeze last refreshed.
+    var streakFreezeWeekKey: String = ""
+    /// Day key that was patched by a freeze (counts toward streak once).
+    var streakFreezeUsedDay: String = ""
+    /// Calendar week key of the weekly report the learner already opened.
+    var lastWeeklyReportWeek: String = ""
+    /// Review answers counted this week (for the weekly report).
+    var weeklyReviewCount: Int = 0
+    /// Words saved this week (reset with the week key).
+    var weeklyWordsSaved: Int = 0
+    /// Week key (`yyyy-ww`) for weekly counters.
+    var weeklyStatsWeekKey: String = ""
 
     /// Onboarding: Instagram / TikTok / App Store / etc.
     var acquisitionSource: String = ""

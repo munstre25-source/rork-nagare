@@ -57,8 +57,22 @@ final class AppModel {
     var rewardFlight: WordFlight?
     /// Bumps when a brand-new word is saved so the Vocab tab can animate attention.
     private(set) var vocabBadgePulse: Int = 0
+    /// Toast payload when a saved word reappears in the spoken line.
+    var cameBackToast: CameBackPayload?
+    /// First-session coach step mirrored for the Feed overlay (`nil` when finished/skipped).
+    var firstSessionCoach: FirstSessionStep? {
+        // Existing installs that already open the main app skip the coach.
+        if profile.mainAppOpenCount > 2, profile.firstSessionStep == 0 {
+            return nil
+        }
+        let step = profile.firstSessionStep
+        guard profile.onboardingCompleted, step >= 0, step < FirstSessionStep.done.rawValue else { return nil }
+        return FirstSessionStep(rawValue: step)
+    }
 
     @ObservationIgnored private let seedClips: [Clip]
+    @ObservationIgnored private var cameBackShownKeys: Set<String> = []
+    @ObservationIgnored private var lastCameBackProbeKey: String = ""
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var clipsById: [String: Clip] = [:]
@@ -101,6 +115,8 @@ final class AppModel {
         rebuildClips()
         reloadLookedUpKeys()
         preloadCaches()
+        refreshStreakFreezeIfNeeded()
+        ensureWeeklyStatsBucket()
         save()
     }
 
@@ -115,9 +131,16 @@ final class AppModel {
         WidgetSnapshotPublisher.publish(from: self)
     }
 
-    /// Handles `jojo://feed` and `jojo://review` from widgets.
+    /// Handles `jojo://feed` and `jojo://review` from widgets / local notifications.
     func handleDeepLink(_ url: URL) {
         guard url.scheme == "jojo" else { return }
+        let clipFromQuery = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .first(where: { $0.name == "clipId" })?
+            .value
+        if let clipFromQuery, !clipFromQuery.isEmpty {
+            pendingFeedClipId = clipFromQuery
+        }
         switch url.host?.lowercased() {
         case "review":
             pendingDeepLink = .review
@@ -358,6 +381,7 @@ final class AppModel {
             profile.firstName,
             profile.finishedClipIds.joined(separator: ","),
             profile.favoriteClipIds.joined(separator: ","),
+            profile.watchLaterClipIds.joined(separator: ","),
             profile.followedChannelNames.joined(separator: ","),
             profile.tasteTrace.joined(separator: ";")
         ].joined(separator: "|")
@@ -536,6 +560,45 @@ final class AppModel {
         return isFavorite(clipId)
     }
 
+    // MARK: Watch later / Library
+
+    func isWatchLater(_ clipId: String) -> Bool {
+        profile.watchLaterClipIds.contains(clipId)
+    }
+
+    @discardableResult
+    func toggleWatchLater(_ clipId: String) -> Bool {
+        if let index = profile.watchLaterClipIds.firstIndex(of: clipId) {
+            profile.watchLaterClipIds.remove(at: index)
+        } else {
+            profile.watchLaterClipIds.append(clipId)
+        }
+        save()
+        tasteRevision += 1
+        return isWatchLater(clipId)
+    }
+
+    func hasFinished(_ clipId: String) -> Bool {
+        profile.finishedClipIds.contains(clipId)
+    }
+
+    /// Clips for Library shelves.
+    func libraryClips(shelf: LibraryShelf) -> [Clip] {
+        let ids: [String]
+        switch shelf {
+        case .watched: ids = profile.finishedClipIds.reversed()
+        case .saved: ids = profile.favoriteClipIds.reversed()
+        case .later: ids = profile.watchLaterClipIds.reversed()
+        }
+        return ids.compactMap { clip(id: $0) }
+    }
+
+    /// Rough clips remaining for today's minute goal (~45s average clip).
+    var clipsLeftToday: Int {
+        guard !isGoalReached else { return 0 }
+        return max(1, Int(ceil(Double(minutesLeft) * 60 / 45)))
+    }
+
     // MARK: Following
 
     func isFollowing(channel: String) -> Bool {
@@ -657,6 +720,8 @@ final class AppModel {
         wordStates[key] = word.state
         if isNew {
             vocabBadgePulse += 1
+            noteWeeklyWordSaved()
+            noteFirstSessionTap()
             let reading = word.primaryReading
             rewardFlight = WordFlight(
                 id: vocabBadgePulse,
@@ -676,6 +741,7 @@ final class AppModel {
         _ = recordTap(token: token, explanation: explanation, clip: clip, lineIndex: lineIndex, persist: false)
         guard let word = fetchWord(key: Self.wordKey(for: token)) else { return }
         apply(mark, to: word)
+        if mark != .new { noteFirstSessionGood() }
     }
 
     func paint(_ word: SavedWord, mark: SRSState) {
@@ -688,12 +754,20 @@ final class AppModel {
             word.state = .known
             word.intervalStepIndex = SRS.maxStep
             word.dueAt = Date().addingTimeInterval(365 * 86_400)
+        case .easy:
+            word.state = .easy
+            word.intervalStepIndex = 3
+            word.dueAt = Date().addingTimeInterval(21 * 86_400)
         case .familiar:
             word.state = .familiar
             word.intervalStepIndex = 2
             word.dueAt = Date().addingTimeInterval(7 * 86_400)
-        case .learning, .new:
+        case .learning:
             word.state = .learning
+            word.intervalStepIndex = 0
+            word.dueAt = Date()
+        case .new:
+            word.state = .new
             word.intervalStepIndex = 0
             word.dueAt = Date()
         }
@@ -715,6 +789,212 @@ final class AppModel {
             }
             .prefix(limit)
             .map(\.key)
+    }
+
+    /// POS / JLPT pockets with the most struggling cards.
+    func weakWordPockets(limit: Int = 3) -> [WeakWordPocket] {
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        let struggling = words.filter { $0.state == .new || $0.state == .learning || ($0.state == .familiar && $0.occurrenceCount >= 2) }
+        guard !struggling.isEmpty else { return [] }
+
+        var byPos: [String: [SavedWord]] = [:]
+        for word in struggling {
+            let label = StudyPosFilter.normalizedLabel(for: word.pos)
+            byPos[label, default: []].append(word)
+        }
+        var pockets: [WeakWordPocket] = byPos
+            .map { key, group in
+                let keys = group.sorted { $0.occurrenceCount > $1.occurrenceCount }.prefix(8).map(\.key)
+                return WeakWordPocket(
+                    title: key,
+                    subtitle: "\(group.count) words still soft — short review tightens this pocket",
+                    keys: Array(keys)
+                )
+            }
+            .sorted { $0.keys.count > $1.keys.count }
+
+        let n5 = struggling.filter { $0.jlpt == "N5" }
+        if n5.count >= 3 {
+            pockets.insert(
+                WeakWordPocket(
+                    title: "N5 verbs & particles",
+                    subtitle: "Core beginner forms that keep showing up",
+                    keys: Array(n5.prefix(8).map(\.key))
+                ),
+                at: 0
+            )
+        }
+        return Array(pockets.prefix(limit))
+    }
+
+    /// When a spoken token matches a saved word that isn't known yet, surface a one-shot toast.
+    func noteSpokenWordCameBack(token: Token, clipId: String) {
+        let key = Self.wordKey(for: token)
+        guard key != lastCameBackProbeKey else { return }
+        lastCameBackProbeKey = key
+        guard lookedUpKeys.contains(key), wordStates[key] != .known else { return }
+        let day = Self.dayKey(Date())
+        let toastKey = "\(day)|\(key)"
+        guard !cameBackShownKeys.contains(toastKey) else { return }
+        cameBackShownKeys.insert(toastKey)
+        let gloss = fetchWord(key: key)?.gloss ?? token.definitions.first ?? ""
+        cameBackToast = CameBackPayload(surface: token.surface, gloss: gloss, wordKey: key, clipId: clipId)
+        track("word_came_back", props: ["word": token.surface])
+    }
+
+    func dismissCameBackToast() {
+        cameBackToast = nil
+    }
+
+    // MARK: First-session win
+
+    func advanceFirstSession(to step: FirstSessionStep) {
+        guard profile.firstSessionStep >= 0, profile.firstSessionStep < FirstSessionStep.done.rawValue else { return }
+        if step.rawValue > profile.firstSessionStep {
+            profile.firstSessionStep = step.rawValue
+            save()
+        }
+    }
+
+    func noteFirstSessionTap() {
+        advanceFirstSession(to: .hear)
+    }
+
+    func noteFirstSessionHeard() {
+        advanceFirstSession(to: .good)
+    }
+
+    func noteFirstSessionGood() {
+        advanceFirstSession(to: .done)
+        track("first_session_win")
+    }
+
+    func skipFirstSessionCoach() {
+        profile.firstSessionStep = -1
+        save()
+    }
+
+    // MARK: Streak freeze
+
+    /// Refreshes the once-per-week freeze allowance and patches a missed day when eligible.
+    func refreshStreakFreezeIfNeeded() {
+        let week = Self.weekKey(Date())
+        var changed = false
+        if profile.streakFreezeWeekKey != week {
+            profile.streakFreezeWeekKey = week
+            profile.streakFreezeRemaining = 1
+            profile.streakFreezeUsedDay = ""
+            changed = true
+        }
+        if applyStreakFreezeIfNeeded() {
+            changed = true
+        } else if changed {
+            save()
+        }
+    }
+
+    /// If yesterday was missed but the day before was active, consume one freeze.
+    @discardableResult
+    private func applyStreakFreezeIfNeeded() -> Bool {
+        guard profile.streakFreezeRemaining > 0, profile.streakFreezeUsedDay.isEmpty else { return false }
+        let calendar = Calendar.current
+        let today = Date()
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today),
+              let dayBefore = calendar.date(byAdding: .day, value: -2, to: today) else { return false }
+        let todayKey = Self.dayKey(today)
+        let yKey = Self.dayKey(yesterday)
+        let beforeKey = Self.dayKey(dayBefore)
+        // Only freeze when today hasn't started and yesterday is empty but the streak was alive.
+        guard (watchLog[todayKey] ?? 0) < 60,
+              (watchLog[yKey] ?? 0) < 60,
+              (watchLog[beforeKey] ?? 0) >= 60 else { return false }
+        watchLog[yKey] = 60
+        profile.streakFreezeRemaining = 0
+        profile.streakFreezeUsedDay = yKey
+        persistWatchLog()
+        track("streak_freeze_used", props: ["day": yKey])
+        return true
+    }
+
+    static func weekKey(_ date: Date) -> String {
+        let cal = Calendar.current
+        let week = cal.component(.weekOfYear, from: date)
+        let year = cal.component(.yearForWeekOfYear, from: date)
+        return String(format: "%04d-W%02d", year, week)
+    }
+
+    func ensureWeeklyStatsBucket() {
+        let week = Self.weekKey(Date())
+        guard profile.weeklyStatsWeekKey != week else { return }
+        profile.weeklyStatsWeekKey = week
+        profile.weeklyReviewCount = 0
+        profile.weeklyWordsSaved = 0
+        save()
+    }
+
+    func noteWeeklyWordSaved() {
+        ensureWeeklyStatsBucket()
+        profile.weeklyWordsSaved += 1
+        save()
+    }
+
+    func markWeeklyReportSeen() {
+        profile.lastWeeklyReportWeek = Self.weekKey(Date())
+        save()
+    }
+
+    var shouldOfferWeeklyReport: Bool {
+        guard profile.onboardingCompleted else { return false }
+        return profile.lastWeeklyReportWeek != Self.weekKey(Date())
+            && Calendar.current.component(.weekday, from: Date()) == 1 // Sunday nudge
+            && weeklyMinutes.contains { $0.minutes > 0 }
+    }
+
+    func buildWeeklyReport() -> WeeklyLearningReport {
+        ensureWeeklyStatsBucket()
+        let minutes = Int(weeklyMinutes.reduce(0) { $0 + $1.minutes }.rounded())
+        let goalDays = weeklyMinutes.filter { $0.minutes * 60 >= dailyGoalSeconds }.count
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        let top = words.sorted { $0.occurrenceCount > $1.occurrenceCount }.prefix(5).map(\.surface)
+        let weak = weakWordPockets(limit: 1).first?.title
+        let headline: String
+        if minutes >= profile.dailyGoalMinutes * 5 {
+            headline = "Strong week"
+        } else if minutes > 0 {
+            headline = "You showed up"
+        } else {
+            headline = "Quiet week"
+        }
+        return WeeklyLearningReport(
+            headline: headline,
+            subtitle: minutes > 0
+                ? "\(minutes) minutes in real Japanese — streak \(currentStreak)."
+                : "Open For You for a few minutes and next Sunday will look different.",
+            minutesWatched: minutes,
+            wordsSaved: profile.weeklyWordsSaved,
+            cardsReviewed: profile.weeklyReviewCount,
+            streak: currentStreak,
+            goalDays: goalDays,
+            dayMinutes: weeklyMinutes,
+            topWords: Array(top),
+            weakPocketTitle: weak
+        )
+    }
+
+    /// Clip teaser used by contextual local notifications.
+    func reminderClipTeaser() -> (title: String, channel: String, clipId: String)? {
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        if let due = words.filter({ $0.dueAt <= Date() && !$0.contextClipId.isEmpty }).sorted(by: { $0.dueAt < $1.dueAt }).first,
+           let clip = clip(id: due.contextClipId) {
+            return (clip.title, clip.channelName, clip.id)
+        }
+        if let id = profile.firstClipId, let clip = clip(id: id) {
+            return (clip.title, clip.channelName, clip.id)
+        }
+        if let clip = forYouClips.first {
+            return (clip.title, clip.channelName, clip.id)
+        }
+        return nil
     }
 
     /// Saves a word read from a photo or screenshot. The sentence is the line it was found in.
@@ -814,7 +1094,16 @@ final class AppModel {
             let interval = SRS.goodInterval(fromStep: word.intervalStepIndex)
             word.intervalStepIndex = min(word.intervalStepIndex + 1, SRS.maxStep)
             word.dueAt = Date().addingTimeInterval(interval)
-            word.state = interval >= SRS.knownThreshold ? .known : (word.state == .familiar ? .familiar : .learning)
+            if interval >= SRS.knownThreshold {
+                word.state = .known
+            } else if word.state == .easy || word.state == .familiar {
+                // Keep manual paint marks through Good until the known threshold.
+            } else {
+                word.state = .learning
+            }
+            if firstSessionCoach == .good || firstSessionCoach == .hear {
+                noteFirstSessionGood()
+            }
         } else {
             word.intervalStepIndex = 0
             word.dueAt = Date().addingTimeInterval(SRS.againInterval)
@@ -822,6 +1111,8 @@ final class AppModel {
         }
         word.lastReviewedAt = Date()
         wordStates[word.key] = word.state
+        ensureWeeklyStatsBucket()
+        profile.weeklyReviewCount += 1
         save()
         refreshAllReminders()
     }
@@ -880,6 +1171,7 @@ final class AppModel {
     }
 
     /// Consecutive days with at least one minute watched, ending today (or yesterday if today isn't started).
+    /// A once-per-week soft freeze can patch a single missed day into the watch log via `refreshStreakFreezeIfNeeded()`.
     var currentStreak: Int {
         let calendar = Calendar.current
         var day = Date()
@@ -894,6 +1186,10 @@ final class AppModel {
             day = previous
         }
         return streak
+    }
+
+    var streakFreezeAvailable: Bool {
+        profile.streakFreezeRemaining > 0
     }
 
     /// Minutes watched for each of the last 7 days (oldest first).
@@ -912,24 +1208,35 @@ final class AppModel {
     }
 
     /// Older builds stored the accent in `appearanceMode` (`sakura`, `plum`, `orange`, `system`).
-    /// Light and dark now apply to whichever accent is selected.
+    /// Light and dark now apply to whichever accent is selected. Lavender becomes Sakura; Orange becomes Amber.
     private func migrateAppearanceIfNeeded() {
         switch profile.appearanceMode {
         case "plum", "purple":
-            profile.accentTheme = AccentTheme.plum.rawValue
+            profile.accentTheme = AccentTheme.sakura.rawValue
             profile.appearanceMode = JojoScheme.dark.rawValue
         case "orange":
-            profile.accentTheme = AccentTheme.orange.rawValue
+            profile.accentTheme = AccentTheme.amber.rawValue
             profile.appearanceMode = JojoScheme.dark.rawValue
         case "sakura", "system":
             profile.accentTheme = AccentTheme.sakura.rawValue
             profile.appearanceMode = JojoScheme.dark.rawValue
         case "light", "dark":
-            if AccentTheme(rawValue: profile.accentTheme) == nil {
-                profile.accentTheme = AccentTheme.sakura.rawValue
-            }
+            migrateAccentThemeIfNeeded()
         default:
             profile.appearanceMode = JojoScheme.dark.rawValue
+            migrateAccentThemeIfNeeded()
+        }
+        migrateAccentThemeIfNeeded()
+    }
+
+    /// Maps retired accent names onto Sakura or Amber.
+    private func migrateAccentThemeIfNeeded() {
+        switch profile.accentTheme {
+        case "plum", "purple":
+            profile.accentTheme = AccentTheme.sakura.rawValue
+        case "orange":
+            profile.accentTheme = AccentTheme.amber.rawValue
+        default:
             if AccentTheme(rawValue: profile.accentTheme) == nil {
                 profile.accentTheme = AccentTheme.sakura.rawValue
             }
@@ -1024,12 +1331,13 @@ final class AppModel {
     /// Re-schedule daily, review, and streak-at-risk notifications from current local state.
     func refreshAllReminders() {
         guard profile.remindersEnabled else { return }
-        NotificationService.scheduleDailyReminder()
-        NotificationService.scheduleReviewReminder(dueCount: dueWordCount)
+        let teaser = reminderClipTeaser()
+        NotificationService.scheduleDailyReminder(clipTitle: teaser?.title, channel: teaser?.channel, clipId: teaser?.clipId)
+        NotificationService.scheduleReviewReminder(dueCount: dueWordCount, clipTitle: teaser?.title, clipId: teaser?.clipId)
         if isGoalReached {
             NotificationService.cancelStreakAtRisk()
         } else {
-            NotificationService.scheduleStreakAtRisk(streak: currentStreak)
+            NotificationService.scheduleStreakAtRisk(streak: currentStreak, clipTitle: teaser?.title, clipId: teaser?.clipId)
         }
         refreshTrialReminder()
     }
@@ -1270,6 +1578,7 @@ final class AppModel {
         ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }
         watchLog = [:]
         profile.favoriteClipIds = []
+        profile.watchLaterClipIds = []
         profile.tasteTrace = []
         profile.lastGoalCelebratedDay = ""
         profile.didSeedDemoData = false
@@ -1304,6 +1613,7 @@ final class AppModel {
         defaults.removeObject(forKey: "nagare.local.anon.id")
         defaults.removeObject(forKey: "nagare.analytics.log")
         defaults.removeObject(forKey: "nagare.explain.calllog")
+        ResumePlaybackStore.clear()
 
         let fresh = UserProfile()
         context.delete(profile)

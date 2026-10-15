@@ -22,6 +22,7 @@ struct ExploreHomeView: View {
     @State private var watchDone = false
     @State private var speakDone = false
     @State private var speakCoordinator = PlaybackCoordinator()
+    @State private var showSpeakingScenes = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -36,18 +37,64 @@ struct ExploreHomeView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Explore")
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(LearningInk.japanese)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+                            .textGlow(LearningInk.glow, level: app.profile.glow)
                         Text("Dive into different ways to learn.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.studyMuted)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    exploreDoors
-                    Text("Ways to study")
-                        .font(.headline)
+                    HStack(spacing: 0) {
+                        Color.clear.frame(width: 40, height: 40)
+                        Spacer(minLength: 0)
+                        CenteredModeSwitch(
+                            forYouSelected: false,
+                            onForYou: onOpenFeed,
+                            onExplore: {}
+                        )
+                        Spacer(minLength: 0)
+                        Button {
+                            path.append(LearningPath.jlpt)
+                        } label: {
+                            Image(systemName: "map")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 40, height: 40)
+                        }
+                        .accessibilityLabel("My Path")
+                    }
+                    Button {
+                        Haptics.selection()
+                        showSpeakingScenes = true
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "mic.fill")
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Speaking scenes")
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                Text("Konbini, station, restaurant — say it out loud.")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.studyMuted)
+                                    .lineLimit(2)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(14)
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
+                    }
+                    .buttonStyle(.plain)
                     VStack(spacing: 12) {
                         ForEach(LearningPath.allCases) { path in
                             NavigationLink(value: path) {
@@ -79,6 +126,9 @@ struct ExploreHomeView: View {
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
             }
+            .sheet(isPresented: $showSpeakingScenes) {
+                SpeakingScenesView()
+            }
             .sheet(isPresented: $showCapture) {
                 CaptureJapaneseView()
             }
@@ -100,52 +150,28 @@ struct ExploreHomeView: View {
             guard let newPath else { return }
             path.append(newPath)
         }
-        .environment(\.colorScheme, .light)
     }
 
     private var topBar: some View {
-        ZStack {
-            CenteredModeSwitch(forYouSelected: false, onForYou: onOpenFeed, onExplore: {})
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                NavigationLink(value: SearchRoute.search) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 40, height: 40)
-                }
-                .accessibilityLabel("Search")
-                Button {
-                    showGoal = true
-                } label: {
-                    Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(app.isGoalReached ? Color.designOrange : .primary)
-                        .frame(width: 40, height: 40)
-                }
-                .accessibilityLabel("Daily goal")
-            }
-        }
-    }
-
-    private var exploreDoors: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+        HStack(spacing: 8) {
+            JojoWordmark(size: 28)
+            Spacer(minLength: 0)
             NavigationLink(value: SearchRoute.search) {
-                ExploreDoorCard(title: "Search a word", subtitle: "Hear it in real clips", symbol: "magnifyingglass")
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 40, height: 40)
             }
-            .buttonStyle(.plain)
-            NavigationLink(value: LearningPath.jlpt) {
-                ExploreDoorCard(title: "Difficulty levels", subtitle: "N5 through N1", symbol: "chart.bar.fill")
+            .accessibilityLabel("Search")
+            Button {
+                showGoal = true
+            } label: {
+                Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(app.isGoalReached ? Color.designOrange : .primary)
+                    .frame(width: 40, height: 40)
             }
-            .buttonStyle(.plain)
-            NavigationLink(value: LearningPath.grammar) {
-                ExploreDoorCard(title: "Grammar patterns", subtitle: "Particles and forms in real lines", symbol: "text.book.closed")
-            }
-            .buttonStyle(.plain)
-            NavigationLink(value: TopicHub.topics) {
-                ExploreDoorCard(title: "Topics & styles", subtitle: "Conversation, culture, more", symbol: "square.grid.2x2")
-            }
-            .buttonStyle(.plain)
+            .accessibilityLabel("Daily goal")
         }
     }
 
@@ -264,37 +290,6 @@ nonisolated enum TopicHub: Hashable, Sendable {
     case topics
 }
 
-private struct ExploreDoorCard: View {
-    let title: String
-    let subtitle: String
-    let symbol: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.studyAccent)
-                .frame(width: 36, height: 36)
-                .background(Color.studyFocus, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            Text(title)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
-    }
-}
-
 private struct TopicStylesView: View {
     private let paths: [LearningPath] = [.conversation, .listening, .culture, .practice]
 
@@ -317,7 +312,6 @@ private struct TopicStylesView: View {
         .background(Color.studyPage.ignoresSafeArea())
         .navigationTitle("Topics & styles")
         .navigationBarTitleDisplayMode(.inline)
-        .environment(\.colorScheme, .light)
     }
 }
 
@@ -382,6 +376,7 @@ nonisolated enum LearningPath: String, CaseIterable, Identifiable, Hashable, Sen
 
 private struct LearningPathCard: View {
     let path: LearningPath
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         HStack(spacing: 14) {
@@ -402,11 +397,21 @@ private struct LearningPathCard: View {
             }
             .frame(width: 64, height: 64)
             VStack(alignment: .leading, spacing: 3) {
-                Text(path.title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                HStack(spacing: 8) {
+                    Text(path.title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    if path == .practice {
+                        Text("New")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.sakuraButton, in: Capsule())
+                    }
+                }
                 Text(path.subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -419,7 +424,12 @@ private struct LearningPathCard: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(12)
-        .background(path.tint, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(Color.card.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.sakuraPink.opacity(app.profile.glow == .off ? 0.22 : 0.55), lineWidth: 1)
+        )
+        .chromeGlow(Color.sakuraPink, level: app.profile.glow, radius: 10)
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }

@@ -54,8 +54,9 @@ struct TranscriptLineView: View {
                 }
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
-                        .font((forceDenseAids || raisedCard ? Font.subheadline : Font.body).weight(.semibold))
-                        .foregroundStyle(LearningInk.english)
+                        .font(forceDenseAids || raisedCard ? Font.footnote : Font.body)
+                        .fontWeight(raisedCard ? .regular : .semibold)
+                        .foregroundStyle(LearningInk.english.opacity(raisedCard ? 0.78 : 1))
                         .lineLimit(4)
                         .minimumScaleFactor(0.85)
                         .multilineTextAlignment(.leading)
@@ -87,23 +88,13 @@ struct TranscriptLineView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if raisedCard {
-                    let glow = app.profile.glow
+                    // Quiet dark plate — words and the green cursor carry the hierarchy, not the chrome.
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .fill(Color.transcriptCard)
-                        .shadow(color: Color.activeLineGlow.opacity(glow.intensity), radius: 4 + glow.radius, y: 2)
-                        .overlay {
-                            if glow == .liquid {
-                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.22), Color.white.opacity(0.04), .clear],
-                                            startPoint: .top,
-                                            endPoint: .center
-                                        )
-                                    )
-                                    .allowsHitTesting(false)
-                            }
-                        }
+                        .fill(Color.black.opacity(0.88))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                 }
             }
             .opacity(isActive ? 1 : 0.82)

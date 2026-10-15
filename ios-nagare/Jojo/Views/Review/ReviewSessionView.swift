@@ -168,9 +168,15 @@ struct ReviewSessionView: View {
             romaji: app.profile.showRomaji ? word.romaji : "",
             pos: word.pos,
             jlpt: word.jlpt,
-            hint: "Tap to reveal"
+            hint: "Tap to reveal",
+            sourceLabel: sourceLabel(for: word)
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func sourceLabel(for word: SavedWord) -> String? {
+        guard let clip = app.clip(id: word.contextClipId) else { return nil }
+        return "from \(clip.channelName)"
     }
 
     private func backFace(_ word: SavedWord) -> some View {
@@ -291,7 +297,8 @@ struct KikuFlashcardBack: View {
                 reading: app.profile.showFurigana ? word.primaryReading : "",
                 romaji: app.profile.showRomaji ? word.romaji : "",
                 pos: word.pos,
-                jlpt: word.jlpt
+                jlpt: word.jlpt,
+                sourceLabel: clip.map { "from \($0.channelName)" }
             )
             if !defs.isEmpty {
                 FlashcardSectionTitle(title: "Definition", systemImage: "book.closed.fill")
@@ -456,9 +463,14 @@ struct FlashcardHero: View {
     let pos: String
     let jlpt: String?
     var hint: String? = nil
+    /// e.g. "from a food vlog" — always show the clip the word came from.
+    var sourceLabel: String? = nil
+
+    @Environment(AppModel.self) private var app
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        let glow = app.profile.glow
+        return ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 8) {
                 HStack {
                     readingPill
@@ -472,11 +484,18 @@ struct FlashcardHero: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
                     .frame(maxWidth: .infinity)
+                    .textGlow(Color.sakuraPink, level: glow)
                 if !romaji.isEmpty {
                     Text(romaji.uppercased())
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .tracking(2)
                         .foregroundStyle(FlashcardInk.ink.opacity(0.92))
+                }
+                if let sourceLabel, !sourceLabel.isEmpty {
+                    Label(sourceLabel, systemImage: "play.rectangle.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Color.sakuraPink)
+                        .labelStyle(.titleAndIcon)
                 }
                 if let hint {
                     Text(hint)
@@ -516,9 +535,10 @@ struct FlashcardHero: View {
         .background(FlashcardInk.plate, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(Color.sakuraPink.opacity(0.9), lineWidth: 1.5)
+                .strokeBorder(Color.sakuraPink.opacity(glow == .off ? 0.35 : 0.9), lineWidth: 1.5)
         )
-        .shadow(color: Color.sakuraPink.opacity(0.45), radius: 16, y: 4)
+        .shadow(color: Color.sakuraPink.opacity(0.45 * glow.intensity), radius: glow == .off ? 0 : 16, y: glow == .off ? 0 : 4)
+        .chromeGlow(Color.sakuraPink, level: glow, radius: 14)
     }
 
     private var readingPill: some View {
@@ -634,63 +654,52 @@ struct ReviewGradeButton: View {
     }
 }
 
-/// Colors for the review card. Sakura, Lavender, and Orange each have a white-page set and a night set.
+/// Colors for the review card. Sakura and Amber each have a white-page set and a night set.
 enum FlashcardInk {
     static var page: Color { JojoPalette.color(
         sakuraLight: "#FFFFFF", sakuraDark: "#07060E",
-        plumLight: "#FFFFFF", plumDark: "#0C0814",
-        orangeLight: "#FFFFFF", orangeDark: "#100C08"
+        amberLight: "#FFFFFF", amberDark: "#100C08"
     ) }
     static var plate: Color { JojoPalette.color(
         sakuraLight: "#FFFFFF", sakuraDark: "#1A1022",
-        plumLight: "#FFFFFF", plumDark: "#161222",
-        orangeLight: "#FFFFFF", orangeDark: "#1C140E"
+        amberLight: "#FFFFFF", amberDark: "#1C140E"
     ) }
     static var row: Color { JojoPalette.color(
         sakuraLight: "#FFF0F6", sakuraDark: "#2A1A32",
-        plumLight: "#F4EEF7", plumDark: "#241C32",
-        orangeLight: "#FFF4E8", orangeDark: "#2A1C12"
+        amberLight: "#FFF4E8", amberDark: "#2A1C12"
     ) }
     /// Word and definition type. Near-black on the white page for every accent.
     static var ink: Color { JojoPalette.color(
         sakuraLight: "#1C1C1E", sakuraDark: "#FFFFFF",
-        plumLight: "#1C1C1E", plumDark: "#FFFFFF",
-        orangeLight: "#1C1C1E", orangeDark: "#FFFFFF"
+        amberLight: "#1C1C1E", amberDark: "#FFFFFF"
     ) }
     static var muted: Color { JojoPalette.color(
         sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
-        plumLight: "#655C6B", plumDark: "#C7C7CC",
-        orangeLight: "#6B5E52", orangeDark: "#C7C7CC"
+        amberLight: "#6B5E52", amberDark: "#C7C7CC"
     ) }
     static var againFill: Color { JojoPalette.color(
         sakuraLight: "#F8D0E4", sakuraDark: "#F7C6DE",
-        plumLight: "#E3D2E8", plumDark: "#E4D0EE",
-        orangeLight: "#F8E0C4", orangeDark: "#F6D4AE"
+        amberLight: "#F8E0C4", amberDark: "#F6D4AE"
     ) }
     static var againInk: Color { JojoPalette.color(
         sakuraLight: "#C2186A", sakuraDark: "#A01458",
-        plumLight: "#5C3A72", plumDark: "#4A2C60",
-        orangeLight: "#C45C00", orangeDark: "#8A3E00"
+        amberLight: "#C45C00", amberDark: "#8A3E00"
     ) }
     static var goodA: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF4D8D",
-        plumLight: "#8B5CF6", plumDark: "#8B5CF6",
-        orangeLight: "#FF7A00", orangeDark: "#FF7A00"
+        amberLight: "#FF7A00", amberDark: "#FF7A00"
     ) }
     static var goodB: Color { JojoPalette.color(
         sakuraLight: "#FF7EB8", sakuraDark: "#FF7EB8",
-        plumLight: "#A78BFA", plumDark: "#C4B5FD",
-        orangeLight: "#FF9A3C", orangeDark: "#FFB020"
+        amberLight: "#FF9A3C", amberDark: "#FFB020"
     ) }
     static var posFill: Color { JojoPalette.color(
         sakuraLight: "#F3D0E6", sakuraDark: "#5C2A6A",
-        plumLight: "#E3D2E8", plumDark: "#5C3A72",
-        orangeLight: "#F8E0C4", orangeDark: "#6B3A12"
+        amberLight: "#F8E0C4", amberDark: "#6B3A12"
     ) }
     static var posInk: Color { JojoPalette.color(
         sakuraLight: "#7A2460", sakuraDark: "#F6D6EA",
-        plumLight: "#5C3A72", plumDark: "#F3E6FA",
-        orangeLight: "#8A3E00", orangeDark: "#FFE0B8"
+        amberLight: "#8A3E00", amberDark: "#FFE0B8"
     ) }
 }
 
