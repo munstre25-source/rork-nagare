@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Routes to onboarding/paywall until onboarding is complete AND the entitlement is active.
 struct RootView: View {
@@ -41,8 +42,7 @@ struct MainTabView: View {
     @State private var showFeedbackPrompt = false
     @State private var showManualFeedback = false
     @State private var showCancellationSurvey = false
-    /// New flashcards saved since the last visit to Vocab. The system badge shows only this count.
-    @State private var newVocabSinceVisit: Int = 0
+    @Query private var savedWords: [SavedWord]
     @State private var showingExplore = false
     @State private var welcome: (due: Int, streak: Int)?
     @State private var flight: WordFlight?
@@ -50,6 +50,16 @@ struct MainTabView: View {
     /// True only on For You, once the learner has settled into a playing clip.
     private var focusCapsuleHidden: Bool {
         app.feedChromeHidden && tab == .feed && !showingExplore
+    }
+
+    /// The badge is a real Vocab notification: cards the learner can review now.
+    /// It deliberately survives visiting Vocab and clears only as the cards are rescheduled.
+    private var dueVocabNotificationCount: Int {
+        savedWords.reduce(into: 0) { count, word in
+            if word.state != .known, word.dueAt <= Date() {
+                count += 1
+            }
+        }
     }
 
     var body: some View {
@@ -68,7 +78,6 @@ struct MainTabView: View {
                 .background(SystemTabBarHider())
                 .tabItem { Label("Vocab", systemImage: "book") }
                 .tag(AppTab.vocab)
-                .badge(newVocabSinceVisit)
 
             ProfileView(onGiveFeedback: { showManualFeedback = true })
                 .toolbar(.hidden, for: .tabBar)
@@ -83,7 +92,7 @@ struct MainTabView: View {
             // While a clip is playing the whole dock leaves the screen so the raised
             // panda never covers the video. It returns on tap, pause, or a dictionary card.
             if !app.hidesMainTabBar, !focusCapsuleHidden {
-                JojoDock(selection: $tab, vocabBadge: newVocabSinceVisit)
+                JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
                     .padding(.horizontal, 26)
                     .padding(.top, 12)
                     .padding(.bottom, 6)
@@ -93,11 +102,7 @@ struct MainTabView: View {
         .animation(.easeInOut(duration: 0.4), value: focusCapsuleHidden)
         .preferredColorScheme(app.profile.scheme.colorScheme)
         .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
-        .onChange(of: app.vocabBadgePulse) { _, _ in
-            if tab != .vocab { newVocabSinceVisit += 1 }
-        }
         .onChange(of: tab) { _, newTab in
-            if newTab == .vocab { newVocabSinceVisit = 0 }
             if newTab != .feed {
                 showingExplore = false
                 app.feedChromeHidden = false
@@ -284,7 +289,7 @@ struct JojoDock: View {
                         .clipShape(Circle())
                         .frame(width: 64, height: 64)
                     if vocabBadge > 0 {
-                        Text("\(vocabBadge)")
+                        Text("\(min(vocabBadge, 99))")
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(width: 30, height: 30)
