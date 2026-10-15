@@ -100,14 +100,12 @@ enum PlaybackUI {
     }
 }
 
-/// Builds the right player for a clip. Bundled MP4s are debug walkthroughs only.
-/// Release playback uses the YouTube source for the same clip.
+/// Builds the right player for a clip. Bundled MP4s are preferred in every build so
+/// curated offline clips remain playable without a remote embed or network connection.
 @MainActor
 enum ClipPlayerFactory {
     static func make(for clip: Clip) -> any ClipPlayer {
-        #if DEBUG
         if clip.hasLocalVideo { return LocalClipPlayer(clip: clip) }
-        #endif
         if clip.hasRealVideo { return YouTubeClipPlayer(clip: clip) }
         return SimulatedClipPlayer(clip: clip)
     }

@@ -49,6 +49,11 @@ final class LocalClipPlayer: ClipPlayer {
                 guard let self else { return }
                 if item.status == .readyToPlay {
                     self.isReady = true
+                    // `activate` can request playback before AVFoundation finishes loading the
+                    // item. Start it here as well so that initial request is never lost.
+                    if self.isPlaying {
+                        self.avPlayer.playImmediately(atRate: Float(self.rate))
+                    }
                 }
             }
         }
@@ -130,8 +135,11 @@ final class LocalClipPlayer: ClipPlayer {
         didFinish = false
         lastTickWall = Date()
         isPlaying = true
-        avPlayer.rate = Float(rate)
-        if avPlayer.rate == 0 { avPlayer.play() }
+        // This works whether the item is ready now or becomes ready in the status observer.
+        avPlayer.play()
+        if isReady {
+            avPlayer.rate = Float(rate)
+        }
     }
 
     func pause() {

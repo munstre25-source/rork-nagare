@@ -237,6 +237,7 @@ struct SplashView: View {
                         .buttonStyle(PrimaryButtonStyle())
 
                         #if DEBUG
+                        debugSkipToFeedButton
                         debugMarketingButtons
                         #endif
                     }
@@ -267,6 +268,23 @@ struct SplashView: View {
     }
 
     #if DEBUG
+    private var debugSkipToFeedButton: some View {
+        Button {
+            Haptics.medium()
+            // Keep the debug shortcut representative of a true first-run account: it opens
+            // the real feed without demo vocabulary or watch history.
+            app.purchases.activateDebugBypass()
+            app.completeOnboarding(seedDemo: false)
+        } label: {
+            Label("DEBUG · Skip setup & paywall", systemImage: "forward.fill")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .background(Color.jojoOrange.opacity(0.88), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .accessibilityHint("Opens the real feed with the debug paywall bypass")
+    }
+
     private var debugMarketingButtons: some View {
         VStack(spacing: Spacing.s) {
             Text("DEBUG")
