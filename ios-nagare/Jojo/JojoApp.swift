@@ -35,7 +35,8 @@ struct JojoApp: App {
                         session.app.refreshAllReminders()
                         WidgetSnapshotPublisher.publish(from: session.app)
                         ImmersionIsland.endStale()
-                        await MetaAttribution.requestTrackingIfNeededAndSync()
+                        MetaAttribution.activateApp()
+                        MetaAttribution.syncToRevenueCat()
                     }
                     .onOpenURL { url in
                         if MetaAttribution.handleOpenURL(url) { return }
@@ -69,7 +70,8 @@ struct JojoApp: App {
                 session.app.refreshAllReminders()
             }
             WidgetSnapshotPublisher.publish(from: session.app)
-            Task { await MetaAttribution.requestTrackingIfNeededAndSync() }
+            MetaAttribution.activateApp()
+            MetaAttribution.syncToRevenueCat()
         }
     }
 }
