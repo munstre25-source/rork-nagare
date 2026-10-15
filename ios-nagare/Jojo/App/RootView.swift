@@ -34,7 +34,7 @@ nonisolated enum AppTab: Hashable, Sendable {
     case library, feed, vocab, explore, profile
 }
 
-/// Library, Feed, Vocab, and Profile sit in the bottom bar. Explore opens from the top switch.
+/// Vocab, Feed, and Profile sit in the bottom bar. Explore opens from the top switch.
 struct MainTabView: View {
     @Environment(AppModel.self) private var app
     @State private var tab: AppTab = .feed
@@ -54,12 +54,6 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            LibraryView()
-                .toolbar(.hidden, for: .tabBar)
-                .background(SystemTabBarHider())
-                .tabItem { Label("Library", systemImage: "books.vertical") }
-                .tag(AppTab.library)
-
             FeedTab(
                 showingExplore: $showingExplore,
                 feedActive: tab == .feed
@@ -232,7 +226,7 @@ private struct FeedTab: View {
     }
 }
 
-/// Curved dock from the navigation board: Library, Vocab, raised Feed panda, Profile.
+/// Curved dock from the approved navigation board: Vocab, raised Feed panda, Profile.
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
@@ -255,23 +249,22 @@ struct JojoDock: View {
                     DockWaveMotif()
                         .allowsHitTesting(false)
                 }
-                .frame(height: 64)
+                .frame(height: 72)
 
             HStack(alignment: .bottom, spacing: 0) {
-                sideItem(.library, title: "Library", symbol: "books.vertical")
-                sideItem(.vocab, title: "Vocab", symbol: "book", badge: vocabBadge)
+                sideItem(.vocab, title: "Vocab", symbol: "book.closed", badge: vocabBadge)
                 Spacer(minLength: 0)
                 feedItem
                 Spacer(minLength: 0)
                 sideItem(.profile, title: "Profile", symbol: "person")
             }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 8)
-            .offset(y: -18)
+            .padding(.horizontal, 28)
+            .padding(.bottom, 9)
+            .offset(y: -24)
         }
-        .frame(maxWidth: 400)
+        .frame(maxWidth: 430)
         .frame(maxWidth: .infinity)
-        .padding(.top, 22)
+        .padding(.top, 28)
         .accessibilityElement(children: .contain)
     }
 
@@ -285,15 +278,15 @@ struct JojoDock: View {
                 ZStack {
                     Circle()
                         .fill(Color.dockFill)
-                        .frame(width: 66, height: 66)
+                        .frame(width: 78, height: 78)
                         .overlay {
                             Circle()
                                 .strokeBorder(accent, lineWidth: selected ? 2.5 : 1.5)
                         }
                         .chromeGlow(accent, level: glow, radius: selected ? 16 : 10)
-                    JojoMascot(height: 52, floats: false, pose: .book)
+                    JojoMascot(height: 62, floats: false, pose: .book)
                         .clipShape(Circle())
-                        .frame(width: 56, height: 56)
+                        .frame(width: 66, height: 66)
                     // Petals around the panda — decorative only.
                     ForEach(0..<4, id: \.self) { i in
                         Blossom(size: i % 2 == 0 ? 10 : 7, color: accent.opacity(0.85))
@@ -305,12 +298,12 @@ struct JojoDock: View {
                     }
                 }
                 Text("Feed")
-                    .font(.caption2.weight(.bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(selected ? accent : muted)
                     .lineLimit(1)
                 Capsule()
                     .fill(selected ? accent : Color.clear)
-                    .frame(width: 22, height: 3)
+                    .frame(width: 34, height: 4)
                     .chromeGlow(accent, level: selected ? glow : .off, radius: 4)
             }
         }
@@ -338,7 +331,7 @@ struct JojoDock: View {
                     Image(systemName: dockSymbol(symbol, selected: selected))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(tint)
-                        .frame(width: 40, height: 26)
+                        .frame(width: 44, height: 28)
                         .textGlow(accent, level: selected ? glow : .off)
                     if badge > 0 {
                         Text("\(badge)")
@@ -352,14 +345,14 @@ struct JojoDock: View {
                     }
                 }
                 Text(title)
-                    .font(.caption2.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(tint)
                     .lineLimit(1)
                 Capsule()
                     .fill(selected ? accent : Color.clear)
                     .frame(width: 18, height: 3)
             }
-            .frame(width: 72)
+            .frame(width: 82)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
