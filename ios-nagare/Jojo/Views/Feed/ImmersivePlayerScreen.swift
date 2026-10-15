@@ -14,7 +14,7 @@ struct ImmersivePlayerScreen: View {
     @State private var coordinator = PlaybackCoordinator()
     @State private var lookup = WordLookupController()
     @State private var infoClip: Clip?
-    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
+    @State private var videoExpanded: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,7 +31,6 @@ struct ImmersivePlayerScreen: View {
                 onToggleVideoSize: {
                     Haptics.selection()
                     withAnimation(.snappy) { videoExpanded.toggle() }
-                    VideoFramePreference.isExpanded = videoExpanded
                 },
                 onActivate: { coordinator.activate(clip, startLine: startLine, loopLine: loopLine) },
                 onInfo: { infoClip = clip }
@@ -60,7 +59,6 @@ struct ImmersivePlayerScreen: View {
                 Button {
                     Haptics.selection()
                     withAnimation(.snappy) { videoExpanded = false }
-                    VideoFramePreference.isExpanded = false
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 17, weight: .bold))

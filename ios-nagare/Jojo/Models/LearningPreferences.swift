@@ -61,18 +61,6 @@ nonisolated enum JojoScheme: String, CaseIterable, Identifiable, Sendable {
     var colorScheme: ColorScheme { self == .light ? .light : .dark }
 }
 
-/// Whether the feed video is the large Kiku frame or the small one. Shared by For You and Explore.
-enum VideoFramePreference {
-    private static let key = "jojo.videoFrameExpanded"
-
-    static var isExpanded: Bool {
-        get {
-            UserDefaults.standard.object(forKey: key) as? Bool ?? false
-        }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
-    }
-}
-
 /// What to show under the video transcript.
 ///
 /// Clips are streamed from their original YouTube source (never re-hosted).

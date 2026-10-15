@@ -34,7 +34,7 @@ struct ClipQueueScreen: View {
     var forcedId: String? = nil
     /// Marketing playback loops every clip so both stay visibly playing.
     var loopPlayback: Bool = false
-    /// Walkthroughs open at the usual frame instead of the saved maximized one.
+    /// Kept for walkthrough call sites; every player now starts at the standard frame.
     var preferMinimized: Bool = false
 
     @Environment(AppModel.self) private var app
@@ -63,7 +63,7 @@ struct ClipQueueScreen: View {
         self.loopPlayback = loopPlayback
         self.preferMinimized = preferMinimized
         _currentId = State(initialValue: startId)
-        _videoExpanded = State(initialValue: preferMinimized ? false : VideoFramePreference.isExpanded)
+        _videoExpanded = State(initialValue: false)
     }
 
     var body: some View {
@@ -77,9 +77,8 @@ struct ClipQueueScreen: View {
                             immersiveFeed: true,
                             videoExpanded: videoExpanded,
                             onToggleVideoSize: {
-                                Haptics.selection()
-                                withAnimation(.snappy) { videoExpanded.toggle() }
-                                VideoFramePreference.isExpanded = videoExpanded
+                            Haptics.selection()
+                            withAnimation(.snappy) { videoExpanded.toggle() }
                             },
                             onActivate: { show(clip.id) },
                             onInfo: { infoClip = clip }

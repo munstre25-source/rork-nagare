@@ -180,6 +180,26 @@ final class AppModel {
         return Array(ordered.prefix(max(limit, 1)))
     }
 
+    /// Offline-first reel for DEBUG builds. Every returned record has a bundled MP4,
+    /// so this part of the feed remains playable without a YouTube embed or network.
+    func debugShowcaseClips(limit: Int = 3) -> [Clip] {
+        let local = studyLibrary.filter { $0.hasLocalVideo && !$0.lines.isEmpty }
+        let preferred = [
+            "hoshizora-academy-07",
+            "boss-rush-live-09",
+        ]
+        var ordered: [Clip] = []
+        for id in preferred {
+            if let clip = local.first(where: { $0.id == id }) {
+                ordered.append(clip)
+            }
+        }
+        ordered.append(contentsOf: local.filter { candidate in
+            !ordered.contains(where: { $0.id == candidate.id })
+        })
+        return Array(ordered.prefix(max(limit, 1)))
+    }
+
     /// Clips whose transcript contains this dictionary form or surface, in library order.
     func clipsMentioning(_ word: String, limit: Int = 4) -> [Clip] {
         guard !word.isEmpty, let ids = clipIdsByWord[word] else { return [] }

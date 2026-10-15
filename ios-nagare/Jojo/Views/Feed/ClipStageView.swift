@@ -58,11 +58,14 @@ struct ClipStageView: View {
         Group {
             if usesFlexibleVideo {
                 GeometryReader { geo in
+                    // Keep the same AVPlayer-backed hierarchy when resizing. Replacing it with
+                    // a full-page view while a paged LazyVStack is animating can detach the
+                    // player layer and crash UIKit.
+                    let largeVideoHeight = min(max(260, geo.size.height * 0.62), geo.size.height * 0.72)
                     stage(
-                        videoHeight: videoExpanded ? geo.size.height : videoSize(in: geo.size).height,
-                        videoWidth: videoExpanded ? geo.size.width : videoSize(in: geo.size).width,
-                        columnWidth: columnWidth(in: geo.size),
-                        fillsPage: videoExpanded
+                        videoHeight: videoExpanded ? largeVideoHeight : videoSize(in: geo.size).height,
+                        videoWidth: videoExpanded ? columnWidth(in: geo.size) : videoSize(in: geo.size).width,
+                        columnWidth: columnWidth(in: geo.size)
                     )
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
@@ -95,73 +98,9 @@ struct ClipStageView: View {
     }
 
     @ViewBuilder
-    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, fillsPage: Bool = false) -> some View {
+    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
         let player = coordinator.player(for: clip)
-        if fillsPage {
-            maximizedStage(player: player)
-        } else {
-            restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth)
-        }
-    }
-
-    /// Video fills the page. Words sit on the picture — Kiku maximized feed.
-    private func maximizedStage(player: (any ClipPlayer)?) -> some View {
-        ZStack {
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsControls: false,
-                showsRail: false,
-                compactChrome: true,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                onInfo: nil,
-                onShadowing: nil,
-                fitsFrame: false,
-                watchChromeHidden: watchChromeHidden,
-                onRevealWatchChrome: onRevealWatchChrome,
-                onSkip: onSkip
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 88)
-                    .allowsHitTesting(false)
-                Spacer(minLength: 0)
-                LinearGradient(colors: [.clear, .black.opacity(0.82)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 240)
-                    .allowsHitTesting(false)
-            }
-
-            VStack(spacing: 0) {
-                if showsChannelRow {
-                    ChannelRow(
-                        clip: clip,
-                        trailing: channelTrailing,
-                        showsFollow: false,
-                        emphasizesTitle: false
-                    )
-                    .padding(.top, 4)
-                }
-                Spacer(minLength: 0)
-                ClipActionRow(
-                    clip: clip,
-                    player: player,
-                    onInfo: onInfo,
-                    videoExpanded: true,
-                    onToggleVideoSize: isPopupHere ? nil : onToggleVideoSize
-                )
-                .padding(.horizontal, 12)
-                transcript(player: player, onVideo: true)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 4)
-            }
-            .environment(\.colorScheme, .dark)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPlayer)
+        restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth)
     }
 
     private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
@@ -209,7 +148,7 @@ struct ClipStageView: View {
                     clip: clip,
                     player: player,
                     onInfo: onInfo,
-                    videoExpanded: false,
+                    videoExpanded: videoExpanded,
                     // Corner box on the video owns resize; keep strip free of a second control.
                     onToggleVideoSize: nil
                 )

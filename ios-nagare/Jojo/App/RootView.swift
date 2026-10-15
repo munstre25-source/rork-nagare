@@ -217,177 +217,87 @@ private struct FeedTab: View {
     }
 }
 
-/// Curved dock from the approved navigation board: Vocab, raised Feed panda, Profile.
+/// Compact dark dock: Vocab, Feed mascot, Profile.
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
 
-    // The approved pastel navigation is intentionally constant across the app's looks.
-    private let accent = Color(hex: "#D47BE8")
-    private let muted = Color(hex: "#9290AA")
-    private let fill = Color.white
+    private let active = Color.white
+    private let inactive = Color.white.opacity(0.52)
 
     var body: some View {
-        ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 42, style: .continuous)
-                .fill(fill)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 42, style: .continuous)
-                        .strokeBorder(Color(hex: "#F3F1F7"), lineWidth: 1)
-                }
-                .shadow(color: Color(hex: "#716B91").opacity(0.16), radius: 18, y: 8)
-                .frame(height: 82)
-
-            HStack(alignment: .bottom, spacing: 0) {
-                sideItem(.vocab, title: "Vocab", symbol: "book.closed")
-                Spacer(minLength: 0)
-                feedItem
-                Spacer(minLength: 0)
-                sideItem(.profile, title: "Profile", symbol: "person")
+        HStack(spacing: 0) {
+            dockItem(.vocab, title: "Vocab", symbol: "books.vertical") {
+                badge
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 10)
-            .offset(y: -25)
+            dockItem(.feed, title: "Feed", symbol: nil) {
+                JojoMascot(height: 28, floats: false, pose: .book)
+                    .frame(width: 32, height: 32)
+            }
+            dockItem(.profile, title: "Profile", symbol: "person") { EmptyView() }
         }
-        .frame(maxWidth: 440)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 31)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: 290)
+        .background(Color(hex: "#10120F").opacity(0.96), in: Capsule())
+        .overlay {
+            Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+        }
         .accessibilityElement(children: .contain)
     }
 
-    private var feedItem: some View {
-        let selected = selection == .feed
-        return Button {
-            Haptics.selection()
-            selection = .feed
-        } label: {
-            VStack(spacing: 4) {
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: "#F1C8FA"))
-                        .frame(width: 76, height: 76)
-                        .overlay {
-                            Circle()
-                                .strokeBorder(Color.white, lineWidth: 5)
-                        }
-                        .shadow(color: accent.opacity(0.24), radius: 10, y: 4)
-                    JojoMascot(height: 60, floats: false, pose: .book)
-                        .clipShape(Circle())
-                        .frame(width: 64, height: 64)
-                    if vocabBadge > 0 {
-                        Text("\(min(vocabBadge, 99))")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .frame(width: 30, height: 30)
-                            .background(Color(hex: "#FF9F1C"), in: Circle())
-                            .overlay(Circle().strokeBorder(Color.white, lineWidth: 2))
-                            .offset(x: 29, y: -26)
-                            .accessibilityLabel("\(vocabBadge) new vocabulary cards")
-                    }
-                }
-                Text("Feed")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(selected ? accent : muted)
-                    .lineLimit(1)
-                Capsule()
-                    .fill(selected ? accent : Color.clear)
-                    .frame(width: 34, height: 4)
-            }
+    @ViewBuilder
+    private var badge: some View {
+        if vocabBadge > 0 {
+            Text("\(min(vocabBadge, 99))")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(minWidth: 20, minHeight: 20)
+                .padding(.horizontal, 3)
+                .background(Color(hex: "#FF9418"), in: Capsule())
+                .overlay(Capsule().strokeBorder(Color(hex: "#10120F"), lineWidth: 2))
+                .offset(x: 13, y: -11)
+                .accessibilityLabel("\(vocabBadge) vocabulary reviews due")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Feed")
-        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    private func dockSymbol(_ symbol: String, selected: Bool) -> String {
-        if !selected { return symbol }
-        let filled = "\(symbol).fill"
-        // Prefer the filled variant when it exists; otherwise keep the base name.
-        return filled
-    }
-
-    private func sideItem(_ tab: AppTab, title: String, symbol: String) -> some View {
+    private func dockItem<Icon: View>(
+        _ tab: AppTab,
+        title: String,
+        symbol: String?,
+        @ViewBuilder icon: () -> Icon
+    ) -> some View {
         let selected = selection == tab
-        let tint = selected ? accent : muted
+        let tint = selected ? active : inactive
         return Button {
             Haptics.selection()
             selection = tab
         } label: {
-            VStack(spacing: 3) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: dockSymbol(symbol, selected: selected))
-                        .font(.system(size: 28, weight: .regular))
-                        .foregroundStyle(tint)
-                        .frame(width: 48, height: 32)
+            VStack(spacing: 4) {
+                ZStack {
+                    if let symbol {
+                        Image(systemName: symbol)
+                            .font(.system(size: 23, weight: .medium))
+                            .foregroundStyle(tint)
+                    }
+                    icon()
                 }
+                .frame(height: 36)
                 Text(title)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .foregroundStyle(tint)
                     .lineLimit(1)
-                Capsule()
-                    .fill(selected ? accent : Color.clear)
-                    .frame(width: 18, height: 3)
             }
-            .frame(width: 88)
-            .contentShape(Rectangle())
+            .overlay(alignment: .bottom) {
+                Capsule()
+                    .fill(selected ? Color.white : .clear)
+                    .frame(width: 16, height: 2)
+                    .offset(y: 4)
+            }
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// Soft saddle with a raised center for the Feed panda.
-private struct DockBarShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let w = rect.width
-        let h = rect.height
-        var path = Path()
-        path.move(to: CGPoint(x: 22, y: h))
-        path.addLine(to: CGPoint(x: w - 22, y: h))
-        path.addQuadCurve(to: CGPoint(x: w, y: h - 22), control: CGPoint(x: w, y: h))
-        path.addLine(to: CGPoint(x: w, y: 22))
-        path.addQuadCurve(to: CGPoint(x: w - 22, y: 8), control: CGPoint(x: w, y: 8))
-        // Gentle rise under the panda.
-        path.addCurve(
-            to: CGPoint(x: w * 0.62, y: 4),
-            control1: CGPoint(x: w * 0.82, y: 8),
-            control2: CGPoint(x: w * 0.72, y: 4)
-        )
-        path.addCurve(
-            to: CGPoint(x: w * 0.38, y: 4),
-            control1: CGPoint(x: w * 0.55, y: -2),
-            control2: CGPoint(x: w * 0.45, y: -2)
-        )
-        path.addCurve(
-            to: CGPoint(x: 22, y: 8),
-            control1: CGPoint(x: w * 0.28, y: 4),
-            control2: CGPoint(x: w * 0.18, y: 8)
-        )
-        path.addQuadCurve(to: CGPoint(x: 0, y: 22), control: CGPoint(x: 0, y: 8))
-        path.addLine(to: CGPoint(x: 0, y: h - 22))
-        path.addQuadCurve(to: CGPoint(x: 22, y: h), control: CGPoint(x: 0, y: h))
-        path.closeSubpath()
-        return path
-    }
-}
-
-/// Quiet seigaiha texture in the dock corners — never interactive.
-private struct DockWaveMotif: View {
-    var body: some View {
-        HStack {
-            wave
-            Spacer()
-            wave
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .opacity(0.22)
-    }
-
-    private var wave: some View {
-        Image(systemName: "water.waves")
-            .font(.system(size: 14, weight: .regular))
-            .foregroundStyle(Color.sakuraPink)
     }
 }

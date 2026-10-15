@@ -18,7 +18,9 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
-    @State private var videoExpanded: Bool = VideoFramePreference.isExpanded
+    // For You always opens like a standard video feed: a 16:9 player followed by
+    // the learning controls and transcript. Enlarging is an intentional, temporary action.
+    @State private var videoExpanded: Bool = false
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
     @State private var chromeHideTask: Task<Void, Never>?
@@ -316,7 +318,6 @@ struct FeedView: View {
                         onToggleVideoSize: {
                             Haptics.selection()
                             withAnimation(.snappy) { videoExpanded.toggle() }
-                            VideoFramePreference.isExpanded = videoExpanded
                         },
                         onActivate: { coordinator.activate(clip) },
                         onFullscreen: {
@@ -439,13 +440,10 @@ struct FeedView: View {
     private func reloadClips() {
         let ranked = app.forYouClips
         #if DEBUG
-        // A bypassed debug session always begins with three verified, playable clips. The
-        // remainder stays personalized, so paging behaves exactly like the live For You feed.
+        // Debug stays entirely offline: only the bundled Japanese-learning clips are shown.
+        // This guarantees every visible item is playable in a fresh simulator session.
         if app.purchases.debugBypassActive {
-            let verified = app.showcaseClips(limit: 3)
-            clips = verified + ranked.filter { candidate in
-                !verified.contains(where: { $0.id == candidate.id })
-            }
+            clips = app.debugShowcaseClips(limit: 3)
         } else {
             clips = ranked
         }
