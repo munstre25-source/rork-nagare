@@ -185,7 +185,7 @@ App-side (`MetaAttribution.swift` + FacebookCore SPM):
    - `META_APP_ID` = Nagare Meta App ID (`1856489205337782`)
    - `META_CLIENT_TOKEN` = Meta Developers → App → Settings → Advanced → **Client Token**
 2. After `Purchases.configure`, the app sets `$fbAnonId` + device IDs via `collectDeviceIdentifiers()`.
-3. ATT is requested once after onboarding; Meta auto purchase logging stays disabled.
+3. The tracking prompt appears on first launch, before any ad event. Meta auto purchase logging stays disabled.
 
 Test: sandbox purchase → RevenueCat Customer History → Meta Ads delivery row.
 

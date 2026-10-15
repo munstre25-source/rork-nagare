@@ -3,6 +3,7 @@ import UIKit
 import UserNotifications
 import FacebookCore
 import RevenueCat
+import AppTrackingTransparency
 
 /// Boots the Meta (Facebook) SDK for install/attribution matching and pushes
 /// `$fbAnonId` / device IDs into RevenueCat so the Meta Ads Conversions API can match purchases.
@@ -29,6 +30,7 @@ enum MetaAttribution {
         Settings.shared.displayName = "Jojo"
         // RevenueCat owns Subscribe / StartTrial / renewals — avoid double-counting.
         Settings.shared.isAutoLogAppEventsEnabled = false
+        // Stay off until the system tracking prompt is allowed. The Info.plist flag is also false.
         Settings.shared.isAdvertiserIDCollectionEnabled = false
         Settings.shared.isAdvertiserTrackingEnabled = false
 
@@ -47,18 +49,53 @@ enum MetaAttribution {
 
     static func activateApp() {
         guard Secrets.isMetaConfigured else { return }
+        guard ATTrackingManager.trackingAuthorizationStatus == .authorized else { return }
         AppEvents.shared.activateApp()
     }
 
-    /// Push matching identifiers into RevenueCat. Does not request tracking permission.
+    /// Push ad-matching identifiers into RevenueCat only after tracking is allowed.
     static func syncToRevenueCat() {
         guard Secrets.isMetaConfigured, Purchases.isConfigured else { return }
+        guard ATTrackingManager.trackingAuthorizationStatus == .authorized else { return }
+        Settings.shared.isAdvertiserTrackingEnabled = true
+        Settings.shared.isAdvertiserIDCollectionEnabled = true
         Purchases.shared.attribution.collectDeviceIdentifiers()
         let anon = AppEvents.shared.anonymousID
         if !anon.isEmpty {
             Purchases.shared.attribution.setFBAnonymousID(anon)
         }
     }
+
+    /// System tracking prompt on the first active screen, before any ad event.
+    /// Review looks for this immediately, including on iPad, so it is not delayed until onboarding ends.
+    @MainActor
+    static func requestTrackingIfNeededAndSync() async {
+        if requestInFlight { return }
+        requestInFlight = true
+        defer { requestInFlight = false }
+
+        if ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
+            for _ in 0..<50 {
+                if UIApplication.shared.applicationState == .active { break }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            if ATTrackingManager.trackingAuthorizationStatus == .notDetermined,
+               UIApplication.shared.applicationState == .active {
+                _ = await ATTrackingManager.requestTrackingAuthorization()
+            }
+        }
+
+        let authorized = ATTrackingManager.trackingAuthorizationStatus == .authorized
+        Settings.shared.isAdvertiserTrackingEnabled = authorized
+        Settings.shared.isAdvertiserIDCollectionEnabled = authorized
+        guard authorized, Secrets.isMetaConfigured else { return }
+        syncToRevenueCat()
+        activateApp()
+    }
+
+    private static var requestInFlight = false
 }
 
 extension Notification.Name {

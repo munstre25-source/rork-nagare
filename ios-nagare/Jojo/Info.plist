@@ -34,6 +34,8 @@
 		<string>fbapi</string>
 		<string>fb-messenger-share-api</string>
 	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Jojo uses this to measure which ads help people discover the app, so we can keep improving it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Jojo listens while you shadow a line so it can tell you how close you were.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
