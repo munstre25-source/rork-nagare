@@ -84,9 +84,9 @@ struct MainTabView: View {
             // panda never covers the video. It returns on tap, pause, or a dictionary card.
             if !app.hidesMainTabBar, !focusCapsuleHidden {
                 JojoDock(selection: $tab, vocabBadge: newVocabSinceVisit)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 10)
-                    .padding(.bottom, 2)
+                    .padding(.horizontal, 26)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -230,41 +230,37 @@ private struct FeedTab: View {
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
-    @Environment(AppModel.self) private var app
 
-    private var glow: GlowLevel { app.profile.glow }
-    private var accent: Color { Color.sakuraPink }
-    private var muted: Color { accent.opacity(0.55) }
+    // The approved pastel navigation is intentionally constant across the app's looks.
+    private let accent = Color(hex: "#D47BE8")
+    private let muted = Color(hex: "#9290AA")
+    private let fill = Color.white
 
     var body: some View {
         ZStack(alignment: .top) {
-            DockBarShape()
-                .fill(Color.dockFill.opacity(0.94))
+            RoundedRectangle(cornerRadius: 42, style: .continuous)
+                .fill(fill)
                 .overlay {
-                    DockBarShape()
-                        .stroke(accent.opacity(glow == .off ? 0.35 : 0.75), lineWidth: 1.2)
+                    RoundedRectangle(cornerRadius: 42, style: .continuous)
+                        .strokeBorder(Color(hex: "#F3F1F7"), lineWidth: 1)
                 }
-                .chromeGlow(accent, level: glow, radius: 14)
-                .overlay {
-                    DockWaveMotif()
-                        .allowsHitTesting(false)
-                }
-                .frame(height: 72)
+                .shadow(color: Color(hex: "#716B91").opacity(0.16), radius: 18, y: 8)
+                .frame(height: 82)
 
             HStack(alignment: .bottom, spacing: 0) {
-                sideItem(.vocab, title: "Vocab", symbol: "book.closed", badge: vocabBadge)
+                sideItem(.vocab, title: "Vocab", symbol: "book.closed")
                 Spacer(minLength: 0)
                 feedItem
                 Spacer(minLength: 0)
                 sideItem(.profile, title: "Profile", symbol: "person")
             }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 9)
-            .offset(y: -24)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 10)
+            .offset(y: -25)
         }
-        .frame(maxWidth: 430)
+        .frame(maxWidth: 440)
         .frame(maxWidth: .infinity)
-        .padding(.top, 28)
+        .padding(.top, 31)
         .accessibilityElement(children: .contain)
     }
 
@@ -277,24 +273,25 @@ struct JojoDock: View {
             VStack(spacing: 4) {
                 ZStack {
                     Circle()
-                        .fill(Color.dockFill)
-                        .frame(width: 78, height: 78)
+                        .fill(Color(hex: "#F1C8FA"))
+                        .frame(width: 76, height: 76)
                         .overlay {
                             Circle()
-                                .strokeBorder(accent, lineWidth: selected ? 2.5 : 1.5)
+                                .strokeBorder(Color.white, lineWidth: 5)
                         }
-                        .chromeGlow(accent, level: glow, radius: selected ? 16 : 10)
-                    JojoMascot(height: 62, floats: false, pose: .book)
+                        .shadow(color: accent.opacity(0.24), radius: 10, y: 4)
+                    JojoMascot(height: 60, floats: false, pose: .book)
                         .clipShape(Circle())
-                        .frame(width: 66, height: 66)
-                    // Petals around the panda — decorative only.
-                    ForEach(0..<4, id: \.self) { i in
-                        Blossom(size: i % 2 == 0 ? 10 : 7, color: accent.opacity(0.85))
-                            .offset(
-                                x: [22, -24, 20, -18][i],
-                                y: [-18, -14, 16, 18][i]
-                            )
-                            .allowsHitTesting(false)
+                        .frame(width: 64, height: 64)
+                    if vocabBadge > 0 {
+                        Text("\(vocabBadge)")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(width: 30, height: 30)
+                            .background(Color(hex: "#FF9F1C"), in: Circle())
+                            .overlay(Circle().strokeBorder(Color.white, lineWidth: 2))
+                            .offset(x: 29, y: -26)
+                            .accessibilityLabel("\(vocabBadge) new vocabulary cards")
                     }
                 }
                 Text("Feed")
@@ -304,7 +301,6 @@ struct JojoDock: View {
                 Capsule()
                     .fill(selected ? accent : Color.clear)
                     .frame(width: 34, height: 4)
-                    .chromeGlow(accent, level: selected ? glow : .off, radius: 4)
             }
         }
         .buttonStyle(.plain)
@@ -319,7 +315,7 @@ struct JojoDock: View {
         return filled
     }
 
-    private func sideItem(_ tab: AppTab, title: String, symbol: String, badge: Int = 0) -> some View {
+    private func sideItem(_ tab: AppTab, title: String, symbol: String) -> some View {
         let selected = selection == tab
         let tint = selected ? accent : muted
         return Button {
@@ -329,30 +325,19 @@ struct JojoDock: View {
             VStack(spacing: 3) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: dockSymbol(symbol, selected: selected))
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 28, weight: .regular))
                         .foregroundStyle(tint)
-                        .frame(width: 44, height: 28)
-                        .textGlow(accent, level: selected ? glow : .off)
-                    if badge > 0 {
-                        Text("\(badge)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 4)
-                            .frame(minWidth: 16, minHeight: 16)
-                            .background(Color.sakuraButton, in: Capsule())
-                            .offset(x: 8, y: -6)
-                            .modifier(BadgePop(value: badge))
-                    }
+                        .frame(width: 48, height: 32)
                 }
                 Text(title)
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(tint)
                     .lineLimit(1)
                 Capsule()
                     .fill(selected ? accent : Color.clear)
                     .frame(width: 18, height: 3)
             }
-            .frame(width: 82)
+            .frame(width: 88)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
