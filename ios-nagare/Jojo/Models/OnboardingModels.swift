@@ -163,8 +163,8 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     /// Theme and text-glow setup, immediately before the paywall.
     case look = 19
 
-    /// Presentation order. `trialTimeline` stays on the enum so a saved step still decodes.
-    /// The live feed demo comes just before the review ask, once the person has scrolled and tapped a word.
+    /// Presentation order. `trialTimeline` and `appReview` stay on the enum so a saved step still decodes.
+    /// The App Store rating screen is not in this flow. A rating is asked only after real use.
     static let flow: [OnboardingStep] = [
         .splash,
         .valueCaptions, .valueTap, .valueFlashcards,
@@ -173,7 +173,6 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         .motivation, .taste, .level,
         .dailyGoal, .journey, .notifications,
         .demo,
-        .appReview,
         .look,
         .paywall, .welcome
     ]

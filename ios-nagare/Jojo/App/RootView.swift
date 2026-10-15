@@ -27,20 +27,14 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.4), value: app.profile.onboardingCompleted)
         .animation(.easeInOut(duration: 0.4), value: app.purchases.isSubscribed)
-        .task(id: app.profile.onboardingCompleted) {
-            // After onboarding, ask for ATT once so RevenueCat can attach IDFA when allowed.
-            guard app.profile.onboardingCompleted else { return }
-            try? await Task.sleep(for: .milliseconds(800))
-            await MetaAttribution.requestTrackingIfNeededAndSync()
-        }
     }
 }
 
 nonisolated enum AppTab: Hashable, Sendable {
-    case feed, vocab, explore, profile
+    case library, feed, vocab, explore, profile
 }
 
-/// Feed, Vocab, and Profile sit in the bottom bar. Explore opens from the top switch.
+/// Library, Feed, Vocab, and Profile sit in the bottom bar. Explore opens from the top switch.
 struct MainTabView: View {
     @Environment(AppModel.self) private var app
     @State private var tab: AppTab = .feed
@@ -60,6 +54,12 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $tab) {
+            LibraryView()
+                .toolbar(.hidden, for: .tabBar)
+                .background(SystemTabBarHider())
+                .tabItem { Label("Library", systemImage: "books.vertical") }
+                .tag(AppTab.library)
+
             FeedTab(
                 showingExplore: $showingExplore,
                 feedActive: tab == .feed
@@ -86,17 +86,17 @@ struct MainTabView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !app.hidesMainTabBar {
-                KikuTabBar(selection: $tab, vocabBadge: newVocabSinceVisit)
-                    .padding(.top, 6)
-                    .padding(.bottom, 4)
-                    .opacity(focusCapsuleHidden ? 0 : 1)
-                    .offset(y: focusCapsuleHidden ? 14 : 0)
-                    .allowsHitTesting(!focusCapsuleHidden)
-                    .animation(.easeInOut(duration: 0.4), value: focusCapsuleHidden)
-                    .accessibilityHidden(focusCapsuleHidden)
+            // While a clip is playing the whole dock leaves the screen so the raised
+            // panda never covers the video. It returns on tap, pause, or a dictionary card.
+            if !app.hidesMainTabBar, !focusCapsuleHidden {
+                JojoDock(selection: $tab, vocabBadge: newVocabSinceVisit)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(.easeInOut(duration: 0.4), value: focusCapsuleHidden)
         .preferredColorScheme(app.profile.scheme.colorScheme)
         .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
         .onChange(of: app.vocabBadgePulse) { _, _ in
@@ -232,43 +232,114 @@ private struct FeedTab: View {
     }
 }
 
-/// Kiku's bottom capsule: three icon-and-label buttons, centered, not a full-width bar.
-struct KikuTabBar: View {
+/// Curved dock from the navigation board: Library, Vocab, raised Feed panda, Profile.
+struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
+    @Environment(AppModel.self) private var app
+
+    private var glow: GlowLevel { app.profile.glow }
+    private var accent: Color { Color.sakuraPink }
+    private var muted: Color { accent.opacity(0.55) }
 
     var body: some View {
-        HStack(spacing: 4) {
-            item(.feed, title: "Feed", symbol: "play.circle")
-            item(.vocab, title: "Vocab", symbol: "book", badge: vocabBadge)
-            item(.profile, title: "Profile", symbol: "person")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.black.opacity(0.88))
+        ZStack(alignment: .top) {
+            DockBarShape()
+                .fill(Color.dockFill.opacity(0.94))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                    DockBarShape()
+                        .stroke(accent.opacity(glow == .off ? 0.35 : 0.75), lineWidth: 1.2)
                 }
+                .chromeGlow(accent, level: glow, radius: 14)
+                .overlay {
+                    DockWaveMotif()
+                        .allowsHitTesting(false)
+                }
+                .frame(height: 64)
+
+            HStack(alignment: .bottom, spacing: 0) {
+                sideItem(.library, title: "Library", symbol: "books.vertical")
+                sideItem(.vocab, title: "Vocab", symbol: "book", badge: vocabBadge)
+                Spacer(minLength: 0)
+                feedItem
+                Spacer(minLength: 0)
+                sideItem(.profile, title: "Profile", symbol: "person")
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+            .offset(y: -18)
         }
-        .frame(maxWidth: 280)
+        .frame(maxWidth: 400)
         .frame(maxWidth: .infinity)
+        .padding(.top, 22)
         .accessibilityElement(children: .contain)
     }
 
-    private func item(_ tab: AppTab, title: String, symbol: String, badge: Int = 0) -> some View {
+    private var feedItem: some View {
+        let selected = selection == .feed
+        return Button {
+            Haptics.selection()
+            selection = .feed
+        } label: {
+            VStack(spacing: 4) {
+                ZStack {
+                    Circle()
+                        .fill(Color.dockFill)
+                        .frame(width: 66, height: 66)
+                        .overlay {
+                            Circle()
+                                .strokeBorder(accent, lineWidth: selected ? 2.5 : 1.5)
+                        }
+                        .chromeGlow(accent, level: glow, radius: selected ? 16 : 10)
+                    JojoMascot(height: 52, floats: false, pose: .book)
+                        .clipShape(Circle())
+                        .frame(width: 56, height: 56)
+                    // Petals around the panda — decorative only.
+                    ForEach(0..<4, id: \.self) { i in
+                        Blossom(size: i % 2 == 0 ? 10 : 7, color: accent.opacity(0.85))
+                            .offset(
+                                x: [22, -24, 20, -18][i],
+                                y: [-18, -14, 16, 18][i]
+                            )
+                            .allowsHitTesting(false)
+                    }
+                }
+                Text("Feed")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(selected ? accent : muted)
+                    .lineLimit(1)
+                Capsule()
+                    .fill(selected ? accent : Color.clear)
+                    .frame(width: 22, height: 3)
+                    .chromeGlow(accent, level: selected ? glow : .off, radius: 4)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Feed")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func dockSymbol(_ symbol: String, selected: Bool) -> String {
+        if !selected { return symbol }
+        let filled = "\(symbol).fill"
+        // Prefer the filled variant when it exists; otherwise keep the base name.
+        return filled
+    }
+
+    private func sideItem(_ tab: AppTab, title: String, symbol: String, badge: Int = 0) -> some View {
         let selected = selection == tab
+        let tint = selected ? accent : muted
         return Button {
             Haptics.selection()
             selection = tab
         } label: {
             VStack(spacing: 3) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: selected ? "\(symbol).fill" : symbol)
-                        .font(.system(size: 20, weight: .semibold))
-                        .frame(width: 44, height: 24)
+                    Image(systemName: dockSymbol(symbol, selected: selected))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .frame(width: 40, height: 26)
+                        .textGlow(accent, level: selected ? glow : .off)
                     if badge > 0 {
                         Text("\(badge)")
                             .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -282,14 +353,72 @@ struct KikuTabBar: View {
                 }
                 Text(title)
                     .font(.caption2.weight(.semibold))
+                    .foregroundStyle(tint)
                     .lineLimit(1)
+                Capsule()
+                    .fill(selected ? accent : Color.clear)
+                    .frame(width: 18, height: 3)
             }
-            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.78))
-            .frame(maxWidth: .infinity)
+            .frame(width: 72)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Soft saddle with a raised center for the Feed panda.
+private struct DockBarShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        var path = Path()
+        path.move(to: CGPoint(x: 22, y: h))
+        path.addLine(to: CGPoint(x: w - 22, y: h))
+        path.addQuadCurve(to: CGPoint(x: w, y: h - 22), control: CGPoint(x: w, y: h))
+        path.addLine(to: CGPoint(x: w, y: 22))
+        path.addQuadCurve(to: CGPoint(x: w - 22, y: 8), control: CGPoint(x: w, y: 8))
+        // Gentle rise under the panda.
+        path.addCurve(
+            to: CGPoint(x: w * 0.62, y: 4),
+            control1: CGPoint(x: w * 0.82, y: 8),
+            control2: CGPoint(x: w * 0.72, y: 4)
+        )
+        path.addCurve(
+            to: CGPoint(x: w * 0.38, y: 4),
+            control1: CGPoint(x: w * 0.55, y: -2),
+            control2: CGPoint(x: w * 0.45, y: -2)
+        )
+        path.addCurve(
+            to: CGPoint(x: 22, y: 8),
+            control1: CGPoint(x: w * 0.28, y: 4),
+            control2: CGPoint(x: w * 0.18, y: 8)
+        )
+        path.addQuadCurve(to: CGPoint(x: 0, y: 22), control: CGPoint(x: 0, y: 8))
+        path.addLine(to: CGPoint(x: 0, y: h - 22))
+        path.addQuadCurve(to: CGPoint(x: 22, y: h), control: CGPoint(x: 0, y: h))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Quiet seigaiha texture in the dock corners — never interactive.
+private struct DockWaveMotif: View {
+    var body: some View {
+        HStack {
+            wave
+            Spacer()
+            wave
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
+        .opacity(0.22)
+    }
+
+    private var wave: some View {
+        Image(systemName: "water.waves")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundStyle(Color.sakuraPink)
     }
 }

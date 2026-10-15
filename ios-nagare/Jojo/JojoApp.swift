@@ -35,12 +35,22 @@ struct JojoApp: App {
                         session.app.refreshAllReminders()
                         WidgetSnapshotPublisher.publish(from: session.app)
                         ImmersionIsland.endStale()
-                        MetaAttribution.activateApp()
-                        MetaAttribution.syncToRevenueCat()
+                        await MetaAttribution.requestTrackingIfNeededAndSync()
                     }
                     .onOpenURL { url in
                         if MetaAttribution.handleOpenURL(url) { return }
                         session.app.handleDeepLink(url)
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: .jojoOpenDeepLink)) { note in
+                        if let url = note.object as? URL {
+                            session.app.handleDeepLink(url)
+                        }
+                    }
+                    .onAppear {
+                        if let url = JojoAppDelegate.pendingNotificationURL {
+                            JojoAppDelegate.pendingNotificationURL = nil
+                            session.app.handleDeepLink(url)
+                        }
                     }
             case .unavailable:
                 LibraryRecoveryView(
@@ -59,8 +69,7 @@ struct JojoApp: App {
                 session.app.refreshAllReminders()
             }
             WidgetSnapshotPublisher.publish(from: session.app)
-            MetaAttribution.activateApp()
-            MetaAttribution.syncToRevenueCat()
+            Task { await MetaAttribution.requestTrackingIfNeededAndSync() }
         }
     }
 }

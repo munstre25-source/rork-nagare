@@ -47,6 +47,7 @@ struct OnboardingFlowView: View {
             didLoad = true
             var restored = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
             if restored == .trialTimeline { restored = .demo }
+            if restored == .appReview { restored = .look }
             if restored == .socialProof { restored = .dailyGoal }
             if restored == .welcome, !app.purchases.isSubscribed { restored = .paywall }
             step = restored
@@ -284,12 +285,11 @@ struct SplashView: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(Color.sakuraPink)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            debugDemoButton("For You · Light", script: .forYouLight, hint: "Sakura light: feed, word tap, swipe, flashcard")
-            debugDemoButton("For You · Dark", script: .forYouDark, hint: "Sakura dark: feed, word tap, swipe, flashcard")
-            debugDemoButton("Explore · Light", script: .exploreVocabLight, hint: "Sakura light: explore, known-word count, clip search, flashcards")
-            debugDemoButton("Explore · Dark", script: .exploreVocabDark, hint: "Sakura dark: explore, known-word count, clip search, flashcards")
-            debugDemoButton("Themes · Light", script: .themeTourLight, hint: "Theme menu, then Feed, Vocab, and Profile in Sakura, Lavender, and Orange")
-            debugDemoButton("Themes · Dark", script: .themeTourDark, hint: "Same theme tour on the dark paper")
+            debugDemoButton("1 · Sakura dark neon", script: .coreSakuraDarkNeon, hint: "Core For You story: 3 clips, tap, save, flashcards")
+            debugDemoButton("2 · Sakura dark", script: .coreSakuraDarkOff, hint: "Same core story, glow off")
+            debugDemoButton("3 · Amber dark neon", script: .coreAmberDarkNeon, hint: "Same core story on Amber neon")
+            debugDemoButton("4 · Amber dark", script: .coreAmberDarkOff, hint: "Same core story on Amber, glow off")
+            debugDemoButton("5 · Full app tour", script: .fullTour, hint: "Onboarding through Profile, every theme look")
         }
         .padding(.top, Spacing.s)
     }
