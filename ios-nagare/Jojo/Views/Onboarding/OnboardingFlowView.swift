@@ -18,14 +18,14 @@ struct OnboardingFlowView: View {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         showSplash = false
                         if step == .splash {
-                            go(to: .valueCaptions)
+                            go(to: .name)
                         }
                     }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
             } else {
                 VStack(spacing: 0) {
-                    if step != .demo, step != .paywall {
+                    if step != .paywall {
                         header
                     }
                     content
@@ -46,9 +46,15 @@ struct OnboardingFlowView: View {
             guard !didLoad else { return }
             didLoad = true
             var restored = OnboardingStep(rawValue: app.profile.onboardingStep) ?? .splash
-            if restored == .trialTimeline { restored = .demo }
-            if restored == .appReview { restored = .look }
-            if restored == .socialProof { restored = .dailyGoal }
+            // Older builds could resume inside a feature demo. Onboarding now gathers setup
+            // preferences only, so those interrupted states restart at the setup flow.
+            switch restored {
+            case .valueCaptions, .valueTap, .valueFlashcards, .demo, .flashcardTry,
+                 .socialProof, .journey, .trialTimeline, .appReview, .acquisition:
+                restored = .name
+            default:
+                break
+            }
             if restored == .welcome, !app.purchases.isSubscribed { restored = .paywall }
             step = restored
             applyPalette(for: step)
@@ -77,28 +83,22 @@ struct OnboardingFlowView: View {
 
     private var sceneForStep: BrandScene {
         switch step {
-        case .splash, .valueCaptions: .lanternNight
-        case .valueTap: .neonTokyo
-        case .valueFlashcards: .templeDusk
+        case .splash, .name: .lanternNight
         case .paywall: .templeDusk
         case .welcome: .sakuraDay
         default: .lanternNight
         }
     }
 
-    /// Value-prop pages share one carousel identity so they swipe instead of transitioning.
     private var contentId: String {
-        switch step {
-        case .valueCaptions, .valueTap, .valueFlashcards: "valueprop"
-        default: "step-\(step.rawValue)"
-        }
+        "step-\(step.rawValue)"
     }
 
     @ViewBuilder
     private var header: some View {
         let onNight = activeSurface != .cream
         HStack(spacing: Spacing.m) {
-            if step.allowsBack, step != .valueTap, step != .valueFlashcards {
+            if step.allowsBack {
                 Button {
                     back()
                 } label: {
@@ -144,11 +144,8 @@ struct OnboardingFlowView: View {
     @ViewBuilder
     private var content: some View {
         switch step {
-        case .splash, .valueCaptions, .valueTap, .valueFlashcards:
-            ValuePropCarousel(step: Binding(get: { step }, set: { newValue in
-                isForward = newValue.flowIndex > step.flowIndex
-                step = newValue
-            })) { next() }
+        case .splash:
+            NameStepView { next() }
         case .name:
             NameStepView { next() }
         case .motivation:
@@ -157,26 +154,17 @@ struct OnboardingFlowView: View {
             TasteSwipeStepView { next() }
         case .level:
             LevelStepView { next() }
-        case .demo:
-            OnboardingFeedDemoView(onContinue: { next() }, onBack: { back() })
-        case .flashcardTry:
-            FlashcardTryStepView { next() }
-        case .socialProof:
-            Color.clear
         case .dailyGoal:
             DailyGoalStepView { next() }
-        case .journey:
-            JourneyStepView { next() }
         case .notifications:
             NotificationStepView { next() }
-        case .trialTimeline:
-            TrialTimelineStepView { next() }
-        case .appReview:
-            AppReviewStepView { next() }
         case .look:
             LookStepView { next() }
-        case .acquisition:
-            AcquisitionStepView { next() }
+        // These cases are only retained so interrupted onboarding from older builds decodes.
+        // `onAppear` redirects them to `.name` before the view becomes visible.
+        case .valueCaptions, .valueTap, .valueFlashcards, .demo, .flashcardTry,
+             .socialProof, .journey, .trialTimeline, .appReview, .acquisition:
+            Color.clear
         case .paywall:
             PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {
                 go(to: .welcome)

@@ -12,11 +12,13 @@ struct FlashcardTryStepView: View {
     @State private var revealed: Bool = false
     @State private var answeredGood: Bool?
     @State private var nextDue: String = ""
+    /// A display-only card for a truly fresh install. It is never inserted into SwiftData.
+    @State private var practiceCard: SavedWord?
 
     private var card: SavedWord? {
         let key = app.profile.firstTappedWordKey
         if !key.isEmpty, let match = words.first(where: { $0.key == key }) { return match }
-        return words.max { $0.addedAt < $1.addedAt }
+        return words.max { $0.addedAt < $1.addedAt } ?? practiceCard
     }
 
     var body: some View {
@@ -56,7 +58,7 @@ struct FlashcardTryStepView: View {
                 .padding(.horizontal, Spacing.l)
                 .padding(.bottom, Spacing.m)
         }
-        .onAppear { seedFallbackIfNeeded() }
+        .onAppear { preparePracticeCardIfNeeded() }
     }
 
     private var coachMessage: String {
@@ -169,28 +171,42 @@ struct FlashcardTryStepView: View {
     private func answer(_ word: SavedWord, good: Bool) {
         good ? Haptics.success() : Haptics.soft()
         nextDue = good ? SRS.label(SRS.goodInterval(fromStep: word.intervalStepIndex)) : SRS.againLabel
-        app.answer(word, good: good)
+        // The first-run card only teaches the interaction. It is intentionally not a saved
+        // word, review, or notification until the learner saves a word from the real feed.
+        let isOnboardingPreview = practiceCard.map { $0 === word } ?? false
+        if !isOnboardingPreview {
+            app.answer(word, good: good)
+        }
         app.markFlashcardTried()
         track("onboarding_flashcard_answered", props: ["good": good ? "1" : "0"])
         withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) { answeredGood = good }
     }
 
-    /// Seed one saved word from a recommended clip so this screen is never empty.
-    private func seedFallbackIfNeeded() {
-        guard words.isEmpty, let clip = app.recommendedClip(preferShort: true) else { return }
+    /// Build a card in memory so onboarding stays hands-on without pre-populating vocabulary.
+    private func preparePracticeCardIfNeeded() {
+        guard practiceCard == nil, words.isEmpty, let clip = app.recommendedClip(preferShort: true) else { return }
         for (lineIndex, line) in clip.lines.enumerated() {
             let token = line.tokens.first { $0.tappable && $0.containsKanji }
                 ?? line.tokens.first { $0.tappable }
             guard let token else { continue }
-            app.recordTap(
-                token: token,
-                explanation: app.lexicon.instantExplanation(for: token),
-                clip: clip,
-                lineIndex: lineIndex
+            let explanation = app.lexicon.instantExplanation(for: token)
+            let preview = SavedWord(
+                key: "onboarding-preview-\(token.dictionaryForm)",
+                surface: token.dictionaryForm,
+                readings: token.baseForm != nil ? [token.baseReading].compactMap { $0 } : token.allReadings,
+                romaji: token.dictionaryRomaji,
+                pos: token.pos,
+                conjugationClass: token.conjugationClass,
+                jlpt: token.jlpt,
+                definitions: explanation?.definitions ?? token.definitions,
+                jaDefinitions: explanation?.jaDefinitions ?? token.jaDefinitions
             )
-            app.noteFirstTappedWord(token)
+            preview.contextSentence = line.text
+            preview.contextSurface = token.surface
+            preview.contextClipId = clip.id
+            preview.contextLineIndex = lineIndex
+            practiceCard = preview
             return
         }
     }
 }
-

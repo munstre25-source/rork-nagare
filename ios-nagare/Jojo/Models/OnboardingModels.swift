@@ -163,16 +163,13 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     /// Theme and text-glow setup, immediately before the paywall.
     case look = 19
 
-    /// Presentation order. `trialTimeline` and `appReview` stay on the enum so a saved step still decodes.
-    /// The App Store rating screen is not in this flow. A rating is asked only after real use.
+    /// Presentation order. Legacy experience/demo steps stay on the enum so saved state still decodes,
+    /// but production onboarding only gathers settings that personalize the learner's real feed.
     static let flow: [OnboardingStep] = [
         .splash,
-        .valueCaptions, .valueTap, .valueFlashcards,
-        .flashcardTry,
-        .name, .acquisition,
+        .name,
         .motivation, .taste, .level,
-        .dailyGoal, .journey, .notifications,
-        .demo,
+        .dailyGoal, .notifications,
         .look,
         .paywall, .welcome
     ]
@@ -208,14 +205,14 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
 
     var allowsBack: Bool {
         switch self {
-        case .splash, .valueCaptions, .paywall, .welcome: false
+        case .splash, .paywall, .welcome: false
         default: true
         }
     }
 
     var showsProgress: Bool {
         switch self {
-        case .splash, .valueCaptions, .valueTap, .valueFlashcards, .paywall, .welcome: false
+        case .splash, .paywall, .welcome: false
         default: true
         }
     }
