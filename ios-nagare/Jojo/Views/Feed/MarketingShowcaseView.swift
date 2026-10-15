@@ -154,7 +154,7 @@ struct MarketingShowcaseView: View {
     @State private var onboardingBeat: Int = 0
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case onboarding, feed, explore, watching, vocab, search, analytics, flashcard, library }
+    private enum Stage { case onboarding, feed, explore, watching, vocab, search, analytics, flashcard }
 
     var body: some View {
         ZStack {
@@ -349,8 +349,6 @@ struct MarketingShowcaseView: View {
                     VocabView()
                 case .search:
                     SearchView(initialQuery: demoSearchQuery, embedded: true)
-                case .library:
-                    LibraryView()
                 case .analytics:
                     ProfileView()
                         .environment(\.marketingScrollsToTheme, themeMenu != nil)
@@ -408,9 +406,14 @@ struct MarketingShowcaseView: View {
     }
 
     private var showcaseTabBar: some View {
-        JojoDock(selection: $tabHighlight, vocabBadge: flashWords.count)
+        JojoDock(selection: $tabHighlight, vocabBadge: walkthroughDueVocabCount)
             .padding(.horizontal, 16)
             .padding(.bottom, 6)
+    }
+
+    /// Match the app's dock: this is a review notification, never a decorative card count.
+    private var walkthroughDueVocabCount: Int {
+        app.relevantDueKeys(limit: 99).count
     }
 
     /// The same three choices as Profile’s Theme menu, held open for the recording.
@@ -833,7 +836,7 @@ struct MarketingShowcaseView: View {
         if restoreGlow { restoreParkedGlow() }
     }
 
-    /// Full product tour: onboarding → core → Vocab/Explore/Library/Profile → every theme look.
+    /// Full product tour: onboarding → core → Vocab/Explore/Profile → every theme look.
     private func runFullTour(clips: [Clip], first: Clip) async {
         // Onboarding panels
         withAnimation(.easeInOut(duration: 0.35)) { stage = .onboarding }
@@ -874,14 +877,6 @@ struct MarketingShowcaseView: View {
         guard !Task.isCancelled else { return }
         withAnimation(.easeInOut(duration: 0.4)) { explorePath = .listening }
         try? await Task.sleep(for: .milliseconds(1800))
-        guard !Task.isCancelled else { return }
-
-        // Library
-        withAnimation(.easeInOut(duration: 0.4)) {
-            stage = .library
-            tabHighlight = .library
-        }
-        try? await Task.sleep(for: .milliseconds(2000))
         guard !Task.isCancelled else { return }
 
         // Profile / settings
