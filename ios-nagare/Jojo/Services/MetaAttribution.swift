@@ -54,6 +54,9 @@ enum MetaAttribution {
     }
 
     /// Push ad-matching identifiers into RevenueCat only after tracking is allowed.
+    /// Precondition: the ATT prompt (`requestTrackingIfNeededAndSync`) must have been
+    /// requested before any advertiser ID collection — the flags below are enabled only
+    /// when the user authorized tracking.
     static func syncToRevenueCat() {
         guard Secrets.isMetaConfigured, Purchases.isConfigured else { return }
         guard ATTrackingManager.trackingAuthorizationStatus == .authorized else { return }

@@ -35,7 +35,7 @@
 		<string>fb-messenger-share-api</string>
 	</array>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Jojo uses this to measure which ads help people discover the app, so we can keep improving it.</string>
+	<string>Your data is used for ad attribution and measurement: Jojo measures which ads lead people to discover the app. Tracking only happens if you allow it in this prompt.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Jojo listens while you shadow a line so it can tell you how close you were.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
