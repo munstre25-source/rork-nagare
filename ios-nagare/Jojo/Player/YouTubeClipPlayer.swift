@@ -30,6 +30,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
 
     var duration: Double { clip.durationSec }
+    private var sourceStart: Double { clip.sourceStartSec ?? 0 }
 
     init(clip: Clip) {
         self.clip = clip
@@ -121,7 +122,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             token: &spokenToken
         )
         clock = currentTime
-        run("player&&player.seekTo(\(currentTime),true)")
+        run("player&&player.seekTo(\(sourceStart + currentTime),true)")
     }
 
     func setRate(_ rate: Double) {
@@ -184,12 +185,13 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             setRate(rate)
             // Keep muted until we confirm playing, then apply user mute preference.
             run("player&&player.mute()")
-            if currentTime > 0 { seek(to: currentTime) }
+            run("player&&player.seekTo(\(sourceStart + currentTime),true)")
             if wantsPlay { play() }
         case "time":
             guard let value else { return }
+            let excerptTime = value - sourceStart
             let clock = PlaybackUI.note(
-                time: value,
+                time: excerptTime,
                 duration: duration,
                 clip: clip,
                 uiTime: &currentTime,

@@ -1,6 +1,4 @@
 -- Cheap ingress rate limit for explain-word (before RevenueCat calls).
--- Buckets are per-minute; keys are opaque (ip hash or jwt sub).
-
 create table if not exists public.explain_ingress_buckets (
   bucket_key text not null,
   window_start timestamptz not null,
@@ -39,4 +37,4 @@ end;
 $$;
 
 revoke all on function public.increment_explain_ingress(text, timestamptz, int) from public, anon, authenticated;
-grant execute on function public.increment_explain_ingress(text, timestamptz, int) to service_role;
+grant execute on function public.increment_explain_ingress(text, timestamptz, int) to service_role;;

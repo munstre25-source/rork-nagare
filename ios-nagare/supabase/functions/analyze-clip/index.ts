@@ -7,7 +7,6 @@ import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.
 import { catalogTable, languageName, parseLanguage } from "../_shared/catalog.ts";
 import { enrichHeardLines, hearSystem } from "../_shared/enrich.ts";
 import {
-  durationFromLines,
   LineLike,
   validateEnums,
   validateLines,
@@ -51,8 +50,8 @@ Deno.serve(async (req) => {
 
     const startSec = Number(body.startSec);
     const endSec = Number(body.endSec);
-    if (!Number.isFinite(startSec) || !Number.isFinite(endSec) || endSec <= startSec) {
-      return errorResponse(400, "startSec and endSec required with endSec > startSec");
+    if (!Number.isFinite(startSec) || startSec < 0 || !Number.isFinite(endSec) || endSec <= startSec) {
+      return errorResponse(400, "startSec and endSec required with 0 <= startSec < endSec");
     }
     if (endSec - startSec > 180) {
       return errorResponse(400, "Segment must be <= 180 seconds");
@@ -90,7 +89,20 @@ Deno.serve(async (req) => {
     if (!validated.ok) return errorResponse(422, validated.error);
     const heard = await enrichHeardLines(raw.lines, supabase, language);
 
-    const durationSec = durationFromLines(heard as LineLike[], endSec - startSec);
+    const relativeLines = (heard as LineLike[]).map((line) => {
+      const row = line as Record<string, unknown>;
+      const tokens = Array.isArray(row.tokens) ? row.tokens as Array<Record<string, unknown>> : [];
+      return {
+        ...row,
+        start: Number(row.start) - startSec,
+        end: Number(row.end) - startSec,
+        tokens: tokens.map((token) => ({
+          ...token,
+          start: Number(token.start) - startSec,
+          end: Number(token.end) - startSec,
+        })),
+      };
+    });
     const gradient = GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length];
 
     const row = {
@@ -100,8 +112,9 @@ Deno.serve(async (req) => {
       channel_name: channelName,
       category,
       difficulty,
-      duration_sec: durationSec,
-      lines: heard,
+      source_start_sec: startSec,
+      duration_sec: endSec - startSec,
+      lines: relativeLines,
       published: false,
       channel_avatar_color: "#FF6B00",
       thumbnail_gradient: gradient,

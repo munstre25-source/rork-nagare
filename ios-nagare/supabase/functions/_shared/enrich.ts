@@ -23,8 +23,10 @@ Rules:
 
 export function hearSystemCatalog(language: CatalogLanguage): string {
   return `${hearSystem(language)}
-- Return 2 to 4 short lines that form one complete everyday exchange (a greeting, an order, a question and its answer). Skip music, titles, and silence.
-- If this window has no such exchange, return {"lines":[]}.
+- Find one coherent, self-contained exchange in the supplied video window. Prefer 30–90 seconds; never exceed 90 seconds. Keep the full setup and response, and do not cut a sentence or turn in half.
+- Return between 2 and 20 spoken lines from that exchange, with enough context for a learner to understand what is happening. Skip music, titles, silence, and unrelated dialogue.
+- Include numeric "clip_start_sec" and "clip_end_sec" using absolute source-video timestamps. Start shortly before the exchange begins and end shortly after it finishes. The chosen clip must be at least 20 and at most 90 seconds long.
+- If this window has no complete, useful exchange in that duration, return {"lines":[]}.
 - Also include "difficulty": "Beginner" or "Intermediate" or "Advanced", judged only from the words and grammar you heard.`;
 }
 

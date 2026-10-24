@@ -140,6 +140,8 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     var channelAvatarColor: String
     var category: String
     var difficulty: String
+    /// Start of this curated excerpt within its original YouTube video. Transcript times are excerpt-relative.
+    var sourceStartSec: Double?
     var durationSec: Double
     var lines: [Line]
     var thumbnailGradient: [String]

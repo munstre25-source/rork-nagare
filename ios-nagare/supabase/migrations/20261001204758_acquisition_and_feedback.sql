@@ -70,4 +70,4 @@ revoke all on table public.insight_rate_buckets from anon, authenticated;
 grant all on table public.acquisition_events to service_role;
 grant all on table public.feedback_items to service_role;
 grant all on table public.insight_rate_buckets to service_role;
-grant usage, select on all sequences in schema public to service_role;
+grant usage, select on all sequences in schema public to service_role;;

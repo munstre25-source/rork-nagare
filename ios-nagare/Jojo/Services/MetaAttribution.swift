@@ -12,6 +12,22 @@ import AppTrackingTransparency
 /// RevenueCat already sends those via Conversions API.
 enum MetaAttribution {
     private static var didPrepare = false
+    private static let allowedEventNames: Set<String> = [
+        "onboarding_name_captured",
+        "onboarding_motivation_selected",
+        "onboarding_taste_swiped",
+        "onboarding_level_selected",
+        "onboarding_dailygoal_selected",
+        "onboarding_notifications_answer",
+        "onboarding_look_chosen",
+        "onboarding_flashcard_revealed",
+        "onboarding_flashcard_answered",
+        "onboarding_appreview_rated",
+        "onboarding_valueprop_word_tapped",
+        "onboarding_completed",
+        "feedback_enjoyed_yes",
+        "feedback_enjoyed_no"
+    ]
 
     /// Call from `UIApplicationDelegate.didFinishLaunching`. Safe if Meta secrets are missing.
     @discardableResult
@@ -53,10 +69,19 @@ enum MetaAttribution {
         AppEvents.shared.activateApp()
     }
 
-    /// Push ad-matching identifiers into RevenueCat only after tracking is allowed.
-    /// Precondition: the ATT prompt (`requestTrackingIfNeededAndSync`) must have been
-    /// requested before any advertiser ID collection — the flags below are enabled only
-    /// when the user authorized tracking.
+    /// Forwards only approved onboarding/feedback event names, and only after ATT opt-in.
+    /// Local analytics properties (including any user text) are never passed to Meta.
+    nonisolated static func logAllowedEvent(named eventName: String) {
+        guard allowedEventNames.contains(eventName) else { return }
+        DispatchQueue.main.async {
+            guard Secrets.isMetaConfigured,
+                  ATTrackingManager.trackingAuthorizationStatus == .authorized,
+                  Settings.shared.isAdvertiserTrackingEnabled else { return }
+            AppEvents.shared.logEvent(AppEvents.Name(eventName))
+        }
+    }
+
+    /// Push ad-matching identifiers into RevenueCat only after ATT was requested and allowed.
     static func syncToRevenueCat() {
         guard Secrets.isMetaConfigured, Purchases.isConfigured else { return }
         guard ATTrackingManager.trackingAuthorizationStatus == .authorized else { return }

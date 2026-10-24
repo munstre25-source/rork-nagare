@@ -1,6 +1,3 @@
--- Korean catalog. Same project and keys as Jojo, separate rows so published
--- Japanese clips stay on public.clips for clients that select every published row.
-
 create table if not exists public.sori_clips (
   id text primary key,
   video_id text not null,
@@ -34,8 +31,4 @@ end $$;
 create index if not exists sori_clips_video_id_idx on public.sori_clips (video_id);
 
 revoke all on table public.sori_clips from public, anon, authenticated;
-grant select on table public.sori_clips to anon, authenticated;
-
--- pg_cron is not enabled on this project. When it is, schedule fill-catalog with
--- body {"language":"ko"} on a different minute from fill-jojo-catalog. Same
--- ADMIN_TOKEN, YOUTUBE_API_KEY, and GEMINI_API_KEY.
+grant select on table public.sori_clips to anon, authenticated;;

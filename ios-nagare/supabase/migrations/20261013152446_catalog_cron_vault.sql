@@ -1,6 +1,3 @@
--- Lets fill-catalog store the cron URL and token in Vault.
--- Callable only by the service role. Values are never returned.
-
 create or replace function public.upsert_vault_secret(secret_name text, secret_value text)
 returns void
 language plpgsql
@@ -29,4 +26,4 @@ end;
 $$;
 
 revoke all on function public.upsert_vault_secret(text, text) from public, anon, authenticated;
-grant execute on function public.upsert_vault_secret(text, text) to service_role;
+grant execute on function public.upsert_vault_secret(text, text) to service_role;;

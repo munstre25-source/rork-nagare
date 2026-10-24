@@ -33,7 +33,7 @@ Core story beats (videos 1–4): For You scrolls **3 clips**, normal→maximum v
 ## Adding clips
 The study feed only plays clips whose transcript was taken from the video (`id` starts with `immersion-`).
 `Tools/generate_seed.py` refreshes the dictionary and debug vocab. It does not rewrite `SeedClips.json`.
-New clips come from `fill-catalog`. Each published row is one short exchange: 2–4 spoken lines, about 6–24 seconds, an English translation, and at least two words with definitions. Gemini grades it Beginner, Intermediate, or Advanced. The phone plays the YouTube id. It does not download the file.
+New clips come from `fill-catalog`. Gemini selects one complete, self-contained 20–90 second exchange from each eligible source video, returns exact source offsets and the timed transcript, and the pipeline rejects invalid or incomplete excerpts. The app plays only that excerpt in the official YouTube player, with its transcript-relative timestamps, English translation, and tappable vocabulary. It does not download or re-host the video.
 
 ## Optional local clip overrides
 You can place `Jojo/Resources/Clips/{clip.id}.mp4` to force AVPlayer for a specific clip (useful if
@@ -152,7 +152,7 @@ curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
 
 ## Keeping the feed stocked
 
-`fill-catalog` searches YouTube for a short public video the catalog does not have, asks Gemini for one everyday exchange inside an ~18 second window, adds readings and definitions, grades the difficulty, and publishes when the lines are a real lesson. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
+`fill-catalog` searches YouTube for a public, embeddable source video up to three minutes long that is not already in the catalog. Gemini selects one coherent 20–90 second exchange, returns its absolute start/end times and a timed transcript, and the function validates the clip boundaries, dialogue, and vocabulary before publishing. Transcript times are stored relative to the excerpt; `source_start_sec` tells the app where to seek in the original YouTube video. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
 
 Two pg_cron jobs call it: `fill-jojo-catalog` every 10 minutes with `{}`, and `fill-sori-catalog` at minutes 5, 15, 25, 35, 45, and 55 with `{"language":"ko"}`. The first authorized call stores `project_url`, `admin_token` (the `CRON_FILL_TOKEN`), and `catalog_bearer` in Vault. Do not commit those values.
 

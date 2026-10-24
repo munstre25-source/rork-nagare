@@ -1,10 +1,6 @@
 -- Backend cache, rate limits, quota, and entitlement cache.
 -- Safe to re-run: IF NOT EXISTS throughout. clips may already exist in live projects.
--- Run from ios-nagare/: supabase db push
 
--- ---------------------------------------------------------------------------
--- clips (idempotent; may already exist)
--- ---------------------------------------------------------------------------
 create table if not exists public.clips (
   id text primary key,
   video_id text not null,
@@ -36,9 +32,6 @@ end $$;
 create index if not exists clips_video_id_idx on public.clips (video_id);
 create index if not exists clips_published_idx on public.clips (published) where published = true;
 
--- ---------------------------------------------------------------------------
--- word_explanations — shared Gemini response cache (service role only)
--- ---------------------------------------------------------------------------
 create table if not exists public.word_explanations (
   cache_key text primary key,
   kind text not null check (kind in ('lookup', 'context')),
@@ -55,9 +48,6 @@ alter table public.word_explanations enable row level security;
 
 create index if not exists word_explanations_word_idx on public.word_explanations (word);
 
--- ---------------------------------------------------------------------------
--- explain_rate_buckets — per-user daily counters
--- ---------------------------------------------------------------------------
 create table if not exists public.explain_rate_buckets (
   app_user_id text not null,
   day_utc date not null,
@@ -68,9 +58,6 @@ create table if not exists public.explain_rate_buckets (
 
 alter table public.explain_rate_buckets enable row level security;
 
--- ---------------------------------------------------------------------------
--- gemini_daily_usage — global Gemini call counter
--- ---------------------------------------------------------------------------
 create table if not exists public.gemini_daily_usage (
   day_utc date primary key,
   count int not null default 0
@@ -78,9 +65,6 @@ create table if not exists public.gemini_daily_usage (
 
 alter table public.gemini_daily_usage enable row level security;
 
--- ---------------------------------------------------------------------------
--- revenuecat_entitlement_cache — short-lived RC results
--- ---------------------------------------------------------------------------
 create table if not exists public.revenuecat_entitlement_cache (
   app_user_id text primary key,
   entitled boolean not null,
@@ -89,19 +73,12 @@ create table if not exists public.revenuecat_entitlement_cache (
 
 alter table public.revenuecat_entitlement_cache enable row level security;
 
--- ---------------------------------------------------------------------------
--- youtube_quota_usage — YouTube Data API quota units per UTC day
--- ---------------------------------------------------------------------------
 create table if not exists public.youtube_quota_usage (
   day_utc date primary key,
   units int not null default 0
 );
 
 alter table public.youtube_quota_usage enable row level security;
-
--- ---------------------------------------------------------------------------
--- Atomic increment RPCs (security definer; service role / edge functions)
--- ---------------------------------------------------------------------------
 
 create or replace function public.increment_explain_rate(
   p_app_user_id text,
@@ -188,18 +165,9 @@ begin
 end;
 $$;
 
-revoke all on function public.increment_explain_rate(text, date, text, int) from public, anon, authenticated;
-revoke all on function public.increment_gemini_usage(date, int) from public, anon, authenticated;
-revoke all on function public.consume_youtube_quota(date, int, int) from public, anon, authenticated;
+revoke all on function public.increment_explain_rate(text, date, text, int) from public;
+revoke all on function public.increment_gemini_usage(date, int) from public;
+revoke all on function public.consume_youtube_quota(date, int, int) from public;
 grant execute on function public.increment_explain_rate(text, date, text, int) to service_role;
 grant execute on function public.increment_gemini_usage(date, int) to service_role;
-grant execute on function public.consume_youtube_quota(date, int, int) to service_role;
-
-revoke all on table public.word_explanations from public, anon, authenticated;
-revoke all on table public.explain_rate_buckets from public, anon, authenticated;
-revoke all on table public.gemini_daily_usage from public, anon, authenticated;
-revoke all on table public.revenuecat_entitlement_cache from public, anon, authenticated;
-revoke all on table public.youtube_quota_usage from public, anon, authenticated;
-
-revoke all on table public.clips from public, anon, authenticated;
-grant select on table public.clips to anon, authenticated;
+grant execute on function public.consume_youtube_quota(date, int, int) to service_role;;

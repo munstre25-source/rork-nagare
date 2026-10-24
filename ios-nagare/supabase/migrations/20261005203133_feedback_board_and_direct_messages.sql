@@ -1,5 +1,4 @@
--- Public in-app request board. Writes go through the feedback-board Edge Function (service role).
--- Private "not enjoying" notes stay on feedback_items.
+-- Public request board and private one-to-one messages. Service role only.
 
 create table if not exists public.feedback_posts (
   id bigint generated always as identity primary key,
@@ -40,7 +39,6 @@ alter table public.insight_rate_buckets
   add constraint insight_rate_buckets_kind_check
   check (kind in ('acquisition','feedback','board','inbox'));
 
--- Private one-to-one notes between a learner and Jojo. Service role only.
 create table if not exists public.direct_messages (
   id bigint generated always as identity primary key,
   app_user_id text not null,
@@ -50,13 +48,13 @@ create table if not exists public.direct_messages (
 );
 alter table public.direct_messages enable row level security;
 create index if not exists direct_messages_user_idx on public.direct_messages (app_user_id, created_at);
+
 revoke all on table public.direct_messages from anon, authenticated;
 grant all on table public.direct_messages to service_role;
-
 revoke all on table public.feedback_posts from anon, authenticated;
 revoke all on table public.feedback_votes from anon, authenticated;
 revoke all on table public.feedback_comments from anon, authenticated;
 grant all on table public.feedback_posts to service_role;
 grant all on table public.feedback_votes to service_role;
 grant all on table public.feedback_comments to service_role;
-grant usage, select on all sequences in schema public to service_role;
+grant usage, select on all sequences in schema public to service_role;;

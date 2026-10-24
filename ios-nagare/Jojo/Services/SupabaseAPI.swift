@@ -85,6 +85,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
     var channelName: String?
     var category: String?
     var difficulty: String?
+    var sourceStartSec: Double?
     var durationSec: Double?
     var lines: [Line]
     var published: Bool?
@@ -95,6 +96,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
         case id, title, category, difficulty, lines, published
         case videoId = "video_id"
         case channelName = "channel_name"
+        case sourceStartSec = "source_start_sec"
         case durationSec = "duration_sec"
         case channelAvatarColor = "channel_avatar_color"
         case thumbnailGradient = "thumbnail_gradient"
@@ -111,6 +113,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
             channelAvatarColor: channelAvatarColor ?? "#8E5C9C",
             category: category ?? ClipCategory.drama.rawValue,
             difficulty: difficulty ?? Difficulty.beginner.rawValue,
+            sourceStartSec: sourceStartSec ?? 0,
             durationSec: durationSec ?? (lines.last?.end ?? 20) + 1.5,
             lines: lines,
             thumbnailGradient: thumbnailGradient ?? palette[index]

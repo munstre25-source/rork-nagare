@@ -1,10 +1,10 @@
 import Foundation
 
-/// Local-only event tracking (console + UserDefaults ring buffer). No external analytics.
+/// Local event tracking (console + UserDefaults ring buffer), with a narrow Meta event allowlist.
 ///
 /// Meta ad-SDK rules (do not violate in future call sites):
-/// - Only the RevenueCat Conversions API receives purchase/subscription events — never `AppEvents.shared.logEvent`.
-/// - Any Meta event may carry only the event name plus non-sensitive values (step name, rating, boolean flags).
+/// - Only the RevenueCat Conversions API receives purchase/subscription events.
+/// - Meta events carry only an allowlisted event name; no event parameters are forwarded.
 ///   Never send user-typed text, word/sentence content, or free-text feedback to Meta.
 nonisolated enum Analytics {
     private static let storageKey = "nagare.analytics.log"
@@ -21,6 +21,8 @@ nonisolated enum Analytics {
         log.append(entry)
         if log.count > maxEvents { log.removeFirst(log.count - maxEvents) }
         defaults.set(log, forKey: storageKey)
+
+        MetaAttribution.logAllowedEvent(named: event)
     }
 }
 

@@ -9,6 +9,7 @@ create table if not exists public.clips (
   channel_name text not null,
   category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming')),
   difficulty text not null check (difficulty in ('Beginner','Intermediate','Advanced')),
+  source_start_sec numeric not null default 0,
   duration_sec numeric not null,
   lines jsonb not null,              -- [{ tokens:[Token], translation, start, end }]
   published boolean not null default false,
@@ -40,6 +41,7 @@ create table if not exists public.sori_clips (
   channel_name text not null,
   category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming')),
   difficulty text not null check (difficulty in ('Beginner','Intermediate','Advanced')),
+  source_start_sec numeric not null default 0,
   duration_sec numeric not null,
   lines jsonb not null,
   published boolean not null default false,

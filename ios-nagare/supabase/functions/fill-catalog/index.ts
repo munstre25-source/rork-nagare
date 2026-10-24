@@ -7,7 +7,6 @@ import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.
 import { catalogTable, languageName, parseLanguage, type CatalogLanguage } from "../_shared/catalog.ts";
 import { enrichHeardLines, hearSystemCatalog } from "../_shared/enrich.ts";
 import {
-  durationFromLines,
   LineLike,
   validateEnums,
   validateLines,
@@ -34,7 +33,7 @@ const JAPANESE_LANES: Lane[] = [
   { category: "anime", difficulty: "Beginner", query: "日本語 アニメ 日常会話 ショート" },
   { category: "anime", difficulty: "Intermediate", query: "アニメ セリフ 日本語 ショート" },
   { category: "vtuber", difficulty: "Intermediate", query: "日本語 VTuber 雑談 ショート" },
-  { category: "gaming", difficulty: "Intermediate", query: "日本語 ゲーム実況 会話 ショート" },
+  { category: "gaming", difficulty: "Intermediate", query: "日本語 マイクラ 実況 会話 ショート" },
 ];
 
 const KOREAN_LANES: Lane[] = [
@@ -109,23 +108,19 @@ Deno.serve(async (req) => {
         for (const video of found.videos) {
           if (seenVideos.has(video.videoId) || Date.now() - started >= RUN_BUDGET_MS) continue;
           seenVideos.add(video.videoId);
-          for (const window of lessonWindows(video.durationSec)) {
-            const result = await analyzeAndPublish(supabase, video, lane, window, language);
-            if (result.ok) {
-              published.push({
-                id: result.id,
-                videoId: video.videoId,
-                difficulty: result.difficulty,
-                category: lane.category,
-              });
-              pagePublished = true;
-              moved = true;
-              break;
-            }
-            if (result.reason === "gemini-cap" || result.reason === "youtube-quota" || result.reason.includes("402")) {
-              if (result.reason.includes("402")) await pauseFill(supabase, "gemini-payment");
-              return jsonResponse(summary(published, result.reason, cronReady));
-            }
+          const result = await analyzeAndPublish(supabase, video, lane, language);
+          if (result.ok) {
+            published.push({
+              id: result.id,
+              videoId: video.videoId,
+              difficulty: result.difficulty,
+              category: lane.category,
+            });
+            pagePublished = true;
+            moved = true;
+          } else if (result.reason === "gemini-cap" || result.reason === "youtube-quota" || result.reason.includes("402")) {
+            if (result.reason.includes("402")) await pauseFill(supabase, "gemini-payment");
+            return jsonResponse(summary(published, result.reason, cronReady));
           }
         }
         if (!pagePublished) {
@@ -305,7 +300,9 @@ async function searchFresh(
     if (!videoId || existingIds.has(videoId)) continue;
     if (item.status?.embeddable !== true || item.status?.privacyStatus !== "public") continue;
     const durationSec = parseDurationSec(item.contentDetails?.duration ?? "");
-    if (durationSec === null || durationSec < 12 || durationSec > 240) continue;
+    // YouTube's "short" search filter means under four minutes, not a learner-sized
+    // excerpt. Keep only sources we can inspect in one pass and curate into 20–90s clips.
+    if (durationSec === null || durationSec < 20 || durationSec > 180) continue;
     videos.push({
       videoId,
       title: item.snippet?.title?.trim() || `Clip ${videoId}`,
@@ -349,23 +346,13 @@ async function advanceCursor(
   });
 }
 
-function lessonWindows(durationSec: number): Array<{ start: number; end: number }> {
-  const windows: Array<{ start: number; end: number }> = [];
-  let start = durationSec > 25 ? 4 : 0;
-  while (windows.length < 3 && start + 8 < durationSec) {
-    const end = Math.min(durationSec, start + 18);
-    if (end - start >= 8 && end - start <= 22) windows.push({ start, end });
-    start += 14;
-  }
-  return windows;
-}
-
-function isLesson(lines: LineLike[]): boolean {
-  if (lines.length < 2 || lines.length > 5) return false;
-  const start = Number(lines[0]?.start);
-  const end = Number(lines[lines.length - 1]?.end);
-  const span = end - start;
-  if (!Number.isFinite(span) || span < 6 || span > 24) return false;
+function isLesson(lines: LineLike[], clipStart: number, clipEnd: number): boolean {
+  if (lines.length < 2 || lines.length > 20) return false;
+  const span = clipEnd - clipStart;
+  if (!Number.isFinite(span) || span < 20 || span > 90) return false;
+  const spokenStart = Number(lines[0]?.start);
+  const spokenEnd = Number(lines[lines.length - 1]?.end);
+  if (spokenStart < clipStart || spokenEnd > clipEnd || spokenEnd - spokenStart < 12) return false;
   let defined = 0;
   for (const line of lines) {
     const tokens = Array.isArray(line.tokens) ? line.tokens : [];
@@ -418,21 +405,20 @@ async function analyzeAndPublish(
   supabase: ReturnType<typeof serviceClient>,
   video: FreshVideo,
   lane: Lane,
-  window: { start: number; end: number },
   language: CatalogLanguage,
 ): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
   if (!(await tryIncrementGeminiUsage(supabase))) {
     return { ok: false, reason: "gemini-cap" };
   }
   const prefix = language === "ko" ? "sori" : "immersion";
-  const id = `${prefix}-${video.videoId}-${Math.floor(window.start)}-${Math.floor(window.end)}`;
+  const window = { start: 0, end: video.durationSec };
   const model = geminiModelAnalyze();
   let text = "";
   try {
     const result = await geminiAnalyzeYouTubeSegment({
       model,
       system: hearSystemCatalog(language),
-      user: `Segment window: startSec=${window.start}, endSec=${window.end}. Produce lines JSON for this ${languageName(language)} clip.`,
+      user: `Inspect the full source window [${window.start}, ${window.end}] seconds and select exactly one coherent, self-contained ${languageName(language)} exchange lasting 20–90 seconds. Return absolute source-video timestamps for clip_start_sec and clip_end_sec. Include only dialogue inside those chosen boundaries. If there is no suitable exchange, return {"lines":[]}.`,
       youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
       startSec: window.start,
       endSec: window.end,
@@ -452,11 +438,34 @@ async function analyzeAndPublish(
   } catch {
     return { ok: false, reason: "invalid-transcript" };
   }
+  const clipStart = raw.clip_start_sec;
+  const clipEnd = raw.clip_end_sec;
+  if (typeof clipStart !== "number" || typeof clipEnd !== "number" ||
+      !Number.isFinite(clipStart) || !Number.isFinite(clipEnd) ||
+      clipStart < window.start || clipEnd > window.end || clipEnd <= clipStart ||
+      clipEnd - clipStart < 20 || clipEnd - clipStart > 90) {
+    return { ok: false, reason: "invalid-clip-boundaries" };
+  }
   const validated = validateLines(raw.lines, window.start, window.end, language);
   if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
   const lines = await enrichHeardLines(raw.lines, supabase, language) as LineLike[];
-  if (!isLesson(lines)) return { ok: false, reason: "not-a-lesson" };
+  if (!isLesson(lines, clipStart, clipEnd)) return { ok: false, reason: "not-a-lesson" };
+  const id = `${prefix}-${video.videoId}-${Math.floor(clipStart)}-${Math.floor(clipEnd)}`;
   const difficulty = gradeDifficulty(raw.difficulty, lines, language);
+  const relativeLines = lines.map((line) => {
+    const row = line as Record<string, unknown>;
+    const tokens = Array.isArray(row.tokens) ? row.tokens as Array<Record<string, unknown>> : [];
+    return {
+      ...row,
+      start: Number(row.start) - clipStart,
+      end: Number(row.end) - clipStart,
+      tokens: tokens.map((token) => ({
+        ...token,
+        start: Number(token.start) - clipStart,
+        end: Number(token.end) - clipStart,
+      })),
+    };
+  });
   const row = {
     id,
     video_id: video.videoId,
@@ -464,8 +473,9 @@ async function analyzeAndPublish(
     channel_name: video.channelTitle.slice(0, 80),
     category: lane.category,
     difficulty,
-    duration_sec: durationFromLines(lines, window.end - window.start),
-    lines,
+    source_start_sec: clipStart,
+    duration_sec: clipEnd - clipStart,
+    lines: relativeLines,
     published: true,
     channel_avatar_color: "#FF6B00",
     thumbnail_gradient: GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length],

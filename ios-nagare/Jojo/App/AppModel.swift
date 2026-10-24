@@ -397,7 +397,8 @@ final class AppModel {
             profile.favoriteClipIds.joined(separator: ","),
             profile.watchLaterClipIds.joined(separator: ","),
             profile.followedChannelNames.joined(separator: ","),
-            profile.tasteTrace.joined(separator: ";")
+            profile.tasteTrace.joined(separator: ";"),
+            lookedUpKeys.sorted().joined(separator: ",")
         ].joined(separator: "|")
     }
 
@@ -450,6 +451,8 @@ final class AppModel {
             if profile.followedChannelNames.contains(clip.channelName) { s += 22 }
             if profile.favoriteClipIds.contains(clip.id) { s += 28 }
             s -= abs(Double(clip.difficultyKind.rank) - targetLevel) * 8
+            s += durationFitScore(for: clip.durationSec, level: profile.readingLevel)
+            s += savedVocabularyFitScore(for: clip)
             if clip.hasVerifiedTranscript { s += 4 }
             if let seen = profile.finishedClipIds.firstIndex(of: clip.id) {
                 s -= 400 + Double(seen)
@@ -458,6 +461,34 @@ final class AppModel {
             return s
         }
         return spreadSimilar(pool.sorted { score($0) > score($1) })
+    }
+
+    /// Clip length is a gentle preference, never an eligibility rule: complete, teachable
+    /// excerpts should stay discoverable even when they fall outside the starting targets.
+    private func durationFitScore(for duration: Double, level: ReadingLevel) -> Double {
+        let preferred: ClosedRange<Double>
+        switch level {
+        case .beginner: preferred = 15...60
+        case .intermediate: preferred = 30...90
+        case .advanced: preferred = 45...120
+        }
+        if preferred.contains(duration) { return 5 }
+        let distance = duration < preferred.lowerBound
+            ? preferred.lowerBound - duration
+            : duration - preferred.upperBound
+        return max(-8, 5 - distance / 6)
+    }
+
+    /// Re-encountering saved words gives the feed a lightweight memory of what the learner
+    /// has actually studied. Cap the boost so genre, level, and fresh discovery still lead.
+    private func savedVocabularyFitScore(for clip: Clip) -> Double {
+        guard !lookedUpKeys.isEmpty else { return 0 }
+        var matched = Set<String>()
+        for token in clip.lines.flatMap(\.tokens) where token.tappable {
+            let key = Self.wordKey(for: token)
+            if lookedUpKeys.contains(key) { matched.insert(key) }
+        }
+        return min(Double(matched.count), 4) * 1.5
     }
 
     /// Recent behavior. Newer marks count more, so the feed follows what they just did.
@@ -738,6 +769,9 @@ final class AppModel {
         }
         if persist {
             rememberTaste("save", clip: clip)
+            if isNew {
+                track("vocab_saved", props: ["clip": clip.id])
+            }
             save()
             refreshFirstReviewReminder()
             scheduleReviewAvailabilityRefresh()
@@ -1173,6 +1207,7 @@ final class AppModel {
         let changed = ids != profile.finishedClipIds
         if changed { profile.finishedClipIds = ids }
         if let clip = clip(id: id) {
+            track("clip_completed", props: ["clip": id, "duration_seconds": String(Int(clip.durationSec))])
             rememberTaste("watch", clip: clip)
         } else if changed {
             save()

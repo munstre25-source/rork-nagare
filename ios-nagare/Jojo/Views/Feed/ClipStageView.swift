@@ -225,10 +225,7 @@ struct ClipStageView: View {
                 )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.94).combined(with: .opacity).combined(with: .offset(y: 16)),
-            removal: .opacity
-        ))
+        .transition(.opacity)
     }
 
     private func dismiss() {

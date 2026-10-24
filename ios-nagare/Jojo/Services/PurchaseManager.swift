@@ -115,7 +115,6 @@ final class PurchaseManager {
         #endif
         // No appUserID passed → RevenueCat generates and persists an anonymous ID.
         Purchases.configure(with: Configuration.Builder(withAPIKey: Secrets.revenueCatAPIKey).build())
-        MetaAttribution.syncToRevenueCat()
         streamTask = Task { [weak self] in
             for await info in Purchases.shared.customerInfoStream {
                 self?.apply(info)
