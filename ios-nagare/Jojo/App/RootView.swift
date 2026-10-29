@@ -46,6 +46,7 @@ struct MainTabView: View {
     @State private var showingExplore = false
     @State private var welcome: (due: Int, streak: Int)?
     @State private var experiencePromptTask: Task<Void, Never>?
+    @State private var dockHidden = false
     private let guide = GuidanceCenter.shared
 
     private var anySheetUp: Bool {
@@ -89,16 +90,19 @@ struct MainTabView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            // A solid, fixed-height bar that never auto-hides. Every screen lays out above it,
-            // so captions and lists are never covered and nothing jumps when playback starts.
-            // It only steps aside for a pushed word detail, which has its own back navigation.
-            if !app.hidesMainTabBar {
+            // A compact floating pill, centered like the system bar. While a swipe hides it the
+            // inset collapses too, so nothing sits behind it and nothing is blocked at all.
+            if !app.hidesMainTabBar && !dockHidden {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        // Swipe up (next clip / scrolling down) tucks the dock away; swipe down brings it back.
+        .tabBarAutoHide($dockHidden)
         .preferredColorScheme(app.profile.scheme.colorScheme)
         .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
         .onChange(of: tab) { _, newTab in
+            dockHidden = false
             if newTab != .feed {
                 showingExplore = false
                 app.feedChromeHidden = false
@@ -250,38 +254,35 @@ private struct FeedTab: View {
     }
 }
 
-/// Persistent bottom navigation: Vocab, Feed (mascot), Profile. Full-width and opaque,
-/// like the system tab bar, so content always ends above it instead of sliding underneath.
+/// Bottom navigation: Vocab, Feed (mascot), Profile. A compact floating pill, centered so it
+/// covers almost nothing; the feed can tuck it away with a swipe and bring it back the same way.
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             dockItem(.vocab, title: "Vocab", symbol: "books.vertical", hint: vocabHint) {
                 badge
             }
             dockItem(.feed, title: "Feed", symbol: nil, hint: "Watch clips") {
-                JojoMascot(height: 26, floats: false, pose: .book)
-                    .frame(width: 30, height: 30)
+                JojoMascot(height: 24, floats: false, pose: .book)
+                    .frame(width: 28, height: 28)
                     .opacity(selection == .feed ? 1 : 0.6)
                     .saturation(selection == .feed ? 1 : 0.35)
             }
             dockItem(.profile, title: "Profile", symbol: "person", hint: "Progress and settings") { EmptyView() }
         }
-        .frame(maxWidth: 520)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 6)
-        .padding(.bottom, 2)
+        .padding(.horizontal, 8)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
         .background {
-            Color.canvas
-                .ignoresSafeArea(edges: .bottom)
+            Capsule().fill(Color.canvas)
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         }
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Color.primary.opacity(0.1))
-                .frame(height: 0.5)
-        }
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
     }
 
@@ -334,7 +335,7 @@ struct JojoDock: View {
                     .foregroundStyle(tint)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .frame(minWidth: 84, minHeight: 48)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
