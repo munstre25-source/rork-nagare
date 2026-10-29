@@ -49,12 +49,25 @@ struct TapPopupCard: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    if lookup.occurrenceCount <= 1 {
-                        Text("NEW")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(LearningInk.selected)
-                            .accessibilityLabel("New flashcard")
-                    }
+                    // Says exactly what the tap did: the word is a flashcard now, no save step.
+                    Label(
+                        lookup.previewOnly
+                            ? "Preview · not saved"
+                            : lookup.occurrenceCount <= 1
+                                ? "New · saved to Vocab"
+                                : "In your Vocab · seen \(lookup.occurrenceCount)×",
+                        systemImage: lookup.occurrenceCount <= 1 ? "sparkles" : "bookmark.fill"
+                    )
+                    .font(.caption2.weight(.bold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(LearningInk.selected)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .accessibilityLabel(
+                        lookup.occurrenceCount <= 1
+                            ? "New word, saved to Vocab as a flashcard"
+                            : "Already in your Vocab, seen \(lookup.occurrenceCount) times"
+                    )
                     Text(explanation.word)
                         .font(JojoFont.jp(30, bold: true, relativeTo: .title))
                         .foregroundStyle(ink)

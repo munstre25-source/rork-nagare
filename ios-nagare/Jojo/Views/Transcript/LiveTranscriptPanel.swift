@@ -29,11 +29,19 @@ struct LiveTranscriptPanel: View {
                     .padding(.bottom, 4)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else if windowMode {
-                windowStack
-                    .padding(.top, tooltip == nil ? Spacing.s : 40)
-                    .padding(.bottom, Spacing.l)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .clipped()
+                // Only whole lines are ever shown: drop following lines until everything fits,
+                // and if even the current line is too tall (large text), let it scroll.
+                // Nothing gets sliced off at the bottom edge.
+                ViewThatFits(in: .vertical) {
+                    ForEach(Array(stride(from: max(0, followingLines), through: 0, by: -1)), id: \.self) { extra in
+                        paddedWindow(following: extra)
+                    }
+                    ScrollView(.vertical, showsIndicators: false) {
+                        paddedWindow(following: 0)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if onlyCurrentLine {
                 lineStack
                     .padding(.horizontal, Spacing.l)
@@ -63,9 +71,18 @@ struct LiveTranscriptPanel: View {
         .environment(\.spokenTokenNamespace, spokenNamespace)
     }
 
-    private var windowStack: some View {
+    private func paddedWindow(following: Int) -> some View {
+        windowStack(following: following)
+            .padding(.top, tooltip == nil ? Spacing.s : 40)
+            .padding(.bottom, Spacing.m)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var windowStack: some View { windowStack(following: followingLines) }
+
+    private func windowStack(following: Int) -> some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
-            ForEach(windowLines, id: \.self) { index in
+            ForEach(windowLines(following: following), id: \.self) { index in
                 TranscriptLineView(
                     clip: clip,
                     lineIndex: index,
@@ -114,11 +131,11 @@ struct LiveTranscriptPanel: View {
     }
 
     /// Current line plus the following lines. The card stays in the centered column.
-    private var windowLines: [Int] {
+    private func windowLines(following: Int) -> [Int] {
         guard !clip.lines.isEmpty else { return [] }
-        let extra = max(0, followingLines)
-        let end = min(clip.lines.count - 1, currentLine + extra)
-        return Array(currentLine...end)
+        let start = min(max(0, currentLine), clip.lines.count - 1)
+        let end = min(clip.lines.count - 1, start + max(0, following))
+        return Array(start...end)
     }
 }
 

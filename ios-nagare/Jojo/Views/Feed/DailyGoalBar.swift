@@ -43,14 +43,14 @@ struct DailyGoalBar: View {
     var body: some View {
         HStack(spacing: Spacing.m) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(app.isGoalReached ? "Goal done" : "\(app.minutesLeft) min left")
+                Text(app.isGoalReached ? "Daily goal done" : "\(app.minutesLeft) min left today")
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(.primary.opacity(0.9))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .contentTransition(.numericText())
-                Text(app.isGoalReached ? "Nice work today" : "\(app.clipsLeftToday) clip\(app.clipsLeftToday == 1 ? "" : "s") left")
+                Text(app.isGoalReached ? "Nice work today" : "Daily goal · about \(app.clipsLeftToday) clip\(app.clipsLeftToday == 1 ? "" : "s")")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.sakuraPink)
                     .textCase(.uppercase)

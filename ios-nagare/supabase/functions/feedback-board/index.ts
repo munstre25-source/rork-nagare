@@ -3,6 +3,7 @@ import { requireEnv, utcDayString } from "../_shared/env.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { feedbackIdentity } from "../_shared/feedback.ts";
 import { BOARD_SORTS, cleanSearch, cleanText, REPORT_REASONS } from "../_shared/analytics.ts";
+import { filterMessage, screenPublicText } from "../_shared/moderation.ts";
 
 /**
  * Public feature-request board. Responses never include author ids, voter ids or IPs.
@@ -18,6 +19,7 @@ type Body = {
   title?: string;
   body?: string;
   reason?: string;
+  comment_id?: number;
 };
 
 type PostRow = {
@@ -52,6 +54,11 @@ function publicPost(row: PostRow, voted: boolean) {
   };
 }
 
+async function blockedAuthors(sb: ReturnType<typeof serviceClient>, viewer: string): Promise<Set<string>> {
+  const { data } = await sb.from("feedback_blocks").select("blocked_author").eq("blocker", viewer).limit(500);
+  return new Set((data ?? []).map((row: { blocked_author: string }) => row.blocked_author));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
 
@@ -67,14 +74,17 @@ Deno.serve(async (req) => {
       if (Number.isFinite(postId) && postId > 0) {
         const { data: post, error } = await sb
           .from("feedback_posts")
-          .select("id, category, title, body, status, vote_count, comment_count, created_at, held")
+          .select("id, category, title, body, status, vote_count, comment_count, created_at, held, app_user_id")
           .eq("id", postId)
           .maybeSingle();
         if (error || !post || post.status === "hidden" || post.held) return errorResponse(404, "Not found");
+        const blocked = await blockedAuthors(sb, identity.key);
+        if (blocked.has(post.app_user_id)) return errorResponse(404, "Not found");
         const [{ data: comments }, { data: vote }] = await Promise.all([
           sb.from("feedback_comments")
-            .select("id, body, created_at")
+            .select("id, body, created_at, app_user_id")
             .eq("post_id", postId)
+            .eq("hidden", false)
             .order("created_at", { ascending: true })
             .limit(100),
           sb.from("feedback_votes")
@@ -85,7 +95,9 @@ Deno.serve(async (req) => {
         ]);
         return jsonResponse({
           post: publicPost(post as PostRow, Boolean(vote)),
-          comments: (comments ?? []).map((row) => ({ id: row.id, body: row.body, created_at: stamp(row.created_at) })),
+          comments: (comments ?? [])
+            .filter((row) => !blocked.has(row.app_user_id))
+            .map((row) => ({ id: row.id, body: row.body, created_at: stamp(row.created_at) })),
         });
       }
 
@@ -105,8 +117,17 @@ Deno.serve(async (req) => {
       if (error) return errorResponse(500, "Failed to load board");
       const rows = (data ?? []) as PostRow[];
       const page = rows.slice(0, limit);
+      let visible = page;
+      const blocked = await blockedAuthors(sb, identity.key);
+      if (blocked.size > 0 && page.length > 0) {
+        const { data: authors } = await sb.from("feedback_posts").select("id, app_user_id").in("id", page.map((r) => r.id));
+        const hiddenIds = new Set(
+          (authors ?? []).filter((a: { app_user_id: string }) => blocked.has(a.app_user_id)).map((a: { id: number }) => a.id),
+        );
+        visible = page.filter((row) => !hiddenIds.has(row.id));
+      }
       return jsonResponse({
-        posts: page.map((row) => publicPost(row, row.voted === true)),
+        posts: visible.map((row) => publicPost(row, row.voted === true)),
         has_more: rows.length > limit,
         next_offset: offset + page.length,
       });
@@ -131,6 +152,8 @@ Deno.serve(async (req) => {
       const title = cleanText(body.title, 80) || cleanText(text, 80);
       if (!CATEGORIES.has(category)) return errorResponse(400, "Pick bug, feature, or general");
       if (!text || !title) return errorResponse(400, "Tell us what you want");
+      const screen = screenPublicText(`${title}\n${text}`);
+      if (!screen.ok) return errorResponse(422, filterMessage(screen.reason));
       const { data, error } = await sb
         .from("feedback_posts")
         .insert({ app_user_id: identity.key, category, title, body: text, status: "under_review" })
@@ -138,6 +161,37 @@ Deno.serve(async (req) => {
         .single();
       if (error || !data) return errorResponse(500, "Failed to post");
       return jsonResponse({ post: publicPost(data as PostRow, false) });
+    }
+
+    if (action === "report_comment" || action === "block") {
+      const commentId = Number(body.comment_id);
+      const hasComment = Number.isFinite(commentId) && commentId > 0;
+      if (action === "report_comment") {
+        if (!hasComment) return errorResponse(400, "Invalid id");
+        const reason = REPORT_REASONS.has(body.reason ?? "") ? body.reason! : "other";
+        const { data: reportGate } = await sb.rpc("increment_insight_rate", {
+          p_app_user_id: identity.key, p_day_utc: day, p_kind: "report", p_limit: 15,
+        });
+        if (reportGate !== true) return errorResponse(429, "Too many reports today");
+        const { error } = await sb.rpc("feedback_report_comment", { p_comment: commentId, p_reporter: identity.key, p_reason: reason });
+        if (error) return errorResponse(500, "Failed to report");
+        return jsonResponse({ reported: true });
+      }
+      // Block the author of a post or comment. The author id never leaves the server.
+      const targetId = hasComment ? commentId : Number(body.id);
+      if (!Number.isFinite(targetId) || targetId <= 0) return errorResponse(400, "Invalid id");
+      const { data: target } = await sb
+        .from(hasComment ? "feedback_comments" : "feedback_posts")
+        .select("app_user_id")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (!target) return errorResponse(404, "Not found");
+      if (target.app_user_id === identity.key) return errorResponse(400, "That's your own post");
+      const { error } = await sb
+        .from("feedback_blocks")
+        .upsert({ blocker: identity.key, blocked_author: target.app_user_id }, { onConflict: "blocker,blocked_author" });
+      if (error) return errorResponse(500, "Failed to block");
+      return jsonResponse({ blocked: true });
     }
 
     const postId = Number(body.id);
@@ -165,6 +219,8 @@ Deno.serve(async (req) => {
     if (action === "comment") {
       const text = cleanText(body.body, 500);
       if (!text) return errorResponse(400, "Write a comment");
+      const screen = screenPublicText(text);
+      if (!screen.ok) return errorResponse(422, filterMessage(screen.reason));
       const { data: post } = await sb
         .from("feedback_posts")
         .select("id")

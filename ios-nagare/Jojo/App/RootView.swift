@@ -52,11 +52,6 @@ struct MainTabView: View {
         showFeedbackPrompt || showManualFeedback || showCancellationSurvey
     }
 
-    /// True only on For You, once the learner has settled into a playing clip.
-    private var focusCapsuleHidden: Bool {
-        app.feedChromeHidden && tab == .feed && !showingExplore
-    }
-
     /// The badge is a real Vocab notification: cards the learner can review now.
     /// It deliberately survives visiting Vocab and clears only as the cards are rescheduled.
     private var dueVocabNotificationCount: Int {
@@ -94,17 +89,13 @@ struct MainTabView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            // While a clip is playing the whole dock leaves the screen so the raised
-            // panda never covers the video. It returns on tap, pause, or a dictionary card.
-            if !app.hidesMainTabBar, !focusCapsuleHidden {
+            // A solid, fixed-height bar that never auto-hides. Every screen lays out above it,
+            // so captions and lists are never covered and nothing jumps when playback starts.
+            // It only steps aside for a pushed word detail, which has its own back navigation.
+            if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
-                    .padding(.horizontal, 26)
-                    .padding(.top, 12)
-                    .padding(.bottom, 6)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: focusCapsuleHidden)
         .preferredColorScheme(app.profile.scheme.colorScheme)
         .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
         .onChange(of: tab) { _, newTab in
@@ -259,33 +250,43 @@ private struct FeedTab: View {
     }
 }
 
-/// Compact dark dock: Vocab, Feed mascot, Profile.
+/// Persistent bottom navigation: Vocab, Feed (mascot), Profile. Full-width and opaque,
+/// like the system tab bar, so content always ends above it instead of sliding underneath.
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
 
-    private let active = Color.white
-    private let inactive = Color.white.opacity(0.52)
-
     var body: some View {
         HStack(spacing: 0) {
-            dockItem(.vocab, title: "Vocab", symbol: "books.vertical") {
+            dockItem(.vocab, title: "Vocab", symbol: "books.vertical", hint: vocabHint) {
                 badge
             }
-            dockItem(.feed, title: "Feed", symbol: nil) {
-                JojoMascot(height: 28, floats: false, pose: .book)
-                    .frame(width: 32, height: 32)
+            dockItem(.feed, title: "Feed", symbol: nil, hint: "Watch clips") {
+                JojoMascot(height: 26, floats: false, pose: .book)
+                    .frame(width: 30, height: 30)
+                    .opacity(selection == .feed ? 1 : 0.6)
+                    .saturation(selection == .feed ? 1 : 0.35)
             }
-            dockItem(.profile, title: "Profile", symbol: "person") { EmptyView() }
+            dockItem(.profile, title: "Profile", symbol: "person", hint: "Progress and settings") { EmptyView() }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: 290)
-        .background(Color(hex: "#10120F").opacity(0.96), in: Capsule())
-        .overlay {
-            Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+        .frame(maxWidth: 520)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .padding(.bottom, 2)
+        .background {
+            Color.canvas
+                .ignoresSafeArea(edges: .bottom)
+        }
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color.primary.opacity(0.1))
+                .frame(height: 0.5)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var vocabHint: String {
+        vocabBadge > 0 ? "\(vocabBadge) words ready to review" : "Your saved words"
     }
 
     @ViewBuilder
@@ -294,12 +295,12 @@ struct JojoDock: View {
             Text("\(min(vocabBadge, 99))")
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-                .frame(minWidth: 20, minHeight: 20)
+                .frame(minWidth: 18, minHeight: 18)
                 .padding(.horizontal, 3)
-                .background(Color(hex: "#FF9418"), in: Capsule())
-                .overlay(Capsule().strokeBorder(Color(hex: "#10120F"), lineWidth: 2))
-                .offset(x: 13, y: -11)
-                .accessibilityLabel("\(vocabBadge) vocabulary reviews due")
+                .background(Color.designOrange, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.canvas, lineWidth: 2))
+                .offset(x: 14, y: -9)
+                .accessibilityHidden(true)
         }
     }
 
@@ -307,40 +308,40 @@ struct JojoDock: View {
         _ tab: AppTab,
         title: String,
         symbol: String?,
+        hint: String,
         @ViewBuilder icon: () -> Icon
     ) -> some View {
         let selected = selection == tab
-        let tint = selected ? active : inactive
+        let tint: Color = selected ? .designOrange : .secondary
         return Button {
+            guard selection != tab else { return }
             Haptics.selection()
             selection = tab
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 ZStack {
                     if let symbol {
-                        Image(systemName: symbol)
-                            .font(.system(size: 23, weight: .medium))
+                        Image(systemName: selected ? "\(symbol).fill" : symbol)
+                            .font(.system(size: 21, weight: .semibold))
                             .foregroundStyle(tint)
                     }
                     icon()
                 }
-                .frame(height: 36)
+                .frame(height: 30)
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold))
+                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
                     .foregroundStyle(tint)
                     .lineLimit(1)
             }
-            .overlay(alignment: .bottom) {
-                Capsule()
-                    .fill(selected ? Color.white : .clear)
-                    .frame(width: 16, height: 2)
-                    .offset(y: 4)
-            }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityHint(hint)
+        .accessibilityValue(tab == .vocab && vocabBadge > 0 ? "\(vocabBadge) due" : "")
+        .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
         .coachTarget(.vocabDock, active: tab == .vocab)
     }
 }

@@ -98,6 +98,13 @@ struct ProfileView: View {
                     }
                     .buttonStyle(ChunkyPressStyle())
                     .disabled(words.isEmpty)
+                    if words.isEmpty {
+                        Text("Reviews unlock after you tap your first word in the feed.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                    }
                     settings
                     Text("Jojo 流れ · Scroll, Listen, Flow into Japanese.")
                         .font(.footnote)
@@ -171,6 +178,13 @@ struct ProfileView: View {
                     .contentTransition(.numericText(value: Double(known)))
                     .animation(.snappy, value: known)
                 Text("Words you know").font(.subheadline).foregroundStyle(.secondary)
+                Text(known == 0
+                     ? "A word counts as known once you can recall it with 3 weeks between reviews."
+                     : "Recalled with 3+ weeks between reviews.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 6) {
@@ -219,7 +233,10 @@ struct ProfileView: View {
         let today = Calendar.current.startOfDay(for: Date())
         return VStack(alignment: .leading, spacing: Spacing.s) {
             Text("This week").font(.headline)
-            Text("Minutes watched").font(.subheadline).foregroundStyle(.secondary)
+            Text("Minutes watched · dashed line is your \(app.profile.dailyGoalMinutes)-min daily goal")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Chart(data) { item in
                 BarMark(
                     x: .value("Day", item.date, unit: .day),
@@ -238,6 +255,17 @@ struct ProfileView: View {
                 }
             }
             .frame(height: 150)
+            .overlay {
+                if data.allSatisfy({ $0.minutes < 1 }) {
+                    Text("Watch a clip and your minutes show up here.")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.card.opacity(0.92), in: Capsule())
+                }
+            }
         }
         .padding(Spacing.l)
         .cardStyle()
@@ -247,15 +275,26 @@ struct ProfileView: View {
         let total = max(words.count, 1)
         return VStack(alignment: .leading, spacing: Spacing.m) {
             Text("Mastery overview").font(.headline)
+            Text(words.isEmpty
+                 ? "Words you look up start as New, then move to Learning, Familiar and Known as you review them."
+                 : "Each review moves a word one step closer to Known.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             GeometryReader { proxy in
-                HStack(spacing: 2) {
-                    Capsule().fill(Color.gray.opacity(0.45)).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
-                    Capsule().fill(Color.sakuraPinkSoft).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
-                    Capsule().fill(Color.designOrange).frame(width: proxy.size.width * CGFloat(familiar) / CGFloat(total))
-                    Capsule().fill(Color.spokenGreen)
+                if words.isEmpty {
+                    Capsule().fill(Color.primary.opacity(0.1))
+                } else {
+                    HStack(spacing: 2) {
+                        Capsule().fill(Color.gray.opacity(0.45)).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
+                        Capsule().fill(Color.sakuraPinkSoft).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
+                        Capsule().fill(Color.designOrange).frame(width: proxy.size.width * CGFloat(familiar) / CGFloat(total))
+                        Capsule().fill(Color.spokenGreen)
+                    }
                 }
             }
             .frame(height: 12)
+            .accessibilityHidden(true)
             HStack {
                 MasteryStat(color: .gray.opacity(0.7), label: "New", value: newCount)
                 MasteryStat(color: Color.sakuraPinkSoft, label: "Learning", value: learning)

@@ -94,6 +94,8 @@ struct PaywallView: View {
             .onChange(of: plansReady) { _, ready in
                 if ready { offeringTimedOut = false }
             }
+            .onChange(of: anyPlanReady) { _, _ in selectAvailablePlan() }
+            .onChange(of: offeringTimedOut) { _, _ in selectAvailablePlan() }
     }
 
     private var nativePaywall: some View {
@@ -287,9 +289,9 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
-    /// Yearly opens on the trial. Monthly switches the button to Continue.
+    /// "Start free trial" only when the selected product really offers one to this user.
     private var primaryCTATitle: String {
-        plan == .yearly ? "Start free trial" : "Continue"
+        selectedPackageHasTrial ? "Start free trial" : "Continue"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
@@ -307,10 +309,18 @@ struct PaywallView: View {
 
     private var yearlyPrice: String? { purchases.priceText(purchases.yearly) }
     private var monthlyPrice: String? { purchases.priceText(purchases.monthly) }
+    /// Every plan has loaded.
     private var plansReady: Bool { yearlyPrice != nil && monthlyPrice != nil }
-    /// Offerings failed, or they have not arrived within 8 seconds.
+    /// At least one plan can be bought; each plan is purchasable on its own.
+    private var anyPlanReady: Bool { yearlyPrice != nil || monthlyPrice != nil }
+    private var selectedPlanReady: Bool { purchases.priceText(selectedPackage) != nil }
+    /// Offerings failed, or nothing has arrived within 8 seconds.
     private var offeringUnavailable: Bool {
-        !plansReady && (purchases.offeringFailed || offeringTimedOut)
+        !anyPlanReady && (purchases.offeringFailed || offeringTimedOut)
+    }
+    /// One plan loaded but this one did not.
+    private var planMissing: Bool {
+        anyPlanReady && (purchases.offeringFailed || offeringTimedOut)
     }
 
     private var perMonthLine: String? {
@@ -347,8 +357,8 @@ struct PaywallView: View {
                     Text("\(yearlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(PaywallInk.ink)
-                } else if offeringUnavailable {
-                    Text("Plans didn’t load")
+                } else if offeringUnavailable || planMissing {
+                    Text(planMissing ? "Not available right now" : "Plans didn’t load")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(PaywallInk.ink)
                 } else {
@@ -402,8 +412,8 @@ struct PaywallView: View {
                     Text("\(monthlyPrice) / \(period)")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
-                } else if offeringUnavailable {
-                    Text("Plans didn’t load")
+                } else if offeringUnavailable || planMissing {
+                    Text(planMissing ? "Not available right now" : "Plans didn’t load")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                 } else {
@@ -471,7 +481,7 @@ struct PaywallView: View {
             }
         }
         .buttonStyle(PaywallCTAStyle())
-        .disabled(!plansReady || purchases.isPurchasing || purchases.isRestoring)
+        .disabled(!selectedPlanReady || purchases.isPurchasing || purchases.isRestoring)
     }
 
     private var offeringRetry: some View {
@@ -611,6 +621,14 @@ struct PaywallView: View {
             try? await Task.sleep(for: .seconds(8))
             guard watch == offeringWatch, !plansReady else { return }
             offeringTimedOut = true
+        }
+    }
+
+    /// If the chosen plan never loads but the other did, switch to the one that can be bought.
+    private func selectAvailablePlan() {
+        guard anyPlanReady, !selectedPlanReady else { return }
+        if purchases.offeringFailed || offeringTimedOut || plansReady {
+            plan = (plan == .yearly) ? .monthly : .yearly
         }
     }
 

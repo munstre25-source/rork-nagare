@@ -20,6 +20,7 @@ struct FeedbackBoardView: View {
     @State private var showComposer = false
     @State private var selected: FeedbackPost?
     @State private var reporting: FeedbackPost?
+    @State private var blocking: FeedbackPost?
     @State private var reportNotice: String?
     @State private var loadGeneration = 0
 
@@ -69,11 +70,16 @@ struct FeedbackBoardView: View {
                     .background(Color.studyPage)
             }
             .navigationDestination(item: $selected) { post in
-                FeedbackPostScreen(post: post) { updated in
+                FeedbackPostScreen(post: post, onChange: { updated in
                     if let index = posts.firstIndex(where: { $0.id == updated.id }) {
                         posts[index] = updated
                     }
-                }
+                }, onBlocked: {
+                    selected = nil
+                    Task { await reload() }
+                }, onBoardChanged: {
+                    Task { await reload() }
+                })
             }
             .sheet(isPresented: $showComposer) {
                 FeedbackComposer { post in
@@ -93,6 +99,17 @@ struct FeedbackBoardView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
                 Text("Reported posts are hidden for review once several people flag them.")
+            }
+            .confirmationDialog(
+                "Block this person?",
+                isPresented: Binding(get: { blocking != nil }, set: { if !$0 { blocking = nil } }),
+                titleVisibility: .visible,
+                presenting: blocking
+            ) { post in
+                Button("Block", role: .destructive) { Task { await block(post) } }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("You won't see their posts or comments on the board anymore.")
             }
             .alert(reportNotice ?? "", isPresented: Binding(get: { reportNotice != nil }, set: { if !$0 { reportNotice = nil } })) {
                 Button("OK", role: .cancel) {}
@@ -178,7 +195,8 @@ struct FeedbackBoardView: View {
                     post: post,
                     onOpen: { selected = post },
                     onVote: { await vote(post) },
-                    onReport: { reporting = post }
+                    onReport: { reporting = post },
+                    onBlock: { blocking = post }
                 )
             }
             if hasMore {
@@ -249,6 +267,18 @@ struct FeedbackBoardView: View {
         posts[current].voted = result.voted
     }
 
+    private func block(_ post: FeedbackPost) async {
+        blocking = nil
+        let ok = await InsightsService.shared.blockFeedbackAuthor(postId: post.id, commentId: nil, appUserId: app.purchases.appUserId)
+        if ok {
+            track("feedback_author_blocked")
+            await reload()
+            reportNotice = "Blocked. Their posts and comments are hidden for you."
+        } else {
+            reportNotice = "Couldn't block right now. Try again in a moment."
+        }
+    }
+
     private func report(_ post: FeedbackPost, reason: FeedbackReportReason) async {
         reporting = nil
         let ok = await InsightsService.shared.reportFeedbackPost(id: post.id, reason: reason.rawValue, appUserId: app.purchases.appUserId)
@@ -303,6 +333,7 @@ private struct FeedbackPostRow: View {
     var onOpen: () -> Void
     var onVote: () async -> Void
     var onReport: () -> Void
+    var onBlock: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -363,8 +394,12 @@ private struct FeedbackPostRow: View {
             Button(role: .destructive, action: onReport) {
                 Label("Report", systemImage: "flag")
             }
+            Button(role: .destructive, action: onBlock) {
+                Label("Block this person", systemImage: "hand.raised")
+            }
         }
         .accessibilityAction(named: "Report", onReport)
+        .accessibilityAction(named: "Block this person", onBlock)
     }
 }
 
@@ -375,11 +410,36 @@ private struct FeedbackPostScreen: View {
     @State private var draft = ""
     @State private var isSending = false
     @State private var errorText: String?
+    @State private var reportingPost = false
+    @State private var reportingComment: FeedbackComment?
+    @State private var blockTarget: BlockTarget?
+    @State private var notice: String?
     var onChange: (FeedbackPost) -> Void
+    var onBlocked: () -> Void
+    var onBoardChanged: () -> Void
 
-    init(post: FeedbackPost, onChange: @escaping (FeedbackPost) -> Void) {
+    /// Who to block: the post's author, or one comment's author.
+    enum BlockTarget: Identifiable {
+        case post
+        case comment(FeedbackComment)
+        var id: String {
+            switch self {
+            case .post: "post"
+            case .comment(let c): "c\(c.id)"
+            }
+        }
+    }
+
+    init(
+        post: FeedbackPost,
+        onChange: @escaping (FeedbackPost) -> Void,
+        onBlocked: @escaping () -> Void = {},
+        onBoardChanged: @escaping () -> Void = {}
+    ) {
         _post = State(initialValue: post)
         self.onChange = onChange
+        self.onBlocked = onBlocked
+        self.onBoardChanged = onBoardChanged
     }
 
     var body: some View {
@@ -417,15 +477,36 @@ private struct FeedbackPostScreen: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(comments) { comment in
-                        Text(comment.body)
-                            .font(.subheadline)
-                            .foregroundStyle(.primary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .background(Color.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        HStack(alignment: .top, spacing: 4) {
+                            Text(comment.body)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 12)
+                                .padding(.leading, 12)
+                            Menu {
+                                Button(role: .destructive) { reportingComment = comment } label: {
+                                    Label("Report comment", systemImage: "flag")
+                                }
+                                Button(role: .destructive) { blockTarget = .comment(comment) } label: {
+                                    Label("Block this person", systemImage: "hand.raised")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .accessibilityLabel("Comment options")
+                        }
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
+                Text("Be kind. Offensive language, links and personal details are blocked.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 TextField("Write a comment…", text: $draft, axis: .vertical)
                     .lineLimit(2...5)
                     .padding(12)
@@ -444,20 +525,112 @@ private struct FeedbackPostScreen: View {
         .background(Color.studyPage.ignoresSafeArea())
         .navigationTitle("Feedback")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(role: .destructive) { reportingPost = true } label: {
+                        Label("Report post", systemImage: "flag")
+                    }
+                    Button(role: .destructive) { blockTarget = .post } label: {
+                        Label("Block this person", systemImage: "hand.raised")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("Post options")
+            }
+        }
+        .confirmationDialog("Report this post?", isPresented: $reportingPost, titleVisibility: .visible) {
+            ForEach(FeedbackReportReason.allCases) { reason in
+                Button(reason.title) { Task { await reportPost(reason) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Report this comment?",
+            isPresented: Binding(get: { reportingComment != nil }, set: { if !$0 { reportingComment = nil } }),
+            titleVisibility: .visible,
+            presenting: reportingComment
+        ) { comment in
+            ForEach(FeedbackReportReason.allCases) { reason in
+                Button(reason.title) { Task { await reportComment(comment, reason: reason) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Reported comments are hidden once two people flag them.")
+        }
+        .confirmationDialog(
+            "Block this person?",
+            isPresented: Binding(get: { blockTarget != nil }, set: { if !$0 { blockTarget = nil } }),
+            titleVisibility: .visible,
+            presenting: blockTarget
+        ) { target in
+            Button("Block", role: .destructive) { Task { await block(target) } }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("You won't see their posts or comments on the board anymore.")
+        }
+        .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
         .task { await load() }
+    }
+
+    private func reportPost(_ reason: FeedbackReportReason) async {
+        let ok = await InsightsService.shared.reportFeedbackPost(id: post.id, reason: reason.rawValue, appUserId: app.purchases.appUserId)
+        notice = ok ? "Thanks. We'll take a look." : "Couldn't send the report. Try again in a moment."
+        if ok { track("feedback_post_reported", props: ["reason": reason.rawValue]) }
+    }
+
+    private func reportComment(_ comment: FeedbackComment, reason: FeedbackReportReason) async {
+        reportingComment = nil
+        let ok = await InsightsService.shared.reportFeedbackComment(id: comment.id, reason: reason.rawValue, appUserId: app.purchases.appUserId)
+        if ok {
+            comments.removeAll { $0.id == comment.id }
+            track("feedback_comment_reported", props: ["reason": reason.rawValue])
+        }
+        notice = ok ? "Thanks. That comment is hidden for you while we take a look." : "Couldn't send the report. Try again in a moment."
+    }
+
+    private func block(_ target: BlockTarget) async {
+        blockTarget = nil
+        let commentId: Int? = if case .comment(let c) = target { c.id } else { nil }
+        let ok = await InsightsService.shared.blockFeedbackAuthor(
+            postId: post.id, commentId: commentId, appUserId: app.purchases.appUserId
+        )
+        guard ok else {
+            notice = "Couldn't block right now. Try again in a moment."
+            return
+        }
+        track("feedback_author_blocked")
+        switch target {
+        case .post:
+            onBlocked()
+        case .comment:
+            // Their comments disappear right away; if they also wrote this post, leave it.
+            comments.removeAll { $0.id == commentId }
+            if await load() {
+                onBoardChanged()
+                notice = "Blocked. Their comments are hidden for you."
+            } else {
+                onBlocked()
+            }
+        }
     }
 
     private var canSend: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSending
     }
 
-    private func load() async {
+    @discardableResult
+    private func load() async -> Bool {
         guard let detail = await InsightsService.shared.loadFeedbackPost(id: post.id, appUserId: app.purchases.appUserId) else {
-            return
+            return false
         }
         post = detail.post
         comments = detail.comments
         onChange(detail.post)
+        return true
     }
 
     private func vote() async {
@@ -485,7 +658,7 @@ private struct FeedbackPostScreen: View {
             body: text,
             appUserId: app.purchases.appUserId
         ) else {
-            errorText = "Couldn't send — try again in a moment."
+            errorText = await InsightsService.shared.lastErrorMessage() ?? "Couldn't send — try again in a moment."
             return
         }
         comments.append(result.comment)
@@ -669,6 +842,10 @@ private struct FeedbackComposer: View {
             categoryPills
             titleField
             messageField
+            Text("Posts are public. Be kind: offensive language, links and personal details are blocked, and anyone can report or block.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             if let errorText {
                 Text(errorText).font(.footnote).foregroundStyle(.red)
             }
@@ -732,7 +909,7 @@ private struct FeedbackComposer: View {
             body: message,
             appUserId: app.purchases.appUserId
         ) else {
-            errorText = "Couldn't send — try again in a moment."
+            errorText = await InsightsService.shared.lastErrorMessage() ?? "Couldn't send — try again in a moment."
             return
         }
         onPosted(post)

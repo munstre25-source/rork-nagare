@@ -37,10 +37,8 @@ struct FeedView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            StudySessionClock(running: isActiveTab && scenePhase == .active)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.l)
-                .padding(.top, 2)
+            // One slim progress row, then the mode switch. The video and the current line lead;
+            // due reviews live on the Vocab tab badge instead of a card above the clip.
             if !app.profile.hideDailyGoalBar {
                 DailyGoalBar()
                     .padding(.top, 2)
@@ -59,11 +57,6 @@ struct FeedView: View {
                 )
             }
             header
-            if !dueReviewKeys.isEmpty {
-                dueReviewPrompt
-                    .padding(.horizontal, Spacing.l)
-                    .padding(.bottom, Spacing.s)
-            }
             ZStack {
                 feedPager
                 if let quizClip {
@@ -100,14 +93,6 @@ struct FeedView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
-            .overlay {
-                if let bornCard {
-                    BornFlashcard(surface: bornCard.surface, romaji: bornCard.romaji, gloss: bornCard.gloss) {
-                        self.bornCard = nil
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                }
-            }
         }
         .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
@@ -173,15 +158,6 @@ struct FeedView: View {
         .onChange(of: coordinator.player?.isPlaying ?? false) { _, playing in
             if playing { scheduleWatchChromeHide() } else { showWatchChrome() }
         }
-        .onChange(of: lookup.tapPulse) { _, _ in
-            guard lookup.occurrenceCount == 1, let selection = lookup.selection else { return }
-            let gloss = lookup.explanation?.definitions.first ?? selection.token.definitions.first ?? ""
-            bornCard = BornCardPayload(
-                surface: selection.token.surface,
-                romaji: lookup.explanation?.romaji ?? selection.token.romaji,
-                gloss: gloss
-            )
-        }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(
                 clip: clip,
@@ -227,33 +203,24 @@ struct FeedView: View {
                 Image(systemName: "books.vertical")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Library")
             Spacer(minLength: 0)
             CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: onOpenExplore)
             Spacer(minLength: 0)
+            // Report lives in the clip's info sheet (the ⓘ under the video), so the corner
+            // holds the one thing people look for up here: search.
             Button {
-                reportClip = clips.first(where: { $0.id == currentId })
+                Haptics.selection()
+                showSearch = true
             } label: {
-                Image(systemName: "flag")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
             }
-            .accessibilityLabel("Clip info & report")
-            .contextMenu {
-                Button {
-                    showSearch = true
-                } label: {
-                    Label("Search clips", systemImage: "magnifyingglass")
-                }
-                Button {
-                    reportClip = clips.first(where: { $0.id == currentId })
-                } label: {
-                    Label("Clip info & report", systemImage: "flag")
-                }
-            }
+            .accessibilityLabel("Search clips by word")
         }
         .opacity(watchChromeVisible ? 1 : 0)
         .allowsHitTesting(watchChromeVisible)
@@ -307,6 +274,11 @@ struct FeedView: View {
         return savedWords.count { $0.state != .known && $0.dueAt <= Date() }
     }
 
+    /// Until a few words are saved (and outside the guided tour), say what a word tap does.
+    private var showsWordHint: Bool {
+        savedWords.count < 3 && GuidanceCenter.shared.tourStep == nil
+    }
+
     private var feedPager: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 0) {
@@ -340,7 +312,8 @@ struct FeedView: View {
                             mirrorUpcoming()
                             advance()
                         },
-                        reportsCoachAnchors: true
+                        reportsCoachAnchors: true,
+                        showsWordHint: showsWordHint
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)

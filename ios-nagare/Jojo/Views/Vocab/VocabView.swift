@@ -326,8 +326,14 @@ struct VocabView: View {
     private var myWordsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             decksSection
-            if filtered.isEmpty {
+            if words.isEmpty {
                 emptyVocab
+            } else if filtered.isEmpty {
+                Text("No words match this search or filter.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
             } else {
                 wordList(filtered)
             }
@@ -346,18 +352,54 @@ struct VocabView: View {
     }
 
     private var emptyVocab: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("No words yet")
-                .font(.headline)
-            Text("Tap a word in the feed and it lands here, ready to review.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Your words will collect here")
+                    .font(.headline)
+                Text("There's no save button. Every word you look up becomes a flashcard on its own.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                emptyStep(1, "Watch a clip in the feed.")
+                emptyStep(2, "Tap any underlined word to see what it means.")
+                emptyStep(3, "Come back here to review it before you forget.")
+            }
+            Button {
+                Haptics.selection()
+                app.pendingDeepLink = .feed
+            } label: {
+                Text("Find your first word")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(Color.sakuraButton, in: Capsule())
+            }
+            .buttonStyle(ChunkyPressStyle())
+            .accessibilityHint("Opens the feed")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
+    }
+
+    private func emptyStep(_ number: Int, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text("\(number)")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(Color.sakuraButton, in: Circle())
+                .accessibilityHidden(true)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Step \(number). \(text)")
     }
 
     private var decksSection: some View {

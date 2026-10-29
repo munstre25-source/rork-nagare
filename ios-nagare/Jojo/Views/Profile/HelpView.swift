@@ -169,7 +169,7 @@ struct HelpView: View {
     private var privacyBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
             AnalyticsConsentToggle()
-            Text("Jojo counts things like screens opened, clips watched, and how long a session lasts, tied to a random ID for this install. It never collects your name, email, voice recordings, or what you type. Data is kept for about 13 months. Turning this off stops collection and clears anything not yet sent.")
+            Text("Jojo counts things like screens opened, clips watched, and how long a session lasts, tied to a random ID for this install. Usage stats never include your name, email, voice recordings, or anything you type. Feedback you choose to send is stored separately so we can read it. Usage data is kept for about 13 months. Turning this off stops collection and clears anything not yet sent.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

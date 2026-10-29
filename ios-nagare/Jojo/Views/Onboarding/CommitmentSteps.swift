@@ -212,7 +212,7 @@ struct NotificationStepView: View {
             )
             notificationPreview
             Spacer()
-            Button("Turn on reminders") {
+            Button("Continue") {
                 Haptics.light()
                 app.profile.notificationsAsked = true
                 Task {
@@ -222,16 +222,11 @@ struct NotificationStepView: View {
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
-            Button("Not now") {
-                Haptics.selection()
-                app.profile.notificationsAsked = true
-                app.save()
-                track("onboarding_notifications_answer", props: ["granted": "0"])
-                onContinue()
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Color.white.opacity(0.8))
-            .frame(minHeight: 44)
+            Text("iOS will ask next. You can say no and change it anytime in Settings.")
+                .font(.footnote)
+                .foregroundStyle(Color.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .frame(minHeight: 44)
         }
         .padding(.horizontal, Spacing.l)
         .padding(.bottom, Spacing.m)
@@ -289,11 +284,11 @@ struct TrialTimelineStepView: View {
         VStack(spacing: Spacing.l) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
-                    OnboardingTitle(title: "How your free trial works", subtitle: "7 days free on Yearly. Cancel anytime before Day 7.")
+                    OnboardingTitle(title: "How your free trial works", subtitle: "3 days free on Yearly. Cancel anytime before Day 3.")
                     VStack(alignment: .leading, spacing: 0) {
                         timelineRow(symbol: "lock.open.fill", title: "Today", detail: "Full Jojo Pro access starts immediately.", isFirst: true)
-                        timelineRow(symbol: "bell.fill", title: "Day 6", detail: "We'll remind you before your trial ends.")
-                        timelineRow(symbol: "star.fill", title: "Day 7", detail: "Trial ends. Yearly subscription begins unless cancelled.", isLast: true)
+                        timelineRow(symbol: "bell.fill", title: "Day 2", detail: "We'll remind you before your trial ends.")
+                        timelineRow(symbol: "star.fill", title: "Day 3", detail: "Trial ends. Yearly subscription begins unless cancelled.", isLast: true)
                     }
                     VStack(alignment: .leading, spacing: Spacing.m) {
                         ForEach(["Unlimited clips", "Tap-to-understand on every word", "Automatic flashcards", "Full progress tracking"], id: \.self) { item in

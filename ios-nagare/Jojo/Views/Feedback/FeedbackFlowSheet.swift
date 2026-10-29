@@ -259,6 +259,8 @@ struct FeedbackFlowSheet: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .foregroundStyle(Color.jojoOrange)
+
+                rateButton
             }
             .padding(Spacing.l)
         }
@@ -292,6 +294,21 @@ struct FeedbackFlowSheet: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    /// The App Store rating is offered whatever the answer was (guideline 5.6.1).
+    private var rateButton: some View {
+        Button {
+            rated = true
+            track("review_request_tapped")
+            requestReview()
+        } label: {
+            Label(rated ? "Thanks for rating" : "Rate Jojo on the App Store", systemImage: "star")
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .foregroundStyle(.secondary)
+        .disabled(rated)
+    }
+
     // MARK: Sent
 
     private var sentPage: some View {
@@ -313,9 +330,12 @@ struct FeedbackFlowSheet: View {
                     .multilineTextAlignment(.center)
             }
             Spacer(minLength: Spacing.m)
-            Button("Done") { close() }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.bottom, Spacing.l)
+            VStack(spacing: 8) {
+                Button("Done") { close() }
+                    .buttonStyle(PrimaryButtonStyle())
+                rateButton
+            }
+            .padding(.bottom, Spacing.l)
         }
         .padding(.horizontal, Spacing.l)
     }

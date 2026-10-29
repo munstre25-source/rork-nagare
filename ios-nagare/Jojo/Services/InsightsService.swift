@@ -76,6 +76,26 @@ actor InsightsService {
         ) != nil
     }
 
+    /// Flags one comment. Two independent reports hide it.
+    func reportFeedbackComment(id: Int, reason: String, appUserId: String) async -> Bool {
+        await send(
+            method: "POST",
+            path: "functions/v1/feedback-board",
+            appUserId: appUserId,
+            body: ["action": "report_comment", "comment_id": id, "reason": reason]
+        ) != nil
+    }
+
+    /// Hides everything the author of this post (or comment) wrote, for this viewer only.
+    func blockFeedbackAuthor(postId: Int?, commentId: Int?, appUserId: String) async -> Bool {
+        var body: [String: Any] = ["action": "block"]
+        if let commentId { body["comment_id"] = commentId } else if let postId { body["id"] = postId }
+        return await send(method: "POST", path: "functions/v1/feedback-board", appUserId: appUserId, body: body) != nil
+    }
+
+    /// The server's explanation for the last rejected request (e.g. the board's language filter).
+    func lastErrorMessage() -> String? { lastServerError }
+
     func loadFeedbackPost(id: Int, appUserId: String) async -> FeedbackPostDetail? {
         guard let data = await send(
             method: "GET",
@@ -136,6 +156,8 @@ actor InsightsService {
         return try? Self.decoder.decode(DirectMessageEnvelope.self, from: data).message
     }
 
+    private var lastServerError: String?
+
     private func send(
         method: String,
         path: String,
@@ -163,8 +185,16 @@ actor InsightsService {
             if let body {
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
             }
+            lastServerError = nil
             let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let message = object["error"] as? String,
+                   (response as? HTTPURLResponse)?.statusCode == 422 {
+                    lastServerError = message
+                }
+                return nil
+            }
             return data
         } catch {
             return nil
