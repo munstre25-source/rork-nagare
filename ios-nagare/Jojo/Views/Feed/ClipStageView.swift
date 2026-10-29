@@ -29,7 +29,6 @@ struct ClipStageView: View {
     /// The For You feed reports its active page's controls to the guided tour.
     var reportsCoachAnchors: Bool = false
     /// Early on, one quiet line under the controls says what tapping a word does.
-    var showsWordHint: Bool = false
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
@@ -163,18 +162,6 @@ struct ClipStageView: View {
                 )
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity)
-            }
-
-            if immersiveFeed, showsWordHint {
-                Label("Tap any underlined word for its meaning. It saves to Vocab on its own.", systemImage: "hand.tap")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
-                    .frame(width: columnWidth, alignment: .leading)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 2)
-                    .transition(.opacity)
             }
 
             transcript(player: player)

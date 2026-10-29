@@ -275,10 +275,6 @@ struct FeedView: View {
     }
 
     /// Until a few words are saved (and outside the guided tour), say what a word tap does.
-    private var showsWordHint: Bool {
-        savedWords.count < 3 && GuidanceCenter.shared.tourStep == nil
-    }
-
     private var feedPager: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 0) {
@@ -313,7 +309,6 @@ struct FeedView: View {
                             advance()
                         },
                         reportsCoachAnchors: true,
-                        showsWordHint: showsWordHint
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
