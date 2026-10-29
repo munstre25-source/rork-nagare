@@ -17,6 +17,8 @@ struct TranscriptLineView: View {
     var raisedCard: Bool = false
     /// Time range and a speaker, the way the feed lines are labeled.
     var showsLineTools: Bool = false
+    /// The playhead is inside this line (live transcript only).
+    var isSpokenLine: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
@@ -69,6 +71,12 @@ struct TranscriptLineView: View {
                             .font(.caption.weight(.semibold))
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
+                        if !line.hasWordTiming {
+                            Text("Sentence sync")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel("Highlighting follows the sentence, not each word")
+                        }
                         Spacer(minLength: 8)
                         Button {
                             Haptics.selection()
@@ -85,6 +93,17 @@ struct TranscriptLineView: View {
                 }
             }
             .padding(raisedCard ? Spacing.m : 0)
+            .padding(.leading, sentenceSynced(line) ? 10 : 0)
+            .overlay(alignment: .leading) {
+                // Sentence-timed lines: the whole line is the karaoke cursor.
+                if sentenceSynced(line) {
+                    Capsule()
+                        .fill(LearningInk.spoken)
+                        .frame(width: 3)
+                        .padding(.vertical, raisedCard ? Spacing.m : 2)
+                        .transition(.opacity)
+                }
+            }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if raisedCard {
@@ -100,6 +119,10 @@ struct TranscriptLineView: View {
             .opacity(isActive ? 1 : 0.82)
             .animation(.easeOut(duration: 0.2), value: isActive)
         }
+    }
+
+    private func sentenceSynced(_ line: Line) -> Bool {
+        !line.hasWordTiming && isSpokenLine
     }
 
     private func state(for index: Int) -> TokenVisualState {

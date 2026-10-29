@@ -29,6 +29,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var clock: Double = 0
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
 
+    private static let pollMilliseconds = 120
+
     var duration: Double { clip.durationSec }
     private var sourceStart: Double { clip.sourceStartSec ?? 0 }
 
@@ -156,11 +158,12 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         poller?.cancel()
         poller = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(200))
+                // ~8 Hz keeps the word cursor within a syllable of the audio.
+                try? await Task.sleep(for: .milliseconds(Self.pollMilliseconds))
                 guard let self else { return }
                 self.webView.evaluateJavaScript("nTime()", completionHandler: nil)
                 if self.isPlaying {
-                    self.watchAccumulator += 0.2
+                    self.watchAccumulator += Double(Self.pollMilliseconds) / 1000
                     if self.watchAccumulator >= 1 {
                         self.onWatchTick?(self.watchAccumulator)
                         self.watchAccumulator = 0

@@ -1,4 +1,4 @@
-import { geminiApiKey } from "./env.ts";
+import { geminiApiKey, geminiModelFallback } from "./env.ts";
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const ANALYZE_TIMEOUT_MS = 90_000;
@@ -6,8 +6,33 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export type GeminiJsonResult = {
   text: string;
+  /** The model that actually answered (primary or fallback), as an OpenRouter-style slug. */
   model: string;
 };
+
+/** A failed model call with the HTTP status (0 for timeouts and network errors). */
+export class GeminiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = "GeminiError";
+  }
+
+  /** Rate limits, provider outages, and timeouts are worth retrying later. */
+  get retryable(): boolean {
+    return this.status === 0 || this.status === 408 || this.status === 429 || this.status >= 500;
+  }
+
+  /** Out of credits / billing problem on the model account. */
+  get paymentRequired(): boolean {
+    return this.status === 402;
+  }
+
+  /** The model id itself was rejected, so another model may work. */
+  get modelRejected(): boolean {
+    if (this.status === 404) return true;
+    return this.status === 400 && /model|not (a )?valid|not found|unsupported|thinking/i.test(this.message);
+  }
+}
 
 type GeminiCall = {
   model: string;
@@ -47,10 +72,47 @@ function modelForTransport(model: string, openRouter: boolean): string {
   return model.startsWith("google/") ? model.slice("google/".length) : model;
 }
 
+async function callOnce(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
+  try {
+    if (isOpenRouterKey(apiKey)) return await callOpenRouter(apiKey, opts);
+    return await callGoogleGemini(apiKey, opts);
+  } catch (err) {
+    if (err instanceof GeminiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new GeminiError(0, `Gemini timeout after ${opts.timeoutMs}ms`);
+    }
+    throw new GeminiError(0, `Gemini network error: ${err instanceof Error ? err.message : "unknown"}`);
+  }
+}
+
+/** Calls the configured model; if that model id is rejected, retries once on the fallback model. */
 async function callGemini(opts: GeminiCall): Promise<GeminiJsonResult> {
   const apiKey = geminiApiKey();
-  if (isOpenRouterKey(apiKey)) return await callOpenRouter(apiKey, opts);
-  return await callGoogleGemini(apiKey, opts);
+  try {
+    return await callOnce(apiKey, opts);
+  } catch (err) {
+    const fallback = geminiModelFallback();
+    if (!(err instanceof GeminiError) || !err.modelRejected) throw err;
+    if (normalizeSlug(fallback) === normalizeSlug(opts.model)) throw err;
+    console.warn(JSON.stringify({
+      event: "gemini_model_fallback",
+      from: normalizeSlug(opts.model),
+      to: normalizeSlug(fallback),
+      status: err.status,
+      detail: err.message.slice(0, 160),
+    }));
+    return await callOnce(apiKey, { ...opts, model: fallback });
+  }
+}
+
+function normalizeSlug(model: string): string {
+  return model.includes("/") ? model : `google/${model}`;
+}
+
+/** Gemini 3+ only accepts thinking levels; 2.x accepts token budgets. */
+function isGemini3OrLater(model: string): boolean {
+  const match = model.match(/gemini-(\d+)/);
+  return match ? Number(match[1]) >= 3 : false;
 }
 
 async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
@@ -98,13 +160,13 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
     });
     if (!res.ok) {
       const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
-      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
+      throw new GeminiError(res.status, `Gemini HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json() as {
       choices?: Array<{ message?: { content?: string } }>;
     };
     const text = stripFence(data.choices?.[0]?.message?.content ?? "");
-    if (!text) throw new Error("Gemini empty response");
+    if (!text) throw new GeminiError(502, "Gemini empty response");
     return { text, model };
   } finally {
     clearTimeout(timer);
@@ -142,19 +204,21 @@ async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<Gemin
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
-          thinkingConfig: { thinkingBudget: opts.youtube ? 1024 : 0 },
+          thinkingConfig: isGemini3OrLater(model)
+            ? { thinkingLevel: "low" }
+            : { thinkingBudget: opts.youtube ? 1024 : 0 },
         },
       }),
       signal: controller.signal,
     });
     if (!res.ok) {
       const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
-      throw new Error(`Gemini HTTP ${res.status}: ${detail}`);
+      throw new GeminiError(res.status, `Gemini HTTP ${res.status}: ${detail}`);
     }
     const data = await res.json();
     const text = stripFence(extractText(data));
-    if (!text) throw new Error("Gemini empty response");
-    return { text, model };
+    if (!text) throw new GeminiError(502, "Gemini empty response");
+    return { text, model: normalizeSlug(model) };
   } finally {
     clearTimeout(timer);
   }

@@ -26,6 +26,11 @@ final class AppModel {
     let purchases: PurchaseManager
     let lexicon: LocalLexicon
     let explainService: WordExplainService
+    /// "Bring your own video" requests and the lessons they produced.
+    let immersion: ImmersionStore
+    @ObservationIgnored let vocabSync: VocabSync
+    /// Lessons made from the learner's own YouTube links. Searchable and openable, kept out of For You.
+    private(set) var personalClips: [Clip] = []
 
     private(set) var profile: UserProfile
     private(set) var clips: [Clip] = []
@@ -85,6 +90,8 @@ final class AppModel {
         self.lexicon = lexicon
         self.explainService = WordExplainService(api: .shared, lexicon: lexicon)
         self.seedClips = ContentLibrary.loadSeedClips()
+        self.immersion = ImmersionStore()
+        self.vocabSync = VocabSync()
 
         let context = container.mainContext
         let existing = (try? context.fetch(FetchDescriptor<UserProfile>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
@@ -100,6 +107,7 @@ final class AppModel {
             watchLog = log
         }
         migrateAppearanceIfNeeded()
+        personalClips = immersion.readyClips.map { lexiconEnriched($0) }
         if profile.onboardingCompleted {
             JojoPalette.activate(theme: profile.theme, scheme: profile.scheme)
         } else {
@@ -112,17 +120,37 @@ final class AppModel {
         ensureWeeklyStatsBucket()
         save()
         scheduleReviewAvailabilityRefresh()
+        immersion.onClipsChanged = { [weak self] clips in self?.setPersonalClips(clips) }
     }
 
     // MARK: Persistence
 
     func save() {
+        let touchedWords = context.hasChanges
+            ? (context.insertedModelsArray + context.changedModelsArray).compactMap { $0 as? SavedWord }
+            : []
+        let deletedWordKeys = context.hasChanges
+            ? context.deletedModelsArray.compactMap { ($0 as? SavedWord)?.key }
+            : []
         do {
             try context.save()
         } catch {
             print("[AppModel] save failed: \(error.localizedDescription)")
         }
+        mirrorVocabChanges(touched: touchedWords, deletedKeys: deletedWordKeys)
         WidgetSnapshotPublisher.publish(from: self)
+    }
+
+    /// Sends saved-word edits to the learner's synced vocab. Duplicate merges keep their key,
+    /// so only keys that are truly gone from the device are deleted server-side.
+    private func mirrorVocabChanges(touched: [SavedWord], deletedKeys: [String]) {
+        guard vocabSync.isAvailable, !vocabSync.isSuspended, profile.onboardingCompleted else { return }
+        let live = touched.filter { !$0.isDeleted }
+        if !live.isEmpty { vocabSync.noteChanged(live) }
+        guard !deletedKeys.isEmpty else { return }
+        let remaining = Set(((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).map(\.key))
+        let gone = Array(Set(deletedKeys).subtracting(remaining))
+        if !gone.isEmpty { vocabSync.noteDeleted(keys: gone) }
     }
 
     /// Handles `jojo://feed` and `jojo://review` from widgets / local notifications.
@@ -240,7 +268,11 @@ final class AppModel {
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
         clips = verified.isEmpty ? merged : verified
-        indexLibrary(merged)
+        var indexed = merged
+        for clip in personalClips where !indexed.contains(where: { $0.id == clip.id }) {
+            indexed.append(clip)
+        }
+        indexLibrary(indexed)
         rankedCache = nil
         rankedCacheKey = ""
         catalogGeneration += 1
@@ -288,6 +320,15 @@ final class AppModel {
         clips
     }
 
+    private func setPersonalClips(_ fresh: [Clip]) {
+        let enriched = fresh.map { lexiconEnriched($0) }
+        guard enriched != personalClips else { return }
+        personalClips = enriched
+        rebuildClips()
+    }
+
+    private func lexiconEnriched(_ clip: Clip) -> Clip { enrich(clip) }
+
     private func enrich(_ clip: Clip) -> Clip {
         var copy = clip
         copy.lines = clip.lines.map { line in
@@ -301,6 +342,7 @@ final class AppModel {
     /// Background, non-blocking clip library sync from Supabase. Bundled clips stay the offline source of truth.
     func startRemoteSync() {
         guard SupabaseAPI.shared.isConfigured, refreshTask == nil else { return }
+        startUserDataSync()
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshRemoteClips()
@@ -337,6 +379,85 @@ final class AppModel {
         } catch {
             print("[AppModel] clip sync skipped: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: Synced learner data
+
+    private static let pendingServerDeletionKey = "jojo.account.pendingServerDeletion"
+
+    /// Anonymous session, vocab mirror, and video-lesson refresh. All background, all optional:
+    /// the app keeps working fully offline when any of it fails.
+    private func startUserDataSync() {
+        // Visitors still in onboarding don't need a server identity yet.
+        guard profile.onboardingCompleted || UserDefaults.standard.bool(forKey: Self.pendingServerDeletionKey) else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            if UserDefaults.standard.bool(forKey: Self.pendingServerDeletionKey) {
+                // A previous "Delete all data" couldn't reach the server. Finish it before syncing again.
+                guard await self.finishServerDeletion() else { return }
+            }
+            self.vocabSync.launchSync(
+                allWords: { [weak self] in (try? self?.context.fetch(FetchDescriptor<SavedWord>())) ?? [] },
+                insertMissing: { [weak self] rows in self?.insertRemoteWords(rows) }
+            )
+            await self.immersion.refresh()
+        }
+    }
+
+    /// Adds words that exist in the learner's synced vocab but not on this device.
+    private func insertRemoteWords(_ rows: [RemoteVocabRow]) {
+        var added = 0
+        for row in rows {
+            let key = SavedWord.makeKey(surface: row.term, reading: row.reading)
+            guard fetchWord(key: key) == nil else { continue }
+            let word = SavedWord(
+                key: key,
+                surface: row.term,
+                readings: row.reading.isEmpty ? [] : [row.reading],
+                romaji: row.romaji ?? "",
+                pos: row.pos ?? "",
+                conjugationClass: nil,
+                jlpt: row.jlpt,
+                definitions: row.definitions
+            )
+            word.contextSentence = row.contextSentence ?? ""
+            word.contextNote = row.contextNote ?? ""
+            word.contextSurface = row.surface ?? row.term
+            word.contextClipId = row.clipId ?? ""
+            word.contextLineIndex = row.lineIndex ?? 0
+            word.occurrenceCount = max(1, row.encounterCount)
+            word.state = SRSState(rawValue: row.srsState) ?? .new
+            word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
+            context.insert(word)
+            added += 1
+        }
+        guard added > 0 else { return }
+        save()
+        reloadLookedUpKeys()
+        scheduleReviewAvailabilityRefresh()
+        track("vocab_restored", props: ["count": String(added)])
+    }
+
+    /// Deletes the anonymous Supabase user (vocab, practice, requests cascade). True when done.
+    @discardableResult
+    private func finishServerDeletion() async -> Bool {
+        vocabSync.suspend()
+        do {
+            // Never create a session just to delete it.
+            if await SupabaseAuth.shared.currentUserId != nil {
+                try await UserDataAPI.shared.deleteMyData()
+            }
+        } catch ImmersionAPIError.unauthorized {
+            // No session left to delete: nothing on the server is reachable from this device.
+        } catch {
+            UserDefaults.standard.set(true, forKey: Self.pendingServerDeletionKey)
+            return false
+        }
+        await SupabaseAuth.shared.reset()
+        UserDefaults.standard.removeObject(forKey: Self.pendingServerDeletionKey)
+        vocabSync.resetMarkers()
+        vocabSync.resume()
+        return true
     }
 
     /// For You. Onboarding is the cold start. After that, the next clips cluster around
@@ -777,6 +898,19 @@ final class AppModel {
             scheduleReviewAvailabilityRefresh()
         }
         return word.occurrenceCount
+    }
+
+    /// Removes a saved word from the deck (and from synced vocab).
+    func removeWord(_ word: SavedWord) {
+        let key = word.key
+        let descriptor = FetchDescriptor<SavedWord>(predicate: #Predicate { $0.key == key })
+        ((try? context.fetch(descriptor)) ?? []).forEach { context.delete($0) }
+        lookedUpKeys.remove(key)
+        wordStates[key] = nil
+        save()
+        refreshFirstReviewReminder()
+        scheduleReviewAvailabilityRefresh()
+        track("vocab_removed")
     }
 
     /// Mark a word known, familiar, or still learning without leaving the clip.
@@ -1509,6 +1643,7 @@ final class AppModel {
         profile.feedbackBaselineWatchSeconds = totalWatchSeconds
         profile.feedbackBaselineWordCount = savedWordCount
         save()
+        if SupabaseAPI.shared.isConfigured { startUserDataSync() }
         track("onboarding_completed", props: ["first_clip": profile.firstClipId ?? "none"])
     }
 
@@ -1678,6 +1813,12 @@ final class AppModel {
     func deleteAllUserData() {
         Haptics.warning()
         NotificationService.cancelAll()
+        // Stop mirroring before the wipe so local deletions aren't replayed one by one;
+        // the server copy is removed in one call (retried on next launch if offline).
+        vocabSync.suspend()
+        UserDefaults.standard.set(true, forKey: Self.pendingServerDeletionKey)
+        immersion.reset()
+        Task { [weak self] in await self?.finishServerDeletion() }
 
         ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).forEach { context.delete($0) }
         ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }

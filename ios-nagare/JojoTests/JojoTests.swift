@@ -44,7 +44,8 @@ struct JojoTests {
         let app = try makeApp()
         let clips = app.showcaseClips(limit: 2)
         #expect(clips.count == 2)
-        #expect(clips.allSatisfy(\.hasVerifiedTranscript))
+        let allVerified = clips.allSatisfy { $0.hasVerifiedTranscript }
+        #expect(allVerified)
         #expect(clips[0].id == "immersion-konbini-sayaka")
         #expect(clips[1].id == "immersion-_8b_ERSJ6_Q-5-45")
     }

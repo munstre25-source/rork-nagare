@@ -1,16 +1,10 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
-import { geminiModelAnalyze, requireEnv } from "../_shared/env.ts";
-import { requireAdmin, timingSafeEqualString } from "../_shared/admin.ts";
+import { requireEnv } from "../_shared/env.ts";
+import { isAdminOrCron } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
-import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "../_shared/limits.ts";
-import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
-import { catalogTable, languageName, parseLanguage, type CatalogLanguage } from "../_shared/catalog.ts";
-import { enrichHeardLines, hearSystemCatalog } from "../_shared/enrich.ts";
-import {
-  LineLike,
-  validateEnums,
-  validateLines,
-} from "../_shared/validate.ts";
+import { tryConsumeYoutubeQuota } from "../_shared/limits.ts";
+import { catalogTable, parseLanguage, type CatalogLanguage } from "../_shared/catalog.ts";
+import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
 
 /**
  * One scheduled pass: search YouTube for a short public video the catalog
@@ -53,12 +47,6 @@ function lanesFor(language: CatalogLanguage): Lane[] {
   return language === "ko" ? KOREAN_LANES : JAPANESE_LANES;
 }
 
-const GRADIENTS = [
-  ["#0B1030", "#2B2F7A", "#F29E4C"],
-  ["#10261A", "#2E7D4F", "#F6E27F"],
-  ["#2B1405", "#9C3D10", "#F2B134"],
-];
-
 type SearchItem = { id?: { videoId?: string } };
 type VideoItem = {
   id?: string;
@@ -72,7 +60,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
 
   try {
-    if (!isCatalogAdmin(req)) return errorResponse(401, "Unauthorized");
+    if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<{ language?: string }>(req);
     const language = parseLanguage(body.language);
@@ -137,6 +125,7 @@ Deno.serve(async (req) => {
     return jsonResponse(summary(published, stopped, cronReady));
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
+    log("catalog_fill_error", { message: message.slice(0, 200) });
     if (message.startsWith("Missing required env")) return errorResponse(500, "Server misconfigured");
     return errorResponse(500, "Catalog fill failed");
   }
@@ -147,15 +136,6 @@ const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
   ja: ["", "日常会話", "2024", "2025"],
   ko: ["", "일상회화", "2024", "2025"],
 };
-
-function isCatalogAdmin(req: Request): boolean {
-  const adminToken = requireEnv("ADMIN_TOKEN");
-  if (requireAdmin(req, adminToken)) return true;
-  const cronToken = Deno.env.get("CRON_FILL_TOKEN")?.trim() ?? "";
-  if (cronToken.length < 16) return false;
-  const provided = req.headers.get("x-admin-token") ?? "";
-  return timingSafeEqualString(provided, cronToken);
-}
 
 async function rememberCronAccess(
   supabase: ReturnType<typeof serviceClient>,
@@ -346,153 +326,44 @@ async function advanceCursor(
   });
 }
 
-function isLesson(lines: LineLike[], clipStart: number, clipEnd: number): boolean {
-  if (lines.length < 2 || lines.length > 20) return false;
-  const span = clipEnd - clipStart;
-  if (!Number.isFinite(span) || span < 20 || span > 90) return false;
-  const spokenStart = Number(lines[0]?.start);
-  const spokenEnd = Number(lines[lines.length - 1]?.end);
-  if (spokenStart < clipStart || spokenEnd > clipEnd || spokenEnd - spokenStart < 12) return false;
-  let defined = 0;
-  for (const line of lines) {
-    const tokens = Array.isArray(line.tokens) ? line.tokens : [];
-    for (const token of tokens) {
-      const definitions = (token as { definitions?: unknown }).definitions;
-      if (Array.isArray(definitions) && definitions.length > 0) defined += 1;
-    }
-  }
-  return defined >= 2;
-}
-
-function gradeDifficulty(modelValue: unknown, lines: LineLike[], language: CatalogLanguage): string {
-  if (typeof modelValue === "string" && validateEnums("drama", modelValue).ok) return modelValue;
-  const rank: Record<string, number> = language === "ko"
-    ? { TOPIK1: 1, TOPIK2: 2, TOPIK3: 3, TOPIK4: 4, TOPIK5: 5, TOPIK6: 6 }
-    : { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 };
-  let score = 0;
-  let counted = 0;
-  for (const line of lines) {
-    const tokens = Array.isArray(line.tokens) ? line.tokens : [];
-    for (const token of tokens) {
-      const jlpt = (token as { jlpt?: unknown }).jlpt;
-      const topik = (token as { topik?: unknown }).topik;
-      const label = language === "ko" ? topikLabel(topik) ?? topikLabel(jlpt) : (typeof jlpt === "string" ? jlpt : "");
-      if (label && rank[label]) {
-        score += rank[label];
-        counted += 1;
-      }
-    }
-  }
-  if (counted === 0) return "Intermediate";
-  const average = score / counted;
-  if (language === "ko") {
-    if (average < 2.5) return "Beginner";
-    if (average < 4.5) return "Intermediate";
-    return "Advanced";
-  }
-  if (average < 2.2) return "Beginner";
-  if (average < 3.4) return "Intermediate";
-  return "Advanced";
-}
-
-function topikLabel(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const match = value.trim().toUpperCase().replace(/\s+/g, "").match(/^(?:TOPIK)?([1-6])$/);
-  return match ? `TOPIK${match[1]}` : null;
-}
-
 async function analyzeAndPublish(
   supabase: ReturnType<typeof serviceClient>,
   video: FreshVideo,
   lane: Lane,
   language: CatalogLanguage,
 ): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
-  if (!(await tryIncrementGeminiUsage(supabase))) {
-    return { ok: false, reason: "gemini-cap" };
+  const outcome = await analyzeWindow(supabase, {
+    videoId: video.videoId,
+    windowStart: 0,
+    windowEnd: video.durationSec,
+    language,
+    askCategory: false,
+    minSpokenSec: 12,
+  });
+  if (!outcome.ok) {
+    log("catalog_candidate_rejected", { videoId: video.videoId, reason: outcome.reason, detail: outcome.detail });
+    if (outcome.reason === "gemini_cap") return { ok: false, reason: "gemini-cap" };
+    if (outcome.reason === "model_payment") return { ok: false, reason: "Gemini HTTP 402" };
+    return { ok: false, reason: outcome.reason };
   }
   const prefix = language === "ko" ? "sori" : "immersion";
-  const window = { start: 0, end: video.durationSec };
-  const model = geminiModelAnalyze();
-  let text = "";
-  try {
-    const result = await geminiAnalyzeYouTubeSegment({
-      model,
-      system: hearSystemCatalog(language),
-      user: `Inspect the full source window [${window.start}, ${window.end}] seconds and select exactly one coherent, self-contained ${languageName(language)} exchange lasting 20–90 seconds. Return absolute source-video timestamps for clip_start_sec and clip_end_sec. Include only dialogue inside those chosen boundaries. If there is no suitable exchange, return {"lines":[]}.`,
-      youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-      startSec: window.start,
-      endSec: window.end,
-    });
-    text = result.text;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "";
-    if (message.startsWith("Gemini HTTP")) {
-      return { ok: false, reason: message.slice(0, 96) };
-    }
-    return { ok: false, reason: "gemini-failed" };
-  }
-
-  let raw: Record<string, unknown>;
-  try {
-    raw = parseJsonObject(text);
-  } catch {
-    return { ok: false, reason: "invalid-transcript" };
-  }
-  const clipStart = raw.clip_start_sec;
-  const clipEnd = raw.clip_end_sec;
-  if (typeof clipStart !== "number" || typeof clipEnd !== "number" ||
-      !Number.isFinite(clipStart) || !Number.isFinite(clipEnd) ||
-      clipStart < window.start || clipEnd > window.end || clipEnd <= clipStart ||
-      clipEnd - clipStart < 20 || clipEnd - clipStart > 90) {
-    return { ok: false, reason: "invalid-clip-boundaries" };
-  }
-  const validated = validateLines(raw.lines, window.start, window.end, language);
-  if (!validated.ok) return { ok: false, reason: "invalid-transcript" };
-  const lines = await enrichHeardLines(raw.lines, supabase, language) as LineLike[];
-  if (!isLesson(lines, clipStart, clipEnd)) return { ok: false, reason: "not-a-lesson" };
-  const id = `${prefix}-${video.videoId}-${Math.floor(clipStart)}-${Math.floor(clipEnd)}`;
-  const difficulty = gradeDifficulty(raw.difficulty, lines, language);
-  const relativeLines = lines.map((line) => {
-    const row = line as Record<string, unknown>;
-    const tokens = Array.isArray(row.tokens) ? row.tokens as Array<Record<string, unknown>> : [];
-    return {
-      ...row,
-      start: Number(row.start) - clipStart,
-      end: Number(row.end) - clipStart,
-      tokens: tokens.map((token) => ({
-        ...token,
-        start: Number(token.start) - clipStart,
-        end: Number(token.end) - clipStart,
-      })),
-    };
-  });
-  const row = {
+  const id = clipId(prefix, video.videoId, outcome.draft);
+  const row = clipRow({
     id,
-    video_id: video.videoId,
-    title: video.title.slice(0, 140),
-    channel_name: video.channelTitle.slice(0, 80),
+    video: { videoId: video.videoId, title: video.title, channelTitle: video.channelTitle, durationSec: video.durationSec },
+    draft: outcome.draft,
     category: lane.category,
-    difficulty,
-    source_start_sec: clipStart,
-    duration_sec: clipEnd - clipStart,
-    lines: relativeLines,
     published: true,
-    channel_avatar_color: "#FF6B00",
-    thumbnail_gradient: GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length],
-  };
+    withProvenance: language === "ja",
+  });
   const { error } = await supabase.from(catalogTable(language)).upsert(row);
   if (error) return { ok: false, reason: "insert-failed" };
-  return { ok: true, id, difficulty };
+  log("catalog_clip_published", { id, timingMode: outcome.draft.timingMode, model: outcome.draft.model });
+  return { ok: true, id, difficulty: outcome.draft.difficulty };
 }
 
 function parseDurationSec(iso: string): number | null {
   const match = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
   if (!match) return null;
   return Number(match[1] ?? 0) * 3600 + Number(match[2] ?? 0) * 60 + Number(match[3] ?? 0);
-}
-
-function hashCode(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) hash = (Math.imul(31, hash) + value.charCodeAt(i)) | 0;
-  return hash;
 }

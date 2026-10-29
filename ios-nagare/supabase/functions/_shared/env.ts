@@ -31,7 +31,14 @@ export function geminiApiKey(): string {
   return value;
 }
 
-const DEFAULT_GEMINI_MODEL = "google/gemini-2.5-flash";
+/** Primary model for transcription, translation, and vocabulary. */
+const DEFAULT_GEMINI_MODEL = "google/gemini-3.8-flash";
+/** Used only when the primary model id is rejected (400/404 for the model itself). */
+const DEFAULT_GEMINI_FALLBACK_MODEL = "google/gemini-2.5-flash";
+
+export function geminiModelFallback(): string {
+  return envOr("GEMINI_MODEL_FALLBACK", DEFAULT_GEMINI_FALLBACK_MODEL);
+}
 
 export function geminiModelExplain(): string {
   return envOr("GEMINI_MODEL_EXPLAIN", DEFAULT_GEMINI_MODEL);
@@ -42,7 +49,7 @@ export function geminiModelAnalyze(): string {
 }
 
 export function promptVersion(): string {
-  return envOr("PROMPT_VERSION", "3");
+  return envOr("PROMPT_VERSION", "4");
 }
 
 export function utcDayString(d = new Date()): string {

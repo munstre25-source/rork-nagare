@@ -6,6 +6,8 @@ struct WordDetailView: View {
     @Environment(AppModel.self) private var app
     @State private var playing: Clip?
     @State private var showSearch: Bool = false
+    @State private var confirmRemove: Bool = false
+    @Environment(\.dismiss) private var dismiss
 
     private var clip: Clip? { app.clip(id: word.contextClipId) }
 
@@ -73,6 +75,15 @@ struct WordDetailView: View {
                     Label("Hear it in other clips", systemImage: "headphones")
                 }
                 .buttonStyle(PrimaryButtonStyle())
+
+                Button(role: .destructive) {
+                    confirmRemove = true
+                } label: {
+                    Label("Remove from my words", systemImage: "trash")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .tint(Color.againText)
             }
             .padding(Spacing.l)
         }
@@ -84,6 +95,21 @@ struct WordDetailView: View {
         .onDisappear { app.hidesMainTabBar = false }
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, startLine: word.contextLineIndex, loopLine: true)
+        }
+        .confirmationDialog("Remove \(word.surface)?", isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Remove word", role: .destructive) {
+                Haptics.warning()
+                dismiss()
+                // Delete after the pop so this view never renders a deleted model.
+                let target = word
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(350))
+                    app.removeWord(target)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Its review history goes too, on this iPhone and in your synced backup.")
         }
         .sheet(isPresented: $showSearch) {
             SearchView(initialQuery: word.contextSurface.isEmpty ? word.surface : word.contextSurface)

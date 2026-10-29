@@ -3,7 +3,8 @@ import Foundation
 import Speech
 
 enum SpeechListenResult: Sendable {
-    case heard(String)
+    /// What the recognizer heard, and whether recognition stayed on the device.
+    case heard(String, onDevice: Bool)
     case unavailable(String)
 }
 
@@ -30,6 +31,10 @@ enum SpeechPractice {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        // Keep the learner's voice on the phone whenever the Japanese model is installed.
+        // Audio is streamed from memory; nothing is written to disk.
+        let onDevice = recognizer.supportsOnDeviceRecognition
+        request.requiresOnDeviceRecognition = onDevice
         let engine = AVAudioEngine()
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -58,26 +63,39 @@ enum SpeechPractice {
         input.removeTap(onBus: 0)
         request.endAudio()
         task.cancel()
+        try? session.setActive(false, options: .notifyOthersOnDeactivation)
 
         let heard = box.get().trimmingCharacters(in: .whitespacesAndNewlines)
         if heard.isEmpty {
             return .unavailable("I didn't catch that. Hold the phone a little closer and try the line again.")
         }
-        return .heard(heard)
+        return .heard(heard, onDevice: onDevice)
     }
+}
 
-    /// 0–100 overlap between what was heard and the line.
+/// Recognition similarity: how closely speech recognition's text matches the target line.
+/// This is a text comparison, not a phonetic pronunciation score.
+nonisolated enum SpeechScoring {
+    /// 0–100. The better of a script comparison and a reading (romaji) comparison, so
+    /// "今日" heard as "きょう" still counts. Saying only part of the line scores partially.
     static func score(heard: String, target: String) -> Int {
-        let h = normalize(heard)
-        let t = normalize(target)
-        guard !h.isEmpty, !t.isEmpty else { return 0 }
-        if h == t || t.contains(h) || h.contains(t) { return 100 }
-        let shared = lcsLength(Array(h), Array(t))
-        let ratio = Double(shared) / Double(max(t.count, 1))
-        return min(100, Int((ratio * 100).rounded()))
+        let script = similarity(normalize(heard), normalize(target))
+        let reading = similarity(romanized(heard), romanized(target))
+        return max(script, reading)
     }
 
-    private static func normalize(_ text: String) -> String {
+    /// Dice coefficient over the longest common subsequence: 2·LCS / (|a| + |b|).
+    /// Symmetric, so both missing and extra characters lower the score.
+    static func similarity(_ a: String, _ b: String) -> Int {
+        let x = Array(a), y = Array(b)
+        guard !x.isEmpty, !y.isEmpty else { return 0 }
+        if x == y { return 100 }
+        let shared = lcsLength(x, y)
+        let dice = 2 * Double(shared) / Double(x.count + y.count)
+        return min(100, max(0, Int((dice * 100).rounded())))
+    }
+
+    static func normalize(_ text: String) -> String {
         let kana = JapaneseText.hiragana(text)
         return String(kana.filter { character in
             !character.isWhitespace && !"、。！？!?「」…・,. ".contains(character)
@@ -100,6 +118,29 @@ enum SpeechPractice {
             current = Array(repeating: 0, count: b.count + 1)
         }
         return previous[b.count]
+    }
+
+    /// Latin transcription of Japanese text via the system tokenizer (kanji → reading).
+    static func romanized(_ text: String) -> String {
+        let source = normalize(text)
+        guard !source.isEmpty else { return "" }
+        let cf = source as CFString
+        let range = CFRange(location: 0, length: CFStringGetLength(cf))
+        guard let tokenizer = CFStringTokenizerCreate(
+            kCFAllocatorDefault, cf, range, kCFStringTokenizerUnitWordBoundary, Locale(identifier: "ja_JP") as CFLocale
+        ) else { return "" }
+        var out = ""
+        while CFStringTokenizerAdvanceToNextToken(tokenizer) != [] {
+            if let latin = CFStringTokenizerCopyCurrentTokenAttribute(tokenizer, kCFStringTokenizerAttributeLatinTranscription) as? String {
+                out += latin
+            } else {
+                let tokenRange = CFStringTokenizerGetCurrentTokenRange(tokenizer)
+                if let piece = CFStringCreateWithSubstring(kCFAllocatorDefault, cf, tokenRange) as String? {
+                    out += piece
+                }
+            }
+        }
+        return JapaneseText.normalizedRomaji(out).filter { $0.isLetter || $0.isNumber }
     }
 }
 

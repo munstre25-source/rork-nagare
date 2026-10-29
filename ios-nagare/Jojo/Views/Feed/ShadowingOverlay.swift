@@ -13,6 +13,8 @@ struct ShadowingOverlay: View {
     @State private var score: Int?
     @State private var listenNote: String?
     @State private var listening = false
+    @State private var history: [PracticeAttemptRow] = []
+    @State private var historyTask: Task<Void, Never>?
 
     private enum Phase: String {
         case listen, practice, compare
@@ -140,16 +142,37 @@ struct ShadowingOverlay: View {
                 .disabled(listening)
             case .compare:
                 if let score {
-                    Text(score >= 70 ? "\(score)% — that landed." : "\(score)% — try the line once more.")
-                        .font(.headline)
-                        .foregroundStyle(score >= 70 ? Color.spokenGreen : Color.designOrange)
+                    VStack(spacing: 4) {
+                        Text("Recognition match")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(score >= 70 ? "\(score)% — that landed." : "\(score)% — try the line once more.")
+                            .font(.headline)
+                            .foregroundStyle(score >= 70 ? Color.spokenGreen : Color.designOrange)
+                            .contentTransition(.numericText())
+                    }
+                    .accessibilityElement(children: .combine)
                 }
                 if !heard.isEmpty {
-                    Text(heard)
-                        .font(JojoFont.jp(18, relativeTo: .body))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(spacing: 2) {
+                        Text("Recognized as")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                        Text(heard)
+                            .font(JojoFont.jp(18, relativeTo: .body))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Text("Compares speech recognition's text with the line. It isn't a pronunciation grade.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !history.isEmpty {
+                    historyStrip
                 }
                 Button {
                     SpeechService.shared.speak(line.text)
@@ -203,11 +226,13 @@ struct ShadowingOverlay: View {
         let result = await SpeechPractice.listen()
         listening = false
         switch result {
-        case .heard(let text):
+        case .heard(let text, let onDevice):
             heard = text
-            score = SpeechPractice.score(heard: text, target: line.text)
+            let similarity = SpeechScoring.score(heard: text, target: line.text)
+            score = similarity
             phase = .compare
             Haptics.success()
+            record(line: line, heard: text, similarity: similarity, onDevice: onDevice)
         case .unavailable(let message):
             listenNote = message
         }
@@ -219,7 +244,64 @@ struct ShadowingOverlay: View {
             return
         }
         lineIndex += 1
+        history = []
         playListen()
+    }
+
+    /// Last attempts on this line, newest first. Synced under the learner's anonymous user.
+    private var historyStrip: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Your recent tries")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(Array(history.prefix(5).enumerated()), id: \.offset) { _, attempt in
+                    Text("\(attempt.similarity)%")
+                        .font(.caption.weight(.bold).monospacedDigit())
+                        .foregroundStyle(attempt.similarity >= 70 ? Color.spokenGreen : Color.designOrange)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.card, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.cardStroke))
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Saves the attempt, then reloads this line's history. Failures are silent: practice works offline.
+    private func record(line: Line, heard: String, similarity: Int, onDevice: Bool) {
+        let api = UserDataAPI.shared
+        guard api.isConfigured, !line.text.isEmpty else { return }
+        let attempt = PracticeAttemptRow(
+            id: nil,
+            clipId: String(clip.id.prefix(120)),
+            lineIndex: lineIndex,
+            targetText: String(line.text.prefix(400)),
+            recognizedText: String(heard.prefix(400)),
+            similarity: similarity,
+            scoringMethod: "recognition_similarity",
+            locale: "ja-JP",
+            onDevice: onDevice,
+            createdAt: nil
+        )
+        // Show this try immediately; the server list replaces it once saved.
+        history.insert(attempt, at: 0)
+        let clipId = attempt.clipId
+        let index = lineIndex
+        historyTask?.cancel()
+        historyTask = Task {
+            do {
+                try await api.recordPractice(attempt)
+                let rows = try await api.practiceHistory(clipId: clipId, lineIndex: index)
+                guard !Task.isCancelled, index == lineIndex else { return }
+                history = rows
+            } catch {
+                // Offline: keep the local list for this session.
+            }
+        }
     }
 
     private func finish() {

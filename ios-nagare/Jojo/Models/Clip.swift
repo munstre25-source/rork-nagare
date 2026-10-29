@@ -126,8 +126,15 @@ nonisolated struct Line: Codable, Hashable, Sendable {
     var translation: String
     var start: Double
     var end: Double
+    /// "word" when each token carries validated timings, "line" when only the sentence
+    /// window is trustworthy. Missing on hand-authored clips, which are word-timed.
+    var timing: String? = nil
 
     var text: String { tokens.map(\.surface).joined() }
+
+    /// False when the server could not verify per-word timings; the UI then highlights the
+    /// whole sentence instead of guessing which word is being spoken.
+    var hasWordTiming: Bool { timing != "line" }
 }
 
 /// A short video clip with its full transcript.

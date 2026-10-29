@@ -76,7 +76,8 @@ struct LiveTranscriptPanel: View {
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
                     raisedCard: sitsOnVideo ? false : index == currentLine,
-                    showsLineTools: true
+                    showsLineTools: true,
+                    isSpokenLine: index == currentLine
                 )
                 .id(index)
                 .padding(.horizontal, index == currentLine ? 0 : Spacing.m)
@@ -100,7 +101,8 @@ struct LiveTranscriptPanel: View {
                     isPulsing: isPulsing,
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
-                    forceDenseAids: forceDenseAids
+                    forceDenseAids: forceDenseAids,
+                    isSpokenLine: index == currentLine
                 )
                 .id(index)
             }

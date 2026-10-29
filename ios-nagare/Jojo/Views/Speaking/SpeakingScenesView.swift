@@ -221,9 +221,13 @@ struct SpeakingScenePractice: View {
         case .result:
             VStack(alignment: .leading, spacing: 10) {
                 if let score {
-                    Text(score >= 70 ? "Nice — \(score)%" : "Keep going — \(score)%")
+                    Text(score >= 70 ? "Nice — \(score)% recognition match" : "Keep going — \(score)% recognition match")
                         .font(.title3.weight(.black))
                         .foregroundStyle(score >= 70 ? LearningInk.known : Color.jojoOrange)
+                    Text("How closely speech recognition's text matched the line. Not a pronunciation grade.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if !heard.isEmpty {
                     Text("Heard: \(heard)")
@@ -253,9 +257,9 @@ struct SpeakingScenePractice: View {
         let result = await SpeechPractice.listen()
         listening = false
         switch result {
-        case .heard(let text):
+        case .heard(let text, _):
             heard = text
-            score = SpeechPractice.score(heard: text, target: scene.yourLine)
+            score = SpeechScoring.score(heard: text, target: scene.yourLine)
             phase = .result
             Haptics.success()
         case .unavailable(let message):

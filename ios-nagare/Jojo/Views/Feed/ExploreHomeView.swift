@@ -13,6 +13,7 @@ struct ExploreHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var showGoal: Bool = false
     @State private var showCapture: Bool = false
+    @State private var showImport: Bool = false
     @State private var path = NavigationPath()
     @State private var dueKeys: [String] = []
     @State private var reviewSession: ReviewSessionConfig?
@@ -104,6 +105,9 @@ struct ExploreHomeView: View {
                         }
                     }
                     todayPlan
+                    if app.immersion.isAvailable {
+                        importRow
+                    }
                     captureRow
                 }
                 .padding(.horizontal, 20)
@@ -131,6 +135,10 @@ struct ExploreHomeView: View {
             }
             .sheet(isPresented: $showCapture) {
                 CaptureJapaneseView()
+            }
+            .sheet(isPresented: $showImport) {
+                ImmersionImportView()
+                    .environment(app)
             }
             .fullScreenCover(item: $reviewSession, onDismiss: reloadPlan) { config in
                 ReviewSessionView(config: config)
@@ -209,6 +217,53 @@ struct ExploreHomeView: View {
                 }
             }
         }
+    }
+
+    /// Paste a YouTube link and get a captioned, tappable lesson.
+    private var importRow: some View {
+        Button {
+            Haptics.selection()
+            showImport = true
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.card)
+                    Image(systemName: "play.rectangle.on.rectangle.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.designOrangeDeep)
+                }
+                .frame(width: 64, height: 64)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("From your own video")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Text(importSubtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .contentTransition(.opacity)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(12)
+            .background(Color.sakuraPinkLight, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Make a lesson from a YouTube video")
+    }
+
+    private var importSubtitle: String {
+        let active = app.immersion.activeCount
+        if active > 0 { return active == 1 ? "1 video in progress" : "\(active) videos in progress" }
+        let ready = app.immersion.readyClips.count
+        if ready > 0 { return ready == 1 ? "1 lesson ready — paste another link" : "\(ready) lessons ready — paste another link" }
+        return "Paste a YouTube link, get tappable captions"
     }
 
     private var captureRow: some View {

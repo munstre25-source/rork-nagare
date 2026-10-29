@@ -1,6 +1,18 @@
 -- Nagare clip library + backend cache/quota.
 -- Prefer applying migrations from ios-nagare/: supabase db push
 -- The app reads: GET /rest/v1/clips?published=eq.true&select=*
+--
+-- Immersion engine (source of truth: migrations/20261029120000..120200):
+--   immersion_jobs       shared per-video pipeline job (queued/processing/succeeded/failed/unprocessable),
+--                        stage, attempts, lease, next_attempt_at, error_code, timing_mode, clip_id -> clips.id
+--   immersion_job_requests (user_id, job_id) link; RLS: a learner sees only jobs they requested
+--   user_vocab           anonymous user's mirrored deck; unique (user_id, term, reading); RLS owner-only
+--   practice_attempts    speaking tries; scoring_method = 'recognition_similarity' (text match, not
+--                        pronunciation); RLS owner-only; user_id defaults to auth.uid()
+--   clips                + timing_mode, model, prompt_version; learner clips stay published=false
+--                        and are readable only by requesters (policy "requesters read their clips")
+--   claim_immersion_jobs(text,int,int) RPC (service_role only) + pg_cron 'immersion-worker' every minute
+-- All user rows cascade on auth.users delete (delete-my-data function).
 
 create table if not exists public.clips (
   id text primary key,

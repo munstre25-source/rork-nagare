@@ -146,7 +146,7 @@ struct ProfileView: View {
         .confirmationDialog("Delete all data?", isPresented: $confirmDeleteAccount, titleVisibility: .visible) {
             Button("Delete All Data", role: .destructive) { app.deleteAllUserData() }
         } message: {
-            Text("This permanently erases words, decks, watch history, and settings on this device and returns you to onboarding. Jojo has no cloud account. To cancel Jojo Pro, use Manage Subscription or Settings → Apple ID → Subscriptions.")
+            Text("This permanently erases words, decks, watch history, and settings on this device, deletes the synced vocab, speaking practice, and video requests stored for this device, and returns you to onboarding. To cancel Jojo Pro, use Manage Subscription or Settings → Apple ID → Subscriptions.")
         }
     }
 

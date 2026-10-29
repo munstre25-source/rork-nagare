@@ -94,9 +94,12 @@ enum PlaybackUI {
         token = tokenIndex(clip: clip, line: line, time: clock)
     }
 
-    private static func tokenIndex(clip: Clip, line: Int, time: Double) -> Int? {
-        guard let row = clip.lines[safe: line], time >= row.start, time <= row.end + 0.2 else { return nil }
-        return row.tokens.lastIndex { $0.start <= time && !$0.isPunctuation }
+    /// Word under the playhead. Nil for sentence-timed lines: their token times are the
+    /// whole line's window, so picking a word would be a guess.
+    static func tokenIndex(clip: Clip, line: Int, time: Double) -> Int? {
+        guard let row = clip.lines[safe: line], row.hasWordTiming,
+              time >= row.start, time <= row.end + 0.2 else { return nil }
+        return row.tokens.lastIndex { $0.start <= time && $0.end > $0.start && !$0.isPunctuation }
     }
 }
 

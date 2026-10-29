@@ -35,3 +35,15 @@ export function requireAdmin(req: Request, adminToken: string): boolean {
   const provided = req.headers.get("x-admin-token") ?? "";
   return timingSafeEqualString(provided, adminToken);
 }
+
+/**
+ * Admin or scheduled caller. pg_cron sends CRON_FILL_TOKEN (stored in Vault as admin_token);
+ * operators send ADMIN_TOKEN. Both arrive in x-admin-token.
+ */
+export function isAdminOrCron(req: Request): boolean {
+  const adminToken = Deno.env.get("ADMIN_TOKEN")?.trim() ?? "";
+  if (adminToken.length > 0 && requireAdmin(req, adminToken)) return true;
+  const cronToken = Deno.env.get("CRON_FILL_TOKEN")?.trim() ?? "";
+  if (cronToken.length < 16) return false;
+  return requireAdmin(req, cronToken);
+}
