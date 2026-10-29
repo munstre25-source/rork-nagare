@@ -9,6 +9,11 @@
         "displayName": "Jojo",
         "iosBundleId": "com.socialreporthq.jojo"
       }
+    },
+    {
+      "name": "Backend",
+      "path": "backend",
+      "framework": "supabase"
     }
   ]
 }
