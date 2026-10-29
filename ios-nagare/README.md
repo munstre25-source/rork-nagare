@@ -57,7 +57,7 @@ Run all Supabase CLI commands from the **`ios-nagare/`** directory (not the repo
 ```bash
 cd ios-nagare
 supabase db push
-supabase functions deploy explain-word youtube-search analyze-clip publish-clip fill-catalog
+supabase functions deploy explain-word youtube-search analyze-clip publish-clip fill-catalog audit-embeds
 supabase secrets set \
   GEMINI_API_KEY=… \
   YOUTUBE_API_KEY=… \
@@ -155,6 +155,8 @@ curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
 `fill-catalog` searches YouTube for a public, embeddable source video up to three minutes long that is not already in the catalog. Gemini selects one coherent 20–90 second exchange, returns its absolute start/end times and a timed transcript, and the function validates the clip boundaries, dialogue, and vocabulary before publishing. Transcript times are stored relative to the excerpt; `source_start_sec` tells the app where to seek in the original YouTube video. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
 
 Two pg_cron jobs call it: `fill-jojo-catalog` every 10 minutes with `{}`, and `fill-sori-catalog` at minutes 5, 15, 25, 35, 45, and 55 with `{"language":"ko"}`. The first authorized call stores `project_url`, `admin_token` (the `CRON_FILL_TOKEN`), and `catalog_bearer` in Vault. Do not commit those values.
+
+Every 30 minutes, `audit-youtube-embeds` checks published Japanese and Korean catalog videos with YouTube's `videos.list` API in batches of 50. It unpublishes clips when YouTube no longer reports `status.embeddable=true`, including deleted/private videos omitted from a successful API response. YouTube/network/quota errors leave the affected batch untouched. Re-publishing a clip and processing a learner-submitted video also recheck embed availability. Unpublished clips no longer appear in client feeds, while their rows remain available for recovery/history. The job uses the same Vault secrets as the other catalog cron jobs.
 
 The job prefers the level with the fewest published clips and remembers the YouTube page so the next run walks forward. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new rows show up on the next sync.
 

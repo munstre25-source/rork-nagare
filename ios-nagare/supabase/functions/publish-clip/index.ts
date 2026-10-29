@@ -1,9 +1,10 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { requireAdmin } from "../_shared/admin.ts";
+import { isAdminOrCron } from "../_shared/admin.ts";
 import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { LineLike, validateEnums, validateLines } from "../_shared/validate.ts";
+import { checkYouTubeVideo, ERROR_MESSAGES } from "../_shared/immersion.ts";
 
 type Body = {
   id?: string;
@@ -16,8 +17,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
 
   try {
-    const adminToken = requireEnv("ADMIN_TOKEN");
-    if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
+    requireEnv("ADMIN_TOKEN");
+    if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<Body>(req);
     const id = typeof body.id === "string" ? body.id.trim() : "";
@@ -48,6 +49,20 @@ Deno.serve(async (req) => {
         .single();
       if (upErr) return errorResponse(500, "Unpublish failed");
       return jsonResponse({ clip: data });
+    }
+
+    // Recheck on every publish: owners can change a video's embedding setting
+    // after discovery or after a previous publish.
+    const videoCheck = await checkYouTubeVideo(supabase, String(clip.video_id ?? ""));
+    if (!videoCheck.ok) {
+      const message = videoCheck.code === "not_embeddable"
+        ? ERROR_MESSAGES.not_embeddable
+        : videoCheck.code === "private_video" || videoCheck.code === "video_not_found"
+        ? ERROR_MESSAGES[videoCheck.code]
+        : videoCheck.code === "quota_exhausted"
+        ? "YouTube verification quota is exhausted. Try publishing again tomorrow."
+        : "YouTube could not verify this video. Try again later.";
+      return errorResponse(videoCheck.code === "quota_exhausted" || videoCheck.code === "youtube_unavailable" ? 503 : 422, message);
     }
 
     // publish — validate lines first

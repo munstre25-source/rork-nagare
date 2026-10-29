@@ -83,19 +83,7 @@ async function processJob(supabase: Supabase, worker: string, job: Job): Promise
 }
 
 async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Record<string, unknown>> {
-  // A published catalog clip or an earlier learner clip for this video is reused as-is.
-  const existing = await existingClip(supabase, job.video_id);
-  if (existing) {
-    await finish(supabase, worker, job, {
-      status: "succeeded",
-      clip_id: existing.id,
-      timing_mode: existing.timing_mode ?? "word",
-      model: existing.model,
-      prompt_version: existing.prompt_version,
-    });
-    return { outcome: "reused", clipId: existing.id };
-  }
-
+  // Revalidate before reuse because YouTube owners can disable embeds later.
   const check = await checkYouTubeVideo(supabase, job.video_id);
   if (!check.ok) {
     log("immersion_video_rejected", { jobId: job.id, code: check.code, detail: check.detail });
@@ -110,6 +98,20 @@ async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Rec
     await finish(supabase, worker, job, { status: "unprocessable", error_code: check.code });
     return { outcome: "unprocessable", reason: check.code };
   }
+
+  // A published catalog clip or an earlier learner clip for this video can now be reused.
+  const existing = await existingClip(supabase, job.video_id);
+  if (existing) {
+    await finish(supabase, worker, job, {
+      status: "succeeded",
+      clip_id: existing.id,
+      timing_mode: existing.timing_mode ?? "word",
+      model: existing.model,
+      prompt_version: existing.prompt_version,
+    });
+    return { outcome: "reused", clipId: existing.id };
+  }
+
   const video = check.video;
   await update(supabase, worker, job, {
     title: video.title.slice(0, 200),

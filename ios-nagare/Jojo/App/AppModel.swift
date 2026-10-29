@@ -358,7 +358,6 @@ final class AppModel {
     func refreshRemoteClips() async {
         do {
             let rows = try await SupabaseAPI.shared.fetchPublishedClips()
-            guard !rows.isEmpty else { return }
             let existing = (try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []
             var byId: [String: RemoteClip] = [:]
             for row in existing {
