@@ -45,7 +45,7 @@ Everything else uses `SimulatedClipPlayer` (animated gradient poster, karaoke cu
 YouTube video is never re-hosted.
 
 ## Supabase
-- Clip library: apply migrations from **`ios-nagare/`** (see below). Jojo GETs `/rest/v1/clips?published=eq.true&select=*`. The Korean app reads `/rest/v1/sori_clips` on the same project. Each app syncs in the background at launch and every 30 minutes, then merges rows by `id` into SwiftData. Bundled verified clips stay available offline. A remote row replaces the bundle when the id matches. Rows that are no longer published are dropped on the next sync.
+- Clip library: apply migrations from **`ios-nagare/`** (see below). Jojo GETs `/rest/v1/clips?published=eq.true&select=*`. The Korean app reads `/rest/v1/sori_clips` on the same project. Each app syncs at launch and every five minutes, when For You opens, and when the learner reaches the last three queued clips. New published lessons are appended after the current clip; rows that are no longer published are removed from the local remote cache on the next sync. Bundled verified clips stay available offline. A remote row replaces the bundle when the id matches.
 - Word explanations: `POST /functions/v1/explain-word`. See `supabase/functions/explain-word/README.md`.
   Lookup order: seed token → local dictionary → SwiftData cache → Edge Function (12 s timeout) → static fallback.
   Live calls are logged locally (`WordExplainService.stats()`: today/total count, average latency).
@@ -158,7 +158,7 @@ Two pg_cron jobs call it: `fill-jojo-catalog` every 10 minutes with `{}`, and `f
 
 Every 30 minutes, `audit-youtube-embeds` checks published Japanese and Korean catalog videos with YouTube's `videos.list` API in batches of 50. It unpublishes clips when YouTube no longer reports `status.embeddable=true`, including deleted/private videos omitted from a successful API response. YouTube/network/quota errors leave the affected batch untouched. Re-publishing a clip and processing a learner-submitted video also recheck embed availability. Unpublished clips no longer appear in client feeds, while their rows remain available for recovery/history. The job uses the same Vault secrets as the other catalog cron jobs.
 
-The job prefers the level with the fewest published clips and remembers the YouTube page so the next run walks forward. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new rows show up on the next sync.
+The job prefers the level with the fewest published clips and remembers the YouTube page so the next run walks forward. It discovers fresh YouTube sources, verifies their current embed permission, and builds a new timed lesson before publishing. On the phone, a clip the learner has finished sorts behind clips they have not seen, and new lessons are fetched while the learner is approaching the end of the current queue.
 
 ## RevenueCat setup
 - Entitlement: `nagare_learn_japanese_pro`

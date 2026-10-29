@@ -76,6 +76,7 @@ final class AppModel {
     @ObservationIgnored private var lastCameBackProbeKey: String = ""
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var lastRemoteClipRefreshAt = Date.distantPast
     @ObservationIgnored private var reviewAvailabilityTask: Task<Void, Never>?
     @ObservationIgnored private var clipsById: [String: Clip] = [:]
     /// Dictionary form or surface form → clip ids that contain it.
@@ -350,12 +351,16 @@ final class AppModel {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refreshRemoteClips()
-                try? await Task.sleep(for: .seconds(30 * 60))
+                try? await Task.sleep(for: .seconds(5 * 60))
             }
         }
     }
 
     func refreshRemoteClips() async {
+        // Avoid overlapping feed-tail and timer refreshes while remaining responsive
+        // when users return to For You or reach the end of their current queue.
+        guard Date().timeIntervalSince(lastRemoteClipRefreshAt) >= 45 else { return }
+        lastRemoteClipRefreshAt = .now
         do {
             let rows = try await SupabaseAPI.shared.fetchPublishedClips()
             let existing = (try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []

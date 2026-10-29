@@ -106,6 +106,7 @@ struct FeedView: View {
         }
         .onChange(of: isActiveTab) { _, active in
             if active {
+                Task { await app.refreshRemoteClips() }
                 resumeIfPossible()
                 scheduleWatchChromeHide()
                 startGuidedTourSoon()
@@ -132,6 +133,9 @@ struct FeedView: View {
             noteClipChange(from: oldId)
             guard let newId, let clip = clips.first(where: { $0.id == newId }),
                   isActiveTab, quizClip == nil else { return }
+            if let index = clips.firstIndex(where: { $0.id == newId }), index >= max(0, clips.count - 3) {
+                Task { await app.refreshRemoteClips() }
+            }
             coordinator.activate(clip)
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
             ImmersionIsland.note(
