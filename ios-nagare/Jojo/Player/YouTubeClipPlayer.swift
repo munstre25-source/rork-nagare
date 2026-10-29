@@ -16,6 +16,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private(set) var isReady = false
     /// True after the IFrame API reports an embed/playability error.
     private(set) var embedFailed = false
+    /// The last IFrame player error code (2, 5, 100, 101, 150…), for on-screen diagnostics.
+    private(set) var embedErrorCode: Int?
     private(set) var spokenLine: Int = 0
     private(set) var spokenToken: Int?
     @ObservationIgnored var onFinished: (() -> Void)?
@@ -197,6 +199,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         case "ready":
             isReady = true
             embedFailed = false
+            embedErrorCode = nil
             setRate(rate)
             // Keep muted until we confirm playing, then apply user mute preference.
             run("player&&player.mute()")
@@ -228,6 +231,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             }
         case "error":
             print("[YouTube] player error \(value.map { String(Int($0)) } ?? "?") for \(clip.videoId)")
+            embedErrorCode = value.map { Int($0) }
             // One retry via youtube-nocookie host — helps some embedder-identity failures.
             if !didRetryNocookie {
                 didRetryNocookie = true

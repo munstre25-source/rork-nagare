@@ -186,6 +186,11 @@ struct ClipVideoView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+            if let code = (player as? YouTubeClipPlayer)?.embedErrorCode {
+                Text("YouTube error \(code)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
             HStack(spacing: Spacing.s) {
                 if let url = clip.youtubeURL {
                     Button("Open in YouTube") {
