@@ -58,48 +58,18 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         return view
     }
 
-    /// The page identifies as the app (https://<bundle id>), as YouTube's embed rules require.
-    /// Posing as youtube.com, or sending no referrer, now fails with error 152 / 153.
-    private static let appOrigin: String = {
-        let bundleId = (Bundle.main.bundleIdentifier ?? "com.socialreporthq.jojo").lowercased()
-        return "https://\(bundleId)"
-    }()
-
+    /// Loads the player wrapper from the project's own https origin (an edge function). The
+    /// page's real, verifiable referrer is what YouTube's embed rules require — a synthetic
+    /// `https://<bundle id>` origin now fails with errors 150 / 152 / 153.
     private func loadPlayerHTML(in view: WKWebView, host: String) {
-        view.loadHTMLString(html(host: host), baseURL: URL(string: Self.appOrigin))
-    }
-
-    private func html(host: String) -> String {
-        let origin = Self.appOrigin
-        return """
-        <!DOCTYPE html><html><head>
-        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-        <meta name="referrer" content="strict-origin-when-cross-origin">
-        <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style>
-        </head><body><div id="p"></div>
-        <script src="\(host)/iframe_api"></script>
-        <script>
-        var player;
-        function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
-        function onYouTubeIframeAPIReady(){
-          player=new YT.Player('p',{
-            host:'\(host)',
-            videoId:'\(clip.videoId)',
-            playerVars:{
-              playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,
-              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,autoplay:1,mute:1,
-              origin:'\(origin)',widget_referrer:'\(origin)'
-            },
-            events:{
-              onReady:function(){post({e:'ready'});},
-              onStateChange:function(ev){post({e:'state',v:ev.data});},
-              onError:function(ev){post({e:'error',v:ev.data});}
-            }
-          });
+        var components = URLComponents(string: "\(Secrets.supabaseURL)/functions/v1/youtube-embed")!
+        components.queryItems = [URLQueryItem(name: "v", value: clip.videoId)]
+        if host.contains("nocookie") { components.queryItems?.append(URLQueryItem(name: "h", value: "nocookie")) }
+        guard let url = components.url else {
+            embedFailed = true
+            return
         }
-        function nTime(){ if(player&&player.getCurrentTime){post({e:'time',v:player.getCurrentTime()});} }
-        </script></body></html>
-        """
+        view.load(URLRequest(url: url))
     }
 
     func play() {
