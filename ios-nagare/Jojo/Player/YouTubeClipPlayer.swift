@@ -58,14 +58,19 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         return view
     }
 
+    /// The page identifies as the app (https://<bundle id>), as YouTube's embed rules require.
+    /// Posing as youtube.com, or sending no referrer, now fails with error 152 / 153.
+    private static let appOrigin: String = {
+        let bundleId = (Bundle.main.bundleIdentifier ?? "com.socialreporthq.jojo").lowercased()
+        return "https://\(bundleId)"
+    }()
+
     private func loadPlayerHTML(in view: WKWebView, host: String) {
-        view.loadHTMLString(html(host: host), baseURL: URL(string: host))
+        view.loadHTMLString(html(host: host), baseURL: URL(string: Self.appOrigin))
     }
 
     private func html(host: String) -> String {
-        // `origin` + `widget_referrer` + a real youtube.com baseURL are required to avoid
-        // Error 152/153 ("embedder identity") in WKWebView / simulators.
-        let origin = host
+        let origin = Self.appOrigin
         return """
         <!DOCTYPE html><html><head>
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">

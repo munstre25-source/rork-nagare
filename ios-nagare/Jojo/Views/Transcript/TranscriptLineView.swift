@@ -107,13 +107,16 @@ struct TranscriptLineView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if raisedCard {
-                    // Quiet dark plate — words and the green cursor carry the hierarchy, not the chrome.
+                    // Quiet plate — words and the green cursor carry the hierarchy, not the chrome.
+                    // Light themes get a white plate so their dark ink (translation, times) stays readable.
+                    let lightPlate = JojoPalette.scheme == .light
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .fill(Color.black.opacity(0.88))
+                        .fill(lightPlate ? Color.white : Color.black.opacity(0.88))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                                .strokeBorder(lightPlate ? Color.black.opacity(0.08) : Color.white.opacity(0.1), lineWidth: 1)
                         )
+                        .shadow(color: .black.opacity(lightPlate ? 0.06 : 0), radius: 10, y: 3)
                 }
             }
             .opacity(isActive ? 1 : 0.82)
