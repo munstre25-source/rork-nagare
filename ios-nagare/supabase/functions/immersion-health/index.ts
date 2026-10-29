@@ -1,7 +1,7 @@
 import { corsPreflight, errorResponse, jsonResponse } from "../_shared/http.ts";
 import { isAdminOrCron, timingSafeEqualString } from "../_shared/admin.ts";
-import { geminiModelAnalyze, geminiModelFallback, geminiApiKey } from "../_shared/env.ts";
-import { GeminiError, geminiAnalyzeYouTubeSegment, geminiGenerateJson } from "../_shared/gemini.ts";
+import { geminiModelAnalyze, geminiModelFallback } from "../_shared/env.ts";
+import { GeminiError, describeProviders, geminiAnalyzeYouTubeSegment, geminiGenerateJson } from "../_shared/gemini.ts";
 import { readJson } from "../_shared/http.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 
@@ -16,7 +16,8 @@ Deno.serve(async (req) => {
   const allowed = isAdminOrCron(req) || (healthToken.length >= 24 && timingSafeEqualString(provided, healthToken));
   if (!allowed) return errorResponse(401, "Unauthorized");
 
-  const transport = geminiApiKey().startsWith("sk-or-") ? "openrouter" : "google";
+  const transports = describeProviders();
+  const transport = transports.join("+");
   const models = [...new Set([geminiModelAnalyze(), geminiModelFallback()])];
   const probes = await Promise.all(models.map(async (model) => {
     const started = Date.now();
@@ -68,5 +69,5 @@ Deno.serve(async (req) => {
   const { data: queue } = await supabase.from("immersion_jobs").select("status");
   const counts: Record<string, number> = {};
   for (const row of (queue ?? []) as Array<{ status: string }>) counts[row.status] = (counts[row.status] ?? 0) + 1;
-  return jsonResponse({ transport, probes, video, queue: counts });
+  return jsonResponse({ transport, transports, probes, video, queue: counts });
 });

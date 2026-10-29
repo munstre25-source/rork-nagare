@@ -21,14 +21,19 @@ export function envInt(name: string, fallback: number): number {
 }
 
 /**
- * The only model key for transcription, translation, enrichment, and word explanations.
- * An OpenRouter key (`sk-or-`) calls Gemini through OpenRouter. A Google AI Studio key
- * calls Gemini directly. Never log the value.
+ * A Google AI Studio key calling Gemini directly. Never log the value.
+ * (Legacy: if this value is an OpenRouter key, the caller treats it as OpenRouter.)
  */
-export function geminiApiKey(): string {
-  const value = Deno.env.get("GEMINI_API_KEY")?.trim() ?? "";
-  if (!value) throw new Error("Missing required env: GEMINI_API_KEY");
-  return value;
+export function geminiApiKey(): string | null {
+  return Deno.env.get("GEMINI_API_KEY")?.trim() || null;
+}
+
+/**
+ * Optional OpenRouter key (`sk-or-…`). When set, it is preferred over the Google key
+ * (see `AI_PROVIDER_ORDER` in gemini.ts) and used as failover when the other is down.
+ */
+export function openRouterApiKey(): string | null {
+  return Deno.env.get("OPENROUTER_API_KEY")?.trim() || null;
 }
 
 /** Primary model for transcription, translation, and vocabulary. */

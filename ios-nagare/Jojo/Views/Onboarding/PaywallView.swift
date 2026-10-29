@@ -289,9 +289,9 @@ struct PaywallView: View {
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
 
-    /// "Start free trial" only when the selected product really offers one to this user.
+    /// "Start Free Trial" only when the selected product really offers one to this user.
     private var primaryCTATitle: String {
-        selectedPackageHasTrial ? "Start free trial" : "Continue"
+        selectedPackageHasTrial ? "Start Free Trial" : "Continue"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.

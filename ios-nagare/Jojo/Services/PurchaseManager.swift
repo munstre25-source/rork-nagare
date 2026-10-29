@@ -381,7 +381,7 @@ final class PurchaseManager {
         let monthlyRate = monthly.price / monthlyMonths
         guard monthlyRate > 0, yearlyRate < monthlyRate else { return nil }
         let saved = (monthlyRate - yearlyRate) / monthlyRate * 100
-        let percent = NSDecimalNumber(decimal: saved).intValue
+        let percent = Int((saved as NSDecimalNumber).doubleValue.rounded())
         return percent > 0 ? percent : nil
     }
 

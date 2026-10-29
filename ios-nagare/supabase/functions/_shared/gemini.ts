@@ -1,4 +1,4 @@
-import { geminiApiKey, geminiModelFallback } from "./env.ts";
+import { geminiApiKey, geminiModelFallback, openRouterApiKey } from "./env.ts";
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const ANALYZE_TIMEOUT_MS = 90_000;
@@ -46,6 +46,28 @@ type GeminiCall = {
   };
 };
 
+type AiProvider = {
+  transport: "openrouter" | "google";
+  apiKey: string;
+};
+
+/**
+ * Ordered provider list built from whatever keys are configured. OpenRouter goes
+ * first by default (AI_PROVIDER_ORDER), and the other provider is the failover
+ * when this one is rate-limited, out of credits, or down.
+ */
+function aiProviders(): AiProvider[] {
+  const openRouter = openRouterApiKey() ?? (geminiApiKey()?.startsWith("sk-or-") ? geminiApiKey() : null);
+  const google = geminiApiKey() && !geminiApiKey()!.startsWith("sk-or-") ? geminiApiKey() : null;
+  const byName: Record<string, AiProvider | null> = {
+    openrouter: openRouter ? { transport: "openrouter", apiKey: openRouter } : null,
+    google: google ? { transport: "google", apiKey: google } : null,
+  };
+  const order = (Deno.env.get("AI_PROVIDER_ORDER") ?? "openrouter,google")
+    .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return order.map((name) => byName[name]).filter((p): p is AiProvider => p !== null);
+}
+
 function extractText(data: unknown): string {
   const root = data as {
     candidates?: Array<{
@@ -62,47 +84,84 @@ function stripFence(text: string): string {
   return text.trim();
 }
 
-function isOpenRouterKey(apiKey: string): boolean {
-  return apiKey.startsWith("sk-or-");
+async function callProvider(provider: AiProvider, opts: GeminiCall): Promise<GeminiJsonResult> {
+  try {
+    if (provider.transport === "openrouter") return await callOpenRouter(provider.apiKey, opts);
+    return await callGoogleGemini(provider.apiKey, opts);
+  } catch (err) {
+    if (err instanceof GeminiError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new GeminiError(0, `AI timeout after ${opts.timeoutMs}ms`);
+    }
+    throw new GeminiError(0, `AI network error: ${err instanceof Error ? err.message : "unknown"}`);
+  }
+}
+
+/** Configured provider transports in priority order, e.g. ["openrouter","google"]. */
+export function describeProviders(): string[] {
+  return aiProviders().map((p) => p.transport);
+}
+
+/** Failures where a different provider could realistically succeed. */
+function shouldFailOverProvider(err: GeminiError): boolean {
+  return err.retryable || err.paymentRequired || err.modelRejected ||
+    err.status === 401 || err.status === 403;
+}
+
+/**
+ * Calls the prioritized provider chain: for each provider, the configured model;
+ * if that model id is rejected, once on the fallback model; on provider-level
+ * failures (rate limit, out of credits, outage, timeout) moves to the next provider.
+ */
+async function callGemini(opts: GeminiCall): Promise<GeminiJsonResult> {
+  const providers = aiProviders();
+  if (providers.length === 0) throw new GeminiError(500, "No AI provider key configured");
+  const fallbackModel = geminiModelFallback();
+  const models = [opts.model];
+  if (normalizeSlug(fallbackModel) !== normalizeSlug(opts.model)) models.push(fallbackModel);
+
+  let lastError: GeminiError | null = null;
+  for (let p = 0; p < providers.length; p++) {
+    const provider = providers[p];
+    for (let m = 0; m < models.length; m++) {
+      const model = models[m];
+      try {
+        return await callProvider(provider, { ...opts, model });
+      } catch (err) {
+        if (!(err instanceof GeminiError)) throw err;
+        lastError = err;
+        if (err.modelRejected && m < models.length - 1) {
+          console.warn(JSON.stringify({
+            event: "gemini_model_fallback",
+            provider: provider.transport,
+            from: normalizeSlug(model),
+            to: normalizeSlug(fallbackModel),
+            status: err.status,
+            detail: err.message.slice(0, 160),
+          }));
+          continue;
+        }
+        break;
+      }
+    }
+    if (lastError && !shouldFailOverProvider(lastError)) throw lastError;
+    if (p < providers.length - 1) {
+      console.warn(JSON.stringify({
+        event: "gemini_provider_failover",
+        from: provider.transport,
+        to: providers[p + 1].transport,
+        status: lastError?.status ?? 0,
+        detail: (lastError?.message ?? "").slice(0, 160),
+      }));
+    }
+  }
+  throw lastError ?? new GeminiError(500, "AI call failed");
 }
 
 /** OpenRouter slugs look like `google/gemini-2.5-flash`. Google's API wants the bare id. */
 function modelForTransport(model: string, openRouter: boolean): string {
   if (openRouter) return model.includes("/") ? model : `google/${model}`;
   return model.startsWith("google/") ? model.slice("google/".length) : model;
-}
-
-async function callOnce(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
-  try {
-    if (isOpenRouterKey(apiKey)) return await callOpenRouter(apiKey, opts);
-    return await callGoogleGemini(apiKey, opts);
-  } catch (err) {
-    if (err instanceof GeminiError) throw err;
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new GeminiError(0, `Gemini timeout after ${opts.timeoutMs}ms`);
-    }
-    throw new GeminiError(0, `Gemini network error: ${err instanceof Error ? err.message : "unknown"}`);
-  }
-}
-
-/** Calls the configured model; if that model id is rejected, retries once on the fallback model. */
-async function callGemini(opts: GeminiCall): Promise<GeminiJsonResult> {
-  const apiKey = geminiApiKey();
-  try {
-    return await callOnce(apiKey, opts);
-  } catch (err) {
-    const fallback = geminiModelFallback();
-    if (!(err instanceof GeminiError) || !err.modelRejected) throw err;
-    if (normalizeSlug(fallback) === normalizeSlug(opts.model)) throw err;
-    console.warn(JSON.stringify({
-      event: "gemini_model_fallback",
-      from: normalizeSlug(opts.model),
-      to: normalizeSlug(fallback),
-      status: err.status,
-      detail: err.message.slice(0, 160),
-    }));
-    return await callOnce(apiKey, { ...opts, model: fallback });
-  }
 }
 
 function normalizeSlug(model: string): string {
