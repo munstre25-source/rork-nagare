@@ -58,18 +58,55 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         return view
     }
 
-    /// Loads the player wrapper from the project's own https origin (an edge function). The
-    /// page's real, verifiable referrer is what YouTube's embed rules require — a synthetic
-    /// `https://<bundle id>` origin now fails with errors 150 / 152 / 153.
+    /// YouTube's Required Minimum Functionality for iOS WebViews: load the player page with
+    /// `loadHTMLString(_:baseURL:)` where baseURL is `https://<bundle id>` (lowercased). That
+    /// becomes the HTTP Referer YouTube uses to identify the app (avoids errors 152/153).
+    /// (A page served from a Supabase edge function does not work: Supabase rewrites HTML
+    /// responses to text/plain with a sandbox CSP.)
+    private static var appReferrer: String {
+        "https://\((Bundle.main.bundleIdentifier ?? "com.socialreporthq.jojo").lowercased())"
+    }
+
     private func loadPlayerHTML(in view: WKWebView, host: String) {
-        var components = URLComponents(string: "\(Secrets.supabaseURL)/functions/v1/youtube-embed")!
-        components.queryItems = [URLQueryItem(name: "v", value: clip.videoId)]
-        if host.contains("nocookie") { components.queryItems?.append(URLQueryItem(name: "h", value: "nocookie")) }
-        guard let url = components.url else {
+        let videoId = clip.videoId.filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
+        guard !videoId.isEmpty, let base = URL(string: Self.appReferrer + "/") else {
             embedFailed = true
             return
         }
-        view.load(URLRequest(url: url))
+        view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer), baseURL: base)
+    }
+
+    private static func playerHTML(videoId: String, host: String, origin: String) -> String {
+        """
+        <!DOCTYPE html><html><head>
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
+        <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}#p{position:absolute;inset:0;width:100%;height:100%}</style>
+        </head><body><div id="p"></div>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <script>
+        var player;
+        function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
+        function onYouTubeIframeAPIReady(){
+          player=new YT.Player('p',{
+            host:'\(host)',
+            videoId:'\(videoId)',
+            playerVars:{
+              playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,
+              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,autoplay:1,mute:1,
+              origin:'\(origin)',widget_referrer:'\(origin)'
+            },
+            events:{
+              onReady:function(){post({e:'ready'});},
+              onStateChange:function(ev){post({e:'state',v:ev.data});},
+              onError:function(ev){post({e:'error',v:ev.data});}
+            }
+          });
+          var f=document.querySelector('iframe'); if(f){f.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
+        }
+        function nTime(){ if(player&&player.getCurrentTime){post({e:'time',v:player.getCurrentTime()});} }
+        </script></body></html>
+        """
     }
 
     func play() {
