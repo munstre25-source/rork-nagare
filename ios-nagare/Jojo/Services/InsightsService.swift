@@ -11,6 +11,12 @@ actor InsightsService {
         return URLSession(configuration: config)
     }()
 
+    /// Tells the server this device couldn't play a clip so the catalog can retire it.
+    func reportPlaybackFailure(videoId: String, clipId: String, code: Int, appUserId: String) async -> Bool {
+        let body: [String: Any] = ["videoId": videoId, "clipId": clipId, "code": code]
+        return await send(method: "POST", path: "functions/v1/report-playback", appUserId: appUserId, body: body) != nil
+    }
+
     func submitAcquisition(source: String, detail: String?, appUserId: String) async {
         var body: [String: Any] = ["source": source]
         if let detail {

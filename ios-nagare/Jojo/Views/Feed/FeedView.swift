@@ -419,7 +419,8 @@ struct FeedView: View {
         // Debug stays entirely offline: only the bundled Japanese-learning clips are shown.
         // This guarantees every visible item is playable in a fresh simulator session.
         if app.purchases.debugBypassActive {
-            clips = app.debugShowcaseClips(limit: 3)
+            let showcase = app.debugShowcaseClips(limit: 3)
+            clips = showcase.isEmpty ? ranked : showcase
         } else {
             clips = ranked
         }

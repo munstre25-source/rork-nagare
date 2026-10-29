@@ -270,6 +270,17 @@ final class AppModel {
                 merged.append(enriched)
             }
         }
+        // Drop videos real phones couldn't play: this device's own failures, and bundled
+        // clips whose video the server catalog retired (it is the authority once synced).
+        let blocked = PlaybackHealth.blockedVideoIds
+        let published = PlaybackHealth.publishedVideoIds
+        let remoteIds = Set(remote.map(\.id))
+        merged.removeAll { clip in
+            guard clip.hasRealVideo else { return false }
+            if blocked.contains(clip.videoId) { return true }
+            if let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
+            return false
+        }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
         clips = verified.isEmpty ? merged : verified
@@ -369,6 +380,7 @@ final class AppModel {
                 if byId[row.clipId] != nil { context.delete(row) } else { byId[row.clipId] = row }
             }
             let publishedIds = Set(rows.map(\.clip.id))
+            PlaybackHealth.notePublished(videoIds: Set(rows.map(\.clip.videoId)))
             for id in byId.keys where !publishedIds.contains(id) {
                 if let row = byId[id] { context.delete(row) }
                 byId[id] = nil

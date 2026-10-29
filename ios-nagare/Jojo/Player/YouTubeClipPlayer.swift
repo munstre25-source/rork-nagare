@@ -29,9 +29,17 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var didFinish = false
     @ObservationIgnored private var didRetryNocookie = false
     @ObservationIgnored private var clock: Double = 0
+    @ObservationIgnored private var apiLoaded = false
+    @ObservationIgnored private var loadWatchdog: Task<Void, Never>?
+    @ObservationIgnored private var lastReportedTime: Double = -1
+    @ObservationIgnored private var lastProgressAt = Date()
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
 
     private static let pollMilliseconds = 120
+    /// How long a video may take to become ready once YouTube's API script has loaded.
+    private static let readyTimeout: Duration = .seconds(15)
+    /// How long playback may sit at the same time after play was requested.
+    private static let stallTimeout: TimeInterval = 15
 
     var duration: Double { clip.durationSec }
     private var sourceStart: Double { clip.sourceStartSec ?? 0 }
@@ -75,7 +83,42 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             embedFailed = true
             return
         }
+        apiLoaded = false
         view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer), baseURL: base)
+        startLoadWatchdog()
+    }
+
+    /// A player that never becomes ready shows an endless spinner. If YouTube's API loaded
+    /// but this video didn't, the video is the problem (report it). If the API itself never
+    /// loaded, it's the network: fail quietly so the learner can skip, but don't blame the clip.
+    private func startLoadWatchdog() {
+        loadWatchdog?.cancel()
+        loadWatchdog = Task { [weak self] in
+            try? await Task.sleep(for: Self.readyTimeout)
+            guard !Task.isCancelled, let self, !self.isReady, !self.embedFailed else { return }
+            if self.apiLoaded {
+                self.fail(code: PlaybackHealth.neverReadyCode)
+            } else {
+                self.embedFailed = true
+                self.isPlaying = false
+            }
+        }
+    }
+
+    /// Terminal failure: stop, surface the code, and tell PlaybackHealth (which hides the clip
+    /// on definitive codes and reports it so the catalog retires it for everyone).
+    private func fail(code: Int) {
+        loadWatchdog?.cancel()
+        poller?.cancel()
+        poller = nil
+        wantsPlay = false
+        isPlaying = false
+        embedErrorCode = code
+        embedFailed = true
+        // 152/153 are app-identity errors that would hit every video; never blame a clip for them.
+        if PlaybackHealth.definitiveCodes.contains(code) || code < 0 {
+            PlaybackHealth.recordFailure(clip: clip, code: code)
+        }
     }
 
     private static func playerHTML(videoId: String, host: String, origin: String) -> String {
@@ -90,6 +133,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         var player;
         function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
         function onYouTubeIframeAPIReady(){
+          post({e:'api'});
           player=new YT.Player('p',{
             host:'\(host)',
             videoId:'\(videoId)',
@@ -112,9 +156,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     }
 
     func play() {
+        guard !embedFailed else { return }
         wantsPlay = true
         didFinish = false
         isPlaying = true
+        lastProgressAt = Date()
         // Start muted so iOS allows autoplay; unmute once playback actually begins if desired.
         run("player&&player.mute();player&&player.playVideo()")
         startPolling()
@@ -157,6 +203,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     }
 
     func teardown() {
+        loadWatchdog?.cancel()
         pause()
         onFinished = nil
         onWatchTick = nil
@@ -171,11 +218,21 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private func startPolling() {
         poller?.cancel()
         poller = Task { [weak self] in
+            var lastTick = Date()
             while !Task.isCancelled {
                 // ~8 Hz keeps the word cursor within a syllable of the audio.
                 try? await Task.sleep(for: .milliseconds(Self.pollMilliseconds))
                 guard let self else { return }
+                // A long gap means the app was suspended, not that the video stalled.
+                if Date().timeIntervalSince(lastTick) > 2 { self.lastProgressAt = Date() }
+                lastTick = Date()
                 self.webView.evaluateJavaScript("nTime()", completionHandler: nil)
+                // Ready and asked to play, but time hasn't moved: a stalled video.
+                if self.isReady, self.wantsPlay, !self.embedFailed,
+                   Date().timeIntervalSince(self.lastProgressAt) > Self.stallTimeout {
+                    self.fail(code: PlaybackHealth.stalledCode)
+                    return
+                }
                 if self.isPlaying {
                     self.watchAccumulator += Double(Self.pollMilliseconds) / 1000
                     if self.watchAccumulator >= 1 {
@@ -196,7 +253,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     private func handle(event: String, value: Double?) {
         switch event {
+        case "api":
+            apiLoaded = true
         case "ready":
+            loadWatchdog?.cancel()
+            lastProgressAt = Date()
             isReady = true
             embedFailed = false
             embedErrorCode = nil
@@ -207,6 +268,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if wantsPlay { play() }
         case "time":
             guard let value else { return }
+            if abs(value - lastReportedTime) > 0.05 {
+                lastReportedTime = value
+                lastProgressAt = Date()
+                if isReady { PlaybackHealth.noteSuccessfulPlayback() }
+            }
             let excerptTime = value - sourceStart
             let clock = PlaybackUI.note(
                 time: excerptTime,
@@ -230,17 +296,19 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 if !isMuted { run("player&&player.unMute()") }
             }
         case "error":
-            print("[YouTube] player error \(value.map { String(Int($0)) } ?? "?") for \(clip.videoId)")
-            embedErrorCode = value.map { Int($0) }
-            // One retry via youtube-nocookie host — helps some embedder-identity failures.
-            if !didRetryNocookie {
+            let code = value.map { Int($0) } ?? 0
+            print("[YouTube] player error \(code) for \(clip.videoId)")
+            // Removed / embed-blocked videos never play anywhere in the app: no retry.
+            if PlaybackHealth.definitiveCodes.contains(code) {
+                fail(code: code)
+            } else if !didRetryNocookie {
+                // One retry via youtube-nocookie host — helps some embedder-identity failures.
                 didRetryNocookie = true
                 embedFailed = false
                 isReady = false
                 loadPlayerHTML(in: webView, host: "https://www.youtube-nocookie.com")
             } else {
-                embedFailed = true
-                isPlaying = false
+                fail(code: code)
             }
         default:
             break

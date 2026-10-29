@@ -68,7 +68,24 @@ type VideoItem = {
 };
 
 /** One videos.list call (1 quota unit). Decides whether this video may be used at all. */
+/**
+ * True when real phones reported this video can't play in the app (rights-holder embed
+ * blocks the Data API can't see). Same evidence rule as report_clip_playback_failure().
+ */
+export async function isDeviceBlocked(supabase: SupabaseClient, videoId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("clip_playback_failures")
+    .select("error_code")
+    .eq("video_id", videoId)
+    .limit(10);
+  const rows = (data ?? []) as Array<{ error_code: number }>;
+  return rows.some((r) => [100, 101, 150].includes(r.error_code)) || rows.length >= 2;
+}
+
 export async function checkYouTubeVideo(supabase: SupabaseClient, videoId: string): Promise<VideoCheck> {
+  if (await isDeviceBlocked(supabase, videoId)) {
+    return { ok: false, code: "not_embeddable", detail: "device playback reports" };
+  }
   if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
     return { ok: false, code: "quota_exhausted", detail: "youtube daily cap" };
   }

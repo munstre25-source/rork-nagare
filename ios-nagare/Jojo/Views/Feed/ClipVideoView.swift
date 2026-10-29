@@ -122,6 +122,13 @@ struct ClipVideoView: View {
         .overlay(alignment: .bottom) {
             if showsControls { controls }
         }
+        .task(id: embedFailed) {
+            // Never leave a learner staring at a dead clip: move on after a short beat.
+            guard embedFailed, let onSkip else { return }
+            try? await Task.sleep(for: .milliseconds(1800))
+            guard !Task.isCancelled, embedFailed else { return }
+            onSkip()
+        }
         .sheet(isPresented: $showFeatureRequest, onDismiss: {
             coordinator.resumeAfterPopupIfNeeded()
         }) {
@@ -180,17 +187,27 @@ struct ClipVideoView: View {
         (player as? YouTubeClipPlayer)?.embedFailed == true
     }
 
+    private var embedFailureDetail: String {
+        guard let code = (player as? YouTubeClipPlayer)?.embedErrorCode else {
+            return "Check your connection"
+        }
+        switch code {
+        case 100, 101, 150: return "Not playable in apps · removed from your feed"
+        case PlaybackHealth.neverReadyCode, PlaybackHealth.stalledCode: return "The video didn’t start"
+        default: return "YouTube error \(code)"
+        }
+    }
+
     private var embedFailure: some View {
         VStack(spacing: Spacing.m) {
             Text("Video couldn’t load")
                 .font(.headline)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            if let code = (player as? YouTubeClipPlayer)?.embedErrorCode {
-                Text("YouTube error \(code)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.7))
-            }
+            Text(onSkip == nil ? embedFailureDetail : "\(embedFailureDetail) · skipping…")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.75))
+                .multilineTextAlignment(.center)
             HStack(spacing: Spacing.s) {
                 if let url = clip.youtubeURL {
                     Button("Open in YouTube") {

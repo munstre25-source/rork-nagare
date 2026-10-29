@@ -77,7 +77,10 @@ final class PurchaseManager {
     var hasRemotePaywall: Bool { offering?.hasPaywall == true }
 
     /// RevenueCat anonymous app user ID, or a stable local ID when RevenueCat isn't configured.
-    var appUserId: String {
+    var appUserId: String { Self.currentAppUserId }
+
+    /// Same id, for callers without a PurchaseManager instance.
+    static var currentAppUserId: String {
         if Purchases.isConfigured { return Purchases.shared.appUserID }
         let defaults = UserDefaults.standard
         if let existing = defaults.string(forKey: Self.localIdKey) { return existing }
