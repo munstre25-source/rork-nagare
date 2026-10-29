@@ -207,6 +207,12 @@ struct VocabView: View {
                         .background(Color.sakuraButton, in: Capsule())
                 }
                 .buttonStyle(ChunkyPressStyle())
+                .coachTarget(.vocabReview)
+                .task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    GuidanceCenter.shared.requestTip(.vocabReview)
+                }
+                .onDisappear { GuidanceCenter.shared.withdrawTip(.vocabReview) }
                 Button {
                     Haptics.selection()
                     section = .mine

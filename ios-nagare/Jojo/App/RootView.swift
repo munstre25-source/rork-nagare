@@ -45,6 +45,12 @@ struct MainTabView: View {
     @Query private var savedWords: [SavedWord]
     @State private var showingExplore = false
     @State private var welcome: (due: Int, streak: Int)?
+    @State private var experiencePromptTask: Task<Void, Never>?
+    private let guide = GuidanceCenter.shared
+
+    private var anySheetUp: Bool {
+        showFeedbackPrompt || showManualFeedback || showCancellationSurvey
+    }
 
     /// True only on For You, once the learner has settled into a playing clip.
     private var focusCapsuleHidden: Bool {
@@ -106,6 +112,18 @@ struct MainTabView: View {
                 showingExplore = false
                 app.feedChromeHidden = false
             }
+            if newTab == .vocab { guide.noteOpenedVocab() }
+            syncGuideVisibility()
+            if newTab != .feed { scheduleExperiencePrompt() }
+        }
+        .onChange(of: showingExplore) { _, _ in syncGuideVisibility() }
+        .onChange(of: anySheetUp) { _, _ in syncGuideVisibility() }
+        .onChange(of: app.calmMomentTick) { _, _ in
+            if tab != .feed { scheduleExperiencePrompt() }
+        }
+        .onChange(of: guide.feedRequestTick) { _, _ in
+            showingExplore = false
+            tab = .feed
         }
         .onChange(of: app.pendingFeedClipId) { _, id in
             if id != nil {
@@ -130,6 +148,7 @@ struct MainTabView: View {
                 showCancellationSurvey = true
             }
         }
+        .overlay { CoachOverlay() }
         .overlay {
             ZStack {
                 if let welcome {
@@ -149,11 +168,9 @@ struct MainTabView: View {
             }
             if app.pendingDeepLink == .review { tab = .vocab }
             if app.pendingDeepLink == .feed { tab = .feed }
-            if app.noteMainAppOpenAndShouldAskFeedback() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
-                    showFeedbackPrompt = true
-                }
-            }
+            // Counts opens only; the experience prompt shows at calm moments (see below).
+            app.noteMainAppOpenAndShouldAskFeedback()
+            syncGuideVisibility()
             if app.shouldPresentCancellationSurvey {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                     showCancellationSurvey = true
@@ -168,6 +185,31 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showCancellationSurvey) {
             CancellationSurveySheet { showCancellationSurvey = false }
+        }
+    }
+
+    private func syncGuideVisibility() {
+        guide.feedVisible = tab == .feed && !showingExplore
+        guide.blockedByPresentation = anySheetUp
+    }
+
+    /// The one-time "How's Jojo so far?" prompt: only off the feed (nothing playing), never
+    /// during the tour, another sheet, or speaking practice. Waits a beat, then checks again.
+    private func scheduleExperiencePrompt() {
+        experiencePromptTask?.cancel()
+        guard app.shouldPresentFeedbackPrompt else { return }
+        let requestedTab = tab
+        experiencePromptTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(FeedbackPromptConfig.calmDelaySeconds))
+            guard !Task.isCancelled,
+                  tab == requestedTab, tab != .feed,
+                  app.shouldPresentFeedbackPrompt,
+                  guide.tourStep == nil,
+                  guide.activeTip == nil,
+                  !anySheetUp,
+                  !app.hidesMainTabBar,
+                  !SpeechPractice.isListening else { return }
+            showFeedbackPrompt = true
         }
     }
 }
@@ -299,5 +341,6 @@ struct JojoDock: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .coachTarget(.vocabDock, active: tab == .vocab)
     }
 }

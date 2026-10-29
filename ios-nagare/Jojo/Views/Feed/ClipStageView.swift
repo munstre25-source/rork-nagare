@@ -26,6 +26,8 @@ struct ClipStageView: View {
     var watchChromeHidden: Bool = false
     var onRevealWatchChrome: () -> Void = {}
     var onSkip: (() -> Void)? = nil
+    /// The For You feed reports its active page's controls to the guided tour.
+    var reportsCoachAnchors: Bool = false
 
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(WordLookupController.self) private var lookup
@@ -34,6 +36,10 @@ struct ClipStageView: View {
 
     private var isPopupHere: Bool {
         lookup.selection?.clip.id == clip.id
+    }
+
+    private var isCoachPage: Bool {
+        reportsCoachAnchors && coordinator.activeClipId == clip.id
     }
 
     /// Landscape player that leaves room for karaoke (kiku demo2).
@@ -141,6 +147,7 @@ struct ClipStageView: View {
                         .padding(8)
                 }
             }
+            .coachTarget(.video, active: isCoachPage)
             .frame(maxWidth: .infinity)
 
             if immersiveFeed {
@@ -157,6 +164,7 @@ struct ClipStageView: View {
             }
 
             transcript(player: player)
+                .coachTarget(.transcript, active: isCoachPage)
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
                 .clipped()
@@ -212,6 +220,7 @@ struct ClipStageView: View {
                 .padding(.horizontal, 14)
                 .frame(maxWidth: 340)
                 .fixedSize(horizontal: false, vertical: true)
+                .coachTarget(.popupCard, active: isCoachPage)
                 .offset(y: max(0, dragOffset))
                 .gesture(
                     DragGesture(minimumDistance: 12)

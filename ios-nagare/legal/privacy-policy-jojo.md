@@ -32,6 +32,16 @@ After onboarding, the app creates an **anonymous ID** on our backend (Supabase).
 
 Only your anonymous ID can read your rows, enforced by row-level security on our database.
 
+### Usage analytics
+
+To see which parts of Jojo help people learn, the app records **first-party usage events**: screens and onboarding steps viewed, clips watched and swiped, words tapped (counts only), reviews done, session length (active time only, background and idle time excluded), errors, and the app version, iOS version and device type. Events are tied to a **random install ID** created on your iPhone and, once it exists, your anonymous sync ID. We do **not** collect your name, email, audio, speech transcripts, or the text you type. Events are kept for about **13 months** and then deleted automatically. They are not sold or shared with advertisers.
+
+You can turn this off anytime in **Profile → Share usage analytics** (or **Profile → How Jojo works**). Turning it off stops collection and clears anything not yet sent.
+
+### Feedback and the feature board
+
+If you send feedback, we store your note, its category, the time, the app and iOS version, and your anonymous ID so we can reply in *Messages with Jojo*. If you choose **Send without my app ID**, the note is stored without any ID and we can't reply. Posts on the public feature board show no name or ID, but anything you write there is visible to other learners, so please leave out personal details. Votes and reports are counted once per anonymous ID, and the server may use your network address briefly to limit abuse; it is not shown to anyone.
+
 ## 5. Your own videos (YouTube + Google Gemini)
 
 When you paste a YouTube link, our server checks the public video details through the **YouTube Data API**. It then asks **Google Gemini** (through OpenRouter) to transcribe and translate the Japanese speech from that public YouTube URL. **We never download or store the video or its audio.** We store the resulting captions, readings, and translations so the lesson opens instantly. Videos always play through YouTube's official embedded player, under YouTube's Terms of Service and Google's Privacy Policy. If two learners submit the same video, the same captions are reused, but neither learner can see the other's requests.
@@ -42,7 +52,7 @@ When you practice speaking, your microphone audio is turned into text by Apple's
 
 ## 7. Deleting your data
 
-**Profile → Delete my data** removes everything on this iPhone. It also deletes your anonymous ID from our backend, which deletes your synced words, speaking practice, and video requests along with it. If you're offline, the deletion is retried the next time the app opens. Shared captions made from public videos are kept for other learners, but they are no longer linked to you.
+**Profile → Delete my data** removes everything on this iPhone. It also deletes your anonymous ID from our backend, which deletes your synced words, speaking practice, video requests, usage analytics and private feedback notes along with it, and resets the random install ID. If you're offline, the deletion is retried the next time the app opens. Shared captions made from public videos are kept for other learners, but they are no longer linked to you.
 
 ## 8. What the app stores on your device
 
@@ -61,7 +71,9 @@ If you enable reminders, local notifications are scheduled on device. No notific
 | Product interaction | Third-party advertising (onboarding/feedback events, after ATT opt-in) | Yes | Yes |
 | Product interaction | Analytics | Yes | No |
 | User ID (anonymous RevenueCat ID and anonymous sync ID) | App functionality | Yes (anonymous sync ID) | No |
-| User ID | Analytics | No | No |
+| User ID (random install ID, anonymous sync ID) | Analytics | Yes | No |
+| Other diagnostic data (errors, app/iOS version, device type) | Analytics, app functionality | Yes | No |
+| Other user content (feedback notes, board posts) | App functionality | Yes (unless sent without your app ID) | No |
 | Purchase history | App functionality (subscription management) | No | No |
 | Other user content (word/sentence text, saved words, speaking-practice text, submitted YouTube links) | App functionality (AI explanations, backup, video lessons) | Yes (to the anonymous sync ID) | No |
 

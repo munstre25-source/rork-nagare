@@ -62,11 +62,13 @@ struct OnboardingFlowView: View {
             if step != .splash {
                 showSplash = false
             }
+            track("onboarding_\(step.analyticsName)_view", props: ["step": String(step.flowIndex)])
         }
         .onChange(of: step) { _, newStep in
             applyPalette(for: newStep)
             app.setOnboardingStep(newStep)
-            track("onboarding_\(newStep.analyticsName)_view", props: ["step": String(newStep.rawValue)])
+            // `step` is the position in the live flow so the dashboard funnel reads in screen order.
+            track("onboarding_\(newStep.analyticsName)_view", props: ["step": String(newStep.flowIndex)])
         }
     }
 

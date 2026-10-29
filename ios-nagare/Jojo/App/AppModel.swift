@@ -50,6 +50,10 @@ final class AppModel {
     var hidesMainTabBar: Bool = false
     /// Feed focus: the capsule is faded while a clip plays. FeedView owns the timer.
     var feedChromeHidden: Bool = false
+    /// Bumps at calm moments (a review just ended) so the main tabs can consider the feedback prompt.
+    private(set) var calmMomentTick: Int = 0
+    /// Counters for the one-time experience prompt.
+    @ObservationIgnored let experiencePrompt = ExperiencePromptStore()
     /// Bumps when a future first review becomes due, so the dock and Feed prompt refresh on time.
     private(set) var reviewAvailabilityRevision: Int = 0
     /// Bumps when follow list changes so the Following feed can refresh.
@@ -384,6 +388,7 @@ final class AppModel {
     // MARK: Synced learner data
 
     private static let pendingServerDeletionKey = "jojo.account.pendingServerDeletion"
+    private static let pendingAnalyticsDeletionKey = "jojo.account.pendingAnalyticsInstall"
 
     /// Anonymous session, vocab mirror, and video-lesson refresh. All background, all optional:
     /// the app keeps working fully offline when any of it fails.
@@ -445,7 +450,9 @@ final class AppModel {
         do {
             // Never create a session just to delete it.
             if await SupabaseAuth.shared.currentUserId != nil {
-                try await UserDataAPI.shared.deleteMyData()
+                try await UserDataAPI.shared.deleteMyData(
+                    installId: UserDefaults.standard.string(forKey: Self.pendingAnalyticsDeletionKey)
+                )
             }
         } catch ImmersionAPIError.unauthorized {
             // No session left to delete: nothing on the server is reachable from this device.
@@ -455,6 +462,7 @@ final class AppModel {
         }
         await SupabaseAuth.shared.reset()
         UserDefaults.standard.removeObject(forKey: Self.pendingServerDeletionKey)
+        UserDefaults.standard.removeObject(forKey: Self.pendingAnalyticsDeletionKey)
         vocabSync.resetMarkers()
         vocabSync.resume()
         return true
@@ -887,6 +895,7 @@ final class AppModel {
         if isNew {
             noteWeeklyWordSaved()
             noteFirstSessionTap()
+            if persist { experiencePrompt.noteFlashcardAction() }
         }
         if persist {
             rememberTaste("save", clip: clip)
@@ -1060,6 +1069,17 @@ final class AppModel {
 
     func noteFirstSessionHeard() {
         advanceFirstSession(to: .good)
+        track("word_heard")
+    }
+
+    /// True when this install already finished/skipped the old coach or is clearly not new,
+    /// so the guided tour is marked done instead of shown.
+    var guidedTourLegacyFinished: Bool {
+        // Only a finished (done) or skipped (-1) old coach counts; the onboarding demo tap
+        // also nudges the step forward, so in-between values still get the tour.
+        profile.firstSessionStep < 0
+            || profile.firstSessionStep >= FirstSessionStep.done.rawValue
+            || profile.mainAppOpenCount > 2
     }
 
     func noteFirstSessionGood() {
@@ -1312,6 +1332,7 @@ final class AppModel {
         }
         word.lastReviewedAt = Date()
         wordStates[word.key] = word.state
+        experiencePrompt.noteFlashcardAction()
         ensureWeeklyStatsBucket()
         profile.weeklyReviewCount += 1
         save()
@@ -1349,6 +1370,9 @@ final class AppModel {
     }
 
     func addWatch(seconds: Double) {
+        // Watching counts as active use even without touches.
+        SessionTracker.shared.noteActivity()
+        GuidanceCenter.shared.noteWatched(seconds: seconds)
         let key = Self.dayKey(Date())
         let wasReached = isGoalReached
         watchLog[key, default: 0] += seconds
@@ -1649,15 +1673,6 @@ final class AppModel {
 
     // MARK: Feedback prompt
 
-    /// Minimum time after onboarding before we soft-ask. Seeded demo data must not short-circuit this.
-    private static let feedbackCooldown: TimeInterval = 48 * 3600
-    /// New watch time (beyond the onboarding baseline) that counts as enough value.
-    private static let feedbackWatchDeltaSeconds: Double = 10 * 60
-    /// New saved words (beyond the onboarding baseline) that count as enough value.
-    private static let feedbackWordDelta: Int = 5
-    /// At least this many main-app opens after onboarding.
-    private static let feedbackMinOpens: Int = 3
-
     private var savedWordCount: Int {
         ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).count
     }
@@ -1692,26 +1707,32 @@ final class AppModel {
         profile.feedbackBaselineWordCount = savedWordCount
     }
 
-    /// Soft ask only after cool-down + real post-onboarding engagement (watch or new cards).
-    /// Seeded demo watch/words are excluded via baselines taken at `completeOnboarding()`.
+    /// "How's your Jojo experience so far?" is asked exactly once, after real use: enough
+    /// meaningful feed swipes AND flashcard actions (see `FeedbackPromptConfig`). Learners who
+    /// already answered the older soft-ask count as asked. Where/when it may appear is decided
+    /// by the main tabs (calm moments only).
     var shouldPresentFeedbackPrompt: Bool {
-        guard profile.onboardingCompleted else { return false }
-        let state = profile.feedbackPromptState
-        if state == "completed" { return false }
-        if state == "deferred",
-           let until = profile.feedbackPromptDeferredUntil,
-           until > Date() {
-            return false
-        }
-        guard let completedAt = profile.onboardingCompletedAt,
-              Date().timeIntervalSince(completedAt) >= Self.feedbackCooldown else {
-            return false
-        }
-        guard profile.mainAppOpenCount >= Self.feedbackMinOpens else { return false }
+        guard profile.onboardingCompleted,
+              profile.feedbackPromptState != "completed",
+              !experiencePrompt.hasShown else { return false }
+        return experiencePrompt.thresholdsMet
+    }
 
-        let watchDelta = totalWatchSeconds - profile.feedbackBaselineWatchSeconds
-        let wordDelta = savedWordCount - profile.feedbackBaselineWordCount
-        return watchDelta >= Self.feedbackWatchDeltaSeconds || wordDelta >= Self.feedbackWordDelta
+    /// Records that the prompt appeared. It never returns, whatever the answer.
+    func markExperiencePromptShown() {
+        experiencePrompt.markShown()
+        completeFeedbackPrompt()
+        track("feedback_prompt_shown")
+    }
+
+    /// A user-initiated swipe to a new clip after a real look at the previous one.
+    func noteMeaningfulSwipe() {
+        experiencePrompt.noteMeaningfulSwipe()
+    }
+
+    /// Moments where nothing is playing or recording (e.g. a review just finished).
+    func noteCalmMoment() {
+        calmMomentTick += 1
     }
 
     func deferFeedbackPrompt(days: Int) {
@@ -1817,6 +1838,12 @@ final class AppModel {
         // the server copy is removed in one call (retried on next launch if offline).
         vocabSync.suspend()
         UserDefaults.standard.set(true, forKey: Self.pendingServerDeletionKey)
+        // Usage analytics: forget the unsent queue and start a brand-new install id. The old id goes
+        // to the server with the deletion request so its rows are removed too.
+        UserDefaults.standard.set(InstallIdentity.id, forKey: Self.pendingAnalyticsDeletionKey)
+        InstallIdentity.reset()
+        Task { await AnalyticsUploader.shared.purge() }
+        SessionTracker.shared.consentChanged()
         immersion.reset()
         Task { [weak self] in await self?.finishServerDeletion() }
 
@@ -1840,6 +1867,8 @@ final class AppModel {
         defaults.removeObject(forKey: "nagare.local.anon.id")
         defaults.removeObject(forKey: "nagare.analytics.log")
         defaults.removeObject(forKey: "nagare.explain.calllog")
+        experiencePrompt.reset()
+        GuidanceCenter.shared.resetAll()
         ResumePlaybackStore.clear()
 
         let fresh = UserProfile()

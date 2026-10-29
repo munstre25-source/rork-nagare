@@ -357,10 +357,14 @@ nonisolated struct UserDataAPI: Sendable {
 
     // MARK: Account data
 
-    /// POST /functions/v1/delete-my-data. Deletes the anonymous user; rows cascade.
-    func deleteMyData() async throws {
+    /// POST /functions/v1/delete-my-data. Deletes the anonymous user; rows cascade. The previous
+    /// analytics install id is sent too so its usage rows are removed with it.
+    func deleteMyData(installId: String? = nil) async throws {
+        var payload: [String: String] = [:]
+        if let installId { payload["install_id"] = installId }
+        let body = (try? JSONSerialization.data(withJSONObject: payload)) ?? Data("{}".utf8)
         let (_, status) = try await send(
-            method: "POST", path: "functions/v1/delete-my-data", body: Data("{}".utf8), retryingAuth: false
+            method: "POST", path: "functions/v1/delete-my-data", body: body, retryingAuth: false
         )
         if status == 401 { throw ImmersionAPIError.unauthorized }
         guard (200..<300).contains(status) else { throw ImmersionAPIError.server("delete \(status)") }

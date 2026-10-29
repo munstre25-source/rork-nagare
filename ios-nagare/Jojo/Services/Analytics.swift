@@ -1,6 +1,7 @@
 import Foundation
 
-/// Local event tracking (console + UserDefaults ring buffer), with a narrow Meta event allowlist.
+/// Event tracking: console + local ring buffer, first-party upload (see `AnalyticsUploader`;
+/// sanitized props only, respects `AnalyticsConsent`), and a narrow Meta event allowlist.
 ///
 /// Meta ad-SDK rules (do not violate in future call sites):
 /// - Only the RevenueCat Conversions API receives purchase/subscription events.
@@ -22,7 +23,16 @@ nonisolated enum Analytics {
         if log.count > maxEvents { log.removeFirst(log.count - maxEvents) }
         defaults.set(log, forKey: storageKey)
 
+        if AnalyticsConsent.isEnabled {
+            let date = Date()
+            Task { await AnalyticsUploader.shared.enqueue(name: event, props: props, at: date) }
+        }
+
         MetaAttribution.logAllowedEvent(named: event)
+
+        if event == "word_tapped" || event == "word_heard" {
+            Task { @MainActor in GuidanceCenter.shared.observe(event) }
+        }
     }
 }
 

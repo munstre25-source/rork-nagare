@@ -26,6 +26,7 @@ struct JojoApp: App {
             switch launch {
             case .ready(let session):
                 RootView()
+                    .background(ActivityTouchObserver().allowsHitTesting(false))
                     .environment(session.app)
                     .environment(session.purchases)
                     .modelContainer(session.container)
@@ -62,7 +63,8 @@ struct JojoApp: App {
                 )
             }
         }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            SessionTracker.shared.setPhase(phase)
             guard phase == .active, case .ready(let session) = launch else { return }
             Task {
                 await session.purchases.refreshCustomerInfo()

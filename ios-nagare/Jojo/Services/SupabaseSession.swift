@@ -105,6 +105,13 @@ actor SupabaseAuth {
         return session
     }
 
+    /// The current session if one already exists (refreshed when stale), never signing up.
+    /// Analytics uses this so measuring the app never creates a backend user by itself.
+    func existingSession() async -> AuthSession? {
+        guard cached != nil else { return nil }
+        return try? await validSession()
+    }
+
     /// Forget the session (after server-side deletion). The next call creates a new user.
     func reset() {
         cached = nil

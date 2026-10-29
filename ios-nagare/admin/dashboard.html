@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Jojo · Developer dashboard</title>
+<!--
+  Private developer dashboard. Open this file locally in a browser.
+  It reads live aggregates from the `admin-dashboard` Edge Function, gated by the ADMIN_TOKEN secret.
+  The token is kept only in this tab's sessionStorage. Nothing here is hardcoded data.
+-->
+<style>
+  :root { --bg:#0A0A0A; --card:#121212; --line:#262626; --text:#F2F2F2; --dim:#8A8A8A; --orange:#FF6B00; --green:#3DDC84; --pink:#FF5C8A; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Noto Sans JP", sans-serif; }
+  header { position:sticky; top:0; z-index:2; display:flex; gap:12px; align-items:center; padding:14px 24px; background:rgba(10,10,10,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0; letter-spacing:.2px; } header h1 b { color:var(--orange); }
+  header .sp { flex:1; }
+  select, input, button { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:7px 10px; font:inherit; }
+  button { cursor:pointer; } button.primary { background:var(--orange); border-color:var(--orange); color:#000; font-weight:600; }
+  main { padding:20px 24px 60px; display:grid; gap:16px; grid-template-columns:repeat(12, 1fr); max-width:1400px; margin:0 auto; }
+  .card { grid-column:span 12; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; overflow:auto; }
+  .s3 { grid-column:span 3; } .s4 { grid-column:span 4; } .s6 { grid-column:span 6; } .s8 { grid-column:span 8; }
+  @media (max-width:900px) { .s3,.s4,.s6,.s8 { grid-column:span 12; } }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin:0 0 10px; font-weight:600; }
+  .big { font-size:34px; font-weight:700; letter-spacing:-.5px; } .sub { color:var(--dim); font-size:12px; }
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:500; font-size:12px; } td.n { text-align:right; font-variant-numeric:tabular-nums; }
+  .bar { height:8px; border-radius:4px; background:var(--orange); min-width:2px; }
+  .bars { display:flex; align-items:flex-end; gap:3px; height:120px; } .bars div { flex:1; background:var(--orange); border-radius:3px 3px 0 0; min-height:2px; opacity:.9; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); color:var(--dim); }
+  .pill.neg { color:var(--pink); border-color:var(--pink); } .pill.pos { color:var(--green); border-color:var(--green); } .pill.held { color:var(--orange); border-color:var(--orange); }
+  .empty { color:var(--dim); padding:10px 0; } .err { color:var(--pink); }
+  #gate { max-width:420px; margin:12vh auto; padding:24px; } #gate input { width:100%; margin:10px 0; }
+  .msg { white-space:pre-wrap; max-width:520px; }
+</style>
+</head>
+<body>
+<div id="gate" class="card" hidden>
+  <h2>Jojo developer dashboard</h2>
+  <p class="sub">Enter the admin token (the ADMIN_TOKEN secret). It stays in this tab only.</p>
+  <input id="token" type="password" placeholder="Admin token" autocomplete="off">
+  <button class="primary" id="enter">Open dashboard</button>
+  <p id="gateErr" class="err"></p>
+</div>
+<div id="app" hidden>
+  <header>
+    <h1><b>Jojo</b> · Developer dashboard</h1>
+    <span class="sp"></span>
+    <span class="sub" id="generated"></span>
+    <select id="days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="365">365 days</option></select>
+    <button id="refresh">Refresh</button>
+    <button id="logout">Lock</button>
+  </header>
+  <main id="grid"></main>
+</div>
+<script>
+const SUPABASE_URL = "https://jacpmygzmsfiyltdsiyu.supabase.co";
+// Public anon key (safe to embed; it only passes the gateway — the admin token does the gating).
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphY3BteWd6bXNmaXlsdGRzaXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3Nzk4NDQsImV4cCI6MjEwNjM1NTg0NH0.myNHvzFyIqqsw6fGmF0lK0McSYvHug0KOdQsR4ve56A";
+const API = SUPABASE_URL + "/functions/v1/admin-dashboard";
+const STATUSES = ["under_review","planned","in_progress","completed","declined","hidden"];
+const $ = (s) => document.querySelector(s);
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v); }
+  for (const k of kids.flat()) n.append(k instanceof Node ? k : document.createTextNode(k == null ? "" : String(k)));
+  return n;
+}
+const fmtDur = (s) => { s = Math.round(Number(s) || 0); return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s"; };
+const pct = (a, b) => b ? Math.round((a / b) * 100) + "%" : "—";
+const date = (d) => d ? new Date(d).toLocaleString() : "";
+
+async function call(method, body) {
+  const days = $("#days").value;
+  const res = await fetch(method === "GET" ? API + "?days=" + days : API, {
+    method,
+    headers: { "x-admin-token": sessionStorage.getItem("jojo_admin") || "", "Authorization": "Bearer " + ANON_KEY, "apikey": ANON_KEY, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) { sessionStorage.removeItem("jojo_admin"); showGate("Token rejected."); throw new Error("unauthorized"); }
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+function card(cls, title, ...content) { return el("div", { class: "card " + cls }, el("h2", {}, title), ...content); }
+function stat(cls, title, value, sub) { return card(cls, title, el("div", { class: "big" }, value), el("div", { class: "sub" }, sub || "")); }
+function table(headers, rows, emptyText) {
+  if (!rows.length) return el("div", { class: "empty" }, emptyText || "No data yet.");
+  return el("table", {}, el("tr", {}, headers.map((h) => el("th", {}, h))), rows);
+}
+function funnel(items, base) {
+  const max = Math.max(1, base ?? 0, ...items.map((i) => i.users));
+  return table(["Step", "Users", "", "of first"], items.map((i) =>
+    el("tr", {}, el("td", {}, i.name), el("td", { class: "n" }, i.users),
+      el("td", { style: "width:40%" }, el("div", { class: "bar", style: "width:" + (i.users / max * 100) + "%" })),
+      el("td", { class: "n" }, pct(i.users, items[0]?.users)))));
+}
+
+async function load() {
+  const grid = $("#grid");
+  grid.replaceChildren(el("div", { class: "card" }, el("div", { class: "empty" }, "Loading live data…")));
+  let data;
+  try { data = await call("GET"); } catch (e) {
+    if (e.message !== "unauthorized") grid.replaceChildren(el("div", { class: "card err" }, "Could not load: " + e.message));
+    return;
+  }
+  const m = data.metrics || {};
+  $("#generated").textContent = "Updated " + date(m.generated_at);
+  const fb = m.feedback || {};
+  const s = m.sessions || {};
+  const series = m.dau_series || [];
+  const maxDau = Math.max(1, ...series.map((d) => d.users));
+
+  grid.replaceChildren(
+    stat("s3", "Daily active", m.dau ?? 0, "WAU " + (m.wau ?? 0) + " · MAU " + (m.mau ?? 0)),
+    stat("s3", "DAU / MAU", pct(m.dau, m.mau), "stickiness"),
+    stat("s3", "Avg active session", fmtDur(s.avg_active_seconds), "median " + fmtDur(s.median_active_seconds) + " · " + (s.per_user ?? 0) + " / user"),
+    stat("s3", "New installs", m.new_installs ?? 0, "in the last " + m.window_days + " days"),
+    card("s8", "Daily active users",
+      series.length ? el("div", { class: "bars" }, series.map((d) => el("div", { title: d.day + ": " + d.users, style: "height:" + (d.users / maxDau * 100) + "%" }))) : el("div", { class: "empty" }, "No sessions yet.")),
+    card("s4", "Feedback sentiment",
+      el("div", { class: "big" }, pct(fb.positive, (fb.positive || 0) + (fb.negative || 0))),
+      el("div", { class: "sub" }, (fb.positive || 0) + " enjoying · " + (fb.negative || 0) + " not great · " + (fb.total || 0) + " notes"),
+      el("div", { class: "sub" }, "Prompt shown " + (fb.prompt_shown || 0) + " · 👍 " + (fb.prompt_positive || 0) + " · 👎 " + (fb.prompt_negative || 0) + " · rating tapped " + (fb.review_requested || 0)),
+      table(["Category", "Notes"], Object.entries(fb.by_category || {}).map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", { class: "n" }, v))))),
+    card("s6", "Onboarding drop-off", funnel(m.onboarding_funnel || []), el("div", { class: "sub" }, "Completed onboarding: " + (m.onboarding_completed ?? 0))),
+    card("s6", "Core learning funnel", funnel(m.core_funnel || [])),
+    card("s6", "Retention cohorts (weekly)", table(["Cohort", "Installs", "Day 1", "Week 2", "Day 30"], (m.retention || []).map((r) =>
+      el("tr", {}, el("td", {}, r.cohort), el("td", { class: "n" }, r.size), el("td", { class: "n" }, pct(r.d1, r.size)), el("td", { class: "n" }, pct(r.w2, r.size)), el("td", { class: "n" }, pct(r.d30, r.size)))))),
+    card("s6", "Guided first session", funnel((m.guide_funnel || []).slice().sort((a, b) => (a.step ?? 0) - (b.step ?? 0)))),
+    card("s6", "Errors", table(["Event", "Code", "Count", "Last"], (m.errors || []).map((e) =>
+      el("tr", {}, el("td", {}, e.name), el("td", {}, e.code), el("td", { class: "n" }, e.n), el("td", { class: "sub" }, date(e.last_at)))), "No errors reported.")),
+    card("s3", "App versions", table(["Version", "Users"], (m.versions || []).map((v) => el("tr", {}, el("td", {}, v.v), el("td", { class: "n" }, v.users))))),
+    card("s3", "iOS versions", table(["iOS", "Users"], (m.os || []).map((v) => el("tr", {}, el("td", {}, v.v), el("td", { class: "n" }, v.users))))),
+    card("", "Feature board · moderation", moderationTable(data.moderation || [])),
+    card("", "Private feedback inbox", inboxTable(data.inbox || [])),
+  );
+}
+
+function moderationTable(posts) {
+  return table(["Request", "Votes", "Reports", "Status", ""], posts.map((p) => {
+    const sel = el("select", { onchange: async (e) => { await act({ action: "post_status", id: p.id, status: e.target.value }); } },
+      STATUSES.map((st) => { const o = el("option", { value: st }, st.replace("_", " ")); if (st === p.status) o.selected = true; return o; }));
+    return el("tr", {},
+      el("td", {}, el("div", {}, p.title, " ", p.held ? el("span", { class: "pill held" }, "held") : ""), el("div", { class: "sub msg" }, p.body || ""), el("div", { class: "sub" }, p.category + " · " + date(p.created_at))),
+      el("td", { class: "n" }, p.vote_count), el("td", { class: "n" }, p.report_count), el("td", {}, sel),
+      el("td", {}, el("button", { onclick: () => act({ action: "post_hold", id: p.id, held: !p.held }) }, p.held ? "Approve" : "Hold")));
+  }), "No board posts yet.");
+}
+
+function inboxTable(items) {
+  return table(["When", "Sentiment", "Category", "Message", "From", "Version", ""], items.map((i) =>
+    el("tr", {},
+      el("td", { class: "sub" }, date(i.created_at)),
+      el("td", {}, i.enjoyed === true ? el("span", { class: "pill pos" }, "enjoying") : i.enjoyed === false ? el("span", { class: "pill neg" }, "not great") : "—"),
+      el("td", {}, i.category || "—", el("div", { class: "sub" }, i.source || "")),
+      el("td", { class: "msg" }, i.message || ""),
+      el("td", { class: "sub" }, i.app_user_id),
+      el("td", { class: "sub" }, [i.app_version, i.os_version && "iOS " + i.os_version, i.device_class].filter(Boolean).join(" · ")),
+      el("td", {}, el("select", { onchange: (e) => act({ action: "item_status", id: i.id, status: e.target.value }) },
+        ["new", "reviewed", "done"].map((st) => { const o = el("option", { value: st }, st); if (st === i.status) o.selected = true; return o; }))))), "No private notes yet.");
+}
+
+async function act(body) { try { await call("POST", body); await load(); } catch (e) { if (e.message !== "unauthorized") alert("Action failed: " + e.message); } }
+function showGate(msg) { $("#app").hidden = true; $("#gate").hidden = false; $("#gateErr").textContent = msg || ""; }
+function showApp() { $("#gate").hidden = true; $("#app").hidden = false; load(); }
+
+$("#enter").onclick = () => { const t = $("#token").value.trim(); if (!t) return; sessionStorage.setItem("jojo_admin", t); showApp(); };
+$("#token").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#enter").click(); });
+$("#refresh").onclick = load; $("#days").onchange = load;
+$("#logout").onclick = () => { sessionStorage.removeItem("jojo_admin"); showGate(); };
+sessionStorage.getItem("jojo_admin") ? showApp() : showGate();
+</script>
+</body>
+</html>

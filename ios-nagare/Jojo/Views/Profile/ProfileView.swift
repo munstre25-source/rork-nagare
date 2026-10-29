@@ -16,6 +16,7 @@ struct ProfileView: View {
     @State private var showCustomerCenter: Bool = false
     @State private var restoreMessage: String?
     @State private var confirmDeleteAccount: Bool = false
+    @State private var showHelp: Bool = false
     #if DEBUG
     @State private var confirmReset: Bool = false
     @State private var marketingScript: MarketingScript?
@@ -121,6 +122,7 @@ struct ProfileView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(isPresented: $showHelp) { HelpView(onGiveFeedback: onGiveFeedback) }
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
         #if DEBUG
@@ -380,6 +382,8 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
             #endif
 
+            SettingsRow(symbol: "lightbulb", title: "How Jojo works") { showHelp = true }
+            Divider().padding(.leading, 52)
             if let onGiveFeedback {
                 SettingsRow(symbol: "bubble.left.and.bubble.right", title: "Feedback") {
                     onGiveFeedback()
@@ -422,6 +426,15 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
 
             settingsHeader("Legal & support")
+            HStack(spacing: Spacing.m) {
+                Image(systemName: "chart.bar.xaxis")
+                    .foregroundStyle(Color.designOrangeDeep)
+                    .frame(width: 28)
+                AnalyticsConsentToggle()
+            }
+            .padding(.horizontal, Spacing.l)
+            .frame(minHeight: 54)
+            Divider().padding(.leading, 52)
             if let support = StoreConstants.supportURL {
                 SettingsRow(symbol: "questionmark.circle", title: "Support") { openURL(support) }
                 Divider().padding(.leading, 52)

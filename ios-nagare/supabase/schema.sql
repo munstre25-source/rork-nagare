@@ -13,6 +13,16 @@
 --                        and are readable only by requesters (policy "requesters read their clips")
 --   claim_immersion_jobs(text,int,int) RPC (service_role only) + pg_cron 'immersion-worker' every minute
 -- All user rows cascade on auth.users delete (delete-my-data function).
+--
+-- Analytics + feedback v2 (source of truth: migrations/20261029140000_analytics_and_feedback_v2.sql):
+--   analytics_events     first-party events keyed by install_id (+ user_id when signed in); unique
+--                        (install_id, event_id) dedupe; no client access (RLS, no policies); 395-day cron purge
+--   analytics_sessions   per-install session summaries (active seconds only)
+--   analytics_ingest(jsonb) RPC (service_role) used by the analytics-ingest function
+--   feedback_items       private inbox (+ user_id, source, is_anonymous, app/os version, build, device_class)
+--   feedback_posts       public board (+ held, report_count, moderated_at); feedback_reports one per identity
+--   feedback_board_page / feedback_toggle_vote / feedback_report_post RPCs (service_role)
+--   admin_dashboard_metrics(int) RPC read by the token-gated admin-dashboard function
 
 create table if not exists public.clips (
   id text primary key,

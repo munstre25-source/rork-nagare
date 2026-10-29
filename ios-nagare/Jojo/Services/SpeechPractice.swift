@@ -11,7 +11,12 @@ enum SpeechListenResult: Sendable {
 /// Listens for a short Japanese utterance and returns what the recognizer heard.
 @MainActor
 enum SpeechPractice {
+    /// True while the microphone is open. Prompts and tips wait until speaking practice ends.
+    static private(set) var isListening = false
+
     static func listen(seconds: Double = 4.5) async -> SpeechListenResult {
+        isListening = true
+        defer { isListening = false }
         let status = await withCheckedContinuation { (cont: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
             SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0) }
         }

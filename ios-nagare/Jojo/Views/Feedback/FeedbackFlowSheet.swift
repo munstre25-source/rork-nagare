@@ -1,7 +1,9 @@
 import SwiftUI
 import StoreKit
 
-/// Soft "Are you enjoying Jojo?" → yes (continue / review) or no (bug / feature / general).
+/// One-time "How's your Jojo experience so far?" check-in.
+/// Positive → thanks, with an optional App Store rating. Negative → a short private note.
+/// It shows once, whatever the answer (closing it counts too).
 struct FeedbackFlowSheet: View {
     let onFinished: () -> Void
 
@@ -9,24 +11,42 @@ struct FeedbackFlowSheet: View {
     @Environment(\.requestReview) private var requestReview
     @Environment(\.dismiss) private var dismiss
 
-    @State private var phase: Phase = .enjoy
-    @State private var category: FeedbackCategory = .feature
+    @State private var phase: Phase = .ask
+    @State private var category: Category?
     @State private var message: String = ""
+    @State private var anonymous = false
     @State private var isSubmitting = false
     @State private var errorText: String?
+    @State private var answered = false
+    @State private var markedShown = false
+    @State private var showBoard = false
+    @State private var rated = false
+    @FocusState private var editorFocused: Bool
 
-    private enum Phase {
-        case enjoy, details, thanks
-    }
+    private enum Phase { case ask, positive, negative, sent }
 
-    private enum FeedbackCategory: String, CaseIterable, Identifiable {
-        case bug, feature, general
+    /// Display names map to the server's private-inbox categories.
+    enum Category: String, CaseIterable, Identifiable {
+        case bug, content, learning, feature, performance, general
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .bug: "Bug"
-            case .feature: "Feature"
-            case .general: "General"
+            case .bug: "Bugs"
+            case .content: "Content quality"
+            case .learning: "Learning experience"
+            case .feature: "Missing features"
+            case .performance: "Performance"
+            case .general: "Other"
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .bug: "ladybug"
+            case .content: "film.stack"
+            case .learning: "graduationcap"
+            case .feature: "sparkles"
+            case .performance: "gauge.with.dots.needle.33percent"
+            case .general: "ellipsis.bubble"
             }
         }
     }
@@ -35,170 +55,318 @@ struct FeedbackFlowSheet: View {
         NavigationStack {
             Group {
                 switch phase {
-                case .enjoy: enjoyPage
-                case .details: detailsPage
-                case .thanks: thanksPage
+                case .ask: askPage
+                case .positive: positivePage
+                case .negative: negativePage
+                case .sent: sentPage
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.canvas.ignoresSafeArea())
-            .navigationTitle("Feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") {
-                        app.deferFeedbackPrompt(days: 7)
-                        dismiss()
-                        onFinished()
-                    }
+                    Button(phase == .ask ? "Not now" : "Close") { close() }
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(phase == .negative ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showBoard) { FeedbackBoardView() }
+        .onAppear {
+            guard !markedShown else { return }
+            markedShown = true
+            app.markExperiencePromptShown()
+        }
+        .onDisappear {
+            if !answered { track("feedback_prompt_dismissed") }
+        }
     }
 
-    private var enjoyPage: some View {
+    // MARK: Ask
+
+    private var askPage: some View {
         VStack(spacing: Spacing.l) {
-            Spacer(minLength: Spacing.l)
-            Image(systemName: "face.smiling")
-                .font(.system(size: 44))
-                .foregroundStyle(Color.jojoOrange)
-            Text("Are you enjoying Jojo?")
-                .font(.title2.weight(.bold))
-                .multilineTextAlignment(.center)
-            Text("A quick check-in helps us make the feed better.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Spacing.l)
-            Spacer()
-            Button {
-                Task { await submitEnjoyingYes() }
-            } label: {
-                Text(isSubmitting ? "…" : "Yes, loving it")
+            Spacer(minLength: Spacing.m)
+            JojoMascot(height: 64, floats: false, pose: .book)
+                .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                Text("How's your Jojo experience so far?")
+                    .font(.title2.weight(.bold))
+                    .multilineTextAlignment(.center)
+                Text("One tap. It helps us decide what to fix and build next.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(PrimaryButtonStyle(isEnabled: !isSubmitting))
-            .disabled(isSubmitting)
-            Button {
-                withAnimation(.snappy) { phase = .details }
-            } label: {
-                Text("Not really")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .foregroundStyle(.primary)
-                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
+            .padding(.horizontal, Spacing.m)
+            Spacer(minLength: Spacing.m)
+            VStack(spacing: 12) {
+                Button {
+                    Task { await answerPositive() }
+                } label: {
+                    Label("I'm enjoying it", systemImage: "hand.thumbsup.fill")
+                }
+                .buttonStyle(PrimaryButtonStyle(isEnabled: !isSubmitting))
+                .disabled(isSubmitting)
+
+                Button {
+                    answered = true
+                    track("feedback_prompt_negative")
+                    withAnimation(.snappy) { phase = .negative }
+                } label: {
+                    Text("Not great yet")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundStyle(.primary)
+                        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: Radius.button, style: .continuous))
+                }
+                .buttonStyle(PressableStyle())
             }
             .padding(.bottom, Spacing.l)
         }
         .padding(.horizontal, Spacing.l)
     }
 
-    private var detailsPage: some View {
+    // MARK: Positive
+
+    private var positivePage: some View {
         VStack(spacing: Spacing.l) {
-            Text("What went wrong — or what should we build?")
-                .font(.title3.weight(.bold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: Spacing.s) {
-                ForEach(FeedbackCategory.allCases) { cat in
-                    Button {
-                        Haptics.selection()
-                        category = cat
-                    } label: {
-                        Text(cat.title)
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .frame(minHeight: 36)
-                            .foregroundStyle(category == cat ? Color.white : Color.primary)
-                            .background(
-                                category == cat ? Color.jojoOrange : Color.fieldFill,
-                                in: Capsule()
-                            )
-                    }
+            Spacer(minLength: Spacing.m)
+            Image(systemName: "heart.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(Color.jojoOrange)
+                .symbolEffect(.bounce, value: phase)
+                .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                Text("That means a lot. Thank you.")
+                    .font(.title3.weight(.bold))
+                    .multilineTextAlignment(.center)
+                Text("If you have a moment, a rating on the App Store helps other learners find Jojo.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, Spacing.m)
+            Spacer(minLength: Spacing.m)
+            VStack(spacing: 12) {
+                Button {
+                    rated = true
+                    track("review_request_tapped")
+                    requestReview()
+                } label: {
+                    Label(rated ? "Thanks for rating" : "Rate Jojo", systemImage: "star.fill")
                 }
-                Spacer(minLength: 0)
+                .buttonStyle(PrimaryButtonStyle(isEnabled: !rated))
+                .disabled(rated)
+
+                Button("Maybe later") { close() }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(minHeight: 44)
             }
-
-            TextField(
-                "It would be cool if… / I ran into a bug when…",
-                text: $message,
-                axis: .vertical
-            )
-            .lineLimit(4...8)
-            .padding(Spacing.m)
-            .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-
-            if let errorText {
-                Text(errorText).font(.footnote).foregroundStyle(.red)
-            }
-
-            Spacer(minLength: 0)
-
-            Button {
-                Task { await submitDetails() }
-            } label: {
-                Text(isSubmitting ? "Sending…" : "Give Feedback!")
-            }
-            .buttonStyle(PrimaryButtonStyle(isEnabled: !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSubmitting))
-            .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
+            .padding(.bottom, Spacing.l)
         }
-        .padding(Spacing.l)
+        .padding(.horizontal, Spacing.l)
     }
 
-    private var thanksPage: some View {
+    // MARK: Negative
+
+    private var trimmedMessage: String {
+        message.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSend: Bool { category != nil && !isSubmitting }
+
+    private var negativePage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.l) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Sorry it's not there yet")
+                        .font(.title3.weight(.bold))
+                    Text("What's getting in the way? Pick the closest one.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
+                    ForEach(Category.allCases) { cat in
+                        categoryChip(cat)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Tell us more (optional)")
+                        .font(.subheadline.weight(.semibold))
+                    ZStack(alignment: .topLeading) {
+                        if message.isEmpty {
+                            Text("What happened, or what would make Jojo better for you?")
+                                .font(.body)
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 8)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $message)
+                            .focused($editorFocused)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 110)
+                            .onChange(of: message) { _, new in
+                                if new.count > 2000 { message = String(new.prefix(2000)) }
+                            }
+                    }
+                    .padding(10)
+                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    Text("Please don't include personal details like your name or email.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: $anonymous) {
+                        Text("Send without my app ID")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .tint(Color.jojoOrange)
+                    Text(anonymous
+                         ? "We'll store the note without your app ID, so we won't be able to reply. App version and iOS version are still included to help reproduce bugs."
+                         : "Your note is private. It's linked to a random app ID, never your name, so we can reply in Messages with Jojo.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let errorText {
+                    Text(errorText)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+
+                Button {
+                    Task { await submitNegative() }
+                } label: {
+                    Text(isSubmitting ? "Sending…" : "Send feedback")
+                }
+                .buttonStyle(PrimaryButtonStyle(isEnabled: canSend))
+                .disabled(!canSend)
+
+                Button {
+                    editorFocused = false
+                    showBoard = true
+                } label: {
+                    Label("Vote on ideas from other learners", systemImage: "arrow.up.right")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .foregroundStyle(Color.jojoOrange)
+            }
+            .padding(Spacing.l)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    private func categoryChip(_ cat: Category) -> some View {
+        let selected = category == cat
+        return Button {
+            Haptics.selection()
+            category = cat
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: cat.symbol)
+                    .font(.subheadline)
+                    .frame(width: 20)
+                Text(cat.title)
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .background(
+                selected ? Color.jojoOrange : Color.fieldFill,
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // MARK: Sent
+
+    private var sentPage: some View {
         VStack(spacing: Spacing.l) {
-            Spacer()
+            Spacer(minLength: Spacing.m)
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.jojoOrange)
-            Text("Thanks — we read every note.")
-                .font(.title3.weight(.bold))
-                .multilineTextAlignment(.center)
-            Spacer()
-            Button("Done") {
-                dismiss()
-                onFinished()
+                .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                Text("Thanks. We read every note.")
+                    .font(.title3.weight(.bold))
+                    .multilineTextAlignment(.center)
+                Text(anonymous
+                     ? "Your feedback went straight to the team."
+                     : "If we have a question, we'll reply in Messages with Jojo (Profile → Feedback).")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .padding(.bottom, Spacing.l)
+            Spacer(minLength: Spacing.m)
+            Button("Done") { close() }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.bottom, Spacing.l)
         }
         .padding(.horizontal, Spacing.l)
     }
 
-    @MainActor
-    private func submitEnjoyingYes() async {
-        isSubmitting = true
-        defer { isSubmitting = false }
-        _ = await InsightsService.shared.submitFeedback(
-            enjoyed: true,
-            category: nil,
-            message: "Enjoying the app",
-            appUserId: app.purchases.appUserId
-        )
-        app.completeFeedbackPrompt()
-        track("feedback_enjoyed_yes")
-        requestReview()
-        phase = .thanks
+    // MARK: Actions
+
+    private func close() {
+        dismiss()
+        onFinished()
     }
 
     @MainActor
-    private func submitDetails() async {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+    private func answerPositive() async {
+        answered = true
+        isSubmitting = true
+        track("feedback_prompt_positive")
+        // The thanks screen doesn't wait on the network.
+        withAnimation(.snappy) { phase = .positive }
+        isSubmitting = false
+        let appUserId = app.purchases.appUserId
+        Task.detached {
+            _ = await InsightsService.shared.submitFeedback(
+                enjoyed: true,
+                category: nil,
+                message: "",
+                appUserId: appUserId,
+                source: "experience_prompt"
+            )
+        }
+    }
+
+    @MainActor
+    private func submitNegative() async {
+        guard let category else { return }
+        editorFocused = false
+        errorText = nil
         isSubmitting = true
         defer { isSubmitting = false }
         let ok = await InsightsService.shared.submitFeedback(
             enjoyed: false,
             category: category.rawValue,
-            message: trimmed,
-            appUserId: app.purchases.appUserId
+            message: trimmedMessage,
+            appUserId: app.purchases.appUserId,
+            source: "experience_prompt",
+            anonymous: anonymous
         )
-        if !ok {
-            errorText = "Couldn't send — try again in a moment."
+        guard ok else {
+            errorText = "Couldn't send. Check your connection and try again."
             return
         }
-        app.completeFeedbackPrompt()
-        track("feedback_enjoyed_no", props: ["category": category.rawValue])
-        withAnimation { phase = .thanks }
+        track("feedback_submitted", props: ["category": category.rawValue, "anonymous": anonymous ? "1" : "0"])
+        withAnimation(.snappy) { phase = .sent }
     }
 }

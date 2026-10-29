@@ -256,6 +256,12 @@ struct ExploreHomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Make a lesson from a YouTube video")
+        .coachTarget(.exploreImport)
+        .task {
+            try? await Task.sleep(for: .seconds(1.5))
+            GuidanceCenter.shared.requestTip(.exploreImport)
+        }
+        .onDisappear { GuidanceCenter.shared.withdrawTip(.exploreImport) }
     }
 
     private var importSubtitle: String {

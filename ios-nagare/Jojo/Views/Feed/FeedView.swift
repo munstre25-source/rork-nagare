@@ -26,6 +26,10 @@ struct FeedView: View {
     @State private var chromeHideTask: Task<Void, Never>?
     @State private var resumeSnapshot: (clipId: String, time: Double, line: Int, title: String, channel: String)?
     @State private var showResumeChip: Bool = false
+    /// When the current clip came on screen, to tell a real swipe from a quick flick past.
+    @State private var clipShownAt: Date = .now
+    /// Set right before code (not the learner) changes `currentId`.
+    @State private var programmaticClipChange: Bool = false
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -93,12 +97,6 @@ struct FeedView: View {
                         }
                     }
                 }
-                if let step = app.firstSessionCoach {
-                    FirstSessionWinOverlay(step: step) {
-                        app.skipFirstSessionCoach()
-                    }
-                    .zIndex(4)
-                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
@@ -119,11 +117,13 @@ struct FeedView: View {
             setup()
             scheduleWatchChromeHide()
             loadResumeChip()
+            startGuidedTourSoon()
         }
         .onChange(of: isActiveTab) { _, active in
             if active {
                 resumeIfPossible()
                 scheduleWatchChromeHide()
+                startGuidedTourSoon()
             } else {
                 coordinator.pause()
                 lookup.dismiss()
@@ -141,9 +141,10 @@ struct FeedView: View {
                 showWatchChrome()
             }
         }
-        .onChange(of: currentId) { _, newId in
+        .onChange(of: currentId) { oldId, newId in
             lookup.dismiss()
             revealWatchChrome()
+            noteClipChange(from: oldId)
             guard let newId, let clip = clips.first(where: { $0.id == newId }),
                   isActiveTab, quizClip == nil else { return }
             coordinator.activate(clip)
@@ -338,7 +339,8 @@ struct FeedView: View {
                             }
                             mirrorUpcoming()
                             advance()
-                        }
+                        },
+                        reportsCoachAnchors: true
                     )
                     .containerRelativeFrame(.vertical)
                     .id(clip.id)
@@ -404,6 +406,7 @@ struct FeedView: View {
         if !clips.contains(where: { $0.id == snap.clipId }), let clip = app.clip(id: snap.clipId) {
             clips.insert(clip, at: 0)
         }
+        programmaticClipChange = true
         withAnimation { currentId = snap.clipId }
         if let clip = clips.first(where: { $0.id == snap.clipId }) {
             coordinator.activate(clip, seekTime: snap.time)
@@ -430,6 +433,7 @@ struct FeedView: View {
         let ranked = app.forYouClips
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else {
             clips = ranked
+            programmaticClipChange = true
             currentId = clips.first?.id
             return
         }
@@ -450,7 +454,11 @@ struct FeedView: View {
         #else
         clips = ranked
         #endif
-        currentId = clips.first(where: { $0.id == currentId })?.id ?? clips.first?.id
+        let target = clips.first(where: { $0.id == currentId })?.id ?? clips.first?.id
+        if target != currentId {
+            programmaticClipChange = true
+            currentId = target
+        }
     }
 
     private func resumeIfPossible() {
@@ -478,6 +486,7 @@ struct FeedView: View {
     private func advance() {
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
         let next = clips.indices.contains(index + 1) ? clips[index + 1] : clips.first
+        programmaticClipChange = true
         withAnimation(.easeInOut(duration: 0.45)) { currentId = next?.id }
     }
 
@@ -488,6 +497,7 @@ struct FeedView: View {
         if !clips.contains(where: { $0.id == id }), let clip = app.clip(id: id) {
             clips.insert(clip, at: 0)
         }
+        programmaticClipChange = currentId != id
         withAnimation { currentId = id }
     }
 
@@ -513,6 +523,30 @@ struct FeedView: View {
         }
     }
 
+    /// A swipe counts toward the experience prompt only when the learner did it and had
+    /// actually looked at the previous clip (auto-advance, deep links and reloads don't count).
+    private func noteClipChange(from oldId: String?) {
+        let dwell = Date().timeIntervalSince(clipShownAt)
+        clipShownAt = .now
+        if programmaticClipChange {
+            programmaticClipChange = false
+            return
+        }
+        guard oldId != nil, isActiveTab, dwell >= FeedbackPromptConfig.minDwellSeconds else { return }
+        app.noteMeaningfulSwipe()
+        track("feed_swiped", props: ["dwell": String(Int(dwell.rounded()))])
+    }
+
+    /// First visit after onboarding: start the guided tour once the clip has settled.
+    private func startGuidedTourSoon() {
+        guard app.profile.onboardingCompleted, GuidanceCenter.shared.tourStep == nil else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            guard isActiveTab, app.profile.onboardingCompleted else { return }
+            GuidanceCenter.shared.startTourIfNeeded(legacyFinished: app.guidedTourLegacyFinished)
+        }
+    }
+
     private func scheduleWatchChromeHide() {
         chromeHideTask?.cancel()
         guard app.profile.fadeWatchChrome, isActiveTab else {
@@ -523,6 +557,8 @@ struct FeedView: View {
             try? await Task.sleep(for: .seconds(2.6))
             guard !Task.isCancelled else { return }
             guard coordinator.player?.isPlaying == true,
+                  // Keep the Vocab dock visible while the guided tour may point at it.
+                  GuidanceCenter.shared.tourStep == nil,
                   !lookup.isPresented,
                   quizClip == nil,
                   bornCard == nil,

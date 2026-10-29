@@ -20,13 +20,26 @@ actor InsightsService {
         _ = await send(method: "POST", path: "functions/v1/submit-acquisition", appUserId: appUserId, body: body)
     }
 
+    /// Private feedback note. `anonymous` stores no app or user id with the note (so it can't be
+    /// answered). App version, OS version and device class are attached so bugs can be reproduced.
     func submitFeedback(
         enjoyed: Bool?,
         category: String?,
         message: String,
-        appUserId: String
+        appUserId: String,
+        source: String = "manual",
+        anonymous: Bool = false,
+        deviceClass: String = "phone"
     ) async -> Bool {
-        var body: [String: Any] = ["message": message]
+        var body: [String: Any] = [
+            "message": message,
+            "source": source,
+            "anonymous": anonymous,
+            "app_version": AnalyticsContext.appVersion,
+            "build": AnalyticsContext.build,
+            "os_version": AnalyticsContext.osVersion,
+            "device_class": deviceClass,
+        ]
         if let enjoyed { body["enjoyed"] = enjoyed }
         if let category, !category.isEmpty { body["category"] = category }
         return await send(method: "POST", path: "functions/v1/submit-feedback", appUserId: appUserId, body: body) != nil
@@ -37,6 +50,30 @@ actor InsightsService {
             return nil
         }
         return try? Self.decoder.decode(FeedbackBoardList.self, from: data).posts
+    }
+
+    /// One page of the public board. `sort` is top / newest / trending.
+    func loadFeedbackBoardPage(sort: String, search: String, offset: Int, appUserId: String) async -> FeedbackBoardPage? {
+        var query = [
+            URLQueryItem(name: "sort", value: sort),
+            URLQueryItem(name: "offset", value: String(offset)),
+        ]
+        let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { query.append(URLQueryItem(name: "q", value: String(trimmed.prefix(80)))) }
+        guard let data = await send(
+            method: "GET", path: "functions/v1/feedback-board", appUserId: appUserId, query: query, body: nil
+        ) else { return nil }
+        return try? Self.decoder.decode(FeedbackBoardPage.self, from: data)
+    }
+
+    /// Flags a public post for review. Three independent reports hide it until a moderator looks.
+    func reportFeedbackPost(id: Int, reason: String, appUserId: String) async -> Bool {
+        await send(
+            method: "POST",
+            path: "functions/v1/feedback-board",
+            appUserId: appUserId,
+            body: ["action": "report", "id": id, "reason": reason]
+        ) != nil
     }
 
     func loadFeedbackPost(id: Int, appUserId: String) async -> FeedbackPostDetail? {
@@ -116,7 +153,10 @@ actor InsightsService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(Secrets.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(Secrets.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+        // The anonymous session (when one exists) lets the server verify who votes and posts;
+        // the legacy app id header stays for older servers and session-less installs.
+        let token = await SupabaseAuth.shared.existingSession()?.accessToken ?? Secrets.supabaseAnonKey
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(appUserId, forHTTPHeaderField: "x-app-user-id")
         do {
@@ -148,6 +188,14 @@ struct FeedbackPost: Identifiable, Codable, Hashable, Sendable {
     var commentCount: Int
     var createdAt: Date
     var voted: Bool
+    /// under_review / planned / in_progress / completed / declined. Optional for older payloads.
+    var status: String?
+}
+
+struct FeedbackBoardPage: Codable, Sendable {
+    var posts: [FeedbackPost]
+    var hasMore: Bool
+    var nextOffset: Int
 }
 
 struct FeedbackComment: Identifiable, Codable, Hashable, Sendable {

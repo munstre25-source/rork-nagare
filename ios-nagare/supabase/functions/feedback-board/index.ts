@@ -1,8 +1,15 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv, utcDayString } from "../_shared/env.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import { feedbackIdentity } from "../_shared/feedback.ts";
+import { BOARD_SORTS, cleanSearch, cleanText, REPORT_REASONS } from "../_shared/analytics.ts";
 
+/**
+ * Public feature-request board. Responses never include author ids, voter ids or IPs.
+ * Votes, counts, reports and moderation all run in SQL functions with the service role.
+ */
 const CATEGORIES = new Set(["bug", "feature", "general"]);
+const PAGE = 20;
 
 type Body = {
   action?: string;
@@ -10,6 +17,7 @@ type Body = {
   category?: string;
   title?: string;
   body?: string;
+  reason?: string;
 };
 
 type PostRow = {
@@ -17,9 +25,11 @@ type PostRow = {
   category: string;
   title: string;
   body: string;
+  status: string;
   vote_count: number;
   comment_count: number;
   created_at: string;
+  voted?: boolean;
 };
 
 function stamp(value: string): string {
@@ -34,6 +44,7 @@ function publicPost(row: PostRow, voted: boolean) {
     category: row.category,
     title: row.title,
     body: row.body,
+    status: row.status === "open" ? "under_review" : row.status,
     vote_count: row.vote_count,
     comment_count: row.comment_count,
     created_at: stamp(row.created_at),
@@ -41,21 +52,14 @@ function publicPost(row: PostRow, voted: boolean) {
   };
 }
 
-function clean(value: string, max: number): string {
-  return value.replace(/\s+/g, " ").trim().slice(0, max);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
 
   try {
     requireEnv("SUPABASE_URL");
-    const appUserId = (req.headers.get("x-app-user-id") ?? "").trim();
-    if (!appUserId || appUserId.length > 128) {
-      return errorResponse(400, "Missing or invalid x-app-user-id");
-    }
-
     const sb = serviceClient();
+    const identity = await feedbackIdentity(req, sb);
+    if (!identity) return errorResponse(400, "Missing identity");
 
     if (req.method === "GET") {
       const url = new URL(req.url);
@@ -63,10 +67,10 @@ Deno.serve(async (req) => {
       if (Number.isFinite(postId) && postId > 0) {
         const { data: post, error } = await sb
           .from("feedback_posts")
-          .select("id, category, title, body, vote_count, comment_count, created_at, status")
+          .select("id, category, title, body, status, vote_count, comment_count, created_at, held")
           .eq("id", postId)
           .maybeSingle();
-        if (error || !post || post.status === "hidden") return errorResponse(404, "Not found");
+        if (error || !post || post.status === "hidden" || post.held) return errorResponse(404, "Not found");
         const [{ data: comments }, { data: vote }] = await Promise.all([
           sb.from("feedback_comments")
             .select("id, body, created_at")
@@ -76,39 +80,36 @@ Deno.serve(async (req) => {
           sb.from("feedback_votes")
             .select("post_id")
             .eq("post_id", postId)
-            .eq("app_user_id", appUserId)
+            .eq("app_user_id", identity.key)
             .maybeSingle(),
         ]);
         return jsonResponse({
           post: publicPost(post as PostRow, Boolean(vote)),
-          comments: (comments ?? []).map((row) => ({
-            id: row.id,
-            body: row.body,
-            created_at: stamp(row.created_at),
-          })),
+          comments: (comments ?? []).map((row) => ({ id: row.id, body: row.body, created_at: stamp(row.created_at) })),
         });
       }
 
-      const { data, error } = await sb
-        .from("feedback_posts")
-        .select("id, category, title, body, vote_count, comment_count, created_at")
-        .neq("status", "hidden")
-        .order("vote_count", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(80);
+      // Older builds send no paging params and expect the top 80 in one response.
+      const legacy = !url.searchParams.has("sort") && !url.searchParams.has("offset");
+      const sortParam = url.searchParams.get("sort") ?? "top";
+      const sort = BOARD_SORTS.has(sortParam) ? sortParam : "top";
+      const offset = Math.max(0, Number(url.searchParams.get("offset") ?? "0") || 0);
+      const limit = legacy ? 50 : PAGE;
+      const { data, error } = await sb.rpc("feedback_board_page", {
+        p_viewer: identity.key,
+        p_sort: sort,
+        p_search: cleanSearch(url.searchParams.get("q")),
+        p_limit: limit + 1,
+        p_offset: offset,
+      });
       if (error) return errorResponse(500, "Failed to load board");
       const rows = (data ?? []) as PostRow[];
-      const ids = rows.map((row) => row.id);
-      const voted = new Set<number>();
-      if (ids.length > 0) {
-        const { data: votes } = await sb
-          .from("feedback_votes")
-          .select("post_id")
-          .eq("app_user_id", appUserId)
-          .in("post_id", ids);
-        for (const vote of votes ?? []) voted.add(vote.post_id as number);
-      }
-      return jsonResponse({ posts: rows.map((row) => publicPost(row, voted.has(row.id))) });
+      const page = rows.slice(0, limit);
+      return jsonResponse({
+        posts: page.map((row) => publicPost(row, row.voted === true)),
+        has_more: rows.length > limit,
+        next_offset: offset + page.length,
+      });
     }
 
     if (req.method !== "POST") return errorResponse(405, "Method not allowed");
@@ -116,31 +117,24 @@ Deno.serve(async (req) => {
     const body = await readJson<Body>(req);
     const action = (body.action ?? "").trim().toLowerCase();
 
-    const { data: allowed, error: rateErr } = await sb.rpc("increment_insight_rate", {
-      p_app_user_id: appUserId,
-      p_day_utc: utcDayString(),
-      p_kind: "board",
-      p_limit: 40,
-    });
-    if (rateErr) return errorResponse(500, "Rate limit check failed");
-    if (allowed !== true) return errorResponse(429, "Too many requests");
+    const day = utcDayString();
+    const [userGate, ipGate] = await Promise.all([
+      sb.rpc("increment_insight_rate", { p_app_user_id: identity.key, p_day_utc: day, p_kind: "board", p_limit: 60 }),
+      sb.rpc("increment_insight_rate", { p_app_user_id: identity.ipHash, p_day_utc: day, p_kind: "board_ip", p_limit: 200 }),
+    ]);
+    if (userGate.error || ipGate.error) return errorResponse(500, "Rate limit check failed");
+    if (userGate.data !== true || ipGate.data !== true) return errorResponse(429, "Too many requests");
 
     if (action === "create") {
       const category = (body.category ?? "").trim().toLowerCase();
-      const text = clean(body.body ?? "", 1000);
-      const title = clean(body.title ?? "", 80) || clean(text, 80);
+      const text = cleanText(body.body, 1000);
+      const title = cleanText(body.title, 80) || cleanText(text, 80);
       if (!CATEGORIES.has(category)) return errorResponse(400, "Pick bug, feature, or general");
       if (!text || !title) return errorResponse(400, "Tell us what you want");
       const { data, error } = await sb
         .from("feedback_posts")
-        .insert({
-          app_user_id: appUserId,
-          category,
-          title,
-          body: text,
-          status: "open",
-        })
-        .select("id, category, title, body, vote_count, comment_count, created_at")
+        .insert({ app_user_id: identity.key, category, title, body: text, status: "under_review" })
+        .select("id, category, title, body, status, vote_count, comment_count, created_at")
         .single();
       if (error || !data) return errorResponse(500, "Failed to post");
       return jsonResponse({ post: publicPost(data as PostRow, false) });
@@ -150,53 +144,38 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(postId) || postId <= 0) return errorResponse(400, "Invalid id");
 
     if (action === "vote") {
-      const { data: existing } = await sb
-        .from("feedback_votes")
-        .select("post_id")
-        .eq("post_id", postId)
-        .eq("app_user_id", appUserId)
-        .maybeSingle();
-      if (existing) {
-        const { error } = await sb
-          .from("feedback_votes")
-          .delete()
-          .eq("post_id", postId)
-          .eq("app_user_id", appUserId);
-        if (error) return errorResponse(500, "Failed to update vote");
-      } else {
-        const { error } = await sb.from("feedback_votes").insert({
-          post_id: postId,
-          app_user_id: appUserId,
-        });
-        if (error) return errorResponse(500, "Failed to update vote");
-      }
-      const { count, error: countErr } = await sb
-        .from("feedback_votes")
-        .select("post_id", { count: "exact", head: true })
-        .eq("post_id", postId);
-      if (countErr || count == null) return errorResponse(500, "Failed to count votes");
-      const { error: updateErr } = await sb
-        .from("feedback_posts")
-        .update({ vote_count: count })
-        .eq("id", postId)
-        .neq("status", "hidden");
-      if (updateErr) return errorResponse(500, "Failed to update vote");
-      return jsonResponse({ vote_count: count, voted: !existing });
+      const { data, error } = await sb.rpc("feedback_toggle_vote", { p_post: postId, p_voter: identity.key });
+      if (error) return errorResponse(error.code === "P0002" ? 404 : 500, "Failed to update vote");
+      const row = (Array.isArray(data) ? data[0] : data) as { vote_count: number; voted: boolean } | undefined;
+      if (!row) return errorResponse(500, "Failed to update vote");
+      return jsonResponse({ vote_count: row.vote_count, voted: row.voted });
+    }
+
+    if (action === "report") {
+      const reason = REPORT_REASONS.has(body.reason ?? "") ? body.reason! : "other";
+      const { data: reportGate } = await sb.rpc("increment_insight_rate", {
+        p_app_user_id: identity.key, p_day_utc: day, p_kind: "report", p_limit: 15,
+      });
+      if (reportGate !== true) return errorResponse(429, "Too many reports today");
+      const { error } = await sb.rpc("feedback_report_post", { p_post: postId, p_reporter: identity.key, p_reason: reason });
+      if (error) return errorResponse(500, "Failed to report");
+      return jsonResponse({ reported: true });
     }
 
     if (action === "comment") {
-      const text = clean(body.body ?? "", 500);
+      const text = cleanText(body.body, 500);
       if (!text) return errorResponse(400, "Write a comment");
       const { data: post } = await sb
         .from("feedback_posts")
         .select("id")
         .eq("id", postId)
         .neq("status", "hidden")
+        .eq("held", false)
         .maybeSingle();
       if (!post) return errorResponse(404, "Not found");
       const { data, error } = await sb
         .from("feedback_comments")
-        .insert({ post_id: postId, app_user_id: appUserId, body: text })
+        .insert({ post_id: postId, app_user_id: identity.key, body: text })
         .select("id, body, created_at")
         .single();
       if (error || !data) return errorResponse(500, "Failed to comment");
@@ -204,9 +183,7 @@ Deno.serve(async (req) => {
         .from("feedback_comments")
         .select("id", { count: "exact", head: true })
         .eq("post_id", postId);
-      if (count != null) {
-        await sb.from("feedback_posts").update({ comment_count: count }).eq("id", postId);
-      }
+      if (count != null) await sb.from("feedback_posts").update({ comment_count: count }).eq("id", postId);
       return jsonResponse({
         comment: { id: data.id, body: data.body, created_at: stamp(data.created_at) },
         comment_count: count ?? 0,

@@ -89,6 +89,7 @@ struct TapPopupCard: View {
                             .frame(width: 36, height: 36)
                     }
                     .accessibilityLabel("Play pronunciation")
+                    .coachTarget(.popupSpeaker, active: GuidanceCenter.shared.tourStep == .practice)
                 }
             }
 
@@ -152,6 +153,7 @@ struct TapPopupCard: View {
                         .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel("Play pronunciation")
+                    .coachTarget(.popupSpeaker, active: GuidanceCenter.shared.tourStep == .practice)
             }
             pitchChip(for: selection.token)
             conjugationStrip(for: selection.token)
