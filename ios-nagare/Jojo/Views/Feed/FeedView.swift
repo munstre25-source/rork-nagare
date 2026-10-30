@@ -376,7 +376,7 @@ struct FeedView: View {
             }
             // Align to each clip's actual page boundary. The viewport changes when the
             // dock and top chrome leave or return during maximize/minimize.
-            .scrollTargetBehavior(.viewAligned)
+            .scrollTargetBehavior(SingleClipPerSwipeBehavior())
             .scrollPosition(id: $currentId, anchor: .top)
             .scrollDisabled(lookup.isPresented || quizClip != nil)
             .scrollIndicators(.hidden)
@@ -630,5 +630,20 @@ struct FeedView: View {
                 app.feedChromeHidden = true
             }
         }
+    }
+}
+
+/// Keep each feed gesture to one clip, regardless of swipe velocity.
+private struct SingleClipPerSwipeBehavior: ScrollTargetBehavior {
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        let pageHeight = context.containerSize.height
+        guard pageHeight > 0 else { return }
+
+        let currentPage = Int((context.originalTarget.rect.minY / pageHeight).rounded())
+        let proposedPage = Int((target.rect.minY / pageHeight).rounded())
+        let lastPage = Int(max(0, (context.contentSize.height - pageHeight) / pageHeight).rounded(.down))
+        let onePageAtATime = min(max(proposedPage, currentPage - 1), currentPage + 1)
+        let destination = min(max(onePageAtATime, 0), lastPage)
+        target.rect.origin.y = CGFloat(destination) * pageHeight
     }
 }
