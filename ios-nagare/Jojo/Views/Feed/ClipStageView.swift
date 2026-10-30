@@ -442,10 +442,13 @@ struct ClipStageView: View {
                 ? 0.0
                 : (videoBottom > 0 ? min(videoBottom + 8, stageHeight) : stageHeight * 0.38)
             let bottomPad: CGFloat = onShorts
-                ? max(0, stageHeight - (shortsAnchor ?? stageHeight * 0.62))
+                ? max(0, stageHeight - (shortsAnchor ?? stageHeight * 0.7))
                 : (showsMaximizedLandscape ? 84 : 96)
             let zoneHeight = max(0, stageHeight - zoneTop)
-            let cardMaxHeight = max(0, zoneHeight - bottomPad)
+            let availableCardHeight = max(0, zoneHeight - bottomPad)
+            let cardMaxHeight = onShorts
+                ? min(availableCardHeight, stageHeight * 0.38)
+                : availableCardHeight
             ZStack(alignment: .bottom) {
                 // A whisper of dim marks the tap-to-close area, confined to the card's zone
                 // so the picture above stays untouched.
