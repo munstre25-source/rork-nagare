@@ -152,6 +152,10 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     var durationSec: Double
     var lines: [Line]
     var thumbnailGradient: [String]
+    /// Aspect of the actual YouTube video frame (not the subject inside a landscape upload).
+    var videoOrientation: String? = nil
+
+    var isPortraitVideo: Bool { videoOrientation == "portrait" }
 
     /// Clips produced by the catalog pipeline. Their lines were taken from the video itself.
     var hasVerifiedTranscript: Bool { id.hasPrefix("immersion-") }

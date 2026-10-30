@@ -26,6 +26,7 @@ export function hearSystemCatalog(language: CatalogLanguage): string {
 - Find one coherent, self-contained exchange in the supplied video window. Prefer 30–90 seconds; never exceed 90 seconds. Keep the full setup and response, and do not cut a sentence or turn in half.
 - Return between 2 and 20 spoken lines from that exchange, with enough context for a learner to understand what is happening. Skip music, titles, silence, and unrelated dialogue.
 - Include numeric "clip_start_sec" and "clip_end_sec" using absolute source-video timestamps. Start shortly before the exchange begins and end shortly after it finishes. The chosen clip must be at least 20 and at most 90 seconds long.
+- Include "video_orientation": "portrait" or "landscape" based on the source video's actual frame shape. A vertical scene letterboxed inside a 16:9 upload is landscape.
 - If this window has no complete, useful exchange in that duration, return {"lines":[]}.
 - Also include "difficulty": "Beginner" or "Intermediate" or "Advanced", judged only from the words and grammar you heard.`;
 }

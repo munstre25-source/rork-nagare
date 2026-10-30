@@ -144,6 +144,7 @@ export type ClipDraft = {
   lines: TimedLine[];
   difficulty: string;
   category: string | null;
+  videoOrientation: "portrait" | "landscape";
   timingMode: ClipTimingMode;
   timingConfidence: number;
   model: string;
@@ -204,7 +205,7 @@ export async function analyzeWindow(
           languageName(language)
         } exchange lasting ${MIN_CLIP}–${MAX_CLIP} seconds. Return absolute source-video timestamps (seconds from the start of the whole video) for clip_start_sec, clip_end_sec, every line, and every token. Token start/end must be when that word is actually heard; if you cannot hear a word's boundaries, still give your best estimate within its line. Include only dialogue inside the chosen boundaries. If there is no clearly audible ${
           languageName(language)
-        } speech, return {"lines":[]}.${categoryAsk}`,
+        } speech, return {"lines":[]}. Also return "video_orientation" as "portrait" or "landscape" based on the source video's actual frame shape. Classify a portrait Short as portrait; classify any 16:9 upload as landscape even if it contains a vertical video with black side bars, since the YouTube player frame itself is landscape.${categoryAsk}`,
       youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
       startSec: windowStart,
       endSec: windowEnd,
@@ -277,6 +278,7 @@ export async function analyzeWindow(
       lines: toClipRelative(enriched, clipStart),
       difficulty: gradeDifficulty(raw.difficulty, enriched, language),
       category: typeof raw.category === "string" && CATEGORIES.has(raw.category) ? raw.category : null,
+      videoOrientation: raw.video_orientation === "portrait" ? "portrait" : "landscape",
       timingMode: timing.mode,
       timingConfidence: timing.confidence,
       model,
@@ -396,6 +398,7 @@ export function clipRow(opts: {
     published: opts.published,
     channel_avatar_color: "#FF6B00",
     thumbnail_gradient: GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length],
+    video_orientation: draft.videoOrientation,
   };
   if (opts.withProvenance) {
     row.timing_mode = draft.timingMode;

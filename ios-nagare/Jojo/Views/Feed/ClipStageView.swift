@@ -43,8 +43,10 @@ struct ClipStageView: View {
         reportsCoachAnchors && coordinator.activeClipId == clip.id
     }
 
-    /// Landscape player that leaves room for karaoke (kiku demo2).
-    private var resolvedAspect: CGFloat { immersiveFeed ? 16 / 9 : videoAspect }
+    /// Portrait uploads use their native frame; landscape uploads keep the wide player.
+    private var resolvedAspect: CGFloat {
+        immersiveFeed && clip.isPortraitVideo ? 9 / 16 : (immersiveFeed ? 16 / 9 : videoAspect)
+    }
 
     /// Feed pages pass a resize control. Fullscreen and previews keep the fixed aspect.
     private var usesFlexibleVideo: Bool { immersiveFeed && onToggleVideoSize != nil }
@@ -53,12 +55,22 @@ struct ClipStageView: View {
         min(max(0, size.width - 24), 560)
     }
 
-    /// Resting feed size: full-width 16:9, capped so karaoke keeps the lower half (kikufeedlayout).
+    /// Keep enough space for karaoke while giving portrait clips a useful Shorts-sized frame.
     private func videoSize(in size: CGSize) -> CGSize {
         let column = columnWidth(in: size)
+        if clip.isPortraitVideo {
+            let height = min(max(240, size.height * 0.52), column * 16 / 9)
+            return CGSize(width: height * 9 / 16, height: height)
+        }
         let naturalHeight = column * 9 / 16
         let height = min(naturalHeight, max(180, size.height * 0.38))
         return CGSize(width: column, height: height)
+    }
+
+    private func expandedVideoSize(in size: CGSize) -> CGSize {
+        let column = columnWidth(in: size)
+        let height = min(max(260, size.height * 0.72), clip.isPortraitVideo ? column * 16 / 9 : size.height * 0.72)
+        return CGSize(width: clip.isPortraitVideo ? height * 9 / 16 : column, height: height)
     }
 
     var body: some View {
@@ -68,10 +80,11 @@ struct ClipStageView: View {
                     // Keep the same AVPlayer-backed hierarchy when resizing. Replacing it with
                     // a full-page view while a paged LazyVStack is animating can detach the
                     // player layer and crash UIKit.
-                    let largeVideoHeight = min(max(260, geo.size.height * 0.62), geo.size.height * 0.72)
+                    let restingSize = videoSize(in: geo.size)
+                    let expandedSize = expandedVideoSize(in: geo.size)
                     stage(
-                        videoHeight: videoExpanded ? largeVideoHeight : videoSize(in: geo.size).height,
-                        videoWidth: videoExpanded ? columnWidth(in: geo.size) : videoSize(in: geo.size).width,
+                        videoHeight: videoExpanded ? expandedSize.height : restingSize.height,
+                        videoWidth: videoExpanded ? expandedSize.width : restingSize.width,
                         columnWidth: columnWidth(in: geo.size)
                     )
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
@@ -125,7 +138,7 @@ struct ClipStageView: View {
             }
 
             // Video — max/min box lives on the bottom-trailing corner of the frame (kikufeedlayout).
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: immersiveFeed && clip.isPortraitVideo ? .bottom : .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
                     player: player,

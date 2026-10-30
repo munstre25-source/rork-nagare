@@ -91,6 +91,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
     var published: Bool?
     var channelAvatarColor: String?
     var thumbnailGradient: [String]?
+    var videoOrientation: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, category, difficulty, lines, published
@@ -100,6 +101,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
         case durationSec = "duration_sec"
         case channelAvatarColor = "channel_avatar_color"
         case thumbnailGradient = "thumbnail_gradient"
+        case videoOrientation = "video_orientation"
     }
 
     var clip: Clip {
@@ -116,7 +118,8 @@ nonisolated struct ClipRow: Decodable, Sendable {
             sourceStartSec: sourceStartSec ?? 0,
             durationSec: durationSec ?? (lines.last?.end ?? 20) + 1.5,
             lines: lines,
-            thumbnailGradient: thumbnailGradient ?? palette[index]
+            thumbnailGradient: thumbnailGradient ?? palette[index],
+            videoOrientation: videoOrientation
         )
     }
 }
