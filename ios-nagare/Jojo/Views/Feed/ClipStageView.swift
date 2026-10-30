@@ -231,6 +231,9 @@ struct ClipStageView: View {
                         onMinimize: onToggleVideoSize,
                         onPicture: false
                     )
+                    // The centered dictionary card floats over this zone while it is up.
+                    .opacity(isPopupHere ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: isPopupHere)
                 }
                 .padding(.horizontal, 12)
                 .frame(height: theaterWordsHeight(for: stageSize?.height ?? 620), alignment: .top)
@@ -345,6 +348,9 @@ struct ClipStageView: View {
             }
             .frame(width: card.width, height: videoHeight, alignment: .trailing)
             .padding(.trailing, 4)
+            // The centered dictionary card owns the page while it is up; the rail steps back.
+            .opacity(isPopupHere ? 0 : 1)
+            .animation(.easeInOut(duration: 0.2), value: isPopupHere)
         }
         .frame(width: card.width, height: card.height)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
@@ -439,11 +445,10 @@ struct ClipStageView: View {
         )
     }
 
-    /// Pages with the right rail keep it reachable beside the card, like Kiku.
-    private var popupHasRail: Bool { showsShortsStage || showsMaximizedLandscape }
-
-    /// Kiku docks the dictionary card in the space BELOW the picture: it never covers the
-    /// video. On shorts it docks just above the words panel, over the bottom of the picture.
+    /// Kiku's dictionary card floats horizontally CENTERED on every page. It docks in the
+    /// space BELOW the picture: it never covers the video, and on shorts it docks just above
+    /// the words panel, over the bottom of the picture. The card shows its whole text —
+    /// scrolling is only a safety net for extreme heights, never the default.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
@@ -459,7 +464,7 @@ struct ClipStageView: View {
             let zoneHeight = max(0, stageHeight - zoneTop)
             let availableCardHeight = max(0, zoneHeight - bottomPad)
             let cardMaxHeight = onShorts
-                ? min(availableCardHeight, stageHeight * 0.38)
+                ? min(availableCardHeight, stageHeight * 0.66)
                 : availableCardHeight
             ZStack(alignment: .bottom) {
                 // A whisper of dim marks the tap-to-close area, confined to the card's zone
@@ -482,9 +487,8 @@ struct ClipStageView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
         }
-        .padding(.leading, 12)
-        .padding(.trailing, popupHasRail ? 54 : 12)
-        .frame(maxWidth: .infinity, alignment: popupHasRail ? .leading : .center)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 

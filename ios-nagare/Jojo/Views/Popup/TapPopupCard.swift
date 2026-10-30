@@ -193,7 +193,7 @@ struct TapPopupCard: View {
 
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-            .fill(onDark && compact ? Color.black.opacity(0.92) : LearningInk.dictionaryPlate)
+            .fill(onDark && compact ? Color.black : LearningInk.dictionaryPlate)
             .shadow(
                 color: LearningInk.selected.opacity(0.35 * app.profile.glow.intensity),
                 radius: 8 + app.profile.glow.radius * 0.6,
@@ -475,7 +475,7 @@ struct TapPopupCard: View {
                 Text(context.contextualExplanation)
                     .font(.footnote)
                     .foregroundStyle(ink)
-                    .lineLimit(compact ? 4 : 8)
+                    .fixedSize(horizontal: false, vertical: true)
                 if !compact, let example = context.examples.first, !example.isEmpty {
                     Text(example)
                         .font(JojoFont.jp(14, relativeTo: .footnote))
@@ -487,7 +487,6 @@ struct TapPopupCard: View {
             Text(lineMeaning(surface: selection.token.surface, gloss: fallbackGloss))
                 .font(.footnote)
                 .fixedSize(horizontal: false, vertical: true)
-                .lineLimit(3)
         }
     }
 
