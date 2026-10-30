@@ -78,7 +78,8 @@ struct ClipStageView: View {
     /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
     private var showsMaximizedLandscape: Bool { usesFlexibleVideo && videoExpanded && !clip.isPortraitVideo }
 
-    /// Shorts are vertical: a 9:16 card fills the page and everything else lays on the picture.
+    /// Shorts are vertical: a 9:16 card fills the page; the picture stays clean on top
+    /// and the karaoke words sit on a solid panel below it (never on the picture).
     private var showsShortsStage: Bool { usesFlexibleVideo && clip.isPortraitVideo }
 
     var body: some View {
@@ -200,6 +201,9 @@ struct ClipStageView: View {
                             transcript(player: player, following: 1)
                                 .coachTarget(.transcript, active: isCoachPage)
                                 .modifier(TranscriptTopReader(top: $transcriptTop))
+                                // Natural height only: a greedy transcript would eat the
+                                // centering spacers and pin the video under the title.
+                                .fixedSize(horizontal: false, vertical: true)
                                 .transition(.opacity)
                         } else {
                             Color.clear.frame(height: 1)
@@ -253,7 +257,8 @@ struct ClipStageView: View {
         }
     }
 
-    // MARK: Shorts (Kiku): full-height vertical card, words and controls on the picture
+    // MARK: Shorts (Kiku): full-height vertical card, clean picture on top,
+    // words on a solid panel below — the picture is never covered by words.
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
@@ -299,18 +304,8 @@ struct ClipStageView: View {
                     .opacity(watchChromeHidden ? 0 : 1)
                     .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
                 Spacer(minLength: 0)
-                HStack(alignment: .bottom, spacing: 2) {
-                    Group {
-                        if showsShortsCaptions {
-                            transcript(player: player, onVideo: true)
-                                .coachTarget(.transcript, active: isCoachPage)
-                                .modifier(TranscriptTopReader(top: $transcriptTop))
-                                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        } else {
-                            Color.clear.frame(height: 1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Spacer(minLength: 0)
                     ShortsRail(
                         clip: clip,
                         player: player,
@@ -327,11 +322,33 @@ struct ClipStageView: View {
                     .opacity(watchChromeHidden ? 0.35 : 1)
                     .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
                 }
-                .padding(.leading, 10)
                 .padding(.trailing, 4)
-                ShortsFooter(clip: clip, player: player)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                .padding(.bottom, 2)
+
+                // The words live on a solid panel BELOW the picture — never on it (Kiku
+                // shorts). A long line scrolls inside the panel instead of covering the Short.
+                VStack(spacing: 0) {
+                    if showsShortsCaptions {
+                        ViewThatFits(in: .vertical) {
+                            transcript(player: player, onVideo: true)
+                            ScrollView(.vertical, showsIndicators: false) {
+                                transcript(player: player, onVideo: true)
+                            }
+                            .scrollBounceBehavior(.basedOnSize)
+                        }
+                        .coachTarget(.transcript, active: isCoachPage)
+                        .modifier(TranscriptTopReader(top: $transcriptTop))
+                        .padding(.horizontal, 10)
+                    } else {
+                        Color.clear.frame(height: 1)
+                    }
+                    ShortsFooter(clip: clip, player: player)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 2)
+                        .padding(.bottom, 8)
+                }
+                .frame(maxHeight: card.height * 0.58)
+                .background(Color.canvas)
             }
             .frame(width: card.width, height: card.height)
         }
@@ -385,7 +402,7 @@ struct ClipStageView: View {
     private var popupHasRail: Bool { showsShortsStage || showsMaximizedLandscape }
 
     /// Kiku docks the dictionary card in the space BELOW the picture: it never covers the
-    /// video. On shorts the picture is the page, so the card docks above the plated words.
+    /// video. On shorts it docks just above the words panel, over the bottom of the picture.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
