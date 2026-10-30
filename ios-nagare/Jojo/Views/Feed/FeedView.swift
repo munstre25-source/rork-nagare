@@ -45,29 +45,30 @@ struct FeedView: View {
             VStack(spacing: 0) {
                 if !videoExpanded {
                     VStack(spacing: 0) {
-                        if !app.profile.hideDailyGoalBar {
-                            DailyGoalBar()
-                                .padding(.top, 2)
+                        VStack(spacing: 0) {
+                            if !app.profile.hideDailyGoalBar {
+                                DailyGoalBar()
+                                    .padding(.top, 2)
+                            }
+                            if showResumeChip, let resumeSnapshot {
+                                ResumeChip(
+                                    title: resumeSnapshot.title,
+                                    channel: resumeSnapshot.channel,
+                                    time: resumeSnapshot.time,
+                                    onResume: { resumeFromSnapshot() },
+                                    onDismiss: {
+                                        showResumeChip = false
+                                        ResumePlaybackStore.clear()
+                                        self.resumeSnapshot = nil
+                                    }
+                                )
+                            }
                         }
-                        if showResumeChip, let resumeSnapshot {
-                            ResumeChip(
-                                title: resumeSnapshot.title,
-                                channel: resumeSnapshot.channel,
-                                time: resumeSnapshot.time,
-                                onResume: { resumeFromSnapshot() },
-                                onDismiss: {
-                                    showResumeChip = false
-                                    ResumePlaybackStore.clear()
-                                    self.resumeSnapshot = nil
-                                }
-                            )
-                        }
+                        .opacity(watchChromeVisible ? 1 : 0)
+                        .allowsHitTesting(watchChromeVisible)
                         header
                     }
-                    .opacity(watchChromeVisible ? 1 : 0)
-                    .allowsHitTesting(watchChromeVisible)
                     .environment(\.colorScheme, .dark)
-                    .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
                 }
@@ -277,9 +278,6 @@ struct FeedView: View {
             }
             .accessibilityLabel("Search clips by word")
         }
-        .opacity(watchChromeVisible ? 1 : 0)
-        .allowsHitTesting(watchChromeVisible)
-        .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
         .padding(.horizontal, 8)
         .padding(.bottom, 2)
     }
