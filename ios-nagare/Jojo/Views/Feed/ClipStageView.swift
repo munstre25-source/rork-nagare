@@ -14,7 +14,7 @@ struct ClipStageView: View {
     var showsRail: Bool = true
     /// Feed page: Kiku For You layout (video + action strip + karaoke).
     var immersiveFeed: Bool = false
-    /// Maximized fills the page with the video and lays the words on that picture.
+    /// Maximized grows the video while keeping the karaoke in its own section below.
     var videoExpanded: Bool = false
     var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
@@ -35,7 +35,7 @@ struct ClipStageView: View {
     @Environment(AppModel.self) private var app
     @AppStorage("jojo.wordSavedHintShown") private var hasShownWordSavedHint = false
     @State private var wordSavedHint: String?
-    /// Shorts: the captions button hides the words for a clean look at the picture.
+    /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
     @State private var transcriptTop: CGFloat = 0
@@ -80,7 +80,7 @@ struct ClipStageView: View {
     /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
     private var showsMaximizedLandscape: Bool { usesFlexibleVideo && videoExpanded && !clip.isPortraitVideo }
 
-    /// Portrait Shorts use a full-height picture with a compact karaoke overlay.
+    /// Portrait Shorts use a portrait player with a separate timer and karaoke section.
     private var showsShortsStage: Bool { usesFlexibleVideo && clip.isPortraitVideo }
 
     var body: some View {
@@ -171,9 +171,7 @@ struct ClipStageView: View {
             }
 
             if maximized {
-                // The karaoke controls are a bottom overlay, so this spacer centers the video
-                // in the available theater area instead of reserving space for the captions.
-                Spacer(minLength: 12)
+                Color.clear.frame(height: 8)
             } else {
                 Color.clear.frame(height: 18)
             }
@@ -203,14 +201,47 @@ struct ClipStageView: View {
                         .padding(8)
                         .transition(.opacity)
                 }
+
+                if immersiveFeed, maximized, let onToggleVideoSize, !isPopupHere {
+                    VideoSizeBox(expanded: true, action: onToggleVideoSize)
+                        .padding(8)
+                        .transition(.opacity)
+                }
             }
             .coachTarget(.video, active: isCoachPage)
             .modifier(FrameBottomReader(bottom: $videoBottom))
             .frame(maxWidth: .infinity)
 
-            if maximized { Spacer(minLength: 12) }
+            if maximized {
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
 
-            if !maximized {
+                HStack(alignment: .top, spacing: 4) {
+                    if showsShortsCaptions {
+                        transcript(player: player, following: 1)
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .modifier(TranscriptTopReader(top: $transcriptTop))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(.horizontal, 10)
+                            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    } else {
+                        Spacer(minLength: 0)
+                    }
+                    ShortsRail(
+                        clip: clip,
+                        player: player,
+                        showsCaptions: showsShortsCaptions,
+                        onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
+                        onInfo: onInfo,
+                        onMinimize: onToggleVideoSize,
+                        onPicture: false
+                    )
+                }
+                .padding(.horizontal, 12)
+                .frame(maxHeight: .infinity, alignment: .top)
+            } else {
                 if immersiveFeed {
                     ClipActionRow(
                         clip: clip,
@@ -222,6 +253,11 @@ struct ClipStageView: View {
                     )
                     .frame(width: columnWidth)
                     .frame(maxWidth: .infinity)
+
+                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                        .frame(width: columnWidth)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
                 }
 
                 transcript(player: player)
@@ -232,64 +268,19 @@ struct ClipStageView: View {
                     .clipped()
             }
         }
-        .overlay(alignment: .bottom) {
-            if maximized {
-                VStack(spacing: 0) {
-                    HStack(alignment: .bottom, spacing: 2) {
-                        Group {
-                            if showsShortsCaptions {
-                                transcript(player: player, following: 1)
-                                    .coachTarget(.transcript, active: isCoachPage)
-                                    .modifier(TranscriptTopReader(top: $transcriptTop))
-                                    .fixedSize(horizontal: false, vertical: true)
-                            } else {
-                                Color.clear.frame(height: 1)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .bottomLeading)
-                        ShortsRail(
-                            clip: clip,
-                            player: player,
-                            showsCaptions: showsShortsCaptions,
-                            onToggleCaptions: {
-                                withAnimation(.snappy) { showsShortsCaptions.toggle() }
-                            },
-                            onInfo: onInfo,
-                            onFullscreen: onFullscreen,
-                            onMinimize: onToggleVideoSize,
-                            onPicture: false
-                        )
-                    }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 4)
-                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 10)
-                }
-                .background(
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.72)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .allowsHitTesting(false)
-                )
-            }
-        }
     }
 
-    // MARK: Shorts (Kiku): full-height vertical card, clean picture on top,
-    // words on a solid panel below — the picture is never covered by words.
+    // MARK: Shorts: every mode keeps video, timer, and karaoke in separate stacked areas.
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
         let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
-        // Cover the card with a true 9:16 surface so the Short is never letterboxed or squeezed;
-        // the few points that overflow are trimmed evenly by the card's clip shape.
-        let cover: CGSize = card.width / max(card.height, 1) > 9 / 16
-            ? CGSize(width: card.width, height: card.width * 16 / 9)
-            : CGSize(width: card.height * 9 / 16, height: card.height)
-        return ZStack {
+        let maximized = videoExpanded
+        let videoHeight = min(card.height * 0.68, card.width * 16 / 9)
+        let videoWidth = card.width
+
+        return ZStack(alignment: .top) {
+            // Keep one player view in the hierarchy while its frame changes on maximize.
             ClipVideoView(
                 clip: clip,
                 player: player,
@@ -298,96 +289,90 @@ struct ClipStageView: View {
                 compactChrome: true,
                 onActivate: onActivate,
                 onFullscreen: onFullscreen,
-                fitsFrame: false,
+                fitsFrame: true,
                 watchChromeHidden: watchChromeHidden,
                 onRevealWatchChrome: onRevealWatchChrome,
                 onSkip: onSkip
             )
-            .frame(width: cover.width, height: cover.height)
-            .frame(width: card.width, height: card.height)
+            .frame(width: videoWidth, height: videoHeight)
+            .frame(width: card.width, height: card.height, alignment: .top)
+            .background(Color.black)
             .coachTarget(.video, active: isCoachPage)
 
-            // Scrims keep white chrome readable on bright footage. Keep them short and light:
-            // a heavy half-card wash reads as "blocked content" over the Short's own artwork.
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 96)
-                Spacer(minLength: 0)
-                LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: card.height * 0.3)
-            }
-            .allowsHitTesting(false)
-
-            VStack(spacing: 0) {
-                ShortsHeader(clip: clip)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
-                    .opacity(watchChromeHidden ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
-                Spacer(minLength: 0)
-                HStack {
-                    Spacer(minLength: 0)
-                    ShortsRail(
-                        clip: clip,
-                        player: player,
-                        showsCaptions: showsShortsCaptions,
-                        onToggleCaptions: {
-                            withAnimation(.snappy) { showsShortsCaptions.toggle() }
-                        },
-                        onInfo: onInfo,
-                        // In-feed theater for shorts: maximize hides the chrome, minimize
-                        // brings it back. Never opens another player screen.
-                        onMaximize: videoExpanded ? nil : onToggleVideoSize,
-                        onMinimize: videoExpanded ? onToggleVideoSize : nil
-                    )
-                    .opacity(watchChromeHidden ? 0.35 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
-                }
-                .padding(.trailing, 4)
-                .padding(.bottom, 2)
-
-                // Keep the Short full-screen. Karaoke is a compact overlay over the lower
-                // picture, rather than a large opaque panel that competes with the video.
-                VStack(spacing: 4) {
-                    if showsShortsCaptions {
-                        ScrollViewReader { proxy in
-                            ScrollView(.vertical, showsIndicators: false) {
-                                transcript(player: player, onVideo: true)
-                                    .coachTarget(.transcript, active: isCoachPage)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                            }
-                            .scrollBounceBehavior(.basedOnSize)
-                            .onChange(of: player?.currentLineIndex) { _, index in
-                                guard let index else { return }
-                                withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
-                            }
-                            .onAppear {
-                                if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
-                            }
-                        }
-                        .frame(maxHeight: card.height * 0.25)
-                        // Dock the dictionary to the transcript viewport, not the moving
-                        // karaoke content. Auto-scrolling lines otherwise move the popup anchor.
-                        .modifier(TranscriptTopReader(top: $transcriptTop))
-                    } else {
-                        Color.clear.frame(height: 1)
-                    }
-                    ShortsFooter(clip: clip, player: player)
+            VStack(spacing: 4) {
+                Color.clear.frame(height: videoHeight)
+                if showsShortsCaptions {
+                    shortsKaraoke(player: player, maxHeight: card.height * 0.25)
+                        .frame(maxWidth: .infinity, alignment: .top)
                         .padding(.horizontal, 12)
-                        .padding(.bottom, 10)
+                        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 }
-                .frame(maxHeight: card.height * 0.31, alignment: .bottom)
-                // The dock is a safe-area inset, but the paged feed can render beneath it.
-                // Lift the whole captions-and-timer group above the dock in the regular feed.
-                .padding(.bottom, immersiveFeed && !app.hidesMainTabBar ? 96 : 0)
+                // Kiku's vertical Shorts order: the karaoke section follows the video;
+                // the clip timer sits under that section.
+                ShortsFooter(clip: clip, player: player, onPicture: false)
+                    .frame(width: videoWidth)
+                    .padding(.top, 4)
+                    .padding(.bottom, 10)
+                Spacer(minLength: 0)
             }
             .frame(width: card.width, height: card.height)
+
+            ShortsHeader(clip: clip)
+                .frame(width: videoWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.top, 10)
+                .opacity(watchChromeHidden ? 0 : 1)
+
+            HStack {
+                Spacer(minLength: 0)
+                shortsRail(player: player, onPicture: false)
+            }
+            .frame(width: card.width, height: videoHeight, alignment: .trailing)
+            .padding(.trailing, 4)
         }
         .frame(width: card.width, height: card.height)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .frame(maxWidth: .infinity)
         .padding(.top, 2)
+    }
+
+    private func shortsRail(player: (any ClipPlayer)?, onPicture: Bool) -> some View {
+        ShortsRail(
+            clip: clip,
+            player: player,
+            showsCaptions: showsShortsCaptions,
+            onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
+            onInfo: onInfo,
+            onMaximize: videoExpanded ? nil : onToggleVideoSize,
+            onMinimize: videoExpanded ? onToggleVideoSize : nil,
+            onPicture: onPicture
+        )
+        .opacity(watchChromeHidden ? 0.35 : 1)
+        .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+    }
+
+    private func shortsKaraoke(
+        player: (any ClipPlayer)?,
+        maxHeight: CGFloat
+    ) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                transcript(player: player)
+                    .coachTarget(.transcript, active: isCoachPage)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .onChange(of: player?.currentLineIndex) { _, index in
+                guard let index else { return }
+                withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
+            }
+            .onAppear {
+                if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
+            }
+        }
+        .frame(maxHeight: maxHeight)
+        .modifier(TranscriptTopReader(top: $transcriptTop))
     }
 
     private func savedBanner(_ word: String) -> some View {
@@ -415,7 +400,7 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, onVideo: Bool = false, following: Int? = nil) -> some View {
+    private func transcript(player: (any ClipPlayer)?, following: Int? = nil) -> some View {
         TranscriptSection(
             clip: clip,
             player: player,
@@ -427,8 +412,7 @@ struct ClipStageView: View {
             windowMode: immersiveFeed,
             // Keep the active line plus the next two queued in every feed layout. As playback
             // advances, the window rolls forward so learners never need to scroll for lyrics.
-            followingLines: following ?? 2,
-            sitsOnVideo: onVideo
+            followingLines: following ?? 2
         )
     }
 
@@ -516,7 +500,7 @@ struct VideoSizeBox: View {
         .accessibilityHint(
             expanded
                 ? "Returns the video to its usual size, with the words underneath"
-                : "Enlarges the video so the words sit on the picture"
+                : "Enlarges the video while keeping the karaoke underneath"
         )
     }
 }
@@ -683,8 +667,6 @@ struct TranscriptSection: View {
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
-    /// Words paint directly on the picture instead of on a card under the video.
-    var sitsOnVideo: Bool = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -697,8 +679,7 @@ struct TranscriptSection: View {
             onlyCurrentLine: onlyCurrentLine,
             forceDenseAids: forceDenseAids,
             windowMode: windowMode,
-            followingLines: followingLines,
-            sitsOnVideo: sitsOnVideo
+            followingLines: followingLines
         )
     }
 }

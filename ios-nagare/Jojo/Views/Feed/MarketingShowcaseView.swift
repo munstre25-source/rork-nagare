@@ -82,7 +82,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .core:
             return [
                 "For You opens in \(accent.title) dark\(glow == .off ? "" : " neon")",
-                "Normal → maximum video so karaoke sits on the picture",
+                "Normal → maximum video while karaoke stays in its own section",
                 "Scroll through three clips",
                 "Tap a word — dictionary card, conjugation, paint ladder",
                 "Flashcard is born and flies to Vocab",
@@ -770,7 +770,7 @@ struct MarketingShowcaseView: View {
         try? await Task.sleep(for: .milliseconds(1500))
         guard !Task.isCancelled else { return }
 
-        // Normal → maximum so karaoke sits on the picture.
+        // Normal → maximum while karaoke stays in its own section below the video.
         withAnimation(.snappy) { demoVideoExpanded = true }
         try? await Task.sleep(for: .milliseconds(1700))
         guard !Task.isCancelled else { return }
