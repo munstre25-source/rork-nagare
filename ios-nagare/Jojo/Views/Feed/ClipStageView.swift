@@ -87,20 +87,12 @@ struct ClipStageView: View {
     /// Portrait Shorts use a full-height picture with a compact karaoke overlay.
     private var showsShortsStage: Bool { usesFlexibleVideo && clip.isPortraitVideo }
 
-    /// Landscape clips use the centered, full-page Shorts composition at every size.
-    private var showsLandscapeFeed: Bool { usesFlexibleVideo && !clip.isPortraitVideo }
-
     var body: some View {
         Group {
             if showsShortsStage {
                 GeometryReader { geo in
                     shortsStage(in: geo.size)
                         .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-                }
-            } else if showsLandscapeFeed {
-                GeometryReader { geo in
-                    landscapeFeedStage(in: geo.size)
-                        .frame(width: geo.size.width, height: geo.size.height)
                 }
             } else if usesFlexibleVideo {
                 GeometryReader { geo in
@@ -391,106 +383,6 @@ struct ClipStageView: View {
         .padding(.top, 2)
     }
 
-    /// Landscape video stays centered in the portrait feed, with learning text and controls
-    /// docked at the bottom like a Shorts player instead of stacking the video at the top.
-    private func landscapeFeedStage(in size: CGSize) -> some View {
-        let player = coordinator.player(for: clip)
-        let playerFrame = videoExpanded ? expandedVideoSize(in: size) : videoSize(in: size)
-        return ZStack(alignment: .center) {
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsControls: false,
-                showsRail: false,
-                compactChrome: true,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                onInfo: onInfo,
-                fitsFrame: false,
-                watchChromeHidden: watchChromeHidden,
-                onRevealWatchChrome: onRevealWatchChrome,
-                onSkip: onSkip
-            )
-            .modifier(ClipVideoFrame(width: playerFrame.width, height: playerFrame.height, aspect: 16 / 9))
-            .coachTarget(.video, active: isCoachPage)
-
-            // The two scrims protect the title and karaoke while leaving the video center clear.
-            VStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.5), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 110)
-                Spacer(minLength: 0)
-                LinearGradient(colors: [.clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: size.height * 0.38)
-            }
-            .allowsHitTesting(false)
-
-            VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    ShortsHeader(clip: clip)
-                    if let onInfo {
-                        Button(action: onInfo) {
-                            Image(systemName: "flag")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .accessibilityLabel("Report clip")
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-
-                Spacer(minLength: 0)
-
-                HStack(alignment: .bottom, spacing: 2) {
-                    if showsShortsCaptions {
-                        ScrollViewReader { proxy in
-                            ScrollView(.vertical, showsIndicators: false) {
-                                transcript(player: player, onVideo: true, following: 1)
-                                    .coachTarget(.transcript, active: isCoachPage)
-                                    .modifier(TranscriptTopReader(top: $transcriptTop))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                            }
-                            .scrollBounceBehavior(.basedOnSize)
-                            .onChange(of: player?.currentLineIndex) { _, index in
-                                guard let index else { return }
-                                withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
-                            }
-                            .onAppear {
-                                if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
-                            }
-                        }
-                        .frame(maxHeight: size.height * 0.28)
-                    }
-
-                    ShortsRail(
-                        clip: clip,
-                        player: player,
-                        showsCaptions: showsShortsCaptions,
-                        onToggleCaptions: {
-                            withAnimation(.snappy) { showsShortsCaptions.toggle() }
-                        },
-                        onInfo: onInfo,
-                        onMaximize: videoExpanded ? nil : onToggleVideoSize,
-                        onMinimize: videoExpanded ? onToggleVideoSize : nil
-                    )
-                    .opacity(watchChromeHidden ? 0.35 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
-                }
-                .padding(.leading, 10)
-                .padding(.trailing, 4)
-
-                ShortsFooter(clip: clip, player: player, onPicture: true, sourceMark: "YouTube")
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 10)
-            }
-            .frame(width: size.width, height: size.height)
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
     private func savedBanner(_ word: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
@@ -532,7 +424,7 @@ struct ClipStageView: View {
     }
 
     /// Pages with the right rail keep it reachable beside the card, like Kiku.
-    private var popupHasRail: Bool { showsShortsStage || showsLandscapeFeed || showsMaximizedLandscape }
+    private var popupHasRail: Bool { showsShortsStage || showsMaximizedLandscape }
 
     /// Kiku docks the dictionary card in the space BELOW the picture: it never covers the
     /// video. On shorts it docks just above the words panel, over the bottom of the picture.

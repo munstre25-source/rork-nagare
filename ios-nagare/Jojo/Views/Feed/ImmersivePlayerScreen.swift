@@ -30,7 +30,7 @@ struct ImmersivePlayerScreen: View {
                 videoExpanded: videoExpanded,
                 onToggleVideoSize: {
                     Haptics.selection()
-                    withAnimation(.snappy) { videoExpanded.toggle() }
+                    videoExpanded.toggle()
                 },
                 onActivate: { coordinator.activate(clip, startLine: startLine, loopLine: loopLine) },
                 onInfo: { infoClip = clip }

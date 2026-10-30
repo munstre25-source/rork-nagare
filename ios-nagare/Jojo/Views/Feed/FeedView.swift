@@ -305,7 +305,7 @@ struct FeedView: View {
                         videoExpanded: videoExpanded,
                         onToggleVideoSize: {
                             Haptics.selection()
-                            withAnimation(.snappy) { videoExpanded.toggle() }
+                            videoExpanded.toggle()
                         },
                         onActivate: { coordinator.activate(clip) },
                         onFullscreen: {

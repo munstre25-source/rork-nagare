@@ -78,7 +78,7 @@ struct ClipQueueScreen: View {
                             videoExpanded: videoExpanded,
                             onToggleVideoSize: {
                             Haptics.selection()
-                            withAnimation(.snappy) { videoExpanded.toggle() }
+                            videoExpanded.toggle()
                             },
                             onActivate: { show(clip.id) },
                             onInfo: { infoClip = clip }
