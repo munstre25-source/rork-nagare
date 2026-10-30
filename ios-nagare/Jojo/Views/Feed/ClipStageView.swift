@@ -447,8 +447,9 @@ struct ClipStageView: View {
 
     /// Kiku's dictionary card floats horizontally CENTERED on every page. It docks in the
     /// space BELOW the picture: it never covers the video, and on shorts it docks just above
-    /// the words panel, over the bottom of the picture. The card shows its whole text —
-    /// scrolling is only a safety net for extreme heights, never the default.
+    /// the words panel, over the bottom of the picture. The card hugs its content; when it
+    /// runs long, only the middle scrolls INSIDE the card — the mastery chips, Share and
+    /// page dots stay pinned and always visible.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
@@ -464,7 +465,7 @@ struct ClipStageView: View {
             let zoneHeight = max(0, stageHeight - zoneTop)
             let availableCardHeight = max(0, zoneHeight - bottomPad)
             let cardMaxHeight = onShorts
-                ? min(availableCardHeight, stageHeight * 0.66)
+                ? min(availableCardHeight, stageHeight * 0.62)
                 : availableCardHeight
             ZStack(alignment: .bottom) {
                 // A whisper of dim marks the tap-to-close area, confined to the card's zone
@@ -474,12 +475,10 @@ struct ClipStageView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
-                ScrollView(.vertical, showsIndicators: false) {
-                    TapPopupCard(compact: true)
-                        .frame(maxWidth: 420)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .scrollBounceBehavior(.basedOnSize)
+                TapPopupCard(
+                    compact: true,
+                    scrollableMiddleHeight: max(120, cardMaxHeight - 310)
+                )
                 .frame(maxWidth: 420)
                 .frame(maxHeight: cardMaxHeight, alignment: .bottom)
                 .coachTarget(.popupCard, active: isCoachPage)

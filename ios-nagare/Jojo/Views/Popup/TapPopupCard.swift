@@ -4,6 +4,10 @@ import SwiftUI
 struct TapPopupCard: View {
     /// Feed / Kiku-style: smaller card so the video stays visible around it.
     var compact: Bool = false
+    /// Feed mode: the middle of the card (sentence meaning, tabs) scrolls inside this
+    /// height cap while the word header and the "How well do you know it?" footer stay
+    /// pinned and always visible.
+    var scrollableMiddleHeight: CGFloat? = nil
     var onOpenClip: ((Clip, Int) -> Void)?
 
     @Environment(AppModel.self) private var app
@@ -11,6 +15,9 @@ struct TapPopupCard: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var showAllDefinitions: Bool = false
     @State private var badgeBump: Bool = false
+    /// Natural height of the scrollable middle, so the card hugs short content and only
+    /// scrolls when it exceeds the cap.
+    @State private var middleNaturalHeight: CGFloat?
 
     private var onDark: Bool { colorScheme == .dark }
     private var ink: Color { onDark ? .white : Color.primary }
@@ -127,22 +134,36 @@ struct TapPopupCard: View {
                 }
             }
 
-            pitchChip(for: selection.token)
-            conjugationStrip(for: selection.token)
+            // The middle scrolls inside its cap; the mastery chips below never leave the card.
+            let middle = VStack(alignment: .leading, spacing: 10) {
+                pitchChip(for: selection.token)
+                conjugationStrip(for: selection.token)
 
-            // Contextual “in this sentence” only — skip the fallback line that repeats the gloss.
-            if lookup.context != nil || lookup.isLoadingContext {
-                sentenceMeaning(fallbackGloss: gloss)
+                // Contextual “in this sentence” only — skip the fallback line that repeats the gloss.
+                if lookup.context != nil || lookup.isLoadingContext {
+                    sentenceMeaning(fallbackGloss: gloss)
+                }
+
+                quietTabRow
+                if lookup.tab == .flashcard {
+                    flashcardTab(selection: selection, explanation: explanation)
+                        .transition(.opacity)
+                } else if lookup.tab == .examples {
+                    examplesTab
+                        .transition(.opacity)
+                }
             }
 
-            quietTabRow
-            if lookup.tab == .flashcard {
-                flashcardTab(selection: selection, explanation: explanation)
-                    .transition(.opacity)
-            } else if lookup.tab == .examples {
-                examplesTab
-                    .transition(.opacity)
+            if let cap = scrollableMiddleHeight {
+                ScrollView(.vertical, showsIndicators: false) {
+                    middle
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { middleNaturalHeight = $0 }
+                }
+                .frame(height: middleNaturalHeight.map { min($0, cap) })
+            } else {
+                middle
             }
+
             paintRow(selection: selection)
             if let line = selection.clip.lines[safe: selection.lineIndex] {
                 UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
