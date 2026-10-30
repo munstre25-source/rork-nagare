@@ -100,7 +100,8 @@ struct ClipStageView: View {
                     stage(
                         videoHeight: videoExpanded ? expandedSize.height : restingSize.height,
                         videoWidth: videoExpanded ? expandedSize.width : restingSize.width,
-                        columnWidth: columnWidth(in: geo.size)
+                        columnWidth: columnWidth(in: geo.size),
+                        stageSize: geo.size
                     )
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
@@ -148,12 +149,12 @@ struct ClipStageView: View {
     }
 
     @ViewBuilder
-    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
+    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil) -> some View {
         let player = coordinator.player(for: clip)
-        restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth)
+        restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth, stageSize: stageSize)
     }
 
-    private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
+    private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil) -> some View {
         let maximized = showsMaximizedLandscape
         return VStack(spacing: 0) {
             if showsChannelRow {
@@ -178,7 +179,7 @@ struct ClipStageView: View {
 
             // Video: the max/min box sits on the frame's bottom-trailing corner while resting.
             // The video keeps its position in this tree in both sizes so the player never reattaches.
-            ZStack(alignment: maximized ? .center : .bottomTrailing) {
+            ZStack(alignment: .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -201,31 +202,23 @@ struct ClipStageView: View {
                         .padding(8)
                         .transition(.opacity)
                 }
-
-                if immersiveFeed, maximized, let onToggleVideoSize, !isPopupHere {
-                    VideoSizeBox(expanded: true, action: onToggleVideoSize)
-                        .padding(8)
-                        .transition(.opacity)
-                }
             }
             .coachTarget(.video, active: isCoachPage)
             .modifier(FrameBottomReader(bottom: $videoBottom))
             .frame(maxWidth: .infinity)
+            // Theater centers the picture in the space between the title row and the words
+            // (it never hugs the top); resting keeps it snug under the title like a feed card.
+            .frame(maxHeight: maximized ? .infinity : nil, alignment: maximized ? .center : .top)
 
             if maximized {
-                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                    .frame(width: columnWidth)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 6)
-
+                // Theater words: a plated zone of comfortable height with the rail beside it,
+                // then progress and the YouTube mark close the page at the very bottom.
                 HStack(alignment: .top, spacing: 4) {
                     if showsShortsCaptions {
-                        transcript(player: player, following: 1)
+                        shortsKaraoke(player: player, maxHeight: theaterWordsHeight(for: stageSize?.height ?? 620))
                             .coachTarget(.transcript, active: isCoachPage)
-                            .modifier(TranscriptTopReader(top: $transcriptTop))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            .padding(.horizontal, 10)
                             .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
                     } else {
                         Spacer(minLength: 0)
                     }
@@ -240,7 +233,13 @@ struct ClipStageView: View {
                     )
                 }
                 .padding(.horizontal, 12)
-                .frame(maxHeight: .infinity, alignment: .top)
+                .frame(height: theaterWordsHeight(for: stageSize?.height ?? 620), alignment: .top)
+
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+                    .padding(.bottom, 12)
             } else {
                 if immersiveFeed {
                     ClipActionRow(
@@ -253,11 +252,6 @@ struct ClipStageView: View {
                     )
                     .frame(width: columnWidth)
                     .frame(maxWidth: .infinity)
-
-                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                        .frame(width: columnWidth)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 4)
                 }
 
                 transcript(player: player)
@@ -276,7 +270,12 @@ struct ClipStageView: View {
         let player = coordinator.player(for: clip)
         let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
         let maximized = videoExpanded
-        let videoHeight = min(card.height * 0.68, card.width * 16 / 9)
+        // Resting: the picture owns the top band of the split card. Theater: the picture
+        // grows into the largest true 9:16 frame the card holds and the words dock onto
+        // its bottom as a solid floating panel — the words still never paint on the picture.
+        let videoHeight = maximized
+            ? min(card.height - 16, card.width * 16 / 9)
+            : min(card.height * 0.68, card.width * 16 / 9)
         let videoWidth = card.width
 
         return ZStack(alignment: .top) {
@@ -300,22 +299,39 @@ struct ClipStageView: View {
             .coachTarget(.video, active: isCoachPage)
 
             VStack(spacing: 4) {
-                Color.clear.frame(height: videoHeight)
+                // Words flow under the picture at rest; in theater the block docks onto
+                // the picture's bottom edge.
+                Color.clear.frame(height: maximized ? 0 : videoHeight)
                 if showsShortsCaptions {
-                    shortsKaraoke(player: player, maxHeight: card.height * 0.25)
+                    shortsKaraoke(player: player, maxHeight: card.height * (maximized ? 0.32 : 0.25))
                         .frame(maxWidth: .infinity, alignment: .top)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, maximized ? 10 : 12)
                         .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 }
                 // Kiku's vertical Shorts order: the karaoke section follows the video;
                 // the clip timer sits under that section.
-                ShortsFooter(clip: clip, player: player, onPicture: false)
+                ShortsFooter(clip: clip, player: player, onPicture: maximized)
                     .frame(width: videoWidth)
                     .padding(.top, 4)
-                    .padding(.bottom, 10)
-                Spacer(minLength: 0)
+                    .padding(.bottom, maximized ? 16 : 10)
+                if !maximized {
+                    Spacer(minLength: 0)
+                }
             }
-            .frame(width: card.width, height: card.height)
+            .frame(width: card.width, height: card.height, alignment: maximized ? .bottom : .top)
+            .background(alignment: .bottom) {
+                if maximized {
+                    // The light bottom wash (55%) keeps the white timer glyphs readable
+                    // over the footage in theater.
+                    LinearGradient(
+                        colors: [Color.black.opacity(0.55), .clear],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                    .frame(height: 150)
+                    .allowsHitTesting(false)
+                }
+            }
 
             ShortsHeader(clip: clip)
                 .frame(width: videoWidth, alignment: .leading)
@@ -325,7 +341,7 @@ struct ClipStageView: View {
 
             HStack {
                 Spacer(minLength: 0)
-                shortsRail(player: player, onPicture: false)
+                shortsRail(player: player, onPicture: maximized)
             }
             .frame(width: card.width, height: videoHeight, alignment: .trailing)
             .padding(.trailing, 4)
@@ -351,6 +367,12 @@ struct ClipStageView: View {
         .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
     }
 
+    /// Height of the words zone on the maximized landscape page: comfortable for the
+    /// current line plus its lookahead, never taller than about a third of the stage.
+    private func theaterWordsHeight(for stageHeight: CGFloat) -> CGFloat {
+        min(max(180, stageHeight * 0.34), 320)
+    }
+
     private func shortsKaraoke(
         player: (any ClipPlayer)?,
         maxHeight: CGFloat
@@ -358,6 +380,7 @@ struct ClipStageView: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 transcript(player: player)
+                    .fixedSize(horizontal: false, vertical: true)
                     .coachTarget(.transcript, active: isCoachPage)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
