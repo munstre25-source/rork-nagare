@@ -20,6 +20,9 @@ struct FeedView: View {
     @State private var pendingLoopLine: Int?
     // One full-screen clip per page. Feed controls overlay the video; maximize hides them.
     @State private var videoExpanded: Bool = false
+    /// Maximize shortcut: a swipe down brings the navigation dock back over the theater;
+    /// a swipe up tucks it away again — no need to minimize first.
+    @State private var maximizeNavShown: Bool = false
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
     @State private var chromeHideTask: Task<Void, Never>?
@@ -123,21 +126,40 @@ struct FeedView: View {
         .environment(coordinator)
         .environment(lookup)
         .simultaneousGesture(TapGesture().onEnded { revealWatchChrome() })
+        // Maximize shortcut: vertical swipes nudge the navigation in and out while the
+        // theater keeps playing. A swipe down shows the dock, up hides it again.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 28)
+                .onEnded { value in
+                    guard videoExpanded else { return }
+                    let dy = value.translation.height
+                    if dy > 48, !maximizeNavShown {
+                        Haptics.selection()
+                        withAnimation(.snappy) { maximizeNavShown = true }
+                    } else if dy < -48, maximizeNavShown {
+                        Haptics.selection()
+                        withAnimation(.snappy) { maximizeNavShown = false }
+                    }
+                }
+        )
         .onAppear {
             setup()
             scheduleWatchChromeHide()
             loadResumeChip()
             startGuidedTourSoon()
         }
-        // Maximized hands the whole screen to the video, so the floating dock steps away too.
+        // Maximized hands the whole screen to the video, so the floating dock steps away too
+        // (a swipe down brings it back as a shortcut).
         .onChange(of: videoExpanded) { _, expanded in
-            app.hidesMainTabBar = expanded && isActiveTab
+            if !expanded { maximizeNavShown = false }
+            syncDock()
         }
+        .onChange(of: maximizeNavShown) { _, _ in syncDock() }
         .onDisappear {
             if videoExpanded { app.hidesMainTabBar = false }
         }
         .onChange(of: isActiveTab) { _, active in
-            if videoExpanded { app.hidesMainTabBar = active }
+            syncDock()
             if active {
                 Task { await app.refreshRemoteClips() }
                 resumeIfPossible()
@@ -364,6 +386,12 @@ struct FeedView: View {
             .clipped()
         }
         .clipped()
+    }
+
+    /// The dock hides while the theater owns the screen, and returns for the swipe-down
+    /// shortcut so navigation is always one gesture away without minimizing.
+    private func syncDock() {
+        app.hidesMainTabBar = videoExpanded && isActiveTab && !maximizeNavShown
     }
 
     private func setup() {

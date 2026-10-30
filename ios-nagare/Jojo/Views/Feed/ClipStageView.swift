@@ -445,50 +445,31 @@ struct ClipStageView: View {
         )
     }
 
-    /// Kiku's dictionary card floats horizontally CENTERED on every page. It docks in the
-    /// space BELOW the picture: it never covers the video, and on shorts it docks just above
-    /// the words panel, over the bottom of the picture. The card hugs its content; when it
-    /// runs long, only the middle scrolls INSIDE the card — the mastery chips, Share and
-    /// page dots stay pinned and always visible.
+    /// Kiku's dictionary card floats at the DEAD CENTRE of the page on every feed layout —
+    /// over the picture and the words alike, with all corners of the card clear of the
+    /// edges. It hugs its content; when it runs long, only the middle scrolls INSIDE the
+    /// card, so the mastery chips, Share and page dots stay pinned and always visible.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
-            let onShorts = showsShortsStage
-            let shortsAnchor: CGFloat? = transcriptTop > 200
-                ? min(transcriptTop - 6, stageHeight) : nil
-            let zoneTop = onShorts
-                ? 0.0
-                : (videoBottom > 0 ? min(videoBottom + 8, stageHeight) : stageHeight * 0.38)
-            let bottomPad: CGFloat = onShorts
-                ? max(0, stageHeight - (shortsAnchor ?? stageHeight * 0.7))
-                : (showsMaximizedLandscape ? 84 : 96)
-            let zoneHeight = max(0, stageHeight - zoneTop)
-            let availableCardHeight = max(0, zoneHeight - bottomPad)
-            let cardMaxHeight = onShorts
-                ? min(availableCardHeight, stageHeight * 0.62)
-                : availableCardHeight
-            ZStack(alignment: .bottom) {
-                // A whisper of dim marks the tap-to-close area, confined to the card's zone
-                // so the picture above stays untouched.
+            ZStack {
+                // A whisper of dim marks the tap-to-close area across the whole page.
                 Color.black.opacity(0.05)
-                    .frame(height: onShorts ? stageHeight : zoneHeight)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
                 TapPopupCard(
                     compact: true,
-                    scrollableMiddleHeight: max(120, cardMaxHeight - 310)
+                    scrollableMiddleHeight: stageHeight * 0.38
                 )
                 .frame(maxWidth: 420)
-                .frame(maxHeight: cardMaxHeight, alignment: .bottom)
+                .frame(maxHeight: stageHeight * 0.85)
                 .coachTarget(.popupCard, active: isCoachPage)
-                .padding(.bottom, bottomPad)
             }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
         .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
     private func dismiss() {
