@@ -532,7 +532,11 @@ struct FeedView: View {
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
         let next = clips.indices.contains(index + 1) ? clips[index + 1] : clips.first
         programmaticClipChange = true
-        withAnimation(.easeInOut(duration: 0.45)) { currentId = next?.id }
+        // A scrolling animation exposes both adjacent pages while the viewport moves
+        // between them. Automatic advance should land on a single full video immediately.
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { currentId = next?.id }
     }
 
     private func openPendingClip() {
