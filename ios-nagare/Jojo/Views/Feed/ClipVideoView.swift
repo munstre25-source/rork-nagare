@@ -176,7 +176,7 @@ struct ClipVideoView: View {
             ZStack {
                 ClipPosterView(clip: clip, showsSymbol: false)
                 YouTubePlayerView(player: youtube)
-                    .opacity(youtube.isReady && !youtube.embedFailed ? 1 : 0.01)
+                    .opacity(youtube.hasRenderedVideo && !youtube.embedFailed ? 1 : 0.01)
             }
         } else {
             ClipPosterView(clip: clip, isAnimating: player?.isPlaying == true)

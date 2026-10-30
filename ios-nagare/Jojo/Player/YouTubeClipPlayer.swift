@@ -14,6 +14,10 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private(set) var isMuted = false
     private(set) var loopRange: ClosedRange<Double>?
     private(set) var isReady = false
+    /// True only once YouTube has actually rendered moving frames (state 1 or advancing time).
+    /// Until then the web view stays invisible, so YouTube's own pages — the bot check,
+    /// "Sign in", error slates — are never shown inside Jojo.
+    private(set) var hasRenderedVideo = false
     /// True after the IFrame API reports an embed/playability error.
     private(set) var embedFailed = false
     /// The last IFrame player error code (2, 5, 100, 101, 150…), for on-screen diagnostics.
@@ -120,6 +124,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         }
         apiLoaded = false
         isReady = false
+        hasRenderedVideo = false
         embedErrorCode = nil
         let attempt = Self.embedLadder[min(loadAttempt, Self.embedLadder.count - 1)]
         loadMode = attempt
@@ -435,7 +440,10 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if abs(value - lastReportedTime) > 0.05 {
                 lastReportedTime = value
                 lastProgressAt = Date()
-                if isReady { PlaybackHealth.noteSuccessfulPlayback() }
+                if isReady {
+                    hasRenderedVideo = true
+                    PlaybackHealth.noteSuccessfulPlayback()
+                }
             }
             let excerptTime = value - sourceStart
             let clock = PlaybackUI.note(
@@ -457,11 +465,17 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if value == 0, !didFinish { finish() }
             if value == 1 {
                 isPlaying = true
+                hasRenderedVideo = true
                 if !isMuted { runCommand("unMute") }
             }
         case "error":
             let code = value.map { Int($0) } ?? 0
             print("[YouTube] player error \(code) for \(clip.videoId) (attempt \(loadAttempt + 1)/\(Self.embedLadder.count))")
+            // "ready" often fires before the error; the player is not usable, so hide it
+            // again and let the ladder advance (it used to stall on a stale isReady).
+            isReady = false
+            hasRenderedVideo = false
+            let failedAttempt = loadAttempt
             if code == 100 {
                 // Removed video: definitive regardless of the embedder, no retry.
                 fail(code: code)
@@ -472,7 +486,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 ladderTask?.cancel()
                 ladderTask = Task { [weak self] in
                     try? await Task.sleep(for: .seconds(2))
-                    guard let self, !Task.isCancelled, !self.isReady else { return }
+                    guard let self, !Task.isCancelled, self.loadAttempt == failedAttempt, !self.isReady else { return }
                     self.loadAttempt += 1
                     self.embedFailed = false
                     self.isReady = false
