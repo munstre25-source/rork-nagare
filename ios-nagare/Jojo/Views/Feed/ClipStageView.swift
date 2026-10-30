@@ -34,7 +34,6 @@ struct ClipStageView: View {
     @Environment(WordLookupController.self) private var lookup
     @Environment(AppModel.self) private var app
     @AppStorage("jojo.wordSavedHintShown") private var hasShownWordSavedHint = false
-    @State private var dragOffset: CGFloat = 0
     @State private var wordSavedHint: String?
     /// Shorts: the captions button hides the words for a clean look at the picture.
     @State private var showsShortsCaptions: Bool = true
@@ -445,8 +444,8 @@ struct ClipStageView: View {
             let bottomPad: CGFloat = onShorts
                 ? max(0, stageHeight - (shortsAnchor ?? stageHeight * 0.62))
                 : (showsMaximizedLandscape ? 84 : 96)
-            let zoneHeight = max(140, stageHeight - zoneTop)
-            let cardMaxHeight = max(180, zoneHeight - bottomPad)
+            let zoneHeight = max(0, stageHeight - zoneTop)
+            let cardMaxHeight = max(0, zoneHeight - bottomPad)
             ZStack(alignment: .bottom) {
                 // A whisper of dim marks the tap-to-close area, confined to the card's zone
                 // so the picture above stays untouched.
@@ -455,23 +454,16 @@ struct ClipStageView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
-                TapPopupCard(compact: true)
-                    .frame(maxWidth: 420)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxHeight: cardMaxHeight, alignment: .bottom)
-                    .offset(y: max(0, dragOffset))
-                    .gesture(
-                        DragGesture(minimumDistance: 12)
-                            .onChanged { value in dragOffset = value.translation.height }
-                            .onEnded { value in
-                                if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                    dismiss()
-                                }
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
-                            }
-                    )
-                    .coachTarget(.popupCard, active: isCoachPage)
-                    .padding(.bottom, bottomPad)
+                ScrollView(.vertical, showsIndicators: false) {
+                    TapPopupCard(compact: true)
+                        .frame(maxWidth: 420)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(maxWidth: 420)
+                .frame(maxHeight: cardMaxHeight, alignment: .bottom)
+                .coachTarget(.popupCard, active: isCoachPage)
+                .padding(.bottom, bottomPad)
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
         }

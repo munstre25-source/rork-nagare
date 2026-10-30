@@ -89,9 +89,9 @@ struct MainTabView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            // The feed's focus timer hides navigation while a clip is playing and restores it
-            // on interaction. Other tabs keep the dock pinned; maximize can hide it explicitly.
-            if !app.hidesMainTabBar && (tab != .feed || !app.feedChromeHidden) {
+            // Feed focus may fade its video controls, but navigation stays available.
+            // Only explicit maximize or a pushed screen hides the dock.
+            if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
