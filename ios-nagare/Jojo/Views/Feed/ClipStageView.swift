@@ -378,6 +378,9 @@ struct ClipStageView: View {
                         .padding(.bottom, 10)
                 }
                 .frame(maxHeight: card.height * 0.31, alignment: .bottom)
+                // The dock is a safe-area inset, but the paged feed can render beneath it.
+                // Lift the whole captions-and-timer group above the dock in the regular feed.
+                .padding(.bottom, immersiveFeed && !app.hidesMainTabBar ? 96 : 0)
             }
             .frame(width: card.width, height: card.height)
         }

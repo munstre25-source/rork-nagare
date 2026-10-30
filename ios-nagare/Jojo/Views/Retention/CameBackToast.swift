@@ -5,6 +5,9 @@ struct CameBackToast: View {
     let surface: String
     let gloss: String
     var onReview: () -> Void
+    var onDismiss: () -> Void
+
+    @GestureState private var dragOffset: CGFloat = 0
 
     var body: some View {
         HStack(spacing: 12) {
@@ -31,6 +34,15 @@ struct CameBackToast: View {
                 .padding(.horizontal, 12)
                 .frame(minHeight: 32)
                 .background(Color.sakuraButton, in: Capsule())
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss word reminder")
         }
         .padding(14)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -39,6 +51,18 @@ struct CameBackToast: View {
                 .strokeBorder(Color.sakuraPink.opacity(0.45), lineWidth: 1)
         )
         .padding(.horizontal, Spacing.l)
+        .offset(y: dragOffset)
+        .gesture(
+            DragGesture(minimumDistance: 12)
+                .updating($dragOffset) { value, state, _ in
+                    state = value.translation.height
+                }
+                .onEnded { value in
+                    if abs(value.translation.height) > 36 {
+                        onDismiss()
+                    }
+                }
+        )
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 }

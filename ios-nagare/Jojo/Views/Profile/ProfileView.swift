@@ -7,6 +7,7 @@ import StoreKit
 struct ProfileView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
+    @AppStorage("jojo.quickChecksEnabled") private var quickChecksEnabled = true
     @Environment(\.marketingScrollsToTheme) private var marketingScrollsToTheme
     @Environment(\.marketingProfileAnchor) private var marketingProfileAnchor
     @Query private var words: [SavedWord]
@@ -393,6 +394,11 @@ struct ProfileView: View {
                             get: { app.profile.fadeWatchChrome },
                             set: { app.setFadeWatchChrome($0) }
                            ))
+            Divider().padding(.leading, 52)
+
+            settingsHeader("Playback")
+            settingsToggle(symbol: "checkmark.message", title: "Pause for quick checks after videos",
+                           isOn: $quickChecksEnabled)
             Divider().padding(.leading, 52)
 
             #if DEBUG

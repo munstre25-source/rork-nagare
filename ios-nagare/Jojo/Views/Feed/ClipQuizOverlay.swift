@@ -99,6 +99,7 @@ nonisolated enum ClipQuizBuilder {
 struct ClipQuizOverlay: View {
     let clip: Clip
     let onFinished: () -> Void
+    var onDisableQuickChecks: () -> Void = {}
 
     @Environment(AppModel.self) private var app
     @State private var questions: [ClipQuizQuestion] = []
@@ -115,6 +116,13 @@ struct ClipQuizOverlay: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Spacer()
+                    Button("Turn off") {
+                        Haptics.selection()
+                        onDisableQuickChecks()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(minHeight: 44)
                     Button("Skip") {
                         Haptics.selection()
                         onFinished()

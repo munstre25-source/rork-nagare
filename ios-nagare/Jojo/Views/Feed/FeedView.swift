@@ -25,6 +25,7 @@ struct FeedView: View {
     @State private var chromeHideTask: Task<Void, Never>?
     @State private var resumeSnapshot: (clipId: String, time: Double, line: Int, title: String, channel: String)?
     @State private var showResumeChip: Bool = false
+    @AppStorage("jojo.quickChecksEnabled") private var quickChecksEnabled = true
     /// When the current clip came on screen, to tell a real swipe from a quick flick past.
     @State private var clipShownAt: Date = .now
     /// Set right before code (not the learner) changes `currentId`.
@@ -40,10 +41,18 @@ struct FeedView: View {
                 .ignoresSafeArea(edges: .top)
 
             if let quizClip {
-                ClipQuizOverlay(clip: quizClip) {
-                    withAnimation(.snappy) { self.quizClip = nil }
-                    advance()
-                }
+                ClipQuizOverlay(
+                    clip: quizClip,
+                    onFinished: {
+                        withAnimation(.snappy) { self.quizClip = nil }
+                        advance()
+                    },
+                    onDisableQuickChecks: {
+                        quickChecksEnabled = false
+                        withAnimation(.snappy) { self.quizClip = nil }
+                        advance()
+                    }
+                )
                 .transition(.opacity)
                 .zIndex(2)
             }
@@ -55,19 +64,17 @@ struct FeedView: View {
                         onReview: {
                             app.dismissCameBackToast()
                             app.pendingDeepLink = .review
-                        }
+                        },
+                        onDismiss: { withAnimation(.snappy) { app.dismissCameBackToast() } }
                     )
                     .padding(.top, 8)
                     Spacer()
                 }
                 .zIndex(3)
-                .onAppear {
-                    Task {
-                        try? await Task.sleep(for: .seconds(4.5))
-                        if app.cameBackToast?.id == toast.id {
-                            withAnimation(.snappy) { app.dismissCameBackToast() }
-                        }
-                    }
+                .task(id: toast.id) {
+                    try? await Task.sleep(for: .seconds(4.5))
+                    guard !Task.isCancelled, app.cameBackToast?.id == toast.id else { return }
+                    withAnimation(.snappy) { app.dismissCameBackToast() }
                 }
             }
 
@@ -477,7 +484,8 @@ struct FeedView: View {
     private func handleClipFinished() {
         if let id = currentId { app.markClipFinished(id) }
         mirrorUpcoming()
-        guard quizClip == nil,
+        guard quickChecksEnabled,
+              quizClip == nil,
               let id = currentId,
               let clip = clips.first(where: { $0.id == id }),
               !ClipQuizBuilder.questions(for: clip, count: 1).isEmpty else {
