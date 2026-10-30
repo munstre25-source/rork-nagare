@@ -35,6 +35,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
     @ObservationIgnored private var autoRetryTask: Task<Void, Never>?
     @ObservationIgnored private var autoRetries = 0
+    @ObservationIgnored private var ladderTask: Task<Void, Never>?
     /// Prewarmed (next-clip) players load without autoplaying: two simultaneous playback
     /// sessions from one embedder look abusive to YouTube and can trigger error 150 storms.
     @ObservationIgnored private var autoplaysOnLoad = true
@@ -366,6 +367,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     func teardown() {
         loadWatchdog?.cancel()
         autoRetryTask?.cancel()
+        ladderTask?.cancel()
         pause()
         onFinished = nil
         onWatchTick = nil
@@ -465,12 +467,19 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 fail(code: code)
             } else if loadAttempt + 1 < Self.embedLadder.count {
                 // 101/150 can be embedder-identity or WebKit quirks, not the video: try the
-                // next loading strategy before blaming the clip.
-                loadAttempt += 1
-                embedFailed = false
-                isReady = false
-                didFinish = false
-                loadEmbed(in: webView)
+                // next loading strategy before blaming the clip. Pacing matters — reloading
+                // embeds in a burst looks abusive to YouTube and deepens any block.
+                ladderTask?.cancel()
+                ladderTask = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(2))
+                    guard let self, !Task.isCancelled, !self.isReady else { return }
+                    self.loadAttempt += 1
+                    self.embedFailed = false
+                    self.isReady = false
+                    self.didFinish = false
+                    self.loadWatchdog?.cancel()
+                    self.loadEmbed(in: self.webView)
+                }
             } else {
                 fail(code: code)
             }
