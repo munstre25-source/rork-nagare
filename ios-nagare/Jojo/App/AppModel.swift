@@ -291,6 +291,13 @@ final class AppModel {
             if let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
             return false
         }
+        // The learner catalog is 8–40 second excerpts; anything longer breaks the quick
+        // scroll. Bundled clips predate the rule and stay as they are.
+        merged.removeAll { clip in
+            clip.hasRealVideo
+                && !seedClips.contains(where: { $0.id == clip.id })
+                && !(8...40.5).contains(clip.durationSec)
+        }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
         clips = verified.isEmpty ? merged : verified

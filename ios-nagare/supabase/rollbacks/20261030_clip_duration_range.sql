@@ -1,0 +1,9 @@
+-- 2026-10-30: enforce the 8–40s learner clip range on the published catalog.
+-- Paired code change: _shared/immersion.ts MIN_CLIP 8 / MAX_CLIP 40 (with a hard clamp),
+-- fill-catalog minSpokenSec 6, source filter 12–180s; AppModel drops remote clips out of range.
+-- Forward (already applied via the management SQL API):
+--   UPDATE clips SET published = false WHERE published AND (duration_sec > 40 OR duration_sec < 8);
+--   UPDATE sori_clips SET published = false WHERE published AND (duration_sec > 40 OR duration_sec < 8);
+-- Rollback (re-publishes the 3 ja + 2 ko clips retired by the forward pass):
+--   UPDATE clips SET published = true WHERE NOT published AND duration_sec BETWEEN 8 AND 90;
+--   UPDATE sori_clips SET published = true WHERE NOT published AND duration_sec BETWEEN 8 AND 90;

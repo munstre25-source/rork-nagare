@@ -186,8 +186,8 @@ export type AnalyzeOutcome =
 
 export type AnalyzeStage = "transcribing" | "validating" | "enriching";
 
-const MIN_CLIP = 20;
-const MAX_CLIP = 90;
+const MIN_CLIP = 8;
+const MAX_CLIP = 40;
 
 /**
  * Hears one window of a YouTube video and returns a validated, enriched, clip-relative lesson.
@@ -252,7 +252,7 @@ export async function analyzeWindow(
 
   const timeline = validateLineTimeline(raw.lines, windowStart, windowEnd, language);
   if (!timeline.ok) return { ok: false, reason: "transcript_invalid", detail: timeline.error };
-  const lines = timeline.lines;
+  let lines = timeline.lines;
 
   const first = lines[0]!;
   const last = lines[lines.length - 1]!;
@@ -270,13 +270,23 @@ export async function analyzeWindow(
   if (clipEnd - clipStart < MIN_CLIP - 0.5) {
     return { ok: false, reason: "no_dialogue", detail: "window too short for a clip" };
   }
-  if (clipEnd - clipStart > MAX_CLIP + 5) {
-    return { ok: false, reason: "transcript_invalid", detail: `clip ${Math.round(clipEnd - clipStart)}s too long` };
+  if (clipEnd - clipStart > MAX_CLIP) {
+    // Hard learner range: a pick that runs long is cut at MAX_CLIP and trailing lines
+    // past the cut are dropped, so the clip always ends on its last spoken line. Only
+    // a pick so long the cut leaves nothing usable is rejected.
+    clipEnd = clipStart + MAX_CLIP;
+    const kept = lines.filter((l) => l.start <= clipEnd - 0.2);
+    if (kept.length < 2) {
+      return { ok: false, reason: "transcript_invalid", detail: `clip ${Math.round(clipEnd - clipStart)}s too long` };
+    }
+    lines = kept;
   }
+  const spokenFirst = lines[0]!;
+  const spokenLast = lines[lines.length - 1]!;
   if (lines.length < 2 || lines.length > 24) {
     return { ok: false, reason: lines.length < 2 ? "no_dialogue" : "transcript_invalid", detail: `${lines.length} lines` };
   }
-  if (last.end - first.start < opts.minSpokenSec) {
+  if (spokenLast.end - spokenFirst.start < opts.minSpokenSec) {
     return { ok: false, reason: "no_dialogue", detail: "too little speech" };
   }
 

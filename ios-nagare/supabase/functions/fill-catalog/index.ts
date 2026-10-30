@@ -400,8 +400,8 @@ async function searchFresh(
     if (item.status?.embeddable !== true || item.status?.privacyStatus !== "public") continue;
     const durationSec = parseDurationSec(item.contentDetails?.duration ?? "");
     // YouTube's "short" search filter means under four minutes, not a learner-sized
-    // excerpt. Keep only sources we can inspect in one pass and curate into 20–90s clips.
-    if (durationSec === null || durationSec < 20 || durationSec > 180) continue;
+    // excerpt. Keep only sources we can inspect in one pass and curate into 8–40s clips.
+    if (durationSec === null || durationSec < 12 || durationSec > 180) continue;
     videos.push({
       videoId,
       title: item.snippet?.title?.trim() || `Clip ${videoId}`,
@@ -458,7 +458,7 @@ async function analyzeAndPublish(
     windowEnd: Math.min(candidate.durationSec, 90),
     language,
     askCategory: false,
-    minSpokenSec: 12,
+    minSpokenSec: 6,
   });
   if (!outcome.ok) {
     log("catalog_candidate_rejected", {
