@@ -18,6 +18,9 @@ final class PlaybackCoordinator {
     @ObservationIgnored private var resumeAfterPopup = false
     @ObservationIgnored private var rateBeforeHold: Double = 1
     @ObservationIgnored private var loopBeforeHold: ClosedRange<Double>?
+    /// Next clip's player, warmed while the current one plays so swiping starts instantly.
+    @ObservationIgnored private var preloaded: (any ClipPlayer)?
+    @ObservationIgnored private var preloadTask: Task<Void, Never>?
 
     var activeClipId: String? { player?.clip.id }
 
@@ -42,6 +45,30 @@ final class PlaybackCoordinator {
             if autoplay { player.play() }
             return
         }
+        // A pre-warmed player for this exact clip → swap it in, no cold start.
+        if let preloaded, preloaded.clip.id == clip.id {
+            preloadTask?.cancel()
+            preloadTask = nil
+            self.preloaded = nil
+            if onFinished != nil {
+                preloaded.onFinished = { [weak self] in self?.onFinished?() }
+            }
+            preloaded.onWatchTick = { [weak self] seconds in self?.onWatchTick?(seconds) }
+            preloaded.setRate(preferredRate)
+            preloaded.setMuted(isMuted)
+            if let seekTime {
+                preloaded.seek(to: max(0, seekTime))
+            } else if let startLine {
+                position(preloaded, line: startLine, loop: shouldLoop)
+            } else {
+                preloaded.seek(to: 0)
+            }
+            player?.teardown()
+            player = preloaded
+            if autoplay { preloaded.play() }
+            return
+        }
+        cancelPreload()
         player?.teardown()
         let newPlayer = ClipPlayerFactory.make(for: clip)
         newPlayer.setRate(preferredRate)
@@ -57,6 +84,34 @@ final class PlaybackCoordinator {
         }
         player = newPlayer
         if autoplay { newPlayer.play() }
+    }
+
+    /// Warms the next clip's player in the background: creates the web view, loads the
+    /// embed, and buffers the video — so a swipe only needs a swap, not a cold start.
+    func preload(_ clip: Clip) {
+        guard player?.clip.id != clip.id, preloaded?.clip.id != clip.id else { return }
+        cancelPreload()
+        preloadTask = Task { [weak self] in
+            // Let the current video start first; don't compete for bandwidth.
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let self, !Task.isCancelled,
+                  self.player?.clip.id != clip.id else { return }
+            let warm = ClipPlayerFactory.make(for: clip)
+            warm.setRate(self.preferredRate)
+            warm.setMuted(true) // never audible in the background
+            if let webPlayer = warm as? YouTubeClipPlayer {
+                _ = webPlayer.webView // force creation + embed load + buffering
+            }
+            guard !Task.isCancelled else { warm.teardown(); return }
+            self.preloaded = warm
+        }
+    }
+
+    private func cancelPreload() {
+        preloadTask?.cancel()
+        preloadTask = nil
+        preloaded?.teardown()
+        preloaded = nil
     }
 
     private func position(_ player: any ClipPlayer, line index: Int, loop: Bool) {
@@ -117,6 +172,7 @@ final class PlaybackCoordinator {
     }
 
     func stop() {
+        cancelPreload()
         player?.teardown()
         player = nil
     }

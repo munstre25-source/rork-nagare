@@ -192,6 +192,7 @@ struct FeedView: View {
                 Task { await app.refreshRemoteClips() }
             }
             coordinator.activate(clip)
+            preloadUpcoming()
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
             ImmersionIsland.note(
                 clip: clip,
@@ -506,6 +507,14 @@ struct FeedView: View {
         guard isActiveTab, fullscreenClip == nil, quizClip == nil, shadowingClip == nil,
               let id = currentId, let clip = clips.first(where: { $0.id == id }) else { return }
         coordinator.activate(clip)
+        preloadUpcoming()
+    }
+
+    /// Warm the next clip's player while the current one plays — swipe starts instantly.
+    private func preloadUpcoming() {
+        guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }),
+              let next = clips[safe: index + 1] else { return }
+        coordinator.preload(next)
     }
 
     /// End of clip → remember it, then a micro-quiz, then advance.
