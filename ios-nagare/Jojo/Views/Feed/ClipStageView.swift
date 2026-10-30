@@ -63,16 +63,20 @@ struct ClipStageView: View {
 
     /// Kiku normal feed: the landscape player runs edge to edge at its true 16:9.
     private func videoSize(in size: CGSize) -> CGSize {
-        let width = min(size.width, 640)
-        let height = min(width * 9 / 16, max(180, size.height * 0.42))
+        let maxHeight = max(180, size.height * 0.42)
+        let width = min(min(size.width, 640), maxHeight * 16 / 9)
+        let height = width * 9 / 16
         return CGSize(width: width, height: height)
     }
 
     /// Kiku maximize: the page is handed to the video. It keeps its true 16:9 (never cropped)
     /// at full width, and the feed chrome, goal bar and dock step away.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
-        let width = min(size.width, 760)
-        return CGSize(width: width, height: min(width * 9 / 16, size.height * 0.6))
+        // Fit inside both bounds while preserving 16:9, including when the device itself is
+        // in landscape and height is the limiting dimension.
+        let maxHeight = max(0, size.height * 0.6)
+        let width = min(min(size.width, 760), maxHeight * 16 / 9)
+        return CGSize(width: width, height: width * 9 / 16)
     }
 
     /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
@@ -164,7 +168,7 @@ struct ClipStageView: View {
 
             // Video: the max/min box sits on the frame's bottom-trailing corner while resting.
             // The video keeps its position in this tree in both sizes so the player never reattaches.
-            ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: maximized ? .center : .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -325,30 +329,24 @@ struct ClipStageView: View {
                 .padding(.trailing, 4)
                 .padding(.bottom, 2)
 
-                // The words live on a solid panel BELOW the picture — never on it (Kiku
-                // shorts). A long line scrolls inside the panel instead of covering the Short.
-                VStack(spacing: 0) {
+                // Keep the Short full-screen. Karaoke is a compact overlay over the lower
+                // picture, rather than a large opaque panel that competes with the video.
+                VStack(spacing: 4) {
                     if showsShortsCaptions {
-                        ViewThatFits(in: .vertical) {
-                            transcript(player: player, onVideo: true)
-                            ScrollView(.vertical, showsIndicators: false) {
-                                transcript(player: player, onVideo: true)
-                            }
-                            .scrollBounceBehavior(.basedOnSize)
-                        }
-                        .coachTarget(.transcript, active: isCoachPage)
-                        .modifier(TranscriptTopReader(top: $transcriptTop))
-                        .padding(.horizontal, 10)
+                        transcript(player: player, onVideo: true)
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .modifier(TranscriptTopReader(top: $transcriptTop))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
                     } else {
                         Color.clear.frame(height: 1)
                     }
                     ShortsFooter(clip: clip, player: player)
                         .padding(.horizontal, 12)
-                        .padding(.top, 2)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
                 }
-                .frame(maxHeight: card.height * 0.58)
-                .background(Color.canvas)
+                .frame(maxHeight: card.height * 0.34, alignment: .bottom)
             }
             .frame(width: card.width, height: card.height)
         }
