@@ -18,8 +18,7 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
-    // For You always opens like a standard video feed: a 16:9 player followed by
-    // the learning controls and transcript. Enlarging is an intentional, temporary action.
+    // One full-screen clip per page. Feed controls overlay the video; maximize hides them.
     @State private var videoExpanded: Bool = false
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
@@ -36,71 +35,83 @@ struct FeedView: View {
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     var body: some View {
-        VStack(spacing: 0) {
-            // One slim progress row, then the mode switch. The video and the current line lead;
-            // due reviews live on the Vocab tab badge instead of a card above the clip.
-            // Maximized (Kiku): the goal bar, mode switch and dock step away for the video.
-            if !app.profile.hideDailyGoalBar && !videoExpanded {
-                DailyGoalBar()
-                    .padding(.top, 2)
-                    .opacity(watchChromeVisible ? 1 : 0)
-                    .allowsHitTesting(watchChromeVisible)
-                    .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
-            }
-            if showResumeChip, let resumeSnapshot {
-                ResumeChip(
-                    title: resumeSnapshot.title,
-                    channel: resumeSnapshot.channel,
-                    time: resumeSnapshot.time,
-                    onResume: { resumeFromSnapshot() },
-                    onDismiss: {
-                        showResumeChip = false
-                        ResumePlaybackStore.clear()
-                        self.resumeSnapshot = nil
-                    }
-                )
-            }
-            if !videoExpanded {
-                header
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-            ZStack {
-                feedPager
-                if let quizClip {
-                    ClipQuizOverlay(clip: quizClip) {
-                        withAnimation(.snappy) { self.quizClip = nil }
-                        advance()
-                    }
-                    .transition(.opacity)
-                    .zIndex(2)
+        ZStack(alignment: .top) {
+            feedPager
+                .ignoresSafeArea(edges: .top)
+
+            if let quizClip {
+                ClipQuizOverlay(clip: quizClip) {
+                    withAnimation(.snappy) { self.quizClip = nil }
+                    advance()
                 }
-                if let toast = app.cameBackToast {
-                    VStack {
-                        CameBackToast(
-                            surface: toast.surface,
-                            gloss: toast.gloss,
-                            onReview: {
-                                app.dismissCameBackToast()
-                                app.pendingDeepLink = .review
-                            }
-                        )
-                        .padding(.top, 8)
-                        Spacer()
-                    }
-                    .zIndex(3)
-                    .onAppear {
-                        Task {
-                            try? await Task.sleep(for: .seconds(4.5))
-                            if app.cameBackToast?.id == toast.id {
-                                withAnimation(.snappy) { app.dismissCameBackToast() }
-                            }
+                .transition(.opacity)
+                .zIndex(2)
+            }
+            if let toast = app.cameBackToast {
+                VStack {
+                    CameBackToast(
+                        surface: toast.surface,
+                        gloss: toast.gloss,
+                        onReview: {
+                            app.dismissCameBackToast()
+                            app.pendingDeepLink = .review
+                        }
+                    )
+                    .padding(.top, 8)
+                    Spacer()
+                }
+                .zIndex(3)
+                .onAppear {
+                    Task {
+                        try? await Task.sleep(for: .seconds(4.5))
+                        if app.cameBackToast?.id == toast.id {
+                            withAnimation(.snappy) { app.dismissCameBackToast() }
                         }
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
+
+            if !videoExpanded {
+                VStack(spacing: 0) {
+                    if !app.profile.hideDailyGoalBar {
+                        DailyGoalBar()
+                            .padding(.top, 2)
+                    }
+                    if showResumeChip, let resumeSnapshot {
+                        ResumeChip(
+                            title: resumeSnapshot.title,
+                            channel: resumeSnapshot.channel,
+                            time: resumeSnapshot.time,
+                            onResume: { resumeFromSnapshot() },
+                            onDismiss: {
+                                showResumeChip = false
+                                ResumePlaybackStore.clear()
+                                self.resumeSnapshot = nil
+                            }
+                        )
+                    }
+                    header
+                    Spacer(minLength: 0)
+                }
+                .opacity(watchChromeVisible ? 1 : 0)
+                .allowsHitTesting(watchChromeVisible)
+                .environment(\.colorScheme, .dark)
+                .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
+                .background(alignment: .top) {
+                    LinearGradient(
+                        colors: [Color.black.opacity(0.52), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 230)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(1)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.canvas.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
@@ -212,7 +223,7 @@ struct FeedView: View {
         }
     }
 
-    /// Kiku For You chrome: centered For You / Explore + flag. Goal bar sits above.
+    /// Feed navigation layered over the video: centered For You / Explore switch and search.
     private var header: some View {
         HStack(spacing: 0) {
             Button {
@@ -295,51 +306,56 @@ struct FeedView: View {
 
     /// Until a few words are saved (and outside the guided tour), say what a word tap does.
     private var feedPager: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(clips) { clip in
-                    ClipStageView(
-                        clip: clip,
-                        showsChannelRow: true,
-                        immersiveFeed: true,
-                        videoExpanded: videoExpanded,
-                        onToggleVideoSize: {
-                            Haptics.selection()
-                            videoExpanded.toggle()
-                        },
-                        onActivate: { coordinator.activate(clip) },
-                        onFullscreen: {
-                            coordinator.pause()
-                            pendingLoopLine = nil
-                            fullscreenClip = clip
-                        },
-                        onInfo: { infoClip = clip },
-                        onShadowing: {
-                            coordinator.pause()
-                            shadowingClip = clip
-                        },
-                        watchChromeHidden: !watchChromeVisible,
-                        onRevealWatchChrome: { revealWatchChrome() },
-                        onSkip: {
-                            if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
-                                app.noteClipSkipped(clip)
-                            }
-                            mirrorUpcoming()
-                            advance()
-                        },
-                        reportsCoachAnchors: true,
-                    )
-                    .containerRelativeFrame(.vertical)
-                    .id(clip.id)
+        GeometryReader { viewport in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(clips) { clip in
+                        ClipStageView(
+                            clip: clip,
+                            showsChannelRow: true,
+                            immersiveFeed: true,
+                            videoExpanded: videoExpanded,
+                            onToggleVideoSize: {
+                                Haptics.selection()
+                                videoExpanded.toggle()
+                            },
+                            onActivate: { coordinator.activate(clip) },
+                            onFullscreen: {
+                                coordinator.pause()
+                                pendingLoopLine = nil
+                                fullscreenClip = clip
+                            },
+                            onInfo: { infoClip = clip },
+                            onShadowing: {
+                                coordinator.pause()
+                                shadowingClip = clip
+                            },
+                            watchChromeHidden: !watchChromeVisible,
+                            onRevealWatchChrome: { revealWatchChrome() },
+                            onSkip: {
+                                if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
+                                    app.noteClipSkipped(clip)
+                                }
+                                mirrorUpcoming()
+                                advance()
+                            },
+                            reportsCoachAnchors: true,
+                        )
+                        // Match every page to the actual viewport. The available height changes
+                        // when feed chrome or the tab bar hides during maximize/minimize.
+                        .frame(width: viewport.size.width, height: viewport.size.height)
+                        .id(clip.id)
+                    }
                 }
+                .scrollTargetLayout()
             }
-            .scrollTargetLayout()
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $currentId)
+            .scrollDisabled(lookup.isPresented || quizClip != nil)
+            .scrollIndicators(.hidden)
+            .background(Color.canvas)
+            .clipped()
         }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $currentId)
-        .scrollDisabled(lookup.isPresented || quizClip != nil)
-        .scrollIndicators(.hidden)
-        .background(Color.canvas)
         .clipped()
     }
 

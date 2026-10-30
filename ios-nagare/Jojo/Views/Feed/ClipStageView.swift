@@ -71,13 +71,10 @@ struct ClipStageView: View {
         return CGSize(width: width, height: height)
     }
 
-    /// Kiku maximize: the page is handed to the video. It keeps its true 16:9 (never cropped)
-    /// at full width, and the feed chrome, goal bar and dock step away.
+    /// Maximize uses the largest 16:9 frame that fits the whole feed viewport without cropping.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
-        // Fit inside both bounds while preserving 16:9, including when the device itself is
-        // in landscape and height is the limiting dimension.
-        let maxHeight = max(0, size.height * 0.6)
-        let width = min(min(size.width, 760), maxHeight * 16 / 9)
+        let maxHeight = max(0, size.height)
+        let width = min(size.width, maxHeight * 16 / 9)
         return CGSize(width: width, height: width * 9 / 16)
     }
 
@@ -113,7 +110,7 @@ struct ClipStageView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .background(usesFlexibleVideo || immersiveFeed ? Color.canvas : Color.clear)
+        .background(showsMaximizedLandscape ? Color.black : (usesFlexibleVideo || immersiveFeed ? Color.canvas : Color.clear))
         .coordinateSpace(name: StageSpace.name)
         .overlay {
             if isPopupHere { popupLayer }
@@ -175,7 +172,8 @@ struct ClipStageView: View {
             }
 
             if maximized {
-                // Kiku's theater page centers the picture between the title and the words.
+                // The karaoke controls are a bottom overlay, so this spacer centers the video
+                // in the available theater area instead of reserving space for the captions.
                 Spacer(minLength: 12)
             } else {
                 Color.clear.frame(height: 18)
@@ -213,46 +211,7 @@ struct ClipStageView: View {
 
             if maximized { Spacer(minLength: 12) }
 
-            if maximized {
-                HStack(alignment: .top, spacing: 2) {
-                    Group {
-                        if showsShortsCaptions {
-                            transcript(player: player, following: 1)
-                                .coachTarget(.transcript, active: isCoachPage)
-                                .modifier(TranscriptTopReader(top: $transcriptTop))
-                                // Natural height only: a greedy transcript would eat the
-                                // centering spacers and pin the video under the title.
-                                .fixedSize(horizontal: false, vertical: true)
-                                .transition(.opacity)
-                        } else {
-                            Color.clear.frame(height: 1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .top)
-                    ShortsRail(
-                        clip: clip,
-                        player: player,
-                        showsCaptions: showsShortsCaptions,
-                        onToggleCaptions: {
-                            withAnimation(.snappy) { showsShortsCaptions.toggle() }
-                        },
-                        onInfo: onInfo,
-                        onFullscreen: onFullscreen,
-                        onMinimize: onToggleVideoSize,
-                        onPicture: false
-                    )
-                    .padding(.top, 6)
-                }
-                .padding(.leading, 12)
-                .padding(.trailing, 4)
-                .padding(.top, 8)
-                .transition(.opacity)
-
-                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 10)
-                    .transition(.opacity)
-            } else {
+            if !maximized {
                 if immersiveFeed {
                     ClipActionRow(
                         clip: clip,
@@ -272,6 +231,50 @@ struct ClipStageView: View {
                     .frame(width: columnWidth)
                     .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
                     .clipped()
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if maximized {
+                VStack(spacing: 0) {
+                    HStack(alignment: .bottom, spacing: 2) {
+                        Group {
+                            if showsShortsCaptions {
+                                transcript(player: player, following: 1)
+                                    .coachTarget(.transcript, active: isCoachPage)
+                                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                Color.clear.frame(height: 1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .bottomLeading)
+                        ShortsRail(
+                            clip: clip,
+                            player: player,
+                            showsCaptions: showsShortsCaptions,
+                            onToggleCaptions: {
+                                withAnimation(.snappy) { showsShortsCaptions.toggle() }
+                            },
+                            onInfo: onInfo,
+                            onFullscreen: onFullscreen,
+                            onMinimize: onToggleVideoSize,
+                            onPicture: false
+                        )
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 4)
+                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 10)
+                }
+                .background(
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.72)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .allowsHitTesting(false)
+                )
             }
         }
     }
@@ -352,7 +355,6 @@ struct ClipStageView: View {
                             ScrollView(.vertical, showsIndicators: false) {
                                 transcript(player: player, onVideo: true)
                                     .coachTarget(.transcript, active: isCoachPage)
-                                    .modifier(TranscriptTopReader(top: $transcriptTop))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 8)
                             }
@@ -366,6 +368,9 @@ struct ClipStageView: View {
                             }
                         }
                         .frame(maxHeight: card.height * 0.25)
+                        // Dock the dictionary to the transcript viewport, not the moving
+                        // karaoke content. Auto-scrolling lines otherwise move the popup anchor.
+                        .modifier(TranscriptTopReader(top: $transcriptTop))
                     } else {
                         Color.clear.frame(height: 1)
                     }
