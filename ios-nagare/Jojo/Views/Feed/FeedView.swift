@@ -39,7 +39,8 @@ struct FeedView: View {
         VStack(spacing: 0) {
             // One slim progress row, then the mode switch. The video and the current line lead;
             // due reviews live on the Vocab tab badge instead of a card above the clip.
-            if !app.profile.hideDailyGoalBar {
+            // Maximized (Kiku): the goal bar, mode switch and dock step away for the video.
+            if !app.profile.hideDailyGoalBar && !videoExpanded {
                 DailyGoalBar()
                     .padding(.top, 2)
             }
@@ -56,7 +57,10 @@ struct FeedView: View {
                     }
                 )
             }
-            header
+            if !videoExpanded {
+                header
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
             ZStack {
                 feedPager
                 if let quizClip {
@@ -104,7 +108,15 @@ struct FeedView: View {
             loadResumeChip()
             startGuidedTourSoon()
         }
+        // Maximized hands the whole screen to the video, so the floating dock steps away too.
+        .onChange(of: videoExpanded) { _, expanded in
+            app.hidesMainTabBar = expanded && isActiveTab
+        }
+        .onDisappear {
+            if videoExpanded { app.hidesMainTabBar = false }
+        }
         .onChange(of: isActiveTab) { _, active in
+            if videoExpanded { app.hidesMainTabBar = active }
             if active {
                 Task { await app.refreshRemoteClips() }
                 resumeIfPossible()
@@ -419,8 +431,10 @@ struct FeedView: View {
         // Debug stays entirely offline: only the bundled Japanese-learning clips are shown.
         // This guarantees every visible item is playable in a fresh simulator session.
         if app.purchases.debugBypassActive {
+            // Offline clips lead, then the real catalog (Shorts and landscape) follows.
             let showcase = app.debugShowcaseClips(limit: 3)
-            clips = showcase.isEmpty ? ranked : showcase
+            let ids = Set(showcase.map(\.id))
+            clips = showcase + ranked.filter { !ids.contains($0.id) }
         } else {
             clips = ranked
         }

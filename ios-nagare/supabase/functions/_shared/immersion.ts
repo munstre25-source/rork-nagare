@@ -82,6 +82,26 @@ export async function isDeviceBlocked(supabase: SupabaseClient, videoId: string)
   return rows.some((r) => [100, 101, 150].includes(r.error_code)) || rows.length >= 2;
 }
 
+/**
+ * The real player frame shape. oEmbed asked about the /shorts/ URL answers with the Short's
+ * own portrait size (e.g. 113x200) and a 16:9 size for normal uploads. null when unknown,
+ * so the caller can fall back to the model's guess.
+ */
+export async function detectVideoOrientation(videoId: string): Promise<"portrait" | "landscape" | null> {
+  try {
+    const url = `https://www.youtube.com/oembed?format=json&url=${
+      encodeURIComponent(`https://www.youtube.com/shorts/${videoId}`)
+    }`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return null;
+    const body = await res.json() as { width?: number; height?: number };
+    if (typeof body.width !== "number" || typeof body.height !== "number") return null;
+    return body.height > body.width ? "portrait" : "landscape";
+  } catch {
+    return null;
+  }
+}
+
 export async function checkYouTubeVideo(supabase: SupabaseClient, videoId: string): Promise<VideoCheck> {
   if (await isDeviceBlocked(supabase, videoId)) {
     return { ok: false, code: "not_embeddable", detail: "device playback reports" };
@@ -278,7 +298,8 @@ export async function analyzeWindow(
       lines: toClipRelative(enriched, clipStart),
       difficulty: gradeDifficulty(raw.difficulty, enriched, language),
       category: typeof raw.category === "string" && CATEGORIES.has(raw.category) ? raw.category : null,
-      videoOrientation: raw.video_orientation === "portrait" ? "portrait" : "landscape",
+      videoOrientation: (await detectVideoOrientation(videoId)) ??
+        (raw.video_orientation === "portrait" ? "portrait" : "landscape"),
       timingMode: timing.mode,
       timingConfidence: timing.confidence,
       model,

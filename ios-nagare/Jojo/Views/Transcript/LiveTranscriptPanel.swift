@@ -15,7 +15,7 @@ struct LiveTranscriptPanel: View {
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
-    /// The line is drawn on the video, so it skips the raised card.
+    /// The line is drawn on the video (Shorts): no nested scroll, only the plated current line.
     var sitsOnVideo: Bool = false
 
     @Environment(WordLookupController.self) private var lookup
@@ -92,7 +92,9 @@ struct LiveTranscriptPanel: View {
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
-                    raisedCard: sitsOnVideo ? false : index == currentLine,
+                    // On a Short the current line keeps its plate, so it reads on any footage
+                    // and in every theme.
+                    raisedCard: index == currentLine,
                     showsLineTools: true,
                     isSpokenLine: index == currentLine
                 )

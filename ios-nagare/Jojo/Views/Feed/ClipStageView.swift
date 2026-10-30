@@ -34,6 +34,10 @@ struct ClipStageView: View {
     @Environment(WordLookupController.self) private var lookup
     @Environment(AppModel.self) private var app
     @State private var dragOffset: CGFloat = 0
+    /// Shorts: the captions button hides the words for a clean look at the picture.
+    @State private var showsShortsCaptions: Bool = true
+    /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
+    @State private var transcriptTop: CGFloat = 0
 
     private var isPopupHere: Bool {
         lookup.selection?.clip.id == clip.id
@@ -55,27 +59,34 @@ struct ClipStageView: View {
         min(max(0, size.width - 24), 560)
     }
 
-    /// Keep enough space for karaoke while giving portrait clips a useful Shorts-sized frame.
+    /// Kiku normal feed: the landscape player runs edge to edge at its true 16:9.
     private func videoSize(in size: CGSize) -> CGSize {
-        let column = columnWidth(in: size)
-        if clip.isPortraitVideo {
-            let height = min(max(240, size.height * 0.52), column * 16 / 9)
-            return CGSize(width: height * 9 / 16, height: height)
-        }
-        let naturalHeight = column * 9 / 16
-        let height = min(naturalHeight, max(180, size.height * 0.38))
-        return CGSize(width: column, height: height)
+        let width = min(size.width, 640)
+        let height = min(width * 9 / 16, max(180, size.height * 0.42))
+        return CGSize(width: width, height: height)
     }
 
+    /// Kiku maximize: the page is handed to the video. It keeps its true 16:9 (never cropped)
+    /// at full width, and the feed chrome, goal bar and dock step away.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
-        let column = columnWidth(in: size)
-        let height = min(max(260, size.height * 0.72), clip.isPortraitVideo ? column * 16 / 9 : size.height * 0.72)
-        return CGSize(width: clip.isPortraitVideo ? height * 9 / 16 : column, height: height)
+        let width = min(size.width, 760)
+        return CGSize(width: width, height: min(width * 9 / 16, size.height * 0.6))
     }
+
+    /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
+    private var showsMaximizedLandscape: Bool { usesFlexibleVideo && videoExpanded && !clip.isPortraitVideo }
+
+    /// Shorts are vertical: a 9:16 card fills the page and everything else lays on the picture.
+    private var showsShortsStage: Bool { usesFlexibleVideo && clip.isPortraitVideo }
 
     var body: some View {
         Group {
-            if usesFlexibleVideo {
+            if showsShortsStage {
+                GeometryReader { geo in
+                    shortsStage(in: geo.size)
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                }
+            } else if usesFlexibleVideo {
                 GeometryReader { geo in
                     // Keep the same AVPlayer-backed hierarchy when resizing. Replacing it with
                     // a full-page view while a paged LazyVStack is animating can detach the
@@ -95,6 +106,7 @@ struct ClipStageView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
         .background(usesFlexibleVideo || immersiveFeed ? Color.canvas : Color.clear)
+        .coordinateSpace(name: StageSpace.name)
         .overlay {
             if isPopupHere { popupLayer }
         }
@@ -124,21 +136,30 @@ struct ClipStageView: View {
     }
 
     private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?) -> some View {
-        VStack(spacing: 0) {
+        let maximized = showsMaximizedLandscape
+        return VStack(spacing: 0) {
             if showsChannelRow {
                 ChannelRow(
                     clip: clip,
-                    trailing: channelTrailing,
+                    trailing: maximized ? nil : channelTrailing,
                     showsFollow: !immersiveFeed,
-                    emphasizesTitle: false
+                    emphasizesTitle: maximized
                 )
-                .padding(.vertical, immersiveFeed ? 2 : 10)
+                .padding(.vertical, immersiveFeed ? (maximized ? 8 : 2) : 10)
                 .frame(width: columnWidth)
                 .frame(maxWidth: .infinity)
+                .opacity(maximized && watchChromeHidden ? 0 : 1)
+                .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
             }
 
-            // Video — max/min box lives on the bottom-trailing corner of the frame (kikufeedlayout).
-            ZStack(alignment: immersiveFeed && clip.isPortraitVideo ? .bottom : .bottomTrailing) {
+            if maximized {
+                // Lift the picture off the title like Kiku's theater page.
+                Color.clear.frame(height: 18)
+            }
+
+            // Video: the max/min box sits on the frame's bottom-trailing corner while resting.
+            // The video keeps its position in this tree in both sizes so the player never reattaches.
+            ZStack(alignment: .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -156,33 +177,158 @@ struct ClipStageView: View {
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
 
-                if immersiveFeed, let onToggleVideoSize, !isPopupHere {
+                if immersiveFeed, !maximized, let onToggleVideoSize, !isPopupHere {
                     VideoSizeBox(expanded: false, action: onToggleVideoSize)
                         .padding(8)
+                        .transition(.opacity)
                 }
             }
             .coachTarget(.video, active: isCoachPage)
             .frame(maxWidth: .infinity)
 
-            if immersiveFeed {
-                ClipActionRow(
-                    clip: clip,
-                    player: player,
-                    onInfo: onInfo,
-                    videoExpanded: videoExpanded,
-                    // Corner box on the video owns resize; keep strip free of a second control.
-                    onToggleVideoSize: nil
-                )
-                .frame(width: columnWidth)
-                .frame(maxWidth: .infinity)
-            }
+            if maximized {
+                HStack(alignment: .top, spacing: 2) {
+                    Group {
+                        if showsShortsCaptions {
+                            transcript(player: player, following: 1)
+                                .coachTarget(.transcript, active: isCoachPage)
+                                .modifier(TranscriptTopReader(top: $transcriptTop))
+                                .transition(.opacity)
+                        } else {
+                            Color.clear.frame(height: 1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .clipped()
+                    ShortsRail(
+                        clip: clip,
+                        player: player,
+                        showsCaptions: showsShortsCaptions,
+                        onToggleCaptions: {
+                            withAnimation(.snappy) { showsShortsCaptions.toggle() }
+                        },
+                        onInfo: onInfo,
+                        onFullscreen: onFullscreen,
+                        onMinimize: onToggleVideoSize,
+                        onPicture: false
+                    )
+                    .padding(.top, 6)
+                }
+                .padding(.leading, 12)
+                .padding(.trailing, 4)
+                .padding(.top, 8)
+                .transition(.opacity)
 
-            transcript(player: player)
-                .coachTarget(.transcript, active: isCoachPage)
-                .frame(width: columnWidth)
-                .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
-                .clipped()
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 10)
+                    .transition(.opacity)
+            } else {
+                if immersiveFeed {
+                    ClipActionRow(
+                        clip: clip,
+                        player: player,
+                        onInfo: onInfo,
+                        videoExpanded: videoExpanded,
+                        // Corner box on the video owns resize; keep strip free of a second control.
+                        onToggleVideoSize: nil
+                    )
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity)
+                }
+
+                transcript(player: player)
+                    .coachTarget(.transcript, active: isCoachPage)
+                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
+                    .clipped()
+            }
         }
+    }
+
+    // MARK: Shorts (Kiku): full-height vertical card, words and controls on the picture
+
+    private func shortsStage(in size: CGSize) -> some View {
+        let player = coordinator.player(for: clip)
+        let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
+        // Cover the card with a true 9:16 surface so the Short is never letterboxed or squeezed;
+        // the few points that overflow are trimmed evenly by the card's clip shape.
+        let cover: CGSize = card.width / max(card.height, 1) > 9 / 16
+            ? CGSize(width: card.width, height: card.width * 16 / 9)
+            : CGSize(width: card.height * 9 / 16, height: card.height)
+        return ZStack {
+            ClipVideoView(
+                clip: clip,
+                player: player,
+                showsControls: false,
+                showsRail: false,
+                compactChrome: true,
+                onActivate: onActivate,
+                onFullscreen: onFullscreen,
+                fitsFrame: false,
+                watchChromeHidden: watchChromeHidden,
+                onRevealWatchChrome: onRevealWatchChrome,
+                onSkip: onSkip
+            )
+            .frame(width: cover.width, height: cover.height)
+            .frame(width: card.width, height: card.height)
+            .coachTarget(.video, active: isCoachPage)
+
+            // Scrims keep white chrome readable on bright footage without hiding the scene.
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 120)
+                Spacer(minLength: 0)
+                LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: card.height * 0.42)
+            }
+            .allowsHitTesting(false)
+
+            VStack(spacing: 0) {
+                ShortsHeader(clip: clip)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
+                    .opacity(watchChromeHidden ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+                Spacer(minLength: 0)
+                HStack(alignment: .bottom, spacing: 2) {
+                    Group {
+                        if showsShortsCaptions {
+                            transcript(player: player, onVideo: true)
+                                .coachTarget(.transcript, active: isCoachPage)
+                                .modifier(TranscriptTopReader(top: $transcriptTop))
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        } else {
+                            Color.clear.frame(height: 1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    ShortsRail(
+                        clip: clip,
+                        player: player,
+                        showsCaptions: showsShortsCaptions,
+                        onToggleCaptions: {
+                            withAnimation(.snappy) { showsShortsCaptions.toggle() }
+                        },
+                        onInfo: onInfo,
+                        onFullscreen: onFullscreen
+                    )
+                    .opacity(watchChromeHidden ? 0.35 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+                }
+                .padding(.leading, 10)
+                .padding(.trailing, 4)
+                ShortsFooter(clip: clip, player: player)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
+            .frame(width: card.width, height: card.height)
+        }
+        .frame(width: card.width, height: card.height)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .padding(.top, 2)
     }
 
     private func savedBanner(_ word: String) -> some View {
@@ -210,7 +356,7 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, onVideo: Bool = false) -> some View {
+    private func transcript(player: (any ClipPlayer)?, onVideo: Bool = false, following: Int? = nil) -> some View {
         TranscriptSection(
             clip: clip,
             player: player,
@@ -220,35 +366,50 @@ struct ClipStageView: View {
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
             windowMode: immersiveFeed,
-            followingLines: onVideo ? 1 : 2,
+            followingLines: following ?? (onVideo ? 0 : 2),
             sitsOnVideo: onVideo
         )
     }
 
+    /// Pages with the right rail keep it reachable beside the card, like Kiku.
+    private var popupHasRail: Bool { showsShortsStage || showsMaximizedLandscape }
+
+    /// Kiku docks the dictionary card directly above the words it came from, overlapping the
+    /// bottom of the picture, instead of floating it mid-page.
     private var popupLayer: some View {
-        ZStack {
-            Color.black.opacity(0.18)
-                .contentShape(Rectangle())
-                .onTapGesture { dismiss() }
-            TapPopupCard(compact: true)
-                .padding(.horizontal, 14)
-                .frame(maxWidth: 340)
-                .fixedSize(horizontal: false, vertical: true)
-                .coachTarget(.popupCard, active: isCoachPage)
-                .offset(y: max(0, dragOffset))
-                .gesture(
-                    DragGesture(minimumDistance: 12)
-                        .onChanged { value in dragOffset = value.translation.height }
-                        .onEnded { value in
-                            if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                dismiss()
-                            }
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
-                        }
-                )
+        GeometryReader { geo in
+            let anchor = transcriptTop > 200 ? min(transcriptTop - 6, geo.size.height) : nil
+            ZStack(alignment: .top) {
+                Color.black.opacity(0.12)
+                    .contentShape(Rectangle())
+                    .onTapGesture { dismiss() }
+                    .accessibilityHidden(true)
+                VStack(spacing: 0) {
+                    Spacer(minLength: 8)
+                    TapPopupCard(compact: true)
+                        .frame(maxWidth: 420)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .coachTarget(.popupCard, active: isCoachPage)
+                        .offset(y: max(0, dragOffset))
+                        .gesture(
+                            DragGesture(minimumDistance: 12)
+                                .onChanged { value in dragOffset = value.translation.height }
+                                .onEnded { value in
+                                    if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
+                                        dismiss()
+                                    }
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                                }
+                        )
+                }
+                .padding(.leading, 12)
+                .padding(.trailing, popupHasRail ? 54 : 12)
+                .frame(maxWidth: .infinity, alignment: popupHasRail ? .leading : .center)
+                .frame(height: anchor ?? geo.size.height * 0.62, alignment: .bottom)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .transition(.opacity)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
     private func dismiss() {
@@ -470,5 +631,23 @@ struct TranscriptSection: View {
             followingLines: followingLines,
             sitsOnVideo: sitsOnVideo
         )
+    }
+}
+
+/// Named space shared by the stage and its overlays so the card can dock above the words.
+enum StageSpace {
+    static let name = "clipStage"
+}
+
+/// Reports where the words begin so the dictionary card can sit right above them.
+private struct TranscriptTopReader: ViewModifier {
+    @Binding var top: CGFloat
+
+    func body(content: Content) -> some View {
+        content.onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.frame(in: .named(StageSpace.name)).minY
+        } action: { newValue in
+            if abs(newValue - top) > 0.5 { top = newValue }
+        }
     }
 }
