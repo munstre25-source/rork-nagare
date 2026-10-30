@@ -192,7 +192,7 @@ struct ClipThumbnailButton: View {
         Button(action: action) {
             Color.bgElevatedDark
                 .aspectRatio(emphasizesPlay ? 16 / 9 : 16 / 8, contentMode: .fit)
-                .overlay { ClipPosterView(clip: clip, showsSymbol: false).allowsHitTesting(false) }
+                .overlay { ClipVideoStill(clip: clip, showsPlay: false).allowsHitTesting(false) }
                 .overlay {
                     Image(systemName: "play.fill")
                         .font(emphasizesPlay ? .title : .title2)

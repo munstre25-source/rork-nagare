@@ -315,6 +315,11 @@ struct KikuFlashcardBack: View {
                 FlashcardSectionTitle(title: "Context", systemImage: "text.bubble.fill")
                 contextCard(clip: clip, translation: line?.translation)
             }
+            // The scene itself, bottom of the card like the Kiku reference: a real frame
+            // from the video with a play ring, above the rating buttons.
+            if let clip, clip.hasPlayableVideo {
+                clipScene(clip: clip)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -337,37 +342,8 @@ struct KikuFlashcardBack: View {
                     .lineLimit(4)
             }
             HStack(alignment: .top, spacing: 10) {
-                if let clip {
-                    Button {
-                        if playsClip {
-                            onPlayClip(clip)
-                        } else {
-                            SpeechService.shared.speak(word.contextSentence)
-                        }
-                    } label: {
-                        ClipPosterView(clip: clip, showsSymbol: false)
-                            .frame(width: 92, height: 62)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .overlay {
-                                Image(systemName: "play.fill")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 28, height: 28)
-                                    .background(.black.opacity(0.45), in: Circle())
-                            }
-                            .overlay(alignment: .topTrailing) {
-                                if remembered {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.title3)
-                                        .foregroundStyle(Color.spokenGreen)
-                                        .background(Circle().fill(.white).padding(2))
-                                        .offset(x: 6, y: -6)
-                                }
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(playsClip ? "Watch this line" : "Play this line")
-                } else {
+                if clip == nil {
+                    // No clip behind this word: the line stays speakable.
                     Button {
                         SpeechService.shared.speak(word.contextSentence)
                     } label: {
@@ -411,6 +387,37 @@ struct KikuFlashcardBack: View {
             .padding(8)
             .allowsHitTesting(false)
         }
+    }
+
+    /// Full-width scene from the clip: real video frame, play ring, green check on Good.
+    private func clipScene(clip: Clip) -> some View {
+        Button {
+            if playsClip {
+                onPlayClip(clip)
+            } else {
+                SpeechService.shared.speak(word.contextSentence)
+            }
+        } label: {
+            Color.clear
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .overlay { ClipVideoStill(clip: clip) }
+                .overlay(alignment: .topTrailing) {
+                    if remembered {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(Color.spokenGreen)
+                            .background(Circle().fill(.white).padding(2))
+                            .padding(8)
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(playsClip ? "Watch this line" : "Play this line")
     }
 }
 
