@@ -216,6 +216,14 @@ struct ClipVideoView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(Color.jojoOrange)
                 }
+                if player is YouTubeClipPlayer {
+                    Button("Try again") {
+                        Haptics.selection()
+                        (player as? YouTubeClipPlayer)?.retry()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.white)
+                }
                 if let onSkip {
                     Button("Skip") {
                         Haptics.selection()

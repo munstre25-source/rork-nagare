@@ -89,6 +89,7 @@ struct TapPopupCard: View {
                 }
                 Spacer(minLength: 0)
                 VStack(spacing: 8) {
+                    closeButton(size: 28)
                     OccurrenceBadge(count: lookup.occurrenceCount, size: 28)
                         .scaleEffect(badgeBump ? 1.2 : 1)
                         .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
@@ -291,11 +292,30 @@ struct TapPopupCard: View {
                 }
             }
             Spacer(minLength: 0)
-            OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
-                .scaleEffect(badgeBump ? 1.25 : 1)
-                .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
-                .animation(.snappy, value: lookup.occurrenceCount)
+            HStack(alignment: .top, spacing: Spacing.s) {
+                closeButton(size: 32)
+                OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
+                    .scaleEffect(badgeBump ? 1.25 : 1)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                    .animation(.snappy, value: lookup.occurrenceCount)
+            }
         }
+    }
+
+    /// Explicit way out: the card also closes on an outside tap, but learners asked for a
+    /// visible control so they never have to guess the dismiss gesture.
+    private func closeButton(size: CGFloat) -> some View {
+        Button {
+            Haptics.selection()
+            withAnimation(.snappy) { lookup.dismiss() }
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: size * 0.4, weight: .bold))
+                .foregroundStyle(inkSoft)
+                .frame(width: size, height: size)
+                .background(chip, in: Circle())
+        }
+        .accessibilityLabel("Close")
     }
 
     /// Compact feed tabs — icons only, no heavy selected fill.

@@ -37,6 +37,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private static let pollMilliseconds = 120
     /// How long a video may take to become ready once YouTube's API script has loaded.
     private static let readyTimeout: Duration = .seconds(15)
+    /// Retries get a shorter leash so a failing device shows the failure card quickly
+    /// instead of a long silent wait between strategies.
+    private static let retryReadyTimeout: Duration = .seconds(8)
     /// How long playback may sit at the same time after play was requested.
     private static let stallTimeout: TimeInterval = 15
 
@@ -162,6 +165,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             try { window.postMessage(msg, '*'); } catch(e) {}
           }
           window.__nagareCmd = cmd;
+          // NOTE: no announce-on-load here. A dead embed page (bot check, consent wall,
+          // blocked autoplay) must never report ready — that would flip the player to
+          // full opacity and show the learner a blank black frame for the whole stall
+          // window. Ready is only the 'listening'/'onReady' handshake above, which means
+          // YouTube's player is genuinely alive.
           window.addEventListener('message', function(ev){
             var d = ev.data;
             if (typeof d === 'string') { try { d = JSON.parse(d); } catch(e) { return; } }
@@ -173,10 +181,6 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
               send({e:'time', v:d.info.currentTime});
             }
           });
-          function announce(){ send({e:'ready'}); }
-          if (document.readyState === 'complete') announce();
-          else window.addEventListener('load', announce);
-          setTimeout(announce, 3000);
           setInterval(function(){ cmd('getCurrentTime'); }, 250);
         })();
         """
@@ -211,8 +215,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     /// loaded, it's the network: fail quietly so the learner can skip, but don't blame the clip.
     private func startLoadWatchdog() {
         loadWatchdog?.cancel()
+        let timeout: Duration = loadAttempt == 0 ? Self.readyTimeout : Self.retryReadyTimeout
         loadWatchdog = Task { [weak self] in
-            try? await Task.sleep(for: Self.readyTimeout)
+            try? await Task.sleep(for: timeout)
             guard !Task.isCancelled, let self, !self.isReady, !self.embedFailed else { return }
             if self.apiLoaded {
                 self.fail(code: PlaybackHealth.neverReadyCode)
@@ -221,6 +226,17 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 self.isPlaying = false
             }
         }
+    }
+
+    /// Manual "Try again": restarts the loading ladder from the first strategy.
+    func retry() {
+        loadWatchdog?.cancel()
+        loadAttempt = 0
+        embedFailed = false
+        embedErrorCode = nil
+        didFinish = false
+        lastProgressAt = Date()
+        loadEmbed(in: webView)
     }
 
     /// Terminal failure: stop, surface the code, and tell PlaybackHealth (which hides the clip
