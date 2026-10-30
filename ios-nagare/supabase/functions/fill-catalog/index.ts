@@ -20,20 +20,46 @@ import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
  * pg_cron job calls this with x-admin-token every 10 minutes.
  */
 
-type Lane = { category: string; difficulty: string; query: string };
+type Lane = { category: string; difficulty: string; query: string; tag?: string };
 
 const JAPANESE_LANES: Lane[] = [
   { category: "interview", difficulty: "Beginner", query: "日本語 街頭インタビュー ショート" },
   { category: "interview", difficulty: "Advanced", query: "日本語 インタビュー 会話 ショート" },
+  { category: "interview", difficulty: "Advanced", query: "ニュース 解説 日本語 ショート", tag: "news" },
   { category: "drama", difficulty: "Beginner", query: "コンビニ カフェ 注文 日本語 会話 ショート" },
   { category: "drama", difficulty: "Advanced", query: "日本語 ドラマ セリフ ショート" },
+  { category: "drama", difficulty: "Intermediate", query: "ショートドラマ 日本語 会話" },
   { category: "variety", difficulty: "Intermediate", query: "日本語 あるある トーク ショート" },
+  { category: "variety", difficulty: "Advanced", query: "お笑い 漫才 コント ショート" },
+  { category: "variety", difficulty: "Beginner", query: "バラエティ 日本語 リアクション ショート" },
   { category: "kids", difficulty: "Beginner", query: "子供向け 日本語 あいさつ 会話 ショート" },
+  { category: "kids", difficulty: "Beginner", query: "こどもちゃれんじ 絵本 読み聞かせ ショート", tag: "books" },
   { category: "anime", difficulty: "Beginner", query: "日本語 アニメ 日常会話 ショート" },
   { category: "anime", difficulty: "Intermediate", query: "アニメ セリフ 日本語 ショート" },
   { category: "vtuber", difficulty: "Intermediate", query: "日本語 VTuber 雑談 ショート" },
   { category: "gaming", difficulty: "Intermediate", query: "日本語 マイクラ 実況 会話 ショート" },
+  { category: "gaming", difficulty: "Intermediate", query: "ゲーム実況 切り抜き 日本語 ショート", tag: "clips" },
+  { category: "gaming", difficulty: "Beginner", query: "ポケモン ゲーム 実況 日本語 ショート" },
 ];
+
+/**
+ * "Enough content" per language. Below the target (or with any category under its floor)
+ * the cron runs in growth mode: every pass searches/publishes at full speed, always
+ * favouring the most underfilled categories. At target it drops to freshness mode: a
+ * small daily trickle of new clips so the feed never feels stale, and retirements are
+ * replaced automatically because the count falls back under target.
+ */
+const CATALOG_GOALS: Record<CatalogLanguage, { total: number; categoryFloor: number; freshPerDay: number }> = {
+  ja: { total: 600, categoryFloor: 60, freshPerDay: 12 },
+  ko: { total: 300, categoryFloor: 30, freshPerDay: 6 },
+};
+const CATEGORIES = ["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming"];
+/**
+ * Catalog searches stop once the shared daily YouTube quota passes this mark, keeping
+ * the rest for per-candidate checks (1 unit each), the embed audit and in-app search.
+ * 2026-10-30: unbounded searches hit the 10000 cap and blocked publishing for the day.
+ */
+const SEARCH_QUOTA_CEILING = 7000;
 
 const KOREAN_LANES: Lane[] = [
   { category: "interview", difficulty: "Beginner", query: "한국어 길거리 인터뷰 쇼츠" },
@@ -78,16 +104,33 @@ Deno.serve(async (req) => {
     let stopped = "time-budget";
     await pruneQueue(supabase, language);
 
+    const stats = await catalogStats(supabase, language);
+    const goal = CATALOG_GOALS[language];
+    const growth = stats.total < goal.total ||
+      CATEGORIES.some((c) => (stats.byCategory.get(c) ?? 0) < goal.categoryFloor);
+    let passLimit = RUN_CANDIDATE_TARGET;
+    if (!growth) {
+      const freshLeft = goal.freshPerDay - stats.last24h;
+      if (freshLeft <= 0) return jsonResponse(summary(published, "target-reached", cronReady));
+      // One candidate per pass spreads the daily trickle across the day.
+      passLimit = 1;
+    }
+
     // Fill the queue with search results first (quota is spent here, once per candidate),
     // then spend the rest of the pass publishing from it. A quota wall during the search
     // phase must not stop the pass: queued candidates still publish quota-free.
     const queued = await queueCount(supabase, language);
-    if (queued < QUEUE_TARGET) {
-      const fill = await enqueueFreshCandidates(supabase, language, started, QUEUE_TARGET - queued);
-      if (fill.stopped) stopped = fill.stopped;
+    const queueTarget = growth ? QUEUE_TARGET : 3;
+    if (queued < queueTarget) {
+      if (await youtubeQuotaUsedToday(supabase) >= SEARCH_QUOTA_CEILING) {
+        stopped = "search-quota-reserve";
+      } else {
+        const fill = await enqueueFreshCandidates(supabase, language, started, queueTarget - queued, stats);
+        if (fill.stopped) stopped = fill.stopped;
+      }
     }
 
-    const queue = await takeQueue(supabase, language, RUN_CANDIDATE_TARGET);
+    const queue = await takeQueue(supabase, language, passLimit, stats, goal.categoryFloor);
     for (const candidate of queue) {
       if (Date.now() - started >= RUN_BUDGET_MS) break;
       const result = await analyzeAndPublish(supabase, candidate, language);
@@ -172,17 +215,75 @@ async function pruneQueue(
   await supabase.from(queueTable(language)).delete().lt("added_at", cutoff);
 }
 
+type CatalogStats = { total: number; last24h: number; byCategory: Map<string, number>; byCell: Map<string, number> };
+
+async function catalogStats(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+): Promise<CatalogStats> {
+  const { data } = await supabase
+    .from(catalogTable(language))
+    .select("category, difficulty, created_at")
+    .eq("published", true)
+    .limit(5000);
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const stats: CatalogStats = { total: 0, last24h: 0, byCategory: new Map(), byCell: new Map() };
+  for (const row of (data ?? []) as Array<{ category: string; difficulty: string; created_at?: string }>) {
+    stats.total++;
+    if (row.created_at && Date.parse(row.created_at) >= dayAgo) stats.last24h++;
+    stats.byCategory.set(row.category, (stats.byCategory.get(row.category) ?? 0) + 1);
+    const cell = `${row.category}|${row.difficulty}`;
+    stats.byCell.set(cell, (stats.byCell.get(cell) ?? 0) + 1);
+    const level = `level|${row.difficulty}`;
+    stats.byCell.set(level, (stats.byCell.get(level) ?? 0) + 1);
+  }
+  return stats;
+}
+
+async function youtubeQuotaUsedToday(supabase: ReturnType<typeof serviceClient>): Promise<number> {
+  const { data } = await supabase
+    .from("youtube_quota_usage")
+    .select("units")
+    .eq("day_utc", new Date().toISOString().slice(0, 10))
+    .maybeSingle();
+  return Number((data as { units?: number } | null)?.units ?? 0);
+}
+
+/**
+ * Pulls candidates for the most underfilled categories first (oldest first within a
+ * category), so a queue full of one lane can't starve kids/variety/gaming.
+ */
 async function takeQueue(
   supabase: ReturnType<typeof serviceClient>,
   language: CatalogLanguage,
   limit: number,
+  stats: CatalogStats,
+  categoryFloor: number,
 ): Promise<QueuedCandidate[]> {
   const { data } = await supabase
     .from(queueTable(language))
-    .select("video_id, title, channel_title, duration_sec, category, difficulty")
+    .select("video_id, title, channel_title, duration_sec, category, difficulty, added_at")
     .order("added_at", { ascending: true })
-    .limit(limit);
-  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    .limit(200);
+  const rows = ((data ?? []) as Array<Record<string, unknown>>).slice();
+  const fill = (category: string) => (stats.byCategory.get(category) ?? 0) / Math.max(1, categoryFloor);
+  // Round-robin across categories ordered by fill ratio, so one pass mixes categories.
+  const buckets = new Map<string, Array<Record<string, unknown>>>();
+  for (const row of rows) {
+    const category = String(row.category ?? "interview");
+    if (!buckets.has(category)) buckets.set(category, []);
+    buckets.get(category)!.push(row);
+  }
+  const order = [...buckets.keys()].sort((a, b) => fill(a) - fill(b));
+  const picked: Array<Record<string, unknown>> = [];
+  while (picked.length < limit && order.some((c) => (buckets.get(c)?.length ?? 0) > 0)) {
+    for (const category of order) {
+      const next = buckets.get(category)?.shift();
+      if (next) picked.push(next);
+      if (picked.length >= limit) break;
+    }
+  }
+  return picked.map((row) => ({
     videoId: String(row.video_id),
     title: String(row.title ?? ""),
     channelTitle: String(row.channel_title ?? ""),
@@ -209,13 +310,14 @@ async function enqueueFreshCandidates(
   language: CatalogLanguage,
   started: number,
   target: number,
+  stats: CatalogStats,
 ): Promise<{ stopped: string | null }> {
-  const lanes = await lanesByEmptiness(supabase, language);
+  const lanes = lanesByEmptiness(language, stats);
   let queuedNew = 0;
   let searches = 0;
   for (const lane of lanes) {
     if (queuedNew >= target || searches >= MAX_SEARCHES_PER_PASS || Date.now() - started >= RUN_BUDGET_MS) break;
-    const laneKey = `${language}|${lane.category}|${lane.difficulty}`;
+    const laneKey = `${language}|${lane.category}|${lane.difficulty}${lane.tag ? `|${lane.tag}` : ""}`;
     const found = await searchFresh(supabase, lane, language, laneKey);
     if (!found.ok) {
       if (found.reason === "youtube-quota") return { stopped: "youtube-quota" };
@@ -308,25 +410,16 @@ function summary(
   };
 }
 
-async function lanesByEmptiness(
-  supabase: ReturnType<typeof serviceClient>,
-  language: CatalogLanguage,
-): Promise<Lane[]> {
-  const { data } = await supabase.from(catalogTable(language)).select("category, difficulty").eq("published", true);
-  const counts = new Map<string, number>();
-  for (const row of data ?? []) {
-    const key = `${row.category}|${row.difficulty}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-    const levelKey = `level|${row.difficulty}`;
-    counts.set(levelKey, (counts.get(levelKey) ?? 0) + 1);
-  }
-  return [...lanesFor(language)].sort((a, b) => laneRank(a, counts) - laneRank(b, counts));
-}
-
-function laneRank(lane: Lane, counts: Map<string, number>): number {
-  const level = counts.get(`level|${lane.difficulty}`) ?? 0;
-  const cell = counts.get(`${lane.category}|${lane.difficulty}`) ?? 0;
-  return level * 100 + cell;
+/** Emptiest category first, then the scarcest level, then the emptiest cell. */
+function lanesByEmptiness(language: CatalogLanguage, stats: CatalogStats): Lane[] {
+  const floor = CATALOG_GOALS[language].categoryFloor;
+  const rank = (lane: Lane) => {
+    const categoryFill = Math.min(1, (stats.byCategory.get(lane.category) ?? 0) / floor);
+    const level = stats.byCell.get(`level|${lane.difficulty}`) ?? 0;
+    const cell = stats.byCell.get(`${lane.category}|${lane.difficulty}`) ?? 0;
+    return categoryFill * 1_000_000 + level * 100 + cell;
+  };
+  return [...lanesFor(language)].sort((a, b) => rank(a) - rank(b));
 }
 
 type FreshVideo = { videoId: string; title: string; channelTitle: string; durationSec: number };
