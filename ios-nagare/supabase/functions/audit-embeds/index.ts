@@ -4,6 +4,7 @@ import { requireEnv } from "../_shared/env.ts";
 import { errorResponse, jsonResponse } from "../_shared/http.ts";
 import { tryConsumeYoutubeQuota } from "../_shared/limits.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import { oembedBlocked } from "../_shared/immersion.ts";
 
 const YOUTUBE_BATCH_SIZE = 50;
 const DB_PAGE_SIZE = 500;
@@ -40,9 +41,26 @@ Deno.serve(async (req) => {
         const valid = allRows.slice(start, start + YOUTUBE_BATCH_SIZE)
           .filter((row) => /^[A-Za-z0-9_-]{11}$/.test(row.video_id));
         if (valid.length === 0) continue;
+
+        // Quota-free first pass: oEmbed catches owner-disabled embeds the Data API misses.
+        const refused: ClipRow[] = [];
+        for (let i = 0; i < valid.length; i += 8) {
+          const chunk = valid.slice(i, i + 8);
+          const verdicts = await Promise.all(chunk.map((row) => oembedBlocked(row.video_id)));
+          chunk.forEach((row, j) => { if (verdicts[j] === true) refused.push(row); });
+        }
+        if (refused.length > 0) {
+          const { data: changed, error: updateError } = await supabase
+            .from(table).update({ published: false }).eq("published", true)
+            .in("id", refused.map((row) => row.id)).select("id");
+          if (updateError) summary.errors.push(`Could not unpublish refused clips (${language})`);
+          else summary.unpublished += changed?.length ?? 0;
+        }
+
         if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
           summary.quotaLimited = true;
-          return jsonResponse(summary);
+          summary.checked += valid.length;
+          continue;
         }
 
         const params = new URLSearchParams({ part: "status", id: valid.map((r) => r.video_id).join(","), key: youtubeKey });

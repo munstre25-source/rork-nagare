@@ -124,9 +124,11 @@ struct ClipVideoView: View {
         }
         .task(id: embedFailed) {
             // Never leave a learner staring at a dead clip: move on after a short beat.
-            guard embedFailed, let onSkip else { return }
+            // Except when YouTube is limiting the whole network: auto-skipping then just fires
+            // embed after embed at YouTube (the 2026-10-30 storm) and every clip fails anyway.
+            guard embedFailed, let onSkip, !YouTubeSession.shared.isLimited else { return }
             try? await Task.sleep(for: .milliseconds(1800))
-            guard !Task.isCancelled, embedFailed else { return }
+            guard !Task.isCancelled, embedFailed, !YouTubeSession.shared.isLimited else { return }
             onSkip()
         }
         .sheet(isPresented: $showFeatureRequest, onDismiss: {
@@ -176,6 +178,7 @@ struct ClipVideoView: View {
             ZStack {
                 ClipPosterView(clip: clip, showsSymbol: false)
                 YouTubePlayerView(player: youtube)
+                    .id(youtube.sessionGeneration)
                     .opacity(youtube.hasRenderedVideo && !youtube.embedFailed ? 1 : 0.01)
             }
         } else {
@@ -185,6 +188,15 @@ struct ClipVideoView: View {
 
     private var embedFailed: Bool {
         (player as? YouTubeClipPlayer)?.embedFailed == true
+    }
+
+    private var networkLimited: Bool {
+        YouTubeSession.shared.isLimited && embedErrorIsRefusal
+    }
+
+    private var embedErrorIsRefusal: Bool {
+        guard let code = (player as? YouTubeClipPlayer)?.embedErrorCode else { return false }
+        return code == 101 || code == 150
     }
 
     private var embedFailureDetail: String {
@@ -200,11 +212,13 @@ struct ClipVideoView: View {
 
     private var embedFailure: some View {
         VStack(spacing: Spacing.m) {
-            Text("Video couldn’t load")
+            Text(networkLimited ? "YouTube is busy on this network" : "Video couldn’t load")
                 .font(.headline)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
-            Text(onSkip == nil ? embedFailureDetail : "\(embedFailureDetail) · skipping…")
+            Text(networkLimited
+                 ? "Retrying on its own — it’ll start the moment YouTube lets it"
+                 : onSkip == nil ? embedFailureDetail : "\(embedFailureDetail) · skipping…")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.75))
                 .multilineTextAlignment(.center)

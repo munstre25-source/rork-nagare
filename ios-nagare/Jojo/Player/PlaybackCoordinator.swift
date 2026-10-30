@@ -46,6 +46,9 @@ final class PlaybackCoordinator {
             return
         }
         // A pre-warmed player for this exact clip → swap it in, no cold start.
+        if let failed = preloaded as? YouTubeClipPlayer, failed.clip.id == clip.id, failed.embedFailed {
+            cancelPreload() // a warm player that already failed would only show its failure card
+        }
         if let preloaded, preloaded.clip.id == clip.id {
             preloadTask?.cancel()
             preloadTask = nil
@@ -91,16 +94,25 @@ final class PlaybackCoordinator {
     /// prewarmed embed never autoplays: two concurrent playback sessions from one embedder
     /// look abusive to YouTube and can trigger error 150 storms (2026-10-30 incident).
     ///
-    /// NOT currently called from the feed: even a cue-only second session still reads as
-    /// concurrent embedding to YouTube, and the 19:15 UTC session showed every embed
-    /// erroring 150 while a prewarm was alive. Cold start on swipe is the reliable default.
+    /// Gated (2026-10-30, night 12): the warm-up starts only once the current video is
+    /// actually playing, and never while YouTube is limiting the network. Swapping the warm
+    /// player in means each clip still costs exactly one embed load — no extra traffic —
+    /// while the swipe starts on an already-cued video.
     func preload(_ clip: Clip) {
         guard player?.clip.id != clip.id, preloaded?.clip.id != clip.id else { return }
         cancelPreload()
         preloadTask = Task { [weak self] in
             // Let the current video start first; don't compete for bandwidth.
             try? await Task.sleep(for: .seconds(1.5))
+            var waited = 0
+            while let current = self?.player as? YouTubeClipPlayer, !current.hasRenderedVideo, waited < 40 {
+                try? await Task.sleep(for: .milliseconds(500))
+                waited += 1
+                if Task.isCancelled { return }
+            }
             guard let self, !Task.isCancelled,
+                  !YouTubeSession.shared.isLimited,
+                  (self.player as? YouTubeClipPlayer)?.hasRenderedVideo ?? true,
                   self.player?.clip.id != clip.id else { return }
             let warm = ClipPlayerFactory.make(for: clip, autoplaysOnLoad: false)
             warm.setRate(self.preferredRate)

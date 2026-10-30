@@ -36,7 +36,17 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var loadWatchdog: Task<Void, Never>?
     @ObservationIgnored private var lastReportedTime: Double = -1
     @ObservationIgnored private var lastProgressAt = Date()
-    @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
+    @ObservationIgnored private var currentWebView: WKWebView?
+    /// The YouTubeSession generation the current web view was built in. Observed: the host
+    /// view keys on it, so a rebuilt web view (fresh visitor session) is attached at once.
+    private(set) var sessionGeneration = -1
+    var webView: WKWebView {
+        if let currentWebView { return currentWebView }
+        let view = makeWebView()
+        currentWebView = view
+        loadEmbed(in: view)
+        return view
+    }
     @ObservationIgnored private var autoRetryTask: Task<Void, Never>?
     @ObservationIgnored private var autoRetries = 0
     @ObservationIgnored private var ladderTask: Task<Void, Never>?
@@ -86,6 +96,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         self.clip = clip
         self.autoplaysOnLoad = autoplaysOnLoad
         super.init()
+        sessionGeneration = YouTubeSession.shared.generation
     }
 
     private func makeWebView() -> WKWebView {
@@ -93,18 +104,48 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.allowsPictureInPictureMediaPlayback = false
+        // Present as Mobile Safari (same engine). A bare WKWebView UA gets YouTube's stricter
+        // bot screening; the app is still identified to YouTube by the Referer (RMF).
+        config.applicationNameForUserAgent = "Version/26.0 Mobile/15E148 Safari/604.1"
         if #available(iOS 15.4, *) {
             config.preferences.isElementFullscreenEnabled = false
         }
         config.userContentController.add(WeakMessageHandler(self), name: "yt")
+        // In-memory cookie jar shared by all embeds; see YouTubeSession for why.
+        YouTubeSession.shared.purgeLegacyStoreOnce()
+        config.websiteDataStore = YouTubeSession.shared.store
+        if sessionGeneration != YouTubeSession.shared.generation { sessionGeneration = YouTubeSession.shared.generation }
+        didInstallDirectBridge = false
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
         view.backgroundColor = .black
         view.scrollView.isScrollEnabled = false
         view.scrollView.contentInsetAdjustmentBehavior = .never
         // Mute-first autoplay is required on iOS WKWebView; we unmute after play starts if desired.
-        loadEmbed(in: view)
         return view
+    }
+
+    /// Restarts loading from the first ladder strategy. If the shared YouTube session was
+    /// reset since this web view was built, the web view is rebuilt in the fresh session —
+    /// a web view's cookie jar is fixed at creation.
+    private func reloadFromStart() {
+        loadWatchdog?.cancel()
+        loadAttempt = 0
+        embedFailed = false
+        embedErrorCode = nil
+        isReady = false
+        hasRenderedVideo = false
+        didFinish = false
+        lastProgressAt = Date()
+        if let old = currentWebView, sessionGeneration != YouTubeSession.shared.generation {
+            old.stopLoading()
+            old.configuration.userContentController.removeScriptMessageHandler(forName: "yt")
+            old.removeFromSuperview()
+            currentWebView = nil
+            _ = webView // builds in the new session and loads
+        } else {
+            loadEmbed(in: webView)
+        }
     }
 
     /// YouTube's Required Minimum Functionality for iOS WebViews: load the player page with
@@ -136,7 +177,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             }
             view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer, autoplay: autoplaysOnLoad), baseURL: base)
         case .directEmbed:
-            installDirectBridge()
+            installDirectBridge(in: view)
             // No `origin` param here: the embed page is the top-level document, so a foreign
             // origin would make its postMessage handshake drop every event.
             var components = URLComponents(string: "https://www.youtube.com/embed/\(videoId)")!
@@ -163,7 +204,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     /// JS bridge for `.directEmbed`: a user script inside the embed page relays player events to
     /// us and exposes commands through `window.__nagareCmd` (the postMessage player protocol).
-    private func installDirectBridge() {
+    private func installDirectBridge(in view: WKWebView) {
         guard !didInstallDirectBridge else { return }
         didInstallDirectBridge = true
         let source = """
@@ -197,7 +238,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         })();
         """
         let script = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
-        webView.configuration.userContentController.addUserScript(script)
+        view.configuration.userContentController.addUserScript(script)
     }
 
     /// Executes a player command in whichever load mode is active.
@@ -242,13 +283,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     /// Manual "Try again": restarts the loading ladder from the first strategy.
     func retry() {
-        loadWatchdog?.cancel()
-        loadAttempt = 0
-        embedFailed = false
-        embedErrorCode = nil
-        didFinish = false
-        lastProgressAt = Date()
-        loadEmbed(in: webView)
+        reloadFromStart()
     }
 
     /// Failure of this load attempt: stop, surface the code, tell PlaybackHealth (which
@@ -265,9 +300,24 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         isPlaying = false
         embedErrorCode = code
         embedFailed = true
+        let limited = YouTubeSession.shared.isLimited
         // 152/153 are app-identity errors that would hit every video; never blame a clip for them.
-        if PlaybackHealth.definitiveCodes.contains(code) || code < 0 {
+        // Nor while the whole network is limited: then no video is at fault.
+        if !limited, PlaybackHealth.definitiveCodes.contains(code) || code < 0 {
             PlaybackHealth.recordFailure(clip: clip, code: code)
+        }
+        if limited, code != 100 {
+            // One slow probe on the clip on screen; the first frame that plays lifts the limit.
+            autoRetryTask?.cancel()
+            autoRetryTask = Task { [weak self] in
+                try? await Task.sleep(for: YouTubeSession.probeInterval)
+                guard let self, !Task.isCancelled, self.embedFailed else { return }
+                self.wantsPlay = resumeOnRetry
+                if resumeOnRetry { self.isPlaying = true }
+                self.reloadFromStart()
+                if resumeOnRetry { self.startPolling() }
+            }
+            return
         }
         guard code != 100, autoRetries < 2 else { return }
         autoRetryTask?.cancel()
@@ -275,14 +325,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             try? await Task.sleep(for: .seconds(20))
             guard let self, !Task.isCancelled, self.embedFailed else { return }
             self.autoRetries += 1
-            self.embedFailed = false
-            self.embedErrorCode = nil
-            self.didFinish = false
-            self.lastProgressAt = Date()
             self.wantsPlay = resumeOnRetry
             if resumeOnRetry { self.isPlaying = true }
-            self.loadAttempt = 0
-            self.loadEmbed(in: self.webView)
+            self.reloadFromStart()
             if resumeOnRetry { self.startPolling() }
         }
     }
@@ -376,7 +421,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         pause()
         onFinished = nil
         onWatchTick = nil
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "yt")
+        currentWebView?.configuration.userContentController.removeScriptMessageHandler(forName: "yt")
     }
 
     private func run(_ js: String) {
@@ -442,6 +487,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 lastProgressAt = Date()
                 if isReady {
                     hasRenderedVideo = true
+                    YouTubeSession.shared.noteSuccess()
                     PlaybackHealth.noteSuccessfulPlayback()
                 }
             }
@@ -466,6 +512,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if value == 1 {
                 isPlaying = true
                 hasRenderedVideo = true
+                YouTubeSession.shared.noteSuccess()
                 if !isMuted { runCommand("unMute") }
             }
         case "error":
@@ -476,9 +523,27 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             isReady = false
             hasRenderedVideo = false
             let failedAttempt = loadAttempt
+            if code == 101 || code == 150 {
+                YouTubeSession.shared.noteRefusal(videoId: clip.videoId)
+            }
             if code == 100 {
                 // Removed video: definitive regardless of the embedder, no retry.
                 fail(code: code)
+            } else if YouTubeSession.shared.isLimited {
+                // YouTube is refusing this network. Walking the ladder would only fire more
+                // embeds at it and prolong the block; fail quietly and probe slowly instead.
+                ladderTask?.cancel()
+                fail(code: code)
+            } else if sessionGeneration != YouTubeSession.shared.generation
+                        || (loadAttempt == 0 && YouTubeSession.shared.resetIfFlagged()) {
+                // 150/101 storms are YouTube flagging the visitor session, not the videos
+                // (2026-10-30). Retry this clip at once as a brand-new visitor.
+                ladderTask?.cancel()
+                ladderTask = Task { [weak self] in
+                    try? await Task.sleep(for: .milliseconds(250))
+                    guard let self, !Task.isCancelled else { return }
+                    self.reloadFromStart()
+                }
             } else if loadAttempt + 1 < Self.embedLadder.count {
                 // 101/150 can be embedder-identity or WebKit quirks, not the video: try the
                 // next loading strategy before blaming the clip. Pacing matters — reloading
@@ -492,7 +557,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                     self.isReady = false
                     self.didFinish = false
                     self.loadWatchdog?.cancel()
-                    self.loadEmbed(in: self.webView)
+                    if self.sessionGeneration != YouTubeSession.shared.generation {
+                        self.reloadFromStart()
+                    } else {
+                        self.loadEmbed(in: self.webView)
+                    }
                 }
             } else {
                 fail(code: code)

@@ -102,9 +102,32 @@ export async function detectVideoOrientation(videoId: string): Promise<"portrait
   }
 }
 
+/**
+ * Quota-free embed gate. YouTube's Data API can say `embeddable: true` while the watch
+ * oEmbed answers 401 (owner disabled embedding) — those videos error 150/101 in every app
+ * player (2026-10-30: ZXeSXMqsSBQ). 401/403/404 = blocked; anything else = unknown.
+ */
+export async function oembedBlocked(videoId: string): Promise<boolean | null> {
+  try {
+    const url = `https://www.youtube.com/oembed?format=json&url=${
+      encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)
+    }`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    await res.body?.cancel();
+    if (res.ok) return false;
+    if ([401, 403, 404].includes(res.status)) return true;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function checkYouTubeVideo(supabase: SupabaseClient, videoId: string): Promise<VideoCheck> {
   if (await isDeviceBlocked(supabase, videoId)) {
     return { ok: false, code: "not_embeddable", detail: "device playback reports" };
+  }
+  if (await oembedBlocked(videoId) === true) {
+    return { ok: false, code: "not_embeddable", detail: "oembed refused" };
   }
   if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
     return { ok: false, code: "quota_exhausted", detail: "youtube daily cap" };

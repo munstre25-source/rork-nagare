@@ -172,5 +172,8 @@ struct ClipQueueScreen: View {
             startLine: (loopPlayback && id == startId) ? startLine : (useStart ? startLine : nil),
             loopLine: loopPlayback || (useStart && loopLine)
         )
+        if let index = clips.firstIndex(where: { $0.id == id }), let next = clips[safe: index + 1] {
+            coordinator.preload(next)
+        }
     }
 }

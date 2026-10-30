@@ -193,6 +193,9 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
     ]
     : opts.user;
 
+  if (!(await openRouterBudget("openrouter_budget_ok", { reserve: opts.youtube ? 0.1 : 0.01 }))) {
+    throw new GeminiError(402, "OpenRouter budget cap reached");
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   try {
@@ -209,6 +212,7 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
         max_tokens: opts.youtube ? 8192 : 4096,
         response_format: { type: "json_object" },
         reasoning: { effort: opts.youtube ? "low" : "minimal", exclude: true },
+        usage: { include: true },
         provider: { only: ["google-ai-studio"], allow_fallbacks: false },
         messages: [
           { role: "system", content: opts.system },
@@ -223,12 +227,36 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
     }
     const data = await res.json() as {
       choices?: Array<{ message?: { content?: string } }>;
+      usage?: { cost?: number };
     };
+    // Unknown cost is booked pessimistically so the cap can never be overrun silently.
+    const cost = typeof data.usage?.cost === "number" ? data.usage.cost : (opts.youtube ? 0.05 : 0.005);
+    await openRouterBudget("openrouter_add_spend", { cost });
     const text = stripFence(data.choices?.[0]?.message?.content ?? "");
     if (!text) throw new GeminiError(502, "Gemini empty response");
     return { text, model };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** Calls the spend-ledger RPCs with the service role. Fails closed (false) on any error. */
+async function openRouterBudget(fn: string, args: Record<string, unknown>): Promise<boolean> {
+  const base = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!base || !key) return false;
+  try {
+    const res = await fetch(`${base}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+      body: JSON.stringify(args),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return false;
+    const value = await res.json();
+    return fn === "openrouter_budget_ok" ? value === true : true;
+  } catch {
+    return false;
   }
 }
 
