@@ -109,12 +109,12 @@ struct MainTabView: View {
             }
             if newTab == .vocab { guide.noteOpenedVocab() }
             syncGuideVisibility()
-            if newTab != .feed { scheduleExperiencePrompt() }
+            if newTab != .feed, app.pendingDeepLink == nil { scheduleExperiencePrompt() }
         }
         .onChange(of: showingExplore) { _, _ in syncGuideVisibility() }
         .onChange(of: anySheetUp) { _, _ in syncGuideVisibility() }
         .onChange(of: app.calmMomentTick) { _, _ in
-            if tab != .feed { scheduleExperiencePrompt() }
+            if tab != .feed, app.pendingDeepLink == nil { scheduleExperiencePrompt() }
         }
         .onChange(of: guide.feedRequestTick) { _, _ in
             showingExplore = false
@@ -192,13 +192,18 @@ struct MainTabView: View {
     /// during the tour, another sheet, or speaking practice. Waits a beat, then checks again.
     private func scheduleExperiencePrompt() {
         experiencePromptTask?.cancel()
-        guard app.shouldPresentFeedbackPrompt else { return }
+        guard app.shouldPresentFeedbackPrompt,
+              !app.isReviewSessionActive,
+              !app.recentlyEndedReview else { return }
         let requestedTab = tab
         experiencePromptTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(FeedbackPromptConfig.calmDelaySeconds))
             guard !Task.isCancelled,
                   tab == requestedTab, tab != .feed,
                   app.shouldPresentFeedbackPrompt,
+                  !app.isReviewSessionActive,
+                  !app.recentlyEndedReview,
+                  app.pendingDeepLink == nil,
                   guide.tourStep == nil,
                   guide.activeTip == nil,
                   !anySheetUp,

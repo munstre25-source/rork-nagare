@@ -4,20 +4,30 @@ import { geminiModelExplain } from "./env.ts";
 import { geminiGenerateJson, parseJsonObject } from "./gemini.ts";
 import { tryIncrementGeminiUsage } from "./limits.ts";
 
-/** Gemini's job: hear the clip. Dictionary fields are added afterwards. */
+/**
+ * Gemini's job: hear the clip and add learner fields in the same pass.
+ *
+ * Definitions are deliberately NOT asked for. They are fetched per word, on tap,
+ * through the shared `word_explanations` cache (explain-word). Dictionary text for
+ * every token of every clip multiplied the AI cost per clip and capped library growth.
+ */
 export function hearSystem(language: CatalogLanguage): string {
   const name = languageName(language);
   const script = language === "ko"
     ? "Hangul only in surface. No Japanese."
     : "Japanese dialogue only; no English in surface.";
+  const fields = language === "ko"
+    ? "reading (Revised Romanization; omit when the surface is plain hangul), romaji, pos, jlpt (\"TOPIK1\"|\"TOPIK2\"|\"TOPIK3\"|\"TOPIK4\"|\"TOPIK5\"|\"TOPIK6\", omit if unknown; never N1–N5)"
+    : "reading (hiragana when the surface has kanji; omit when the surface is already kana), romaji, pos, jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
   return `You transcribe a short ${name} YouTube video segment for language learners.
-Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number } ] } ] }.
+Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number, ${fields}, "tappable": boolean, "baseForm": string (dictionary form, for conjugated stems), "baseReading": string, "baseRomaji": string } ] } ] }.
 Rules:
 - Transcribe speech you can actually hear. Do not invent dialogue.
 - Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
-- Tokenize into learner-friendly units, with particles as their own tokens. Punctuation may be its own token.
+- Tokenize into learner-friendly units, with particles as their own tokens. Punctuation may be its own token and is tappable=false.
 - ${script}
-- Do not add readings, romaji, part of speech, JLPT, or definitions.
+- Set tappable true for real words and false for punctuation and filler sounds.
+- Do NOT add definitions, glosses, or meanings for tokens. Do not add ja_definitions.
 - No markdown.`;
 }
 
@@ -31,42 +41,10 @@ export function hearSystemCatalog(language: CatalogLanguage): string {
 - Also include "difficulty": "Beginner" or "Intermediate" or "Advanced", judged only from the words and grammar you heard.`;
 }
 
-export const HEAR_SYSTEM = hearSystem("ja");
-
-export const HEAR_SYSTEM_CATALOG = hearSystemCatalog("ja");
-
-function enrichSystem(language: CatalogLanguage): string {
-  const reading = language === "ko"
-    ? "reading (Revised Romanization; omit when the surface is already plain hangul with no hanja)"
-    : "reading (hiragana when the surface has kanji; omit when the surface is already kana)";
-  const level = language === "ko"
-    ? "jlpt (\"TOPIK1\"|\"TOPIK2\"|\"TOPIK3\"|\"TOPIK4\"|\"TOPIK5\"|\"TOPIK6\", omit if unknown). Do not use N1–N5."
-    : "jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
-  return `You add dictionary fields to a ${languageName(language)} transcript that was already heard.
-Do not change surfaces. Do not add, remove, or reorder tokens or lines.
-Return { "lines": [ { "i": number, "tokens": [ Token ] } ] }.
-Each Token keeps the same "i" and adds: ${reading}, romaji, pos, ${level}, definitions (one to three short English glosses), tappable (false for punctuation), formality (optional), conjugationClass (optional), baseForm/baseReading/baseRomaji (optional, for conjugated stems), altReadings (optional string[]).
-Every tappable token needs at least one definition.
-No markdown.`;
-}
-
-const JLPT = new Set(["N5", "N4", "N3", "N2", "N1"]);
-const TOPIK = new Set(["TOPIK1", "TOPIK2", "TOPIK3", "TOPIK4", "TOPIK5", "TOPIK6"]);
-
-type HeardLine = {
-  tokens?: unknown;
-  [key: string]: unknown;
-};
-
-type HeardToken = {
-  surface?: unknown;
-  [key: string]: unknown;
-};
-
 /**
- * Fills reading, meaning, and JLPT on words Gemini already heard.
- * Surfaces and timestamps stay exactly as heard. Uses the same Gemini key as transcription.
- * Returns the heard lines unchanged when the daily cap is spent or the model call fails.
+ * Legacy per-token dictionary enrichment. Ingest no longer calls it: definitions are
+ * fetched on tap through explain-word's shared cache instead. Kept for manual repair
+ * jobs that need to backfill dictionary fields onto already-heard lines.
  */
 export async function enrichHeardLines(
   lines: unknown,
@@ -113,6 +91,36 @@ export async function enrichHeardLines(
     return lines;
   }
 }
+
+export const HEAR_SYSTEM_CATALOG = hearSystemCatalog("ja");
+
+function enrichSystem(language: CatalogLanguage): string {
+  const reading = language === "ko"
+    ? "reading (Revised Romanization; omit when the surface is already plain hangul with no hanja)"
+    : "reading (hiragana when the surface has kanji; omit when the surface is already kana)";
+  const level = language === "ko"
+    ? "jlpt (\"TOPIK1\"|\"TOPIK2\"|\"TOPIK3\"|\"TOPIK4\"|\"TOPIK5\"|\"TOPIK6\", omit if unknown). Do not use N1–N5."
+    : "jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
+  return `You add dictionary fields to a ${languageName(language)} transcript that was already heard.
+Do not change surfaces. Do not add, remove, or reorder tokens or lines.
+Return { "lines": [ { "i": number, "tokens": [ Token ] } ] }.
+Each Token keeps the same "i" and adds: ${reading}, romaji, pos, ${level}, definitions (one to three short English glosses), tappable (false for punctuation), formality (optional), conjugationClass (optional), baseForm/baseReading/baseRomaji (optional, for conjugated stems), altReadings (optional string[]).
+Every tappable token needs at least one definition.
+No markdown.`;
+}
+
+const JLPT = new Set(["N5", "N4", "N3", "N2", "N1"]);
+const TOPIK = new Set(["TOPIK1", "TOPIK2", "TOPIK3", "TOPIK4", "TOPIK5", "TOPIK6"]);
+
+type HeardLine = {
+  tokens?: unknown;
+  [key: string]: unknown;
+};
+
+type HeardToken = {
+  surface?: unknown;
+  [key: string]: unknown;
+};
 
 function mergeEnrichment(lines: unknown[], extra: unknown, language: CatalogLanguage): unknown[] {
   if (!Array.isArray(extra)) return lines;

@@ -46,6 +46,16 @@ final class AppModel {
     var pendingFeedClipId: String?
     /// Deep link destination from widgets / URLs (`jojo://review`, `jojo://feed`).
     var pendingDeepLink: DeepLink?
+    /// True while a flashcard review is on screen (and for a short grace period after it
+    /// ends), so the one-time experience prompt never interrupts review; it re-fires at a
+    /// later calm moment instead.
+    @ObservationIgnored var isReviewSessionActive = false
+    @ObservationIgnored var lastReviewEndedAt: Date?
+    /// True within the quiet window right after a review finishes.
+    var recentlyEndedReview: Bool {
+        guard let ended = lastReviewEndedAt else { return false }
+        return Date().timeIntervalSince(ended) < 90
+    }
     /// Pushed screens such as a word's detail hide the floating tab bar.
     var hidesMainTabBar: Bool = false
     /// Feed focus: the capsule is faded while a clip plays. FeedView owns the timer.

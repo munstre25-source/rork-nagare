@@ -54,6 +54,47 @@ nonisolated struct SupabaseAPI: Sendable {
         return data
     }
 
+    /// POST /rest/v1/rpc/<name>. Word and grammar search over the whole catalog.
+    func rpcLineHits(_ name: String, _ params: [String: Any]) async throws -> [LineHitRow] {
+        guard let baseURL else { throw SupabaseError.notConfigured }
+        var request = URLRequest(url: baseURL.appending(path: "rest/v1/rpc/\(name)"))
+        request.httpMethod = "POST"
+        authorized(&request)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = try JSONSerialization.data(withJSONObject: params)
+        let (data, response) = try await Self.librarySession.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw SupabaseError.invalidResponse }
+        guard (200..<300).contains(http.statusCode) else { throw SupabaseError.http(http.statusCode) }
+        return try JSONDecoder().decode([LineHitRow].self, from: data)
+    }
+
+    /// Kiku-style search: every published clip's transcript, not just what's on the phone.
+    func searchLines(query: String, maxResults: Int = 24) async throws -> [SearchHit] {
+        let rows = try await rpcLineHits("search_clip_lines", [
+            "p_query": query,
+            "p_max_results": maxResults,
+            "p_offset": 0,
+        ])
+        return rows.compactMap { row in
+            guard let clip = row.clip?.clip, !clip.lines.isEmpty else { return nil }
+            return SearchHit(clip: clip, lineIndex: row.lineIndex)
+        }
+    }
+
+    /// Grammar-pattern search: lines that use e.g. 〜たい or 〜てしまう.
+    func searchGrammar(patternId: String, maxResults: Int = 24) async throws -> [SearchHit] {
+        let rows = try await rpcLineHits("search_grammar_lines", [
+            "p_pattern_id": patternId,
+            "p_max_results": maxResults,
+            "p_offset": 0,
+        ])
+        return rows.compactMap { row in
+            guard let clip = row.clip?.clip, !clip.lines.isEmpty else { return nil }
+            return SearchHit(clip: clip, lineIndex: row.lineIndex)
+        }
+    }
+
     /// GET /rest/v1/clips?published=eq.true&select=*
     func fetchPublishedClips() async throws -> [(clip: Clip, json: Data)] {
         guard let baseURL else { throw SupabaseError.notConfigured }
@@ -121,6 +162,23 @@ nonisolated struct ClipRow: Decodable, Sendable {
             thumbnailGradient: thumbnailGradient ?? palette[index],
             videoOrientation: videoOrientation
         )
+    }
+}
+
+/// One row of a search RPC: the clip plus which transcript line matched.
+nonisolated struct LineHitRow: Decodable, Sendable {
+    let clip: ClipRow?
+    let lineIndex: Int
+
+    enum CodingKeys: String, CodingKey {
+        case clip = "clip_row"
+        case lineIndex = "line_index"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        clip = try? c.decode(ClipRow.self, forKey: .clip)
+        lineIndex = (try? c.decodeIfPresent(Int.self, forKey: .lineIndex)) ?? 0
     }
 }
 

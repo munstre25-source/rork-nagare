@@ -32,6 +32,9 @@ struct ShortsRail: View {
     var onToggleCaptions: () -> Void
     var onInfo: (() -> Void)?
     var onFullscreen: (() -> Void)?
+    /// Portrait shorts: enter the in-feed theater (chrome steps away) instead of opening
+    /// another player screen — resizing never leaves the feed.
+    var onMaximize: (() -> Void)? = nil
     /// Maximized landscape: the last control returns the video to its usual size.
     var onMinimize: (() -> Void)? = nil
     /// White glyphs on footage; theme ink when the rail sits on the page.
@@ -86,7 +89,11 @@ struct ShortsRail: View {
                 onToggleCaptions()
             }
 
-            if let onFullscreen {
+            if let onMaximize {
+                railButton("arrow.up.left.and.arrow.down.right", tint: ink, label: "Maximize video") {
+                    onMaximize()
+                }
+            } else if let onFullscreen {
                 railButton(onMinimize == nil ? "arrow.up.left.and.arrow.down.right" : "rotate.right",
                            tint: ink, label: onMinimize == nil ? "Fullscreen" : "Rotate to fullscreen") {
                     Haptics.selection()

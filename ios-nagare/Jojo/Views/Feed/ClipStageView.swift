@@ -275,13 +275,14 @@ struct ClipStageView: View {
             .frame(width: card.width, height: card.height)
             .coachTarget(.video, active: isCoachPage)
 
-            // Scrims keep white chrome readable on bright footage without hiding the scene.
+            // Scrims keep white chrome readable on bright footage. Keep them short and light:
+            // a heavy half-card wash reads as "blocked content" over the Short's own artwork.
             VStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 120)
+                LinearGradient(colors: [.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 96)
                 Spacer(minLength: 0)
-                LinearGradient(colors: [.clear, .black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: card.height * 0.42)
+                LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: card.height * 0.3)
             }
             .allowsHitTesting(false)
 
@@ -312,7 +313,10 @@ struct ClipStageView: View {
                             withAnimation(.snappy) { showsShortsCaptions.toggle() }
                         },
                         onInfo: onInfo,
-                        onFullscreen: onFullscreen
+                        // In-feed theater for shorts: maximize hides the chrome, minimize
+                        // brings it back. Never opens another player screen.
+                        onMaximize: videoExpanded ? nil : onToggleVideoSize,
+                        onMinimize: videoExpanded ? onToggleVideoSize : nil
                     )
                     .opacity(watchChromeHidden ? 0.35 : 1)
                     .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
@@ -380,7 +384,8 @@ struct ClipStageView: View {
         GeometryReader { geo in
             let anchor = transcriptTop > 200 ? min(transcriptTop - 6, geo.size.height) : nil
             ZStack(alignment: .top) {
-                Color.black.opacity(0.12)
+                // A whisper of dim marks the tap-to-close area without blocking the scene.
+                Color.black.opacity(0.05)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)

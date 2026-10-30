@@ -12,11 +12,11 @@
  */
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { CatalogLanguage, languageName } from "./catalog.ts";
-import { enrichHeardLines, hearSystemCatalog } from "./enrich.ts";
+import { hearSystemCatalog } from "./enrich.ts";
 import { geminiModelAnalyze, promptVersion, requireEnv } from "./env.ts";
 import { GeminiError, geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "./limits.ts";
-import { assessTiming, ClipTimingMode, TimedLine, toClipRelative, validateLineTimeline } from "./timing.ts";
+import { assessTiming, ClipTimingMode, isPunctuationSurface, TimedLine, TimedToken, toClipRelative, validateLineTimeline } from "./timing.ts";
 import { CATEGORIES, validateEnums } from "./validate.ts";
 
 export const GRADIENTS = [
@@ -285,18 +285,23 @@ export async function analyzeWindow(
     log("word_timing_fallback", { videoId, mode: timing.mode, problems: timing.problems.slice(0, 8) });
   }
 
-  await opts.onStage?.("enriching");
-  const enriched = await enrichHeardLines(timing.lines, supabase, language) as TimedLine[];
-  const defined = countDefined(enriched);
-  if (defined < 2) return { ok: false, reason: "enrichment_failed", detail: `${defined} defined tokens` };
+  // Definitions are no longer fetched at ingest (the second AI call is gone). Tokens carry
+  // readings, romaji, part of speech and JLPT straight from the hearing pass; the meaning is
+  // fetched per word, on tap, through the shared word_explanations cache. Normalization
+  // guarantees the client's invariants for lines heard with the older prompts too.
+  const normalized = normalizeHeardLines(timing.lines);
+  const tappable = countTappable(normalized);
+  if (tappable < 4) {
+    return { ok: false, reason: "enrichment_failed", detail: `${tappable} tappable tokens` };
+  }
 
   return {
     ok: true,
     draft: {
       clipStart: round3(clipStart),
       clipEnd: round3(clipEnd),
-      lines: toClipRelative(enriched, clipStart),
-      difficulty: gradeDifficulty(raw.difficulty, enriched, language),
+      lines: toClipRelative(normalized, clipStart),
+      difficulty: gradeDifficulty(raw.difficulty, normalized, language),
       category: typeof raw.category === "string" && CATEGORIES.has(raw.category) ? raw.category : null,
       videoOrientation: (await detectVideoOrientation(videoId)) ??
         (raw.video_orientation === "portrait" ? "portrait" : "landscape"),
@@ -358,6 +363,38 @@ function countDefined(lines: TimedLine[]): number {
     }
   }
   return defined;
+}
+
+/** Tappable = a real word the learner can tap. Punctuation and fillers never are. */
+function countTappable(lines: TimedLine[]): number {
+  let count = 0;
+  for (const line of lines) {
+    for (const token of line.tokens) {
+      if ((token as { tappable?: unknown }).tappable !== false) count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Ensures every token satisfies what the client decodes: a tappable flag (defaults true,
+ * false for punctuation), lowercase romaji, and prunes empty tokens.
+ */
+function normalizeHeardLines(lines: TimedLine[]): TimedLine[] {
+  const out: TimedLine[] = [];
+  for (const line of lines) {
+    const tokens: TimedToken[] = [];
+    for (const token of line.tokens) {
+      const surface = typeof token.surface === "string" ? token.surface.trim() : "";
+      if (!surface) continue;
+      const romaji = typeof token.romaji === "string" ? token.romaji.trim().toLowerCase() : "";
+      const tappable = token.tappable === false || isPunctuationSurface(surface) ? false : true;
+      tokens.push({ ...token, surface, romaji, tappable });
+    }
+    if (tokens.length === 0) continue;
+    out.push({ ...line, tokens });
+  }
+  return out;
 }
 
 function finiteOr(value: unknown, fallback: number): number {

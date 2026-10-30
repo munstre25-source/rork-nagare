@@ -85,10 +85,15 @@ struct ReviewSessionView: View {
         .background { ReviewStageBackground() }
         .animation(Motion.cardFlip, value: revealed)
         .onAppear {
+            app.isReviewSessionActive = true
             guard queue.isEmpty, !isFinished else { return }
             queue = config.keys
             total = config.keys.count
             track("review_started", props: ["count": String(total)])
+        }
+        .onDisappear {
+            app.isReviewSessionActive = false
+            app.lastReviewEndedAt = Date()
         }
         .onChange(of: queue.first) { _, _ in
             revealed = false

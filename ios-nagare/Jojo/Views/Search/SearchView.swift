@@ -7,6 +7,14 @@ nonisolated enum SearchScope: String, CaseIterable, Hashable, Sendable {
     case grammar = "Grammar"
 }
 
+/// State of the whole-catalog (server) search under the local results.
+nonisolated enum RemoteSearchState: Equatable, Sendable {
+    case idle
+    case loading
+    case loaded
+    case failed
+}
+
 struct WordSearchHit: Identifiable, Hashable, Sendable {
     var surface: String
     var reading: String
@@ -30,6 +38,12 @@ struct SearchView: View {
     @State private var showAllWords = false
     @State private var showAllSentences = false
     @State private var playing: SearchHit?
+    // Kiku's signature: search the whole catalog on the server, then open the clip at the line.
+    @State private var remoteHits: [SearchHit]? = nil
+    @State private var remoteState: RemoteSearchState = .idle
+    @State private var pattern: GrammarPattern? = nil
+    @State private var patternHits: [SearchHit]? = nil
+    @State private var patternState: RemoteSearchState = .idle
     @FocusState private var isFocused: Bool
 
     private let suggestions = ["好き", "天気", "たべる", "大丈夫", "ことば", "猫"]
@@ -59,6 +73,9 @@ struct SearchView: View {
         .onChange(of: query) { _, _ in
             showAllWords = false
             showAllSentences = false
+        }
+        .task(id: "\(query)|\(scope)") {
+            await runRemoteSearch()
         }
         .fullScreenCover(item: $playing) { hit in
             ClipPlayerScreen(clip: hit.clip, startLine: hit.lineIndex, loopLine: true)
@@ -102,9 +119,13 @@ struct SearchView: View {
     private var results: some View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            suggestionsView
-        } else if visibleWords.isEmpty && visibleSentences.isEmpty && grammarHits.isEmpty {
-            Text("No matches for “\(trimmed)” yet.")
+            if scope == .grammar {
+                grammarBrowse
+            } else {
+                suggestionsView
+            }
+        } else if visibleWords.isEmpty && visibleSentences.isEmpty && grammarHits.isEmpty && showsNoRemoteResults {
+            Text("No matches for \u{201C}\(trimmed)\u{201D} yet.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
@@ -146,6 +167,9 @@ struct SearchView: View {
                     }
                 }
             }
+            if scope == .all || scope == .sentences {
+                remoteSection(trimmed: trimmed)
+            }
             if scope == .all || scope == .grammar, !grammarHits.isEmpty {
                 resultSection(
                     title: "Grammar (\(grammarHits.count))",
@@ -158,6 +182,203 @@ struct SearchView: View {
                     }
                 }
             }
+            if scope == .grammar, let pattern {
+                patternResults(pattern: pattern)
+            }
+        }
+    }
+
+    // MARK: Kiku search: the whole catalog, on the server
+
+    private var showsNoRemoteResults: Bool {
+        guard scope == .all || scope == .sentences else { return remoteState == .idle || remoteState == .failed }
+        switch remoteState {
+        case .loaded: return (remoteHits ?? []).isEmpty
+        case .loading: return false
+        case .failed, .idle: return true
+        }
+    }
+
+    /// Server results under the local ones; hits already shown locally are not repeated.
+    @ViewBuilder
+    private func remoteSection(trimmed: String) -> some View {
+        let localIds = Set(sentenceHits.map(\.id))
+        let hits = (remoteHits ?? []).filter { !localIds.contains($0.id) }
+        switch remoteState {
+        case .loading:
+            resultSection(title: "All clips", expanded: true, canExpand: false, expandTitle: "") {} content: {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Searching the whole library\u{2026}")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 14)
+            }
+        case .loaded:
+            if !hits.isEmpty {
+                resultSection(
+                    title: "All clips (\(hits.count))",
+                    expanded: true,
+                    canExpand: false,
+                    expandTitle: ""
+                ) {} content: {
+                    ForEach(hits) { hit in
+                        Button {
+                            Haptics.light()
+                            playing = hit
+                        } label: {
+                            SentenceResultRow(hit: hit, query: trimmed)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        case .failed:
+            Text("Couldn't reach the library. Local results are shown.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+        case .idle:
+            EmptyView()
+        }
+    }
+
+    /// Grammar scope with an empty field: browse points, then see every line in the
+    /// library that uses one.
+    private var grammarBrowse: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Grammar points")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 8)], alignment: .leading, spacing: 8) {
+                ForEach(GrammarPattern.all) { item in
+                    Button {
+                        Haptics.selection()
+                        pattern = item
+                        Task { await loadPatternHits(item) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(item.title)
+                                    .font(JojoFont.jp(16, relativeTo: .body))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                                if let jlpt = item.jlpt {
+                                    Text(jlpt)
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(Color.studyAccent)
+                                }
+                            }
+                            Text(item.meaning)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(pattern == item ? Color.studyAccent : Color.cardStroke, lineWidth: pattern == item ? 1.6 : 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if let pattern {
+                patternResults(pattern: pattern)
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    @ViewBuilder
+    private func patternResults(pattern: GrammarPattern) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(pattern.title) \u{2014} \(pattern.meaning)")
+                .font(.headline)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            switch patternState {
+            case .loading:
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Finding every line that uses it\u{2026}")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 14)
+            case .loaded:
+                let hits = patternHits ?? []
+                if hits.isEmpty {
+                    Text("No lines use this yet. New clips are added every day.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ForEach(hits) { hit in
+                        Button {
+                            Haptics.light()
+                            playing = hit
+                        } label: {
+                            SentenceResultRow(hit: hit, query: pattern.primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            case .failed, .idle:
+                Text("Couldn't reach the library. Try again in a moment.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private func runRemoteSearch() async {
+        // The Grammar scope searches by pattern chips, not by word.
+        guard scope != .grammar else {
+            remoteHits = nil
+            remoteState = .idle
+            return
+        }
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty, SupabaseAPI.shared.isConfigured else {
+            remoteHits = nil
+            remoteState = .idle
+            return
+        }
+        remoteState = .loading
+        try? await Task.sleep(for: .milliseconds(450))
+        guard !Task.isCancelled else { return }
+        do {
+            let hits = try await SupabaseAPI.shared.searchLines(query: q)
+            guard !Task.isCancelled else { return }
+            remoteHits = hits
+            remoteState = .loaded
+        } catch {
+            guard !Task.isCancelled else { return }
+            remoteHits = nil
+            remoteState = .failed
+        }
+    }
+
+    private func loadPatternHits(_ pattern: GrammarPattern) async {
+        guard SupabaseAPI.shared.isConfigured else {
+            patternState = .failed
+            return
+        }
+        patternState = .loading
+        patternHits = nil
+        do {
+            let hits = try await SupabaseAPI.shared.searchGrammar(patternId: pattern.id)
+            patternHits = hits
+            patternState = .loaded
+        } catch {
+            patternState = .failed
         }
     }
 

@@ -7,12 +7,17 @@ import { catalogTable, parseLanguage, type CatalogLanguage } from "../_shared/ca
 import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
 
 /**
- * One scheduled pass: search YouTube for a short public video the catalog
- * does not have yet, ask Gemini for a learner transcript, and publish it when the
- * lines validate. Body {"language":"ko"} writes sori_clips. Anything else writes
- * clips. The phone never downloads the file. It plays the YouTube id.
+ * One scheduled pass: publish learner clips from the candidate queue, and only when the
+ * queue runs low search YouTube for fresh candidates. Each search costs 101 quota units,
+ * so results are queued and consumed over many passes instead of being dropped when the
+ * analysis budget runs out. Publishing itself uses no YouTube quota.
  *
- * Admin only. A pg_cron job calls this with x-admin-token.
+ * The hearing pass is one AI call per clip (dictionary fields ride along; definitions are
+ * fetched on tap through the shared word_explanations cache), which keeps the cost per
+ * clip low enough for the library to grow by dozens of clips per day.
+ *
+ * Body {"language":"ko"} writes sori_clips. Anything else writes clips. Admin only; a
+ * pg_cron job calls this with x-admin-token every 10 minutes.
  */
 
 type Lane = { category: string; difficulty: string; query: string };
@@ -70,56 +75,47 @@ Deno.serve(async (req) => {
     const pause = await fillPause(supabase);
     if (pause) return jsonResponse(summary(published, pause, cronReady));
     const started = Date.now();
-    const seenVideos = new Set<string>();
     let stopped = "time-budget";
+    await pruneQueue(supabase, language);
 
-    while (Date.now() - started < RUN_BUDGET_MS) {
-      const lanes = await lanesByEmptiness(supabase, language);
-      let moved = false;
-      for (const lane of lanes) {
-        if (Date.now() - started >= RUN_BUDGET_MS) break;
-        const laneKey = `${language}|${lane.category}|${lane.difficulty}`;
-        const found = await searchFresh(supabase, lane, language, laneKey);
-        if (!found.ok) {
-          stopped = found.reason;
-          if (found.reason === "youtube-quota") {
-            return jsonResponse(summary(published, stopped, cronReady));
-          }
-          continue;
+    // Fill the queue with search results first (quota is spent here, once per candidate),
+    // then spend the rest of the pass publishing from it. A quota wall during the search
+    // phase must not stop the pass: queued candidates still publish quota-free.
+    const queued = await queueCount(supabase, language);
+    if (queued < QUEUE_TARGET) {
+      const fill = await enqueueFreshCandidates(supabase, language, started, QUEUE_TARGET - queued);
+      if (fill.stopped) stopped = fill.stopped;
+    }
+
+    const queue = await takeQueue(supabase, language, RUN_CANDIDATE_TARGET);
+    for (const candidate of queue) {
+      if (Date.now() - started >= RUN_BUDGET_MS) break;
+      const result = await analyzeAndPublish(supabase, candidate, language);
+      if (!result.ok) {
+        const keep = result.reason === "gemini-cap" || result.reason === "model_payment" ||
+          result.reason.includes("402");
+        if (!keep) await removeQueued(supabase, language, candidate.videoId);
+        if (result.reason === "gemini-cap") {
+          stopped = "gemini-cap";
+          return jsonResponse(summary(published, stopped, cronReady));
         }
-        if (found.videos.length === 0) {
-          await advanceCursor(supabase, laneKey, found.nextPageToken);
-          moved = true;
-          continue;
+        if (result.reason === "model_payment" || result.reason.includes("402")) {
+          await pauseFill(supabase, "gemini-payment");
+          stopped = "model-payment";
+          return jsonResponse(summary(published, stopped, cronReady));
         }
-        let pagePublished = false;
-        for (const video of found.videos) {
-          if (seenVideos.has(video.videoId) || Date.now() - started >= RUN_BUDGET_MS) continue;
-          seenVideos.add(video.videoId);
-          const result = await analyzeAndPublish(supabase, video, lane, language);
-          if (result.ok) {
-            published.push({
-              id: result.id,
-              videoId: video.videoId,
-              difficulty: result.difficulty,
-              category: lane.category,
-            });
-            pagePublished = true;
-            moved = true;
-          } else if (result.reason === "gemini-cap" || result.reason === "youtube-quota" || result.reason.includes("402")) {
-            if (result.reason.includes("402")) await pauseFill(supabase, "gemini-payment");
-            return jsonResponse(summary(published, result.reason, cronReady));
-          }
-        }
-        if (!pagePublished) {
-          await advanceCursor(supabase, laneKey, found.nextPageToken);
-          moved = true;
-        }
+        continue;
       }
-      if (!moved) {
-        stopped = "no-candidate";
-        break;
-      }
+      await removeQueued(supabase, language, candidate.videoId);
+      published.push({
+        id: result.id,
+        videoId: candidate.videoId,
+        difficulty: result.difficulty,
+        category: candidate.category,
+      });
+    }
+    if (published.length === 0 && stopped === "time-budget" && queue.length === 0) {
+      stopped = "no-candidate";
     }
 
     return jsonResponse(summary(published, stopped, cronReady));
@@ -131,11 +127,128 @@ Deno.serve(async (req) => {
   }
 });
 
-const RUN_BUDGET_MS = 40_000;
+const RUN_BUDGET_MS = 110_000;
+/** Candidates pulled from the queue per pass. */
+const RUN_CANDIDATE_TARGET = 6;
+/** A bad-yield lane must not dump the day's search quota into one pass. */
+const MAX_SEARCHES_PER_PASS = 3;
+/** Keep at least this many unprocessed candidates queued for the language. */
+const QUEUE_TARGET = 15;
 const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
   ja: ["", "日常会話", "2024", "2025"],
   ko: ["", "일상회화", "2024", "2025"],
 };
+
+// MARK: - Candidate queue
+
+type QueuedCandidate = {
+  videoId: string;
+  title: string;
+  channelTitle: string;
+  durationSec: number;
+  category: string;
+  difficulty: string;
+};
+
+async function queueCount(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+): Promise<number> {
+  const { count } = await supabase
+    .from(queueTable(language))
+    .select("video_id", { count: "exact", head: true });
+  return count ?? 0;
+}
+
+function queueTable(language: CatalogLanguage): string {
+  return language === "ko" ? "sori_candidate_queue" : "catalog_candidate_queue";
+}
+
+async function pruneQueue(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+): Promise<void> {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from(queueTable(language)).delete().lt("added_at", cutoff);
+}
+
+async function takeQueue(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+  limit: number,
+): Promise<QueuedCandidate[]> {
+  const { data } = await supabase
+    .from(queueTable(language))
+    .select("video_id, title, channel_title, duration_sec, category, difficulty")
+    .order("added_at", { ascending: true })
+    .limit(limit);
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    videoId: String(row.video_id),
+    title: String(row.title ?? ""),
+    channelTitle: String(row.channel_title ?? ""),
+    durationSec: Number(row.duration_sec ?? 0),
+    category: String(row.category ?? "interview"),
+    difficulty: String(row.difficulty ?? "Beginner"),
+  }));
+}
+
+async function removeQueued(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+  videoId: string,
+): Promise<void> {
+  await supabase.from(queueTable(language)).delete().eq("video_id", videoId);
+}
+
+/**
+ * Searches the emptiest lanes until at least `target` fresh candidates are queued.
+ * A search page's videos are all queued, so one 101-unit search serves many passes.
+ */
+async function enqueueFreshCandidates(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+  started: number,
+  target: number,
+): Promise<{ stopped: string | null }> {
+  const lanes = await lanesByEmptiness(supabase, language);
+  let queuedNew = 0;
+  let searches = 0;
+  for (const lane of lanes) {
+    if (queuedNew >= target || searches >= MAX_SEARCHES_PER_PASS || Date.now() - started >= RUN_BUDGET_MS) break;
+    const laneKey = `${language}|${lane.category}|${lane.difficulty}`;
+    const found = await searchFresh(supabase, lane, language, laneKey);
+    if (!found.ok) {
+      if (found.reason === "youtube-quota") return { stopped: "youtube-quota" };
+      continue;
+    }
+    searches++;
+    if (found.videos.length === 0) {
+      await advanceCursor(supabase, laneKey, found.nextPageToken);
+      continue;
+    }
+    const rows = found.videos.map((video) => ({
+      video_id: video.videoId,
+      title: video.title.slice(0, 140),
+      channel_title: video.channelTitle.slice(0, 80),
+      duration_sec: video.durationSec,
+      category: lane.category,
+      difficulty: lane.difficulty,
+      added_at: new Date().toISOString(),
+    }));
+    const { error, count } = await supabase
+      .from(queueTable(language))
+      .upsert(rows, { onConflict: "video_id", count: "exact", ignoreDuplicates: true });
+    if (error) {
+      log("candidate_queue_upsert_failed", { detail: error.message.slice(0, 120) });
+      continue;
+    }
+    queuedNew += count ?? 0;
+    // A page that queues nothing new is exhausted: advance the cursor so the next
+    // search moves on. Otherwise keep the page token — those queued videos still get
+    // consumed by later passes before this lane is searched again.
+  }
+  return { stopped: null };
+}
 
 async function rememberCronAccess(
   supabase: ReturnType<typeof serviceClient>,
@@ -238,7 +351,7 @@ async function searchFresh(
     part: "snippet",
     type: "video",
     q: `${lane.query} ${variant}`.trim(),
-    maxResults: "8",
+    maxResults: "25",
     videoEmbeddable: "true",
     videoDuration: "short",
     order: "date",
@@ -273,6 +386,12 @@ async function searchFresh(
     .select("video_id")
     .in("video_id", ids);
   const existingIds = new Set((existing ?? []).map((row: { video_id: string }) => row.video_id));
+
+  const { data: queued } = await supabase
+    .from(queueTable(language))
+    .select("video_id")
+    .in("video_id", ids);
+  for (const row of queued ?? []) existingIds.add((row as { video_id: string }).video_id);
 
   const videos: FreshVideo[] = [];
   for (const item of videosJson.items ?? []) {
@@ -328,31 +447,41 @@ async function advanceCursor(
 
 async function analyzeAndPublish(
   supabase: ReturnType<typeof serviceClient>,
-  video: FreshVideo,
-  lane: Lane,
+  candidate: QueuedCandidate,
   language: CatalogLanguage,
 ): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
   const outcome = await analyzeWindow(supabase, {
-    videoId: video.videoId,
+    videoId: candidate.videoId,
     windowStart: 0,
-    windowEnd: video.durationSec,
+    // A 90s window keeps the heard response small enough for the edge worker's compute
+    // limit; longer sources still yield learner-sized clips from their first 90 seconds.
+    windowEnd: Math.min(candidate.durationSec, 90),
     language,
     askCategory: false,
     minSpokenSec: 12,
   });
   if (!outcome.ok) {
-    log("catalog_candidate_rejected", { videoId: video.videoId, reason: outcome.reason, detail: outcome.detail });
+    log("catalog_candidate_rejected", {
+      videoId: candidate.videoId,
+      reason: outcome.reason,
+      detail: outcome.detail,
+    });
     if (outcome.reason === "gemini_cap") return { ok: false, reason: "gemini-cap" };
     if (outcome.reason === "model_payment") return { ok: false, reason: "Gemini HTTP 402" };
     return { ok: false, reason: outcome.reason };
   }
   const prefix = language === "ko" ? "sori" : "immersion";
-  const id = clipId(prefix, video.videoId, outcome.draft);
+  const id = clipId(prefix, candidate.videoId, outcome.draft);
   const row = clipRow({
     id,
-    video: { videoId: video.videoId, title: video.title, channelTitle: video.channelTitle, durationSec: video.durationSec },
+    video: {
+      videoId: candidate.videoId,
+      title: candidate.title,
+      channelTitle: candidate.channelTitle,
+      durationSec: candidate.durationSec,
+    },
     draft: outcome.draft,
-    category: lane.category,
+    category: candidate.category,
     published: true,
     withProvenance: language === "ja",
   });
