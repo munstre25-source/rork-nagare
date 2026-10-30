@@ -374,17 +374,28 @@ struct FeedView: View {
                 }
                 .scrollTargetLayout()
             }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentId)
+            // Align to each clip's actual page boundary. The viewport changes when the
+            // dock and top chrome leave or return during maximize/minimize.
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $currentId, anchor: .top)
             .scrollDisabled(lookup.isPresented || quizClip != nil)
             .scrollIndicators(.hidden)
             .background(Color.canvas)
             .clipped()
-            // Rotation and dock show/hide resize every page. Without re-anchoring, the
-            // scroll offset lands mid-page and the learner sees two half feeds at once.
+            // Wait until resized page frames have been laid out before re-anchoring.
+            // Scrolling in this callback's layout pass can use the old page geometry and
+            // leave the current clip between two pages.
             .onChange(of: viewport.size) { _, _ in
                 guard let id = currentId else { return }
-                proxy.scrollTo(id, anchor: .top)
+                Task { @MainActor in
+                    await Task.yield()
+                    guard currentId == id else { return }
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        proxy.scrollTo(id, anchor: .top)
+                    }
+                }
             }
             }
         }
