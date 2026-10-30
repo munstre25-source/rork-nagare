@@ -9,7 +9,6 @@ struct ClipVideoStill: View {
     var showsPlay: Bool = true
 
     @State private var stillURL: URL?
-    @State private var resolved = false
 
     /// One HEAD probe per video for the whole session, shared across every card.
     private static var resolvedURLs: [String: URL?] = [:]
@@ -22,10 +21,9 @@ struct ClipVideoStill: View {
                 } placeholder: {
                     Color.bgElevatedDark
                 }
-            } else if resolved {
-                ClipPosterView(clip: clip, showsSymbol: false)
             } else {
-                Color.bgElevatedDark
+                // Shown while probing and when the video has no stills.
+                ClipPosterView(clip: clip, showsSymbol: false)
             }
             if showsPlay {
                 Image(systemName: "play.fill")
@@ -40,13 +38,11 @@ struct ClipVideoStill: View {
         .task(id: clip.videoId) {
             if let cached = Self.resolvedURLs[clip.videoId] {
                 stillURL = cached
-                resolved = true
                 return
             }
             let url = clip.hasRealVideo ? await Self.firstExistingStill(videoId: clip.videoId) : nil
             Self.resolvedURLs[clip.videoId] = url
             stillURL = url
-            resolved = true
         }
     }
 
@@ -57,9 +53,12 @@ struct ClipVideoStill: View {
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
             request.timeoutInterval = 6
-            guard let (data, response) = try? await URLSession.shared.data(for: request),
-                  let http = response as? HTTPURLResponse, http.statusCode == 200,
-                  data.count > 1_000 else { continue }
+            // A HEAD response carries no body — judge existence by the status and the
+            // content-length header (YouTube's missing-still placeholder is ~600 bytes).
+            guard let (_, response) = try? await URLSession.shared.data(for: request),
+                  let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
+            let length = http.expectedContentLength
+            if length >= 0 && length <= 1_000 { continue }
             return url
         }
         return nil
