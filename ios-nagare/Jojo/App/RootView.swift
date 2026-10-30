@@ -46,7 +46,6 @@ struct MainTabView: View {
     @State private var showingExplore = false
     @State private var welcome: (due: Int, streak: Int)?
     @State private var experiencePromptTask: Task<Void, Never>?
-    @State private var dockHidden = false
     private let guide = GuidanceCenter.shared
 
     private var anySheetUp: Bool {
@@ -90,19 +89,16 @@ struct MainTabView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            // A compact floating pill, centered like the system bar. While a swipe hides it the
-            // inset collapses too, so nothing sits behind it and nothing is blocked at all.
-            if !app.hidesMainTabBar && !dockHidden {
+            // The feed's focus timer hides navigation while a clip is playing and restores it
+            // on interaction. Other tabs keep the dock pinned; maximize can hide it explicitly.
+            if !app.hidesMainTabBar && (tab != .feed || !app.feedChromeHidden) {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        // Swipe up (next clip / scrolling down) tucks the dock away; swipe down brings it back.
-        .tabBarAutoHide($dockHidden)
         .preferredColorScheme(app.profile.scheme.colorScheme)
         .onAppear { JojoPalette.activate(theme: app.profile.theme, scheme: app.profile.scheme) }
         .onChange(of: tab) { _, newTab in
-            dockHidden = false
             if newTab != .feed {
                 showingExplore = false
                 app.feedChromeHidden = false
@@ -111,7 +107,10 @@ struct MainTabView: View {
             syncGuideVisibility()
             if newTab != .feed, app.pendingDeepLink == nil { scheduleExperiencePrompt() }
         }
-        .onChange(of: showingExplore) { _, _ in syncGuideVisibility() }
+        .onChange(of: showingExplore) { _, exploring in
+            if exploring { app.feedChromeHidden = false }
+            syncGuideVisibility()
+        }
         .onChange(of: anySheetUp) { _, _ in syncGuideVisibility() }
         .onChange(of: app.calmMomentTick) { _, _ in
             if tab != .feed, app.pendingDeepLink == nil { scheduleExperiencePrompt() }

@@ -77,30 +77,6 @@ struct ExploreSegmentBar: View {
     }
 }
 
-/// Hides the floating tab bar while the finger moves down the page, and brings it back on the way up.
-struct TabBarAutoHide: ViewModifier {
-    @Binding var hidden: Bool
-
-    func body(content: Content) -> some View {
-        content.simultaneousGesture(
-            DragGesture(minimumDistance: 18, coordinateSpace: .local)
-                .onEnded { value in
-                    guard abs(value.translation.height) > abs(value.translation.width),
-                          abs(value.translation.height) > 28 else { return }
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-                        hidden = value.translation.height < 0
-                    }
-                }
-        )
-    }
-}
-
-extension View {
-    func tabBarAutoHide(_ hidden: Binding<Bool>) -> some View {
-        modifier(TabBarAutoHide(hidden: hidden))
-    }
-}
-
 /// Equal segments inside one capsule, used on Vocab and Search.
 struct OrangePillBar<Item: Hashable>: View {
     let items: [Item]

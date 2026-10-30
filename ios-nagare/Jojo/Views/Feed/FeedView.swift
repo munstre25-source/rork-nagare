@@ -43,6 +43,9 @@ struct FeedView: View {
             if !app.profile.hideDailyGoalBar && !videoExpanded {
                 DailyGoalBar()
                     .padding(.top, 2)
+                    .opacity(watchChromeVisible ? 1 : 0)
+                    .allowsHitTesting(watchChromeVisible)
+                    .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
             }
             if showResumeChip, let resumeSnapshot {
                 ResumeChip(
