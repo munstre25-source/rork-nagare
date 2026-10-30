@@ -90,6 +90,10 @@ final class PlaybackCoordinator {
     /// embed, and cues the video — so a swipe only needs a swap, not a cold start. The
     /// prewarmed embed never autoplays: two concurrent playback sessions from one embedder
     /// look abusive to YouTube and can trigger error 150 storms (2026-10-30 incident).
+    ///
+    /// NOT currently called from the feed: even a cue-only second session still reads as
+    /// concurrent embedding to YouTube, and the 19:15 UTC session showed every embed
+    /// erroring 150 while a prewarm was alive. Cold start on swipe is the reliable default.
     func preload(_ clip: Clip) {
         guard player?.clip.id != clip.id, preloaded?.clip.id != clip.id else { return }
         cancelPreload()

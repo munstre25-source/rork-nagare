@@ -34,17 +34,48 @@ struct FeedView: View {
     /// Set right before code (not the learner) changes `currentId`.
     @State private var programmaticClipChange: Bool = false
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     var body: some View {
         ZStack(alignment: .top) {
-            feedPager
-                // Portrait keeps the full-bleed top edge; landscape must keep every page
-                // clear of the status bar / Dynamic Island.
-                .ignoresSafeArea(edges: verticalSizeClass == .compact ? [] : .top)
+            // The navigation chrome is a real row ABOVE the feed, never painted on top of
+            // the video. In theater the chrome steps out and the picture takes the screen.
+            VStack(spacing: 0) {
+                if !videoExpanded {
+                    VStack(spacing: 0) {
+                        if !app.profile.hideDailyGoalBar {
+                            DailyGoalBar()
+                                .padding(.top, 2)
+                        }
+                        if showResumeChip, let resumeSnapshot {
+                            ResumeChip(
+                                title: resumeSnapshot.title,
+                                channel: resumeSnapshot.channel,
+                                time: resumeSnapshot.time,
+                                onResume: { resumeFromSnapshot() },
+                                onDismiss: {
+                                    showResumeChip = false
+                                    ResumePlaybackStore.clear()
+                                    self.resumeSnapshot = nil
+                                }
+                            )
+                        }
+                        header
+                    }
+                    .opacity(watchChromeVisible ? 1 : 0)
+                    .allowsHitTesting(watchChromeVisible)
+                    .environment(\.colorScheme, .dark)
+                    .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(1)
+                }
+                feedPager
+                    // Theater owns the screen edge to edge; resting keeps the picture
+                    // below the status bar and the For You / Explore row.
+                    .ignoresSafeArea(edges: videoExpanded ? .top : [])
+            }
 
             if let quizClip {
                 ClipQuizOverlay(
@@ -84,45 +115,6 @@ struct FeedView: View {
                 }
             }
 
-            if !videoExpanded {
-                VStack(spacing: 0) {
-                    if !app.profile.hideDailyGoalBar {
-                        DailyGoalBar()
-                            .padding(.top, 2)
-                    }
-                    if showResumeChip, let resumeSnapshot {
-                        ResumeChip(
-                            title: resumeSnapshot.title,
-                            channel: resumeSnapshot.channel,
-                            time: resumeSnapshot.time,
-                            onResume: { resumeFromSnapshot() },
-                            onDismiss: {
-                                showResumeChip = false
-                                ResumePlaybackStore.clear()
-                                self.resumeSnapshot = nil
-                            }
-                        )
-                    }
-                    header
-                    Spacer(minLength: 0)
-                }
-                .opacity(watchChromeVisible ? 1 : 0)
-                .allowsHitTesting(watchChromeVisible)
-                .environment(\.colorScheme, .dark)
-                .animation(.easeInOut(duration: 0.4), value: watchChromeVisible)
-                .background(alignment: .top) {
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.52), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 230)
-                    .ignoresSafeArea(edges: .top)
-                    .allowsHitTesting(false)
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .zIndex(1)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.canvas.ignoresSafeArea())
@@ -195,7 +187,6 @@ struct FeedView: View {
                 Task { await app.refreshRemoteClips() }
             }
             coordinator.activate(clip)
-            preloadUpcoming()
             track("clip_view", props: ["clip": clip.id, "tab": "For You"])
             ImmersionIsland.note(
                 clip: clip,
@@ -518,14 +509,6 @@ struct FeedView: View {
         guard isActiveTab, fullscreenClip == nil, quizClip == nil, shadowingClip == nil,
               let id = currentId, let clip = clips.first(where: { $0.id == id }) else { return }
         coordinator.activate(clip)
-        preloadUpcoming()
-    }
-
-    /// Warm the next clip's player while the current one plays — swipe starts instantly.
-    private func preloadUpcoming() {
-        guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }),
-              let next = clips[safe: index + 1] else { return }
-        coordinator.preload(next)
     }
 
     /// End of clip → remember it, then a micro-quiz, then advance.
