@@ -425,7 +425,9 @@ struct ClipStageView: View {
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
             windowMode: immersiveFeed,
-            followingLines: following ?? (onVideo ? 0 : 2),
+            // Keep the active line plus the next two queued in every feed layout. As playback
+            // advances, the window rolls forward so learners never need to scroll for lyrics.
+            followingLines: following ?? 2,
             sitsOnVideo: onVideo
         )
     }
