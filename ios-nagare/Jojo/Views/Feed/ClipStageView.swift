@@ -64,6 +64,15 @@ struct ClipStageView: View {
 
     /// Kiku normal feed: the landscape player runs edge to edge at its true 16:9.
     private func videoSize(in size: CGSize) -> CGSize {
+        if isCompactLandscape(size) {
+            // Landscape resting: the words take a trailing column, the picture takes the
+            // rest. Stacking there would glue the video to the top edge and leave the
+            // bottom half of the page dead.
+            let words = wordsColumnWidth(in: size.width)
+            let maxHeight = max(150, size.height - (showsChannelRow ? 150 : 110))
+            let width = min(size.width - words - 44, maxHeight * 16 / 9, 900)
+            return CGSize(width: width, height: width * 9 / 16)
+        }
         let maxHeight = max(180, size.height * 0.42)
         let width = min(min(size.width, 640), maxHeight * 16 / 9)
         let height = width * 9 / 16
@@ -72,9 +81,27 @@ struct ClipStageView: View {
 
     /// Maximize uses the largest 16:9 frame that fits the whole feed viewport without cropping.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
+        if isCompactLandscape(size) {
+            // Landscape theater: the picture must fit between the title row and the
+            // footer instead of clipping under the status bar.
+            let maxHeight = max(140, size.height - 140)
+            let width = min(size.width - 24, maxHeight * 16 / 9, 1100)
+            return CGSize(width: width, height: width * 9 / 16)
+        }
         let maxHeight = max(0, size.height)
         let width = min(size.width, maxHeight * 16 / 9)
         return CGSize(width: width, height: width * 9 / 16)
+    }
+
+    /// Landscape phones: the stage is wider than tall. Stacking video over words there
+    /// either glues the picture to the top edge or clips the words.
+    private func isCompactLandscape(_ size: CGSize?) -> Bool {
+        guard let size, size.width > 60, size.height > 60 else { return false }
+        return size.height < size.width
+    }
+
+    private func wordsColumnWidth(in stageWidth: CGFloat) -> CGFloat {
+        min(max(stageWidth * 0.3, 230), 380)
     }
 
     /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
@@ -156,6 +183,180 @@ struct ClipStageView: View {
 
     private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil) -> some View {
         let maximized = showsMaximizedLandscape
+        return Group {
+            if maximized && isCompactLandscape(stageSize) {
+                maximizedLandscapeStage(
+                    player: player,
+                    videoWidth: videoWidth,
+                    videoHeight: videoHeight,
+                    stageSize: stageSize ?? .zero,
+                    columnWidth: columnWidth
+                )
+            } else if !maximized && isCompactLandscape(stageSize) {
+                compactLandscapeStage(
+                    player: player,
+                    videoWidth: videoWidth,
+                    videoHeight: videoHeight,
+                    stageSize: stageSize ?? .zero,
+                    columnWidth: columnWidth
+                )
+            } else {
+                fullStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth, stageSize: stageSize, maximized: maximized)
+            }
+        }
+    }
+
+    /// Landscape resting: picture + controls left, words right. Nothing glued to the top
+    /// edge, no dead space at the bottom.
+    private func compactLandscapeStage(
+        player: (any ClipPlayer)?,
+        videoWidth: CGFloat?,
+        videoHeight: CGFloat?,
+        stageSize: CGSize,
+        columnWidth: CGFloat?
+    ) -> some View {
+        let wordsWidth = wordsColumnWidth(in: stageSize.width)
+        return VStack(spacing: 8) {
+            if showsChannelRow {
+                ChannelRow(clip: clip, trailing: channelTrailing, showsFollow: false, emphasizesTitle: false)
+                    .padding(.vertical, 4)
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity)
+                    .opacity(watchChromeHidden ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+            }
+            HStack(alignment: .center, spacing: 14) {
+                VStack(spacing: 6) {
+                    ZStack(alignment: .bottomTrailing) {
+                        ClipVideoView(
+                            clip: clip,
+                            player: player,
+                            showsControls: !immersiveFeed,
+                            showsRail: immersiveFeed ? false : showsRail,
+                            compactChrome: immersiveFeed,
+                            onActivate: onActivate,
+                            onFullscreen: onFullscreen,
+                            onInfo: immersiveFeed ? nil : onInfo,
+                            onShadowing: immersiveFeed ? nil : onShadowing,
+                            fitsFrame: false,
+                            watchChromeHidden: watchChromeHidden,
+                            onRevealWatchChrome: onRevealWatchChrome,
+                            onSkip: onSkip
+                        )
+                        .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+
+                        if immersiveFeed, let onToggleVideoSize, !isPopupHere {
+                            VideoSizeBox(expanded: false, action: onToggleVideoSize)
+                                .padding(8)
+                                .transition(.opacity)
+                        }
+                    }
+                    .coachTarget(.video, active: isCoachPage)
+                    .modifier(FrameBottomReader(bottom: $videoBottom))
+
+                    if immersiveFeed {
+                        ClipActionRow(
+                            clip: clip,
+                            player: player,
+                            onInfo: onInfo,
+                            videoExpanded: videoExpanded,
+                            onToggleVideoSize: nil
+                        )
+                        .frame(width: videoWidth)
+                    }
+                }
+
+                transcript(player: player)
+                    .coachTarget(.transcript, active: isCoachPage)
+                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                    .frame(width: wordsWidth, alignment: .top)
+                    .frame(maxHeight: (videoHeight ?? 240) + 56, alignment: .top)
+                    .clipped()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 6)
+    }
+
+    /// Landscape theater: big picture left with the footer under it, words + rail right.
+    private func maximizedLandscapeStage(
+        player: (any ClipPlayer)?,
+        videoWidth: CGFloat?,
+        videoHeight: CGFloat?,
+        stageSize: CGSize,
+        columnWidth: CGFloat?
+    ) -> some View {
+        let wordsWidth = wordsColumnWidth(in: stageSize.width)
+        return VStack(spacing: 8) {
+            if showsChannelRow {
+                ChannelRow(clip: clip, trailing: nil, showsFollow: false, emphasizesTitle: true)
+                    .padding(.vertical, 6)
+                    .frame(width: columnWidth)
+                    .frame(maxWidth: .infinity)
+                    .opacity(watchChromeHidden ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+            }
+            HStack(alignment: .center, spacing: 14) {
+                VStack(spacing: 8) {
+                    ZStack(alignment: .bottomTrailing) {
+                        ClipVideoView(
+                            clip: clip,
+                            player: player,
+                            showsControls: !immersiveFeed,
+                            showsRail: immersiveFeed ? false : showsRail,
+                            compactChrome: immersiveFeed,
+                            onActivate: onActivate,
+                            onFullscreen: onFullscreen,
+                            onInfo: immersiveFeed ? nil : onInfo,
+                            onShadowing: immersiveFeed ? nil : onShadowing,
+                            fitsFrame: false,
+                            watchChromeHidden: watchChromeHidden,
+                            onRevealWatchChrome: onRevealWatchChrome,
+                            onSkip: onSkip
+                        )
+                        .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+                    }
+                    .coachTarget(.video, active: isCoachPage)
+                    .modifier(FrameBottomReader(bottom: $videoBottom))
+
+                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                        .frame(width: videoWidth)
+                }
+
+                HStack(alignment: .top, spacing: 4) {
+                    if showsShortsCaptions {
+                        shortsKaraoke(player: player, maxHeight: theaterWordsHeight(for: stageSize.height))
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                    } else {
+                        Spacer(minLength: 0)
+                    }
+                    ShortsRail(
+                        clip: clip,
+                        player: player,
+                        showsCaptions: showsShortsCaptions,
+                        onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
+                        onInfo: onInfo,
+                        onMinimize: onToggleVideoSize,
+                        onPicture: false
+                    )
+                    .opacity(isPopupHere ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: isPopupHere)
+                }
+                .frame(width: wordsWidth, alignment: .top)
+                .frame(maxHeight: (videoHeight ?? 240) + 40, alignment: .top)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 8)
+    }
+
+    private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
         return VStack(spacing: 0) {
             if showsChannelRow {
                 ChannelRow(
@@ -271,7 +472,7 @@ struct ClipStageView: View {
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
-        let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
+        let card = CGSize(width: max(0, min(size.width - 12, size.height < size.width ? size.height * 0.68 : 620)), height: max(0, size.height - 6))
         let maximized = videoExpanded
         // Resting: the picture owns the top band of the split card. Theater: the picture
         // grows into the largest true 9:16 frame the card holds and the words dock onto

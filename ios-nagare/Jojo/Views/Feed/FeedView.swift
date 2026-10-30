@@ -34,6 +34,7 @@ struct FeedView: View {
     /// Set right before code (not the learner) changes `currentId`.
     @State private var programmaticClipChange: Bool = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
     var tabBarHidden: Binding<Bool> = .constant(false)
@@ -41,7 +42,9 @@ struct FeedView: View {
     var body: some View {
         ZStack(alignment: .top) {
             feedPager
-                .ignoresSafeArea(edges: .top)
+                // Portrait keeps the full-bleed top edge; landscape must keep every page
+                // clear of the status bar / Dynamic Island.
+                .ignoresSafeArea(edges: verticalSizeClass == .compact ? [] : .top)
 
             if let quizClip {
                 ClipQuizOverlay(
@@ -337,6 +340,7 @@ struct FeedView: View {
     /// Until a few words are saved (and outside the guided tour), say what a word tap does.
     private var feedPager: some View {
         GeometryReader { viewport in
+            ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 0) {
                     ForEach(clips) { clip in
@@ -385,6 +389,13 @@ struct FeedView: View {
             .scrollIndicators(.hidden)
             .background(Color.canvas)
             .clipped()
+            // Rotation and dock show/hide resize every page. Without re-anchoring, the
+            // scroll offset lands mid-page and the learner sees two half feeds at once.
+            .onChange(of: viewport.size) { _, _ in
+                guard let id = currentId else { return }
+                proxy.scrollTo(id, anchor: .top)
+            }
+            }
         }
         .clipped()
     }
