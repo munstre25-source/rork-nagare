@@ -27,7 +27,6 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var wantsPlay = false
     @ObservationIgnored private var watchAccumulator: Double = 0
     @ObservationIgnored private var didFinish = false
-    @ObservationIgnored private var didRetryNocookie = false
     @ObservationIgnored private var clock: Double = 0
     @ObservationIgnored private var apiLoaded = false
     @ObservationIgnored private var loadWatchdog: Task<Void, Never>?
@@ -40,6 +39,32 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private static let readyTimeout: Duration = .seconds(15)
     /// How long playback may sit at the same time after play was requested.
     private static let stallTimeout: TimeInterval = 15
+
+    /// How the player page is loaded. Some devices (notably certain iOS 26 WebKit builds) reject
+    /// the local-HTML embed with error 150 for every video while others play it fine, so on error
+    /// we walk down this ladder of loading strategies — each fixes a different known failure:
+    /// 1. RMF "local HTML" pattern: bundle-ID baseURL identifies the app.
+    /// 2. youtube-nocookie iframe host: some embedder-identity failures.
+    /// 3. youtube-nocookie baseURL: the fix reported for device-only error 150.
+    /// 4. Direct navigation to the embed URL with an explicit Referer header (RMF pattern 2):
+    ///    immune to WebKit dropping the Referer on cross-origin iframe requests.
+    private enum EmbedLoad: Equatable {
+        case iframeAPI(host: String, baseURL: String)
+        case directEmbed
+    }
+
+    private static var embedLadder: [EmbedLoad] {
+        [
+            .iframeAPI(host: "https://www.youtube.com", baseURL: appReferrer),
+            .iframeAPI(host: "https://www.youtube-nocookie.com", baseURL: appReferrer),
+            .iframeAPI(host: "https://www.youtube-nocookie.com", baseURL: "https://www.youtube-nocookie.com/"),
+            .directEmbed,
+        ]
+    }
+
+    @ObservationIgnored private var loadAttempt = 0
+    @ObservationIgnored private var loadMode: EmbedLoad = .iframeAPI(host: "https://www.youtube.com", baseURL: "")
+    @ObservationIgnored private var didInstallDirectBridge = false
 
     var duration: Double { clip.durationSec }
     private var sourceStart: Double { clip.sourceStartSec ?? 0 }
@@ -64,7 +89,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         view.scrollView.isScrollEnabled = false
         view.scrollView.contentInsetAdjustmentBehavior = .never
         // Mute-first autoplay is required on iOS WKWebView; we unmute after play starts if desired.
-        loadPlayerHTML(in: view, host: "https://www.youtube.com")
+        loadEmbed(in: view)
         return view
     }
 
@@ -77,15 +102,108 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         "https://\((Bundle.main.bundleIdentifier ?? "com.socialreporthq.jojo").lowercased())"
     }
 
-    private func loadPlayerHTML(in view: WKWebView, host: String) {
+    private func loadEmbed(in view: WKWebView) {
         let videoId = clip.videoId.filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
-        guard !videoId.isEmpty, let base = URL(string: Self.appReferrer + "/") else {
+        guard !videoId.isEmpty else {
             embedFailed = true
             return
         }
         apiLoaded = false
-        view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer), baseURL: base)
+        isReady = false
+        embedErrorCode = nil
+        let attempt = Self.embedLadder[min(loadAttempt, Self.embedLadder.count - 1)]
+        loadMode = attempt
+        switch attempt {
+        case .iframeAPI(let host, let baseURL):
+            guard let base = URL(string: baseURL) else {
+                embedFailed = true
+                return
+            }
+            view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer), baseURL: base)
+        case .directEmbed:
+            installDirectBridge()
+            // No `origin` param here: the embed page is the top-level document, so a foreign
+            // origin would make its postMessage handshake drop every event.
+            var components = URLComponents(string: "https://www.youtube.com/embed/\(videoId)")!
+            components.queryItems = [
+                URLQueryItem(name: "enablejsapi", value: "1"),
+                URLQueryItem(name: "playsinline", value: "1"),
+                URLQueryItem(name: "autoplay", value: "1"),
+                URLQueryItem(name: "mute", value: "1"),
+                URLQueryItem(name: "controls", value: "0"),
+                URLQueryItem(name: "rel", value: "0"),
+                URLQueryItem(name: "modestbranding", value: "1"),
+                URLQueryItem(name: "iv_load_policy", value: "3"),
+                URLQueryItem(name: "cc_load_policy", value: "0"),
+                URLQueryItem(name: "widget_referrer", value: Self.appReferrer),
+            ]
+            var request = URLRequest(url: components.url!)
+            request.setValue(Self.appReferrer, forHTTPHeaderField: "Referer")
+            view.load(request)
+            // The embed page is YouTube's own player; if it loads at all, the network is fine.
+            apiLoaded = true
+        }
         startLoadWatchdog()
+    }
+
+    /// JS bridge for `.directEmbed`: a user script inside the embed page relays player events to
+    /// us and exposes commands through `window.__nagareCmd` (the postMessage player protocol).
+    private func installDirectBridge() {
+        guard !didInstallDirectBridge else { return }
+        didInstallDirectBridge = true
+        let source = """
+        (function(){
+          if (location.pathname.indexOf('/embed/') !== 0) return;
+          if (window.__nagare) return; window.__nagare = true;
+          function send(m){ try { window.webkit.messageHandlers.yt.postMessage(m); } catch(e) {} }
+          function cmd(func, args){
+            var msg = {event:'command', func:func, args:args||[]};
+            try { window.postMessage(JSON.stringify(msg), '*'); } catch(e) {}
+            try { window.postMessage(msg, '*'); } catch(e) {}
+          }
+          window.__nagareCmd = cmd;
+          window.addEventListener('message', function(ev){
+            var d = ev.data;
+            if (typeof d === 'string') { try { d = JSON.parse(d); } catch(e) { return; } }
+            if (!d || typeof d !== 'object') return;
+            if (d.event === 'listening' || d.event === 'onReady') { send({e:'ready'}); }
+            else if (d.event === 'onStateChange') { send({e:'state', v:d.info}); }
+            else if (d.event === 'onError') { send({e:'error', v:d.info}); }
+            else if (d.event === 'infoDelivery' && d.info && typeof d.info.currentTime === 'number') {
+              send({e:'time', v:d.info.currentTime});
+            }
+          });
+          function announce(){ send({e:'ready'}); }
+          if (document.readyState === 'complete') announce();
+          else window.addEventListener('load', announce);
+          setTimeout(announce, 3000);
+          setInterval(function(){ cmd('getCurrentTime'); }, 250);
+        })();
+        """
+        let script = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        webView.configuration.userContentController.addUserScript(script)
+    }
+
+    /// Executes a player command in whichever load mode is active.
+    private func runCommand(_ function: String, _ args: String = "") {
+        guard isReady else { return }
+        let js: String
+        switch loadMode {
+        case .iframeAPI:
+            js = "player&&player.\(function)(\(args))"
+        case .directEmbed:
+            js = "window.__nagareCmd&&window.__nagareCmd('\(function)',[\(args)])"
+        }
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    private func pollTime() {
+        switch loadMode {
+        case .iframeAPI:
+            webView.evaluateJavaScript("nTime()", completionHandler: nil)
+        case .directEmbed:
+            break // the bridge streams time via infoDelivery
+        }
     }
 
     /// A player that never becomes ready shows an endless spinner. If YouTube's API loaded
@@ -162,14 +280,15 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         isPlaying = true
         lastProgressAt = Date()
         // Start muted so iOS allows autoplay; unmute once playback actually begins if desired.
-        run("player&&player.mute();player&&player.playVideo()")
+        runCommand("mute")
+        runCommand("playVideo")
         startPolling()
     }
 
     func pause() {
         wantsPlay = false
         isPlaying = false
-        run("player&&player.pauseVideo()")
+        runCommand("pauseVideo")
         poller?.cancel()
         poller = nil
     }
@@ -184,17 +303,17 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             token: &spokenToken
         )
         clock = currentTime
-        run("player&&player.seekTo(\(sourceStart + currentTime),true)")
+        runCommand("seekTo", "\(sourceStart + currentTime),true")
     }
 
     func setRate(_ rate: Double) {
         self.rate = rate
-        run("player&&player.setPlaybackRate(\(rate))")
+        runCommand("setPlaybackRate", "\(rate)")
     }
 
     func setMuted(_ muted: Bool) {
         isMuted = muted
-        run(muted ? "player&&player.mute()" : "player&&player.unMute()")
+        runCommand(muted ? "mute" : "unMute")
     }
 
     func setLoop(_ range: ClosedRange<Double>?) {
@@ -226,7 +345,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 // A long gap means the app was suspended, not that the video stalled.
                 if Date().timeIntervalSince(lastTick) > 2 { self.lastProgressAt = Date() }
                 lastTick = Date()
-                self.webView.evaluateJavaScript("nTime()", completionHandler: nil)
+                pollTime()
                 // Ready and asked to play, but time hasn't moved: a stalled video.
                 if self.isReady, self.wantsPlay, !self.embedFailed,
                    Date().timeIntervalSince(self.lastProgressAt) > Self.stallTimeout {
@@ -263,8 +382,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             embedErrorCode = nil
             setRate(rate)
             // Keep muted until we confirm playing, then apply user mute preference.
-            run("player&&player.mute()")
-            run("player&&player.seekTo(\(sourceStart + currentTime),true)")
+            runCommand("mute")
+            runCommand("seekTo", "\(sourceStart + currentTime),true")
             if wantsPlay { play() }
         case "time":
             guard let value else { return }
@@ -293,20 +412,22 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if value == 0, !didFinish { finish() }
             if value == 1 {
                 isPlaying = true
-                if !isMuted { run("player&&player.unMute()") }
+                if !isMuted { runCommand("unMute") }
             }
         case "error":
             let code = value.map { Int($0) } ?? 0
-            print("[YouTube] player error \(code) for \(clip.videoId)")
-            // Removed / embed-blocked videos never play anywhere in the app: no retry.
-            if PlaybackHealth.definitiveCodes.contains(code) {
+            print("[YouTube] player error \(code) for \(clip.videoId) (attempt \(loadAttempt + 1)/\(Self.embedLadder.count))")
+            if code == 100 {
+                // Removed video: definitive regardless of the embedder, no retry.
                 fail(code: code)
-            } else if !didRetryNocookie {
-                // One retry via youtube-nocookie host — helps some embedder-identity failures.
-                didRetryNocookie = true
+            } else if loadAttempt + 1 < Self.embedLadder.count {
+                // 101/150 can be embedder-identity or WebKit quirks, not the video: try the
+                // next loading strategy before blaming the clip.
+                loadAttempt += 1
                 embedFailed = false
                 isReady = false
-                loadPlayerHTML(in: webView, host: "https://www.youtube-nocookie.com")
+                didFinish = false
+                loadEmbed(in: webView)
             } else {
                 fail(code: code)
             }
