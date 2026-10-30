@@ -38,6 +38,8 @@ struct ClipStageView: View {
     @State private var showsShortsCaptions: Bool = true
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
     @State private var transcriptTop: CGFloat = 0
+    /// Bottom of the picture, in stage space. The dictionary card never rises above it.
+    @State private var videoBottom: CGFloat = 0
 
     private var isPopupHere: Bool {
         lookup.selection?.clip.id == clip.id
@@ -153,7 +155,9 @@ struct ClipStageView: View {
             }
 
             if maximized {
-                // Lift the picture off the title like Kiku's theater page.
+                // Kiku's theater page centers the picture between the title and the words.
+                Spacer(minLength: 12)
+            } else {
                 Color.clear.frame(height: 18)
             }
 
@@ -184,7 +188,10 @@ struct ClipStageView: View {
                 }
             }
             .coachTarget(.video, active: isCoachPage)
+            .modifier(FrameBottomReader(bottom: $videoBottom))
             .frame(maxWidth: .infinity)
+
+            if maximized { Spacer(minLength: 12) }
 
             if maximized {
                 HStack(alignment: .top, spacing: 2) {
@@ -198,8 +205,7 @@ struct ClipStageView: View {
                             Color.clear.frame(height: 1)
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .clipped()
+                    .frame(maxWidth: .infinity, alignment: .top)
                     ShortsRail(
                         clip: clip,
                         player: player,
@@ -378,42 +384,53 @@ struct ClipStageView: View {
     /// Pages with the right rail keep it reachable beside the card, like Kiku.
     private var popupHasRail: Bool { showsShortsStage || showsMaximizedLandscape }
 
-    /// Kiku docks the dictionary card directly above the words it came from, overlapping the
-    /// bottom of the picture, instead of floating it mid-page.
+    /// Kiku docks the dictionary card in the space BELOW the picture: it never covers the
+    /// video. On shorts the picture is the page, so the card docks above the plated words.
     private var popupLayer: some View {
         GeometryReader { geo in
-            let anchor = transcriptTop > 200 ? min(transcriptTop - 6, geo.size.height) : nil
-            ZStack(alignment: .top) {
-                // A whisper of dim marks the tap-to-close area without blocking the scene.
+            let stageHeight = geo.size.height
+            let onShorts = showsShortsStage
+            let shortsAnchor: CGFloat? = transcriptTop > 200
+                ? min(transcriptTop - 6, stageHeight) : nil
+            let zoneTop = onShorts
+                ? 0.0
+                : (videoBottom > 0 ? min(videoBottom + 8, stageHeight) : stageHeight * 0.38)
+            let bottomPad: CGFloat = onShorts
+                ? max(0, stageHeight - (shortsAnchor ?? stageHeight * 0.62))
+                : (showsMaximizedLandscape ? 84 : 96)
+            let zoneHeight = max(140, stageHeight - zoneTop)
+            let cardMaxHeight = max(180, zoneHeight - bottomPad)
+            ZStack(alignment: .bottom) {
+                // A whisper of dim marks the tap-to-close area, confined to the card's zone
+                // so the picture above stays untouched.
                 Color.black.opacity(0.05)
+                    .frame(height: onShorts ? stageHeight : zoneHeight)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
-                VStack(spacing: 0) {
-                    Spacer(minLength: 8)
-                    TapPopupCard(compact: true)
-                        .frame(maxWidth: 420)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .coachTarget(.popupCard, active: isCoachPage)
-                        .offset(y: max(0, dragOffset))
-                        .gesture(
-                            DragGesture(minimumDistance: 12)
-                                .onChanged { value in dragOffset = value.translation.height }
-                                .onEnded { value in
-                                    if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
-                                        dismiss()
-                                    }
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                TapPopupCard(compact: true)
+                    .frame(maxWidth: 420)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxHeight: cardMaxHeight, alignment: .bottom)
+                    .offset(y: max(0, dragOffset))
+                    .gesture(
+                        DragGesture(minimumDistance: 12)
+                            .onChanged { value in dragOffset = value.translation.height }
+                            .onEnded { value in
+                                if value.translation.height > 70 || value.predictedEndTranslation.height > 160 {
+                                    dismiss()
                                 }
-                        )
-                }
-                .padding(.leading, 12)
-                .padding(.trailing, popupHasRail ? 54 : 12)
-                .frame(maxWidth: .infinity, alignment: popupHasRail ? .leading : .center)
-                .frame(height: anchor ?? geo.size.height * 0.62, alignment: .bottom)
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragOffset = 0 }
+                            }
+                    )
+                    .coachTarget(.popupCard, active: isCoachPage)
+                    .padding(.bottom, bottomPad)
             }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
         }
+        .padding(.leading, 12)
+        .padding(.trailing, popupHasRail ? 54 : 12)
+        .frame(maxWidth: .infinity, alignment: popupHasRail ? .leading : .center)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
@@ -653,6 +670,19 @@ private struct TranscriptTopReader: ViewModifier {
             proxy.frame(in: .named(StageSpace.name)).minY
         } action: { newValue in
             if abs(newValue - top) > 0.5 { top = newValue }
+        }
+    }
+}
+
+/// Reports where the picture ends so the dictionary card never rises above it.
+private struct FrameBottomReader: ViewModifier {
+    @Binding var bottom: CGFloat
+
+    func body(content: Content) -> some View {
+        content.onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.frame(in: .named(StageSpace.name)).maxY
+        } action: { newValue in
+            if abs(newValue - bottom) > 0.5 { bottom = newValue }
         }
     }
 }
