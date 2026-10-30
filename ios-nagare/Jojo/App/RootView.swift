@@ -93,7 +93,7 @@ struct MainTabView: View {
             // Only explicit maximize or a pushed screen hides the dock.
             if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .background(Color.canvas.ignoresSafeArea(edges: .bottom))
             }
         }
         .preferredColorScheme(app.profile.scheme.colorScheme)
