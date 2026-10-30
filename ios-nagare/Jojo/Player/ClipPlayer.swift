@@ -107,9 +107,9 @@ enum PlaybackUI {
 /// curated offline clips remain playable without a remote embed or network connection.
 @MainActor
 enum ClipPlayerFactory {
-    static func make(for clip: Clip) -> any ClipPlayer {
+    static func make(for clip: Clip, autoplaysOnLoad: Bool = true) -> any ClipPlayer {
         if clip.hasLocalVideo { return LocalClipPlayer(clip: clip) }
-        if clip.hasRealVideo { return YouTubeClipPlayer(clip: clip) }
+        if clip.hasRealVideo { return YouTubeClipPlayer(clip: clip, autoplaysOnLoad: autoplaysOnLoad) }
         return SimulatedClipPlayer(clip: clip)
     }
 }

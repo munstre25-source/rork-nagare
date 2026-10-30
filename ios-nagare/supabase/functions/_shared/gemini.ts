@@ -330,9 +330,39 @@ function redactSecrets(text: string, apiKey: string): string {
 }
 
 export function parseJsonObject(text: string): Record<string, unknown> {
-  const parsed = JSON.parse(text) as unknown;
+  const parsed = parseLooseJson(text);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Expected JSON object");
   }
   return parsed as Record<string, unknown>;
+}
+
+/** Models sometimes wrap JSON in fences or prose (2026-10-30: 5/9 analysis rejections were
+ * "response is not a JSON object"). Strip fences and take the first balanced object. */
+function parseLooseJson(text: string): unknown {
+  const trimmed = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*$/, "");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Fall through: extract the first balanced {…} block.
+  }
+  const start = trimmed.indexOf("{");
+  if (start < 0) throw new Error("no JSON object in response");
+  let depth = 0, inString = false, escaped = false;
+  for (let i = start; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return JSON.parse(trimmed.slice(start, i + 1));
+    }
+  }
+  throw new Error("no balanced JSON object in response");
 }

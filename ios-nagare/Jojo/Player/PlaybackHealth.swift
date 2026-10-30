@@ -15,7 +15,9 @@ enum PlaybackHealth {
     /// The player was ready and asked to play, but time never moved.
     static let stalledCode = -2
 
-    private static let blockedKey = "jojo.playback.blockedVideoIds"
+    /// v2: the 2026-10-30 incident poisoned this list during a flaky session (see recordFailure);
+    /// bumping the key cleared every device's stale blocks.
+    private static let blockedKey = "jojo.playback.blockedVideoIds.v2"
     private static let reportedKey = "jojo.playback.reportedVideoIds"
     private static let publishedKey = "jojo.catalog.publishedVideoIds"
     private static let playedKey = "jojo.playback.hasPlayedSuccessfully"
@@ -24,10 +26,28 @@ enum PlaybackHealth {
     /// the device's network or YouTube blocking it entirely, so nothing is blamed on the video.
     private static var hasPlayedSuccessfully = UserDefaults.standard.bool(forKey: playedKey)
 
+    /// Last time any player advanced. Fresh success = the environment works right now.
+    private static var lastSuccessAt: Date?
+    /// Distinct videos that failed on this device recently (videoId → last attempt).
+    private static var recentFailures: [String: Date] = [:]
+
     static func noteSuccessfulPlayback() {
+        lastSuccessAt = Date()
+        recentFailures.removeAll()
         guard !hasPlayedSuccessfully else { return }
         hasPlayedSuccessfully = true
         UserDefaults.standard.set(true, forKey: playedKey)
+    }
+
+    /// A storm of distinct failing videos with no successful playback in between means the
+    /// environment is broken (network, WebKit bug, simulator) — never the videos. Added after
+    /// the 2026-10-30 incident where one flaky session helped retire 39 of 41 catalog clips.
+    private static var environmentIsBroken: Bool {
+        let window = Date().addingTimeInterval(-600)
+        let recent = recentFailures.filter { $0.value > window }
+        guard recent.count >= 3 else { return false }
+        guard let lastSuccessAt else { return true }
+        return lastSuccessAt < (recent.values.min() ?? .distantFuture)
     }
 
     /// Video ids this device saw fail definitively. Filtered out of every feed.
@@ -47,16 +67,22 @@ enum PlaybackHealth {
     }
 
     /// Records a playback failure. Returns true when the clip should leave this device's feed.
+    /// A broken environment (many distinct failures, no success in between) is kept for the
+    /// audit trail but never blocks a video locally and never reports it for global retirement.
     @discardableResult
     static func recordFailure(clip: Clip, code: Int) -> Bool {
         guard hasPlayedSuccessfully else { return false }
-        let definitive = definitiveCodes.contains(code)
+        recentFailures[clip.videoId] = Date()
+        let environmentBroken = environmentIsBroken
+        let definitive = definitiveCodes.contains(code) && !environmentBroken
         if definitive {
             var blocked = blockedVideoIds
             blocked.insert(clip.videoId)
             UserDefaults.standard.set(Array(blocked), forKey: blockedKey)
         }
-        report(clip: clip, code: code)
+        if !environmentBroken {
+            report(clip: clip, code: code)
+        }
         return definitive
     }
 

@@ -33,6 +33,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored private var lastReportedTime: Double = -1
     @ObservationIgnored private var lastProgressAt = Date()
     @ObservationIgnored private(set) lazy var webView: WKWebView = makeWebView()
+    @ObservationIgnored private var autoRetryTask: Task<Void, Never>?
+    @ObservationIgnored private var autoRetries = 0
+    /// Prewarmed (next-clip) players load without autoplaying: two simultaneous playback
+    /// sessions from one embedder look abusive to YouTube and can trigger error 150 storms.
+    @ObservationIgnored private var autoplaysOnLoad = true
 
     private static let pollMilliseconds = 120
     /// How long a video may take to become ready once YouTube's API script has loaded.
@@ -72,8 +77,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     var duration: Double { clip.durationSec }
     private var sourceStart: Double { clip.sourceStartSec ?? 0 }
 
-    init(clip: Clip) {
+    init(clip: Clip, autoplaysOnLoad: Bool = true) {
         self.clip = clip
+        self.autoplaysOnLoad = autoplaysOnLoad
         super.init()
     }
 
@@ -122,7 +128,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 embedFailed = true
                 return
             }
-            view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer), baseURL: base)
+            view.loadHTMLString(Self.playerHTML(videoId: videoId, host: host, origin: Self.appReferrer, autoplay: autoplaysOnLoad), baseURL: base)
         case .directEmbed:
             installDirectBridge()
             // No `origin` param here: the embed page is the top-level document, so a foreign
@@ -131,7 +137,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             components.queryItems = [
                 URLQueryItem(name: "enablejsapi", value: "1"),
                 URLQueryItem(name: "playsinline", value: "1"),
-                URLQueryItem(name: "autoplay", value: "1"),
+                URLQueryItem(name: "autoplay", value: autoplaysOnLoad ? "1" : "0"),
                 URLQueryItem(name: "mute", value: "1"),
                 URLQueryItem(name: "controls", value: "0"),
                 URLQueryItem(name: "rel", value: "0"),
@@ -239,12 +245,16 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         loadEmbed(in: webView)
     }
 
-    /// Terminal failure: stop, surface the code, and tell PlaybackHealth (which hides the clip
-    /// on definitive codes and reports it so the catalog retires it for everyone).
+    /// Failure of this load attempt: stop, surface the code, tell PlaybackHealth (which
+    /// gates on environment health before blocking/reporting) — then self-heal. A fresh
+    /// embed session shortly after fixes the transient 150s and never-ready sessions that
+    /// plague iOS 26.x WebKit, so the learner sees the poster for ~20s instead of a dead
+    /// failure card. Only code 100 (video removed) never retries.
     private func fail(code: Int) {
         loadWatchdog?.cancel()
         poller?.cancel()
         poller = nil
+        let resumeOnRetry = wantsPlay
         wantsPlay = false
         isPlaying = false
         embedErrorCode = code
@@ -253,9 +263,25 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         if PlaybackHealth.definitiveCodes.contains(code) || code < 0 {
             PlaybackHealth.recordFailure(clip: clip, code: code)
         }
+        guard code != 100, autoRetries < 2 else { return }
+        autoRetryTask?.cancel()
+        autoRetryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(20))
+            guard let self, !Task.isCancelled, self.embedFailed else { return }
+            self.autoRetries += 1
+            self.embedFailed = false
+            self.embedErrorCode = nil
+            self.didFinish = false
+            self.lastProgressAt = Date()
+            self.wantsPlay = resumeOnRetry
+            if resumeOnRetry { self.isPlaying = true }
+            self.loadAttempt = 0
+            self.loadEmbed(in: self.webView)
+            if resumeOnRetry { self.startPolling() }
+        }
     }
 
-    private static func playerHTML(videoId: String, host: String, origin: String) -> String {
+    private static func playerHTML(videoId: String, host: String, origin: String, autoplay: Bool) -> String {
         """
         <!DOCTYPE html><html><head>
         <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
@@ -273,7 +299,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             videoId:'\(videoId)',
             playerVars:{
               playsinline:1,controls:0,rel:0,modestbranding:1,fs:0,
-              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,autoplay:1,mute:1,
+              iv_load_policy:3,cc_load_policy:0,enablejsapi:1,autoplay:\(autoplay ? 1 : 0),mute:1,
               origin:'\(origin)',widget_referrer:'\(origin)'
             },
             events:{
@@ -339,6 +365,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     func teardown() {
         loadWatchdog?.cancel()
+        autoRetryTask?.cancel()
         pause()
         onFinished = nil
         onWatchTick = nil

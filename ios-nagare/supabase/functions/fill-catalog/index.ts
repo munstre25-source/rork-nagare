@@ -455,7 +455,10 @@ async function analyzeAndPublish(
     windowStart: 0,
     // A 90s window keeps the heard response small enough for the edge worker's compute
     // limit; longer sources still yield learner-sized clips from their first 90 seconds.
-    windowEnd: Math.min(candidate.durationSec, 90),
+    // An unknown stored duration (0) must not collapse the window to nothing — fall back
+    // to the default 90s window and let the model see the real video (2026-10-30 fix:
+    // scraped candidates without a parsed length all failed with "bad window").
+    windowEnd: candidate.durationSec > 0 ? Math.min(candidate.durationSec, 90) : 90,
     language,
     askCategory: false,
     minSpokenSec: 6,
@@ -465,6 +468,12 @@ async function analyzeAndPublish(
       videoId: candidate.videoId,
       reason: outcome.reason,
       detail: outcome.detail,
+    });
+    // Persist for diagnosis — edge_logs is not always reachable (2026-10-30 incident).
+    await supabase.from("catalog_rejections").insert({
+      video_id: candidate.videoId,
+      reason: outcome.reason,
+      detail: (outcome.detail ?? "").slice(0, 300),
     });
     if (outcome.reason === "gemini_cap") return { ok: false, reason: "gemini-cap" };
     if (outcome.reason === "model_payment") return { ok: false, reason: "Gemini HTTP 402" };

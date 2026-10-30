@@ -87,7 +87,9 @@ final class PlaybackCoordinator {
     }
 
     /// Warms the next clip's player in the background: creates the web view, loads the
-    /// embed, and buffers the video — so a swipe only needs a swap, not a cold start.
+    /// embed, and cues the video — so a swipe only needs a swap, not a cold start. The
+    /// prewarmed embed never autoplays: two concurrent playback sessions from one embedder
+    /// look abusive to YouTube and can trigger error 150 storms (2026-10-30 incident).
     func preload(_ clip: Clip) {
         guard player?.clip.id != clip.id, preloaded?.clip.id != clip.id else { return }
         cancelPreload()
@@ -96,11 +98,11 @@ final class PlaybackCoordinator {
             try? await Task.sleep(for: .seconds(1.5))
             guard let self, !Task.isCancelled,
                   self.player?.clip.id != clip.id else { return }
-            let warm = ClipPlayerFactory.make(for: clip)
+            let warm = ClipPlayerFactory.make(for: clip, autoplaysOnLoad: false)
             warm.setRate(self.preferredRate)
             warm.setMuted(true) // never audible in the background
             if let webPlayer = warm as? YouTubeClipPlayer {
-                _ = webPlayer.webView // force creation + embed load + buffering
+                _ = webPlayer.webView // force creation + embed load + cue
             }
             guard !Task.isCancelled else { warm.teardown(); return }
             self.preloaded = warm
