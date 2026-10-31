@@ -51,6 +51,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ clip: data });
     }
 
+    const duration = Number(clip.duration_sec);
+    if (!Number.isFinite(duration) || duration < 8 || duration > 40) {
+      return errorResponse(422, "Refuse to publish: excerpt must be 8–40 seconds");
+    }
+
     // Recheck on every publish: owners can change a video's embedding setting
     // after discovery or after a previous publish.
     const videoCheck = await checkYouTubeVideo(supabase, String(clip.video_id ?? ""));

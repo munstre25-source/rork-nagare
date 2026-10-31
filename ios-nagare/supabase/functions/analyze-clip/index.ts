@@ -5,7 +5,7 @@ import { serviceClient } from "../_shared/supabase.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
 import { catalogTable, languageName, parseLanguage } from "../_shared/catalog.ts";
-import { enrichHeardLines, hearSystem } from "../_shared/enrich.ts";
+import { hearSystem } from "../_shared/enrich.ts";
 import {
   LineLike,
   validateEnums,
@@ -53,8 +53,9 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(startSec) || startSec < 0 || !Number.isFinite(endSec) || endSec <= startSec) {
       return errorResponse(400, "startSec and endSec required with 0 <= startSec < endSec");
     }
-    if (endSec - startSec > 180) {
-      return errorResponse(400, "Segment must be <= 180 seconds");
+    // Catalog excerpts are 8–40 s (immersion.ts MIN_CLIP/MAX_CLIP); the feed is built around that.
+    if (endSec - startSec < 8 || endSec - startSec > 40) {
+      return errorResponse(400, "Segment must be 8–40 seconds");
     }
 
     const title = (typeof body.title === "string" && body.title.trim()) ||
@@ -87,7 +88,8 @@ Deno.serve(async (req) => {
     const raw = parseJsonObject(text);
     const validated = validateLines(raw.lines, startSec, endSec, language);
     if (!validated.ok) return errorResponse(422, validated.error);
-    const heard = await enrichHeardLines(raw.lines, supabase, language);
+    // One pass only: definitions are fetched on tap through explain-word's shared cache.
+    const heard = raw.lines;
 
     const relativeLines = (heard as LineLike[]).map((line) => {
       const row = line as Record<string, unknown>;
