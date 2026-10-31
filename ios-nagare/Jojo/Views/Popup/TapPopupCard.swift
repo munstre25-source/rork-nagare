@@ -139,16 +139,14 @@ struct TapPopupCard: View {
                 pitchChip(for: selection.token)
                 conjugationStrip(for: selection.token)
 
-                // Contextual “in this sentence” only — skip the fallback line that repeats the gloss.
-                if lookup.context != nil || lookup.isLoadingContext {
-                    sentenceMeaning(fallbackGloss: gloss)
-                }
-
                 quietTabRow
-                if lookup.tab == .flashcard {
+                switch lookup.tab {
+                case .dictionary:
+                    compactDictionaryTab(explanation, primaryGloss: gloss)
+                case .flashcard:
                     flashcardTab(selection: selection, explanation: explanation)
                         .transition(.opacity)
-                } else if lookup.tab == .examples {
+                case .examples:
                     examplesTab
                         .transition(.opacity)
                 }
@@ -339,7 +337,7 @@ struct TapPopupCard: View {
         .accessibilityLabel("Close")
     }
 
-    /// Compact feed tabs — icons only, no heavy selected fill.
+    /// Compact feed tabs with short labels so each icon's purpose is clear.
     private var quietTabRow: some View {
         HStack(spacing: 4) {
             ForEach(PopupTab.allCases, id: \.self) { tab in
@@ -348,10 +346,15 @@ struct TapPopupCard: View {
                     withAnimation(.snappy) { lookup.tab = tab }
                     if tab == .examples { lookup.loadContextIfNeeded(app: app) }
                 } label: {
-                    Image(systemName: tab.symbol)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(lookup.tab == tab ? LearningInk.selected : inkSoft.opacity(0.7))
-                        .frame(width: 36, height: 32)
+                    VStack(spacing: 2) {
+                        Image(systemName: tab.symbol)
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(tab.compactTitle)
+                            .font(.system(size: 9, weight: .semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(lookup.tab == tab ? LearningInk.selected : inkSoft.opacity(0.7))
+                    .frame(minWidth: 56, minHeight: 38)
                 }
                 .accessibilityLabel(tab.title)
                 .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
@@ -563,6 +566,25 @@ struct TapPopupCard: View {
         }
     }
 
+    private func compactDictionaryTab(_ explanation: WordExplanation, primaryGloss: String) -> some View {
+        let otherDefinitions = explanation.displayDefinitions(mode: app.profile.dictionary)
+            .filter { $0.compare(primaryGloss, options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame }
+        return VStack(alignment: .leading, spacing: Spacing.s) {
+            if !otherDefinitions.isEmpty {
+                Text("Other meanings")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(inkSoft)
+                    .textCase(.uppercase)
+                ForEach(Array(otherDefinitions.prefix(2).enumerated()), id: \.offset) { index, definition in
+                    DefinitionRow(number: index + 2, tag: explanation.pos, text: definition, dark: onDark)
+                }
+            }
+            if lookup.context != nil || lookup.isLoadingContext {
+                sentenceMeaning(fallbackGloss: primaryGloss)
+            }
+        }
+    }
+
     @ViewBuilder
     private func relatedClipsRail(for surface: String) -> some View {
         let hits = app.clipsMentioning(surface, limit: 4)
@@ -620,12 +642,19 @@ struct TapPopupCard: View {
     @ViewBuilder
     private var examplesTab: some View {
         if let context = lookup.context {
+            let currentSentence = lookup.selection?.sentence ?? ""
+            let examples = uniqueNonEmpty(context.examples)
+                .filter { example in
+                    let japaneseText = example.components(separatedBy: .newlines).first ?? example
+                    return japaneseText.trimmingCharacters(in: .whitespacesAndNewlines) != currentSentence
+                }
+            let relatedWords = uniqueNonEmpty(context.relatedWords)
             VStack(alignment: .leading, spacing: Spacing.s) {
-                Text(context.contextualExplanation)
-                    .font(.subheadline)
-                    .foregroundStyle(ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                ForEach(Array(context.examples.prefix(2).enumerated()), id: \.offset) { index, example in
+                Text("More examples")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(inkSoft)
+                    .textCase(.uppercase)
+                ForEach(Array(examples.prefix(2).enumerated()), id: \.offset) { index, example in
                     Text(example)
                         .font(JojoFont.jp(14, relativeTo: .subheadline))
                         .foregroundStyle(ink)
@@ -633,8 +662,13 @@ struct TapPopupCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.definitionTints[(index + 1) % 3], in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                if !context.relatedWords.isEmpty {
-                    Text("Related: " + context.relatedWords.joined(separator: " · "))
+                if examples.isEmpty {
+                    Text("No other example sentences are available yet.")
+                        .font(.footnote)
+                        .foregroundStyle(inkSoft)
+                }
+                if !relatedWords.isEmpty {
+                    Text("Related: " + relatedWords.joined(separator: " · "))
                         .font(JojoFont.jp(13, relativeTo: .footnote))
                         .foregroundStyle(inkSoft)
                 }
@@ -647,6 +681,16 @@ struct TapPopupCard: View {
             .frame(minHeight: 60)
             .onAppear { lookup.loadContextIfNeeded(app: app) }
         }
+    }
+}
+
+private func uniqueNonEmpty(_ values: [String]) -> [String] {
+    var seen = Set<String>()
+    return values.compactMap { value in
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        guard !trimmed.isEmpty, seen.insert(key).inserted else { return nil }
+        return trimmed
     }
 }
 

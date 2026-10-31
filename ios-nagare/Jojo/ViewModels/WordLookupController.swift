@@ -19,6 +19,14 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
         case .examples: "Example sentences"
         }
     }
+
+    var compactTitle: String {
+        switch self {
+        case .dictionary: "Dictionary"
+        case .flashcard: "Card"
+        case .examples: "Examples"
+        }
+    }
 }
 
 /// Drives the tap-to-understand popup. The tap itself saves the word; there is no save button.
