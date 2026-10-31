@@ -46,10 +46,7 @@ struct FeedView: View {
                 if !videoExpanded {
                     VStack(spacing: 0) {
                         VStack(spacing: 0) {
-                            if !app.profile.hideDailyGoalBar {
-                                DailyGoalBar()
-                                    .padding(.top, 2)
-                            }
+                            DailyGoalBar()
                             if showResumeChip, let resumeSnapshot {
                                 ResumeChip(
                                     title: resumeSnapshot.title,

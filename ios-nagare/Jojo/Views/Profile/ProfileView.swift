@@ -383,7 +383,7 @@ struct ProfileView: View {
             settingsToggle(symbol: "lock.open", title: "Unlock by level",
                            isOn: Binding(get: { app.profile.gateContentByLevel }, set: { app.setGateContentByLevel($0) }))
             Divider().padding(.leading, 52)
-            settingsToggle(symbol: "timer", title: "Daily progress bar",
+            settingsToggle(symbol: "timer", title: "Daily progress on Explore",
                            isOn: Binding(
                             get: { !app.profile.hideDailyGoalBar },
                             set: { app.setHideDailyGoalBar(!$0) }

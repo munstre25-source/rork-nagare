@@ -41,47 +41,43 @@ struct DailyGoalBar: View {
     @State private var bloom: Bool = false
 
     var body: some View {
-        HStack(spacing: Spacing.m) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(app.isGoalReached ? "Daily goal done" : "\(app.minutesLeft) min left today")
-                    .font(.subheadline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Text("\(watchedMinutes)/\(app.profile.dailyGoalMinutes) MIN")
+                    .font(.caption.weight(.bold))
                     .monospacedDigit()
-                    .foregroundStyle(.primary.opacity(0.9))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .contentTransition(.numericText())
-                Text(app.isGoalReached ? "Nice work today" : "Daily goal · about \(app.clipsLeftToday) clip\(app.clipsLeftToday == 1 ? "" : "s")")
-                    .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.sakuraPink)
-                    .textCase(.uppercase)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+
+                Spacer(minLength: 4)
+
+                if app.isGoalReached {
+                    Text("Goal complete")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text("~\(app.clipsLeftToday) clip\(app.clipsLeftToday == 1 ? "" : "s") · \(app.minutesLeft) min left")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                goalTrophy
+                    .frame(width: 26, height: 26)
             }
+
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.1))
                     Capsule()
                         .fill(Color.sakuraBar)
-                        .frame(width: max(8, proxy.size.width * app.goalProgress))
+                        .frame(width: max(4, proxy.size.width * app.goalProgress))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: app.goalProgress)
                 }
             }
-            .frame(height: 6)
-            ZStack {
-                Circle()
-                    .fill(Color.sakuraButton.opacity(bloom ? 0 : 0.75))
-                    .frame(width: 36, height: 36)
-                    .blur(radius: 6)
-                    .scaleEffect(bloom ? 3.4 : 0.25)
-                    .opacity(showConfetti ? 1 : 0)
-                Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(app.isGoalReached ? Color.sakuraPink : .secondary)
-                    .scaleEffect(trophyBounce ? 1.5 : 1)
-                    .rotationEffect(.degrees(trophyBounce ? -12 : 0))
-                if showConfetti {
-                    ConfettiBurst(colors: [Color.sakuraButton, Color.sakuraPinkLight, .white], count: 16, radius: 52)
-                }
-            }
-            .frame(width: 44, height: 44)
+            .frame(height: 4)
         }
         .padding(.horizontal, Spacing.l)
         .accessibilityElement(children: .ignore)
@@ -89,9 +85,32 @@ struct DailyGoalBar: View {
         .accessibilityValue(
             app.isGoalReached
                 ? "Completed"
-                : "\(app.minutesLeft) minutes left, about \(app.clipsLeftToday) clips, of \(app.profile.dailyGoalMinutes)"
+                : "\(watchedMinutes) of \(app.profile.dailyGoalMinutes) minutes, \(app.minutesLeft) minutes left, about \(app.clipsLeftToday) clips remaining"
         )
         .onChange(of: app.goalCelebrationCount) { _, _ in celebrate() }
+    }
+
+    private var watchedMinutes: Int {
+        min(app.profile.dailyGoalMinutes, Int(app.todayWatchedSeconds / 60))
+    }
+
+    private var goalTrophy: some View {
+        ZStack {
+            Circle()
+                .fill(Color.sakuraButton.opacity(bloom ? 0 : 0.75))
+                .frame(width: 22, height: 22)
+                .blur(radius: 5)
+                .scaleEffect(bloom ? 3.4 : 0.25)
+                .opacity(showConfetti ? 1 : 0)
+            Image(systemName: app.isGoalReached ? "trophy.fill" : "trophy")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(app.isGoalReached ? Color.sakuraPink : .secondary)
+                .scaleEffect(trophyBounce ? 1.5 : 1)
+                .rotationEffect(.degrees(trophyBounce ? -12 : 0))
+            if showConfetti {
+                ConfettiBurst(colors: [Color.sakuraButton, Color.sakuraPinkLight, .white], count: 16, radius: 42)
+            }
+        }
     }
 
     private func celebrate() {
