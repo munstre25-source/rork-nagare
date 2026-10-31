@@ -8,8 +8,9 @@ struct ClipInfoSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(AppModel.self) private var app
-    @State private var reported: Bool = false
+    @Environment(PlaybackCoordinator.self) private var coordinator
     @State private var showSpeaking = false
+    @State private var showTranscriptReport = false
 
     var body: some View {
         NavigationStack {
@@ -84,14 +85,13 @@ struct ClipInfoSheet: View {
                     Text("Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
                 }
                 Section {
-                    Button(role: .destructive) {
-                        reported = true
-                        Haptics.success()
-                        track("clip_reported", props: ["clip": clip.id])
+                    Button {
+                        coordinator.pauseForPopup()
+                        showTranscriptReport = true
                     } label: {
-                        Label(reported ? "Thanks, we'll take a look" : "Report a problem with this clip", systemImage: reported ? "checkmark.circle.fill" : "flag")
+                        Label("Report a transcript issue", systemImage: "flag")
                     }
-                    .disabled(reported)
+                    .disabled(clip.lines.isEmpty)
                 }
             }
             .navigationTitle("Clip info")
@@ -103,6 +103,11 @@ struct ClipInfoSheet: View {
             }
             .sheet(isPresented: $showSpeaking) {
                 SpeakingScenesView()
+            }
+            .sheet(isPresented: $showTranscriptReport, onDismiss: {
+                coordinator.resumeAfterPopupIfNeeded()
+            }) {
+                TranscriptCorrectionSheet(clip: clip)
             }
         }
         .presentationDetents([.medium, .large])

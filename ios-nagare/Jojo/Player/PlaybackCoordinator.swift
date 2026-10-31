@@ -89,21 +89,27 @@ final class PlaybackCoordinator {
         if autoplay { newPlayer.play() }
     }
 
-    /// Warms the next clip's player in the background: creates the web view, loads the
-    /// embed, and cues the video — so a swipe only needs a swap, not a cold start. The
-    /// prewarmed embed never autoplays: two concurrent playback sessions from one embedder
-    /// look abusive to YouTube and can trigger error 150 storms (2026-10-30 incident).
+    /// Warms the next clip's player in the background. Local items start preparing
+    /// immediately; YouTube's web view is prepared after the active clip renders. The
+    /// prewarmed embed never autoplays: concurrent playback sessions can trigger error 150
+    /// storms. YouTube may still need to buffer video data after the swipe.
     ///
     /// Gated (2026-10-30, night 12): the warm-up starts only once the current video is
     /// actually playing, and never while YouTube is limiting the network. Swapping the warm
-    /// player in means each clip still costs exactly one embed load — no extra traffic —
-    /// while the swipe starts on an already-cued video.
+    /// player in means the swipe avoids rebuilding the embed, while preserving one active
+    /// playback session at a time.
     func preload(_ clip: Clip) {
         guard player?.clip.id != clip.id, preloaded?.clip.id != clip.id else { return }
         cancelPreload()
+        if clip.hasLocalVideo {
+            let warm = ClipPlayerFactory.make(for: clip, autoplaysOnLoad: false)
+            warm.setRate(preferredRate)
+            warm.setMuted(true)
+            preloaded = warm
+            return
+        }
         preloadTask = Task { [weak self] in
-            // Let the current video start first; don't compete for bandwidth.
-            try? await Task.sleep(for: .seconds(1.5))
+            // Wait only for the current clip's first frame; don't add an arbitrary delay.
             var waited = 0
             while let current = self?.player as? YouTubeClipPlayer, !current.hasRenderedVideo, waited < 40 {
                 try? await Task.sleep(for: .milliseconds(500))

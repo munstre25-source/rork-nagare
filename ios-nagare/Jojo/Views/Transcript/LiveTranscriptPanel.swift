@@ -9,8 +9,11 @@ struct LiveTranscriptPanel: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var onlyCurrentLine: Bool = false
-    /// Feed immersive mode: always show furigana + romaji + JP/EN.
+    /// Keep feed typography compact; legacy callers can also force every aid on.
     var forceDenseAids: Bool = false
+    /// The immersive feed keeps compact typography while honoring Profile display choices.
+    var respectsProfileDisplay: Bool = false
+    var onReportLine: ((Int) -> Void)?
     /// Kiku window: current line plus the lines after it, no nested scroll.
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
@@ -85,6 +88,8 @@ struct LiveTranscriptPanel: View {
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
+                    respectsProfileDisplay: respectsProfileDisplay,
+                    onReport: { onReportLine?(index) },
                     // The active line keeps its plate so it stays distinct inside the panel.
                     raisedCard: index == currentLine,
                     showsLineTools: true,
@@ -113,6 +118,8 @@ struct LiveTranscriptPanel: View {
                     tooltip: index == currentLine ? tooltip : nil,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
+                    respectsProfileDisplay: respectsProfileDisplay,
+                    onReport: { onReportLine?(index) },
                     isSpokenLine: index == currentLine
                 )
                 .id(index)

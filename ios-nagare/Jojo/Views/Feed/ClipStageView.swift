@@ -37,6 +37,8 @@ struct ClipStageView: View {
     @State private var wordSavedHint: String?
     /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
+    @State private var transcriptReportLineIndex: Int?
+    @State private var showTranscriptReport = false
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
     @State private var transcriptTop: CGFloat = 0
     /// Bottom of the picture, in stage space. The dictionary card never rises above it.
@@ -73,7 +75,9 @@ struct ClipStageView: View {
             let width = min(size.width - words - 44, maxHeight * 16 / 9, 900)
             return CGSize(width: width, height: width * 9 / 16)
         }
-        let maxHeight = max(180, size.height * 0.42)
+        // Give the video a little more vertical priority on wide stages. On a phone in
+        // portrait this remains naturally limited by the full-width 16:9 frame.
+        let maxHeight = max(180, size.height * 0.50)
         let width = min(min(size.width, 640), maxHeight * 16 / 9)
         let height = width * 9 / 16
         return CGSize(width: width, height: height)
@@ -171,6 +175,14 @@ struct ClipStageView: View {
                 coordinator.pauseForPopup()
             } else {
                 coordinator.resumeAfterPopupIfNeeded()
+            }
+        }
+        .sheet(isPresented: $showTranscriptReport, onDismiss: {
+            transcriptReportLineIndex = nil
+            coordinator.resumeAfterPopupIfNeeded()
+        }) {
+            if let lineIndex = transcriptReportLineIndex {
+                TranscriptCorrectionSheet(clip: clip, lineIndex: lineIndex)
             }
         }
     }
@@ -639,10 +651,16 @@ struct ClipStageView: View {
             isPulsing: isPulsing,
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
+            respectsProfileDisplay: immersiveFeed,
             windowMode: immersiveFeed,
-            // Keep the active line plus the next two queued in every feed layout. As playback
-            // advances, the window rolls forward so learners never need to scroll for lyrics.
-            followingLines: following ?? 2
+            onReportLine: { lineIndex in
+                coordinator.pauseForPopup()
+                transcriptReportLineIndex = lineIndex
+                showTranscriptReport = true
+            },
+            // Keep the active line plus one upcoming line visible. This preserves context
+            // while keeping the player as the visual focus.
+            followingLines: following ?? 1
         )
     }
 
@@ -823,6 +841,8 @@ struct ClipActionRow: View {
                 }
                 .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
 
+                TranscriptDisplayMenu(tint: .secondary)
+
                 if let onInfo {
                     Button(action: onInfo) {
                         rowIcon("info.circle", tint: .secondary)
@@ -871,6 +891,8 @@ struct TranscriptSection: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var forceDenseAids: Bool = false
+    var respectsProfileDisplay: Bool = false
+    var onReportLine: ((Int) -> Void)?
     /// Kiku window: current line plus the lines after it, no nested scroll.
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
@@ -886,6 +908,8 @@ struct TranscriptSection: View {
             tooltip: tooltip,
             onlyCurrentLine: onlyCurrentLine,
             forceDenseAids: forceDenseAids,
+            respectsProfileDisplay: respectsProfileDisplay,
+            onReportLine: onReportLine,
             windowMode: windowMode,
             followingLines: followingLines
         )

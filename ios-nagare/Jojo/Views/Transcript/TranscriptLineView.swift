@@ -11,23 +11,26 @@ struct TranscriptLineView: View {
     var tooltip: String?
     var showsTranslation: Bool = true
     var isActive: Bool = true
-    /// Feed immersive: always furigana + romaji + JP/EN regardless of profile toggles.
+    /// Compact styling; legacy callers can force JP/EN, furigana, and romaji on.
     var forceDenseAids: Bool = false
+    /// Keep the feed's compact styling but use the learner's subtitle and reading settings.
+    var respectsProfileDisplay: Bool = false
     /// Kiku raised card behind the current karaoke line.
     var raisedCard: Bool = false
     /// Time range and a speaker, the way the feed lines are labeled.
     var showsLineTools: Bool = false
     /// The playhead is inside this line (live transcript only).
     var isSpokenLine: Bool = false
+    var onReport: (() -> Void)?
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
 
     private var subtitleMode: SubtitleMode {
-        forceDenseAids ? .both : app.profile.subtitles
+        forceDenseAids && !respectsProfileDisplay ? .both : app.profile.subtitles
     }
-    private var showFurigana: Bool { forceDenseAids || app.profile.showFurigana }
-    private var showRomaji: Bool { forceDenseAids || app.profile.showRomaji }
+    private var showFurigana: Bool { (forceDenseAids && !respectsProfileDisplay) || app.profile.showFurigana }
+    private var showRomaji: Bool { (forceDenseAids && !respectsProfileDisplay) || app.profile.showRomaji }
 
     var body: some View {
         if let line = clip.lines[safe: lineIndex] {
@@ -89,6 +92,19 @@ struct TranscriptLineView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Hear this line")
+                        if let onReport {
+                            Button {
+                                Haptics.selection()
+                                onReport()
+                            } label: {
+                                Image(systemName: "flag")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 36, height: 36)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Report an issue with this transcript line")
+                        }
                     }
                 }
             }

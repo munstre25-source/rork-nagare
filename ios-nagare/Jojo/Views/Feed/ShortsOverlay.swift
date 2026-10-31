@@ -76,6 +76,8 @@ struct ShortsRail: View {
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             }
 
+            TranscriptDisplayMenu(tint: ink, compact: true)
+
             if let onInfo {
                 railButton("info.circle", tint: ink, label: "Clip info", action: onInfo)
             }
@@ -121,6 +123,56 @@ struct ShortsRail: View {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(label)
+    }
+}
+
+/// Fast transcript controls available without leaving the feed or opening Profile.
+struct TranscriptDisplayMenu: View {
+    var tint: Color = .secondary
+    var compact: Bool = false
+
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        Menu {
+            Section("Subtitles") {
+                ForEach(SubtitleMode.allCases) { mode in
+                    Button {
+                        Haptics.selection()
+                        app.setSubtitleMode(mode)
+                    } label: {
+                        if app.profile.subtitles == mode {
+                            Label(mode.title, systemImage: "checkmark")
+                        } else {
+                            Text(mode.title)
+                        }
+                    }
+                }
+            }
+
+            Section("Readings") {
+                Toggle(isOn: Binding(
+                    get: { app.profile.showFurigana },
+                    set: { app.setShowFurigana($0) }
+                )) {
+                    Label("Furigana", systemImage: "textformat")
+                }
+                Toggle(isOn: Binding(
+                    get: { app.profile.showRomaji },
+                    set: { app.setShowRomaji($0) }
+                )) {
+                    Label("Romaji", systemImage: "character.book.closed")
+                }
+            }
+        } label: {
+            Image(systemName: "captions.bubble")
+                .font(.system(size: compact ? 19 : 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: compact ? 44 : 34, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Transcript display")
+        .accessibilityHint("Choose subtitles, furigana, and romaji")
     }
 }
 
