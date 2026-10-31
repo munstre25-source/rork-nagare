@@ -652,12 +652,12 @@ struct ClipStageView: View {
             tooltip: tooltip,
             forceDenseAids: immersiveFeed,
             respectsProfileDisplay: immersiveFeed,
-            windowMode: immersiveFeed,
             onReportLine: { lineIndex in
                 coordinator.pauseForPopup()
                 transcriptReportLineIndex = lineIndex
                 showTranscriptReport = true
             },
+            windowMode: immersiveFeed,
             // Keep the active line plus one upcoming line visible. This preserves context
             // while keeping the player as the visual focus.
             followingLines: following ?? 1
