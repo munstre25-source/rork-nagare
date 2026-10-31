@@ -89,11 +89,11 @@ struct LiveTranscriptPanel: View {
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
                     respectsProfileDisplay: respectsProfileDisplay,
-                    onReport: { onReportLine?(index) },
                     // The active line keeps its plate so it stays distinct inside the panel.
                     raisedCard: index == currentLine,
                     showsLineTools: true,
-                    isSpokenLine: index == currentLine
+                    isSpokenLine: index == currentLine,
+                    onReport: { onReportLine?(index) }
                 )
                 .id(index)
                 .padding(.horizontal, index == currentLine ? 0 : Spacing.m)
@@ -119,8 +119,8 @@ struct LiveTranscriptPanel: View {
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
                     respectsProfileDisplay: respectsProfileDisplay,
-                    onReport: { onReportLine?(index) },
-                    isSpokenLine: index == currentLine
+                    isSpokenLine: index == currentLine,
+                    onReport: { onReportLine?(index) }
                 )
                 .id(index)
             }
