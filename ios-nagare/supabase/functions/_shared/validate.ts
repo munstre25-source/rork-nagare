@@ -183,7 +183,9 @@ export function validateLines(
           error: `line[${i}].tokens[${t}] must stay within line bounds`,
         };
       }
-      if (tok.end <= tok.start) {
+      // Punctuation the hearing pass marks non-tappable is often an instant (start == end);
+      // the catalog pipeline publishes those and the client handles them. Words must have length.
+      if (tok.end < tok.start || (tok.end === tok.start && tok.tappable !== false)) {
         return {
           ok: false,
           error: `line[${i}].tokens[${t}] end must be > start`,
