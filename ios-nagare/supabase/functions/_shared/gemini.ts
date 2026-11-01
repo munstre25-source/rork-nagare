@@ -193,9 +193,6 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
     ]
     : opts.user;
 
-  if (!(await openRouterBudget("openrouter_budget_ok", { reserve: opts.youtube ? 0.1 : 0.01 }))) {
-    throw new GeminiError(402, "OpenRouter budget cap reached");
-  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   try {
@@ -229,9 +226,9 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
       choices?: Array<{ message?: { content?: string } }>;
       usage?: { cost?: number };
     };
-    // Unknown cost is booked pessimistically so the cap can never be overrun silently.
+    // Keep an estimated ledger entry when OpenRouter omits the actual cost.
     const cost = typeof data.usage?.cost === "number" ? data.usage.cost : (opts.youtube ? 0.05 : 0.005);
-    await openRouterBudget("openrouter_add_spend", { cost });
+    await recordOpenRouterSpend(cost);
     const text = stripFence(data.choices?.[0]?.message?.content ?? "");
     if (!text) throw new GeminiError(502, "Gemini empty response");
     return { text, model };
@@ -240,23 +237,21 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
   }
 }
 
-/** Calls the spend-ledger RPCs with the service role. Fails closed (false) on any error. */
-async function openRouterBudget(fn: string, args: Record<string, unknown>): Promise<boolean> {
+/** Cost tracking is best effort; a ledger outage must not block clip analysis. */
+async function recordOpenRouterSpend(cost: number): Promise<void> {
   const base = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!base || !key) return false;
+  if (!base || !key) return;
   try {
-    const res = await fetch(`${base}/rest/v1/rpc/${fn}`, {
+    const res = await fetch(`${base}/rest/v1/rpc/openrouter_add_spend`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-      body: JSON.stringify(args),
+      body: JSON.stringify({ cost }),
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return false;
-    const value = await res.json();
-    return fn === "openrouter_budget_ok" ? value === true : true;
+    if (!res.ok) console.warn(JSON.stringify({ event: "openrouter_spend_record_failed", status: res.status }));
   } catch {
-    return false;
+    console.warn(JSON.stringify({ event: "openrouter_spend_record_failed", status: 0 }));
   }
 }
 
@@ -334,12 +329,14 @@ export async function geminiAnalyzeYouTubeSegment(opts: {
   youtubeUrl: string;
   startSec: number;
   endSec: number;
+  /** Optional shorter bound for a focused verification call. */
+  timeoutMs?: number;
 }): Promise<GeminiJsonResult> {
   return await callGemini({
     model: opts.model,
     system: opts.system,
     user: opts.user,
-    timeoutMs: opts.endSec - opts.startSec > 60 ? 120_000 : ANALYZE_TIMEOUT_MS,
+    timeoutMs: opts.timeoutMs ?? (opts.endSec - opts.startSec > 60 ? 120_000 : ANALYZE_TIMEOUT_MS),
     youtube: {
       url: opts.youtubeUrl,
       startSec: opts.startSec,
