@@ -180,7 +180,7 @@ struct FeedView: View {
             revealWatchChrome()
             noteClipChange(from: oldId)
             guard let newId, let clip = clips.first(where: { $0.id == newId }),
-                  isActiveTab, quizClip == nil else { return }
+                  isActiveTab, quizClip == nil, !isCovered else { return }
             if let index = clips.firstIndex(where: { $0.id == newId }), index >= max(0, clips.count - 3) {
                 Task { await app.refreshRemoteClips() }
             }
@@ -195,6 +195,18 @@ struct FeedView: View {
                 goalProgress: app.goalProgress,
                 accent: app.profile.theme.rawValue
             )
+        }
+        // A screen opened over the feed (search, library, review) owns playback: the feed
+        // pauses so two YouTube embeds never play at once (the covering player stalled at
+        // 0:01 while the hidden feed kept auto-advancing — 2026-10-31).
+        .onChange(of: isCovered) { _, covered in
+            if covered {
+                coordinator.persistResumePoint()
+                coordinator.pause()
+                lookup.dismiss()
+            } else {
+                resumeIfPossible()
+            }
         }
         .onChange(of: app.pendingFeedClipId) { _, _ in openPendingClip() }
         .onChange(of: app.catalogGeneration) { _, _ in absorbNewClips() }
@@ -512,8 +524,13 @@ struct FeedView: View {
         }
     }
 
+    /// True while another screen sits over the feed and owns playback.
+    private var isCovered: Bool {
+        showSearch || showLibrary || reviewSession != nil || fullscreenClip != nil || shadowingClip != nil
+    }
+
     private func resumeIfPossible() {
-        guard isActiveTab, fullscreenClip == nil, quizClip == nil, shadowingClip == nil,
+        guard isActiveTab, !isCovered, quizClip == nil,
               let id = currentId, let clip = clips.first(where: { $0.id == id }) else { return }
         coordinator.activate(clip)
         preloadUpcoming()
@@ -528,6 +545,7 @@ struct FeedView: View {
 
     /// End of clip → remember it, then a micro-quiz, then advance.
     private func handleClipFinished() {
+        guard !isCovered else { coordinator.pause(); return }
         if let id = currentId { app.markClipFinished(id) }
         mirrorUpcoming()
         guard quickChecksEnabled,

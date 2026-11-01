@@ -1,16 +1,10 @@
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
-import { geminiModelAnalyze, requireEnv } from "../_shared/env.ts";
-import { requireAdmin } from "../_shared/admin.ts";
+import { requireEnv } from "../_shared/env.ts";
+import { isAdminOrCron } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
-import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
-import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "../_shared/gemini.ts";
-import { catalogTable, languageName, parseLanguage } from "../_shared/catalog.ts";
-import { hearSystem } from "../_shared/enrich.ts";
-import {
-  LineLike,
-  validateEnums,
-  validateLines,
-} from "../_shared/validate.ts";
+import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
+import { analyzeWindow, clipId, clipRow } from "../_shared/immersion.ts";
+import { validateEnums } from "../_shared/validate.ts";
 
 type Body = {
   videoId?: string;
@@ -24,19 +18,14 @@ type Body = {
   language?: string;
 };
 
-const GRADIENTS = [
-  ["#0B1030", "#2B2F7A", "#F29E4C"],
-  ["#10261A", "#2E7D4F", "#F6E27F"],
-  ["#2B1405", "#9C3D10", "#F2B134"],
-];
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
 
   try {
-    const adminToken = requireEnv("ADMIN_TOKEN");
-    if (!requireAdmin(req, adminToken)) return errorResponse(401, "Unauthorized");
+    requireEnv("ADMIN_TOKEN");
+    // Same gate as publish-clip: the admin token or the Vault-held cron token.
+    if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<Body>(req);
     const videoId = typeof body.videoId === "string" ? body.videoId.trim() : "";
@@ -64,63 +53,35 @@ Deno.serve(async (req) => {
       (typeof body.channelName === "string" && body.channelName.trim()) ||
       "Unknown";
     const language = parseLanguage(body.language);
-    const spoken = languageName(language);
-    const id = (typeof body.id === "string" && body.id.trim()) ||
-      `${language === "ko" ? "sori-" : ""}${videoId}-${Math.floor(startSec)}-${Math.floor(endSec)}`;
 
     const supabase = serviceClient();
-    if (!(await tryIncrementGeminiUsage(supabase))) {
-      return errorResponse(429, "Global Gemini cap exceeded");
+    // Same single hearing pass and timing repair as the catalog fill (analyzeWindow):
+    // repairs degenerate token times, keeps the excerpt inside 8–40 s and returns
+    // clip-relative lines. The reviewed window bounds what the model may choose.
+    const outcome = await analyzeWindow(supabase, {
+      videoId,
+      windowStart: startSec,
+      windowEnd: endSec,
+      language,
+      askCategory: false,
+      minSpokenSec: 6,
+    });
+    if (!outcome.ok) {
+      const status = outcome.reason === "gemini_cap" ? 429
+        : outcome.reason.startsWith("model_") ? 502 : 422;
+      return errorResponse(status, `${outcome.reason}: ${outcome.detail}`.slice(0, 240));
     }
-
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const model = geminiModelAnalyze();
-    const { text } = await geminiAnalyzeYouTubeSegment({
-      model,
-      system: hearSystem(language),
-      user:
-        `Segment window: startSec=${startSec}, endSec=${endSec}. Produce lines JSON for this ${spoken} clip.`,
-      youtubeUrl,
-      startSec,
-      endSec,
-    });
-
-    const raw = parseJsonObject(text);
-    const validated = validateLines(raw.lines, startSec, endSec, language);
-    if (!validated.ok) return errorResponse(422, validated.error);
-    // One pass only: definitions are fetched on tap through explain-word's shared cache.
-    const heard = raw.lines;
-
-    const relativeLines = (heard as LineLike[]).map((line) => {
-      const row = line as Record<string, unknown>;
-      const tokens = Array.isArray(row.tokens) ? row.tokens as Array<Record<string, unknown>> : [];
-      return {
-        ...row,
-        start: Number(row.start) - startSec,
-        end: Number(row.end) - startSec,
-        tokens: tokens.map((token) => ({
-          ...token,
-          start: Number(token.start) - startSec,
-          end: Number(token.end) - startSec,
-        })),
-      };
-    });
-    const gradient = GRADIENTS[Math.abs(hashCode(id)) % GRADIENTS.length];
-
-    const row = {
+    const draft = { ...outcome.draft, difficulty: difficulty || outcome.draft.difficulty };
+    const id = (typeof body.id === "string" && body.id.trim()) ||
+      clipId(language === "ko" ? "sori" : "immersion", videoId, draft);
+    const row = clipRow({
       id,
-      video_id: videoId,
-      title,
-      channel_name: channelName,
+      video: { videoId, title, channelTitle: channelName, durationSec: endSec },
+      draft,
       category,
-      difficulty,
-      source_start_sec: startSec,
-      duration_sec: endSec - startSec,
-      lines: relativeLines,
       published: false,
-      channel_avatar_color: "#FF6B00",
-      thumbnail_gradient: gradient,
-    };
+      withProvenance: language === "ja",
+    });
 
     const { data, error } = await supabase.from(catalogTable(language)).upsert(row).select("*")
       .single();
@@ -139,8 +100,3 @@ Deno.serve(async (req) => {
   }
 });
 
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return h;
-}
