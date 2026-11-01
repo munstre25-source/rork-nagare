@@ -166,7 +166,7 @@ export async function checkYouTubeVideo(supabase: SupabaseClient, videoId: strin
   if (item.status?.embeddable !== true) return { ok: false, code: "not_embeddable", detail: "embeddable=false" };
   const durationSec = parseIsoDurationSec(item.contentDetails?.duration ?? "");
   if (durationSec === null || durationSec === 0) return { ok: false, code: "live_stream", detail: "no duration" };
-  if (durationSec < 20) return { ok: false, code: "too_short", detail: `${durationSec}s` };
+  if (durationSec < 8) return { ok: false, code: "too_short", detail: `${durationSec}s` };
   return {
     ok: true,
     video: {
@@ -210,7 +210,15 @@ export type AnalyzeOutcome =
 export type AnalyzeStage = "transcribing" | "validating" | "enriching";
 
 const MIN_CLIP = 8;
-const MAX_CLIP = 40;
+const MAX_SHORT_CLIP = 40;
+const MAX_WHOLE_LESSON = 120;
+
+/** Short source videos can be complete lessons; longer sources stay quick feed excerpts. */
+export function maxLessonDuration(sourceDurationSec: number): number {
+  return sourceDurationSec >= MIN_CLIP && sourceDurationSec <= MAX_WHOLE_LESSON
+    ? MAX_WHOLE_LESSON
+    : MAX_SHORT_CLIP;
+}
 
 /**
  * Hears one window of a YouTube video and returns a validated, enriched, clip-relative lesson.
@@ -222,6 +230,7 @@ export async function analyzeWindow(
     videoId: string;
     windowStart: number;
     windowEnd: number;
+    sourceDurationSec: number;
     language: CatalogLanguage;
     /** Learner videos also need a category; catalog lanes already have one. */
     askCategory: boolean;
@@ -231,6 +240,8 @@ export async function analyzeWindow(
   },
 ): Promise<AnalyzeOutcome> {
   const { videoId, windowStart, windowEnd, language } = opts;
+  const maxClipSec = maxLessonDuration(opts.sourceDurationSec);
+  const preferWholeVideo = maxClipSec === MAX_WHOLE_LESSON;
   if (!(await tryIncrementGeminiUsage(supabase))) return { ok: false, reason: "gemini_cap", detail: "daily cap" };
   await opts.onStage?.("transcribing");
 
@@ -242,11 +253,11 @@ export async function analyzeWindow(
   try {
     const result = await geminiAnalyzeYouTubeSegment({
       model,
-      system: hearSystemCatalog(language),
+      system: hearSystemCatalog(language, maxClipSec, preferWholeVideo),
       user:
         `Inspect the source window [${windowStart}, ${windowEnd}] seconds and select exactly one coherent, self-contained ${
           languageName(language)
-        } exchange lasting ${MIN_CLIP}–${MAX_CLIP} seconds. Return absolute source-video timestamps (seconds from the start of the whole video) for clip_start_sec, clip_end_sec, every line, and every token. Token start/end must be when that word is actually heard; if you cannot hear a word's boundaries, still give your best estimate within its line. Include only dialogue inside the chosen boundaries. If there is no clearly audible ${
+        } exchange lasting ${MIN_CLIP}–${maxClipSec} seconds. Return absolute source-video timestamps (seconds from the start of the whole video) for clip_start_sec, clip_end_sec, every line, and every token. Token start/end must be when that word is actually heard; if you cannot hear a word's boundaries, still give your best estimate within its line. Include only dialogue inside the chosen boundaries. If there is no clearly audible ${
           languageName(language)
         } speech, return {"lines":[]}. Also return "video_orientation" as "portrait" or "landscape" based on the source video's actual frame shape. Classify a portrait Short as portrait; classify any 16:9 upload as landscape even if it contains a vertical video with black side bars, since the YouTube player frame itself is landscape.${categoryAsk}`,
       youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
@@ -275,7 +286,7 @@ export async function analyzeWindow(
 
   const timeline = validateLineTimeline(raw.lines, windowStart, windowEnd, language);
   if (!timeline.ok) return { ok: false, reason: "transcript_invalid", detail: timeline.error };
-  let lines = timeline.lines;
+  const lines = timeline.lines;
 
   const first = lines[0]!;
   const last = lines[lines.length - 1]!;
@@ -293,24 +304,23 @@ export async function analyzeWindow(
   if (clipEnd - clipStart < MIN_CLIP - 0.5) {
     return { ok: false, reason: "no_dialogue", detail: "window too short for a clip" };
   }
-  if (clipEnd - clipStart > MAX_CLIP) {
-    // Hard learner range: a pick that runs long is cut at MAX_CLIP and trailing lines
-    // past the cut are dropped, so the clip always ends on its last spoken line. Only
-    // a pick so long the cut leaves nothing usable is rejected.
-    clipEnd = clipStart + MAX_CLIP;
-    const kept = lines.filter((l) => l.start <= clipEnd - 0.2);
-    if (kept.length < 2) {
-      return { ok: false, reason: "transcript_invalid", detail: `clip ${Math.round(clipEnd - clipStart)}s too long` };
-    }
-    lines = kept;
+  if (clipEnd - clipStart > maxClipSec + 0.01) {
+    return { ok: false, reason: "transcript_invalid", detail: `clip exceeds ${maxClipSec}s limit` };
   }
   const spokenFirst = lines[0]!;
   const spokenLast = lines[lines.length - 1]!;
-  if (lines.length < 2 || lines.length > 24) {
+  if (lines.length < 2 || lines.length > (preferWholeVideo ? 80 : 24)) {
     return { ok: false, reason: lines.length < 2 ? "no_dialogue" : "transcript_invalid", detail: `${lines.length} lines` };
   }
   if (spokenLast.end - spokenFirst.start < opts.minSpokenSec) {
     return { ok: false, reason: "no_dialogue", detail: "too little speech" };
+  }
+  const clipDuration = clipEnd - clipStart;
+  if (clipDuration > 60) {
+    const spokenSeconds = lines.reduce((sum, line) => sum + (line.end - line.start), 0);
+    if (spokenSeconds < clipDuration * 0.35) {
+      return { ok: false, reason: "no_dialogue", detail: "too little speech for a long lesson" };
+    }
   }
 
   const timing = assessTiming(lines);
@@ -547,7 +557,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   private_video: "This video is private, so it can't be played in Jojo.",
   not_embeddable: "The owner doesn't allow this video to play inside other apps.",
   live_stream: "Live streams and premieres can't be turned into lessons yet. Try again after it ends.",
-  too_short: "This video is under 20 seconds, which is too short for a lesson.",
+  too_short: "This video is under 8 seconds, which is too short for a lesson.",
   no_japanese_dialogue: "We couldn't find clear Japanese speech in this video.",
   transcript_invalid: "We couldn't build a reliable transcript for this video.",
   model_unavailable: "Transcription is temporarily unavailable. Please try again later.",

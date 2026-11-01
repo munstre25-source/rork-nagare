@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppStoreReviews } from "./AppStoreReviews";
 
 type FeedbackItem = {
@@ -23,11 +23,27 @@ type DirectMessage = {
 
 type InsightsPayload = {
   metrics?: {
-    dau: number;
-    wau: number;
-    mau: number;
+    active_users: number;
     new_installs: number;
+    retention: {
+      d1_eligible: number; d1_returned: number; d1_percent: number | null;
+      d7_eligible: number; d7_returned: number; d7_percent: number | null;
+    };
+    conversion: {
+      paywall_viewers: number; purchasers: number; view_to_purchase_percent: number | null;
+    };
+    acquisition: { total: number; by_source: Record<string, number> };
     sessions: { count: number; avg_active_seconds: number };
+    learning: {
+      clip_views: number; clip_completions: number; completion_percent: number;
+      likes: number; vocab_saves: number; reviews_completed: number;
+      quiz_completion_percent: number;
+    };
+    playback: {
+      failure_reports: number; affected_videos: number;
+      top_videos: { video_id: string; reports: number }[];
+    };
+    dau_series: { day: string; users: number }[];
     feedback: { total: number; positive: number; negative: number };
     core_funnel: { name: string; users: number }[];
     errors: { name: string; code: string; n: number }[];
@@ -92,22 +108,67 @@ export function JojoInsightsDashboard() {
   const [loading, setLoading] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [sendingTo, setSendingTo] = useState("");
+  const [range, setRange] = useState({ from: "", to: "", label: "Last 30 days" });
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [themeReady, setThemeReady] = useState(false);
+  const requestSequence = useRef(0);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("jojo-insights-theme");
+    if (saved === "light") setTheme("light");
+    setThemeReady(true);
+  }, []);
+  useEffect(() => {
+    if (!themeReady) return;
+    document.documentElement.dataset.insightsTheme = theme;
+    localStorage.setItem("jojo-insights-theme", theme);
+    return () => { delete document.documentElement.dataset.insightsTheme; };
+  }, [theme, themeReady]);
+
+  function choosePreset(days: number, label: string) {
+    const end = new Date();
+    const start = new Date(end);
+    if (days === 1) start.setHours(0, 0, 0, 0);
+    else start.setDate(start.getDate() - days);
+    setRange({ from: start.toISOString(), to: end.toISOString(), label });
+  }
+
+  function applyCustomRange() {
+    const start = new Date(customFrom);
+    const end = new Date(customTo);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) ||
+        start.getTime() >= end.getTime() || end.getTime() - start.getTime() > 366 * 86_400_000) {
+      setError("Choose a valid start and end, up to 366 days apart.");
+      return;
+    }
+    setRange({ from: start.toISOString(), to: end.toISOString(), label: "Custom range" });
+  }
 
   const load = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/hq/jojo-insights/api", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (range.from && range.to) {
+        params.set("from", range.from);
+        params.set("to", range.to);
+      }
+      const res = await fetch(`/hq/jojo-insights/api?${params}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-      setData(json as InsightsPayload);
+      if (requestId === requestSequence.current) setData(json as InsightsPayload);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
-      setData(null);
+      if (requestId === requestSequence.current) {
+        setError(e instanceof Error ? e.message : "Failed to load");
+        setData(null);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
-  }, []);
+  }, [range.from, range.to]);
 
   useEffect(() => {
     void load();
@@ -151,10 +212,11 @@ export function JojoInsightsDashboard() {
     }
   }
 
-  const bySource = Object.entries(data?.acquisition.by_source ?? {}).sort((a, b) => b[1] - a[1]);
+  const bySource = Object.entries(data?.metrics?.acquisition?.by_source ?? {}).sort((a, b) => b[1] - a[1]);
   const threads = buildThreads(data?.feedback.items ?? [], data?.messages ?? []);
   const visibleFeedback = (data?.feedback.items ?? []).filter((item) => !status || item.status === status);
   const maxSource = Math.max(1, ...bySource.map(([, n]) => n));
+  const maxDaily = Math.max(1, ...(data?.metrics?.dau_series ?? []).map((point) => point.users));
 
   return (
     <div className="space-y-5">
@@ -166,15 +228,42 @@ export function JojoInsightsDashboard() {
             Acquisition, private feedback, and a one-to-one thread with each learner. Only you and that person see the replies.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-full bg-[#ff6b00] px-5 py-2.5 text-sm font-bold text-black disabled:opacity-60"
-          disabled={loading}
-        >
-          {loading ? "Loading…" : "Refresh"}
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold">
+            {theme === "dark" ? "Light mode" : "Dark mode"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-full bg-[#ff6b00] px-5 py-2.5 text-sm font-bold text-black disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
       </div>
+
+      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-4">
+        <p className="text-sm font-semibold">Analytics date and time · {range.label}</p>
+        <p className="mt-1 text-xs text-white/50">Presets use your local time. Reports use UTC boundaries; the feedback inbox stays recent.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {([[1, "Today"], [7, "Last 7 days"], [30, "Last 30 days"], [90, "Last 90 days"]] as const).map(([days, label]) => (
+            <button key={days} type="button" onClick={() => choosePreset(days, label)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold hover:bg-white/10">
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-end gap-2 text-xs">
+          <label>From <input type="datetime-local" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+            className="mt-1 block rounded-lg border border-white/10 bg-[#0c0e13] p-2" /></label>
+          <label>To <input type="datetime-local" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+            className="mt-1 block rounded-lg border border-white/10 bg-[#0c0e13] p-2" /></label>
+          <button type="button" onClick={applyCustomRange}
+            className="rounded-lg bg-[#ff6b00] px-4 py-2 text-xs font-bold text-black">Apply</button>
+        </div>
+      </section>
 
       {error ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
@@ -187,15 +276,35 @@ export function JojoInsightsDashboard() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Daily active users" value={data?.metrics?.dau ?? "—"} />
-        <Stat label="Weekly active users" value={data?.metrics?.wau ?? "—"} />
-        <Stat label="Monthly active users" value={data?.metrics?.mau ?? "—"} />
-        <Stat label="New installs · 30 days" value={data?.metrics?.new_installs ?? "—"} />
+        <Stat label="Active users · selected range" value={data?.metrics?.active_users ?? "—"} />
+        <Stat label="First-seen users · selected range" value={data?.metrics?.new_installs ?? "—"} />
+        <Stat label="Sessions" value={data?.metrics?.sessions.count ?? "—"} />
+        <Stat label="Average active minutes" value={data?.metrics ? Math.round(data.metrics.sessions.avg_active_seconds / 60) : "—"} />
       </div>
 
       {data?.metrics ? (
         <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
-          <h2 className="text-lg font-semibold text-white">Learning activity · last 30 days</h2>
+          <h2 className="text-lg font-semibold text-white">Return visits and conversion</h2>
+          <p className="mt-1 text-xs text-white/50">
+            D1 and D7 count first-seen learners who returned on the next or seventh UTC calendar day.
+            Only cohorts old enough for a complete day are included.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label={`D1 return · ${data.metrics.retention.d1_eligible} eligible`}
+              value={data.metrics.retention.d1_percent == null ? "—" : `${data.metrics.retention.d1_percent}%`} />
+            <Stat label={`D7 return · ${data.metrics.retention.d7_eligible} eligible`}
+              value={data.metrics.retention.d7_percent == null ? "—" : `${data.metrics.retention.d7_percent}%`} />
+            <Stat label="Paywall viewers" value={data.metrics.conversion.paywall_viewers} />
+            <Stat label={`Purchased · ${data.metrics.conversion.purchasers} users`}
+              value={data.metrics.conversion.view_to_purchase_percent == null ? "—"
+                : `${data.metrics.conversion.view_to_purchase_percent}%`} />
+          </div>
+        </section>
+      ) : null}
+
+      {data?.metrics ? (
+        <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+          <h2 className="text-lg font-semibold text-white">Learning activity · {range.label}</h2>
           <p className="mt-2 text-sm text-white/55">
             {data.metrics.sessions.count} sessions · {Math.round(data.metrics.sessions.avg_active_seconds / 60)} average active minutes
           </p>
@@ -207,23 +316,59 @@ export function JojoInsightsDashboard() {
               </div>
             ))}
           </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Unique clip views" value={data.metrics.learning.clip_views} />
+            <Stat label="Unique clip completions" value={data.metrics.learning.clip_completions} />
+            <Stat label="Viewed and completed" value={`${data.metrics.learning.completion_percent}%`} />
+            <Stat label="Video likes" value={data.metrics.learning.likes} />
+            <Stat label="Words saved" value={data.metrics.learning.vocab_saves} />
+            <Stat label="Reviews completed" value={data.metrics.learning.reviews_completed} />
+            <Stat label="Quick-check completion" value={`${data.metrics.learning.quiz_completion_percent}%`} />
+            <Stat label="Playback failures · videos" value={`${data.metrics.playback.failure_reports} · ${data.metrics.playback.affected_videos}`} />
+          </div>
+          {data.metrics.dau_series.length > 0 ? (
+            <div className="mt-5">
+              <p className="mb-2 text-xs text-white/50">Daily active users (UTC)</p>
+              <div className="flex h-20 items-end gap-1" aria-label="Daily active users chart">
+                {data.metrics.dau_series.map((point) => (
+                  <div key={point.day} title={`${point.day}: ${point.users} users`}
+                    className="min-w-1 flex-1 rounded-t bg-[#ff6b00]"
+                    style={{ height: `${Math.max(4, point.users / maxDaily * 100)}%` }} />
+                ))}
+              </div>
+            </div>
+          ) : null}
           {data.metrics.errors.length > 0 ? (
             <p className="mt-4 text-sm text-amber-100">
-              Recent errors: {data.metrics.errors.slice(0, 3).map((item) => `${item.name}${item.code ? ` (${item.code})` : ""}: ${item.n}`).join(" · ")}
+              Errors in range: {data.metrics.errors.slice(0, 3).map((item) => `${item.name}${item.code ? ` (${item.code})` : ""}: ${item.n}`).join(" · ")}
             </p>
+          ) : null}
+          {data.metrics.playback.top_videos.length > 0 ? (
+            <div className="mt-4 text-sm">
+              <p className="font-semibold">Most reported playback failures</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {data.metrics.playback.top_videos.map((item) => (
+                  <a key={item.video_id} href={`https://www.youtube.com/watch?v=${encodeURIComponent(item.video_id)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10">
+                    {item.video_id} · {item.reports} reports
+                  </a>
+                ))}
+              </div>
+            </div>
           ) : null}
         </section>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Acquisition answers" value={data?.acquisition.total ?? "—"} />
-        <Stat label="Feedback items · 30 days" value={data?.metrics?.feedback.total ?? "—"} />
+        <Stat label={`Acquisition answers · ${range.label}`} value={data?.metrics?.acquisition?.total ?? "—"} />
+        <Stat label={`Feedback items · ${range.label}`} value={data?.metrics?.feedback.total ?? "—"} />
         <Stat label="Enjoying · Yes" value={data?.metrics?.feedback.positive ?? "—"} />
         <Stat label="Enjoying · No" value={data?.metrics?.feedback.negative ?? "—"} />
       </div>
 
       <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
-        <h2 className="text-lg font-semibold text-white">Where users found Jojo</h2>
+        <h2 className="text-lg font-semibold text-white">Where users found Jojo · {range.label}</h2>
         <div className="mt-4 space-y-3">
           {bySource.length === 0 ? (
             <p className="text-sm text-white/45">No acquisition answers yet.</p>

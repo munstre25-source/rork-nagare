@@ -1,7 +1,7 @@
 # Nagare 流れ — Scroll, Listen, Flow into Japanese
 
-Native SwiftUI (iOS 17+), SwiftData, Observation, Swift concurrency. The only third-party package is
-RevenueCat (`purchases-ios-spm`). Supabase is called over plain URLSession. Gemini is only reached
+Native SwiftUI (iOS 17+), SwiftData, Observation, Swift concurrency. The third-party packages are
+RevenueCat (`purchases-ios-spm`) and Meta FacebookCore. Supabase is called over plain URLSession. Gemini is only reached
 through the Supabase Edge Function, so there is no Gemini key in the app.
 
 ## Secrets
@@ -11,7 +11,8 @@ synchronized target folder), then fill in:
 - `SUPABASE_ANON_KEY`
 - `REVENUECAT_API_KEY`: the public iOS SDK key (`appl_…`)
 
-Any value still starting with `YOUR_` is treated as not configured, and the app runs fully offline.
+Any value still starting with `YOUR_` is treated as not configured. The Meta App ID and client token
+are bundled separately in `Jojo/Info.plist`, so Meta attribution works from a clean checkout.
 
 ## Record marketing videos (screen recording)
 DEBUG only. From splash debug buttons, or **Profile → Debug · Marketing**.
@@ -33,7 +34,7 @@ Core story beats (videos 1–4): For You scrolls **3 clips**, normal→maximum v
 ## Adding clips
 The study feed only plays clips whose transcript was taken from the video (`id` starts with `immersion-`).
 `Tools/generate_seed.py` refreshes the dictionary and debug vocab. It does not rewrite `SeedClips.json`.
-New clips come from `fill-catalog`. Gemini selects one complete, self-contained 8–40 second exchange from each eligible source video, returns exact source offsets and the timed transcript, and the pipeline rejects invalid or incomplete excerpts. The app plays only that excerpt in the official YouTube player, with its transcript-relative timestamps, English translation, and tappable vocabulary. It does not download or re-host the video.
+New clips come from `fill-catalog`. Source videos up to two minutes can become complete lessons of up to 120 seconds when the spoken scene is coherent. Longer source videos yield self-contained 8–40 second excerpts. Gemini returns exact source offsets and timed transcripts; the pipeline rejects invalid or incomplete lessons. The app plays the selected lesson in the official YouTube player, with its transcript-relative timestamps, English translation, and tappable vocabulary. It does not download or re-host the video.
 
 ## Optional local clip overrides
 You can place `Jojo/Resources/Clips/{clip.id}.mp4` to force AVPlayer for a specific clip (useful if
@@ -152,11 +153,11 @@ curl -sS "$SUPABASE_URL/functions/v1/fill-catalog" \
 
 ## Keeping the feed stocked
 
-`fill-catalog` searches YouTube for a public, embeddable source video 12–180 seconds long that is not already in the catalog. Gemini selects one coherent 8–40 second exchange, returns its absolute start/end times and a timed transcript, and the function validates the clip boundaries, dialogue, and vocabulary before publishing. Transcript times are stored relative to the excerpt; `source_start_sec` tells the app where to seek in the original YouTube video. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
+`fill-catalog` searches YouTube for a public, embeddable source video 8–180 seconds long that is not already in the catalog. For sources up to two minutes, Gemini can keep the full meaningful spoken scene, up to 120 seconds. Longer sources yield one coherent 8–40 second exchange. The function validates the lesson boundaries, dialogue, and vocabulary before publishing. Transcript times are stored relative to the lesson; `source_start_sec` tells the app where to seek in the original YouTube video. Japanese rows go in `clips` with ids `immersion-…`. Korean rows go in `sori_clips` with ids `sori-…` and TOPIK levels `TOPIK1`–`TOPIK6`. Both catalogs share `YOUTUBE_QUOTA_DAILY_CAP` and `GEMINI_GLOBAL_DAILY_CAP`. A run stops on those caps. A Gemini video `402` pauses searching for two hours so the timer does not spend YouTube quota.
 
-Japanese discovery rotates through the supplied sources: Blue Archive Global, テレ東公式 あにてれちゃんねる, SHONEN JUMP CHANNEL OFFICIAL, Studio Pierrot, avex pictures, TOHO animation, Shochiku anime, 集英社オレンジ文庫, TMS anime, Pony Canyon anime, and とた. Handle-based sources are resolved through `channels.list`; searches use that channel ID, YouTube's embeddable/under-four-minute filters, and a strict 12–180 second metadata check. Channel sources rotate across cron passes so they do not get buried behind general search lanes. `とた` is treated as a variety source only for spoken interview or behind-the-scenes clips; songs are rejected by the speech-only lesson analysis.
+Japanese discovery rotates through the supplied sources: Blue Archive Global, テレ東公式 あにてれちゃんねる, SHONEN JUMP CHANNEL OFFICIAL, Studio Pierrot, avex pictures, TOHO animation, Shochiku anime, 集英社オレンジ文庫, TMS anime, Pony Canyon anime, and とた. Handle-based sources are resolved through `channels.list`; searches use that channel ID, YouTube's embeddable/under-four-minute filters, and a strict 8–180 second metadata check. Channel sources rotate across cron passes so they do not get buried behind general search lanes. `とた` is treated as a variety source only for spoken interview or behind-the-scenes clips; songs are rejected by the speech-only lesson analysis.
 
-For a one-time curator seed, an admin may include `{"videoIds":["…"]}` in a `fill-catalog` request (up to 50 IDs). This only queues public, embeddable 20–180 second videos; every ID still goes through the normal spoken-Japanese transcript, excerpt, and vocabulary checks before it can become live. It does not force-publish a video.
+For a one-time curator seed, an admin may include `{"videoIds":["…"]}` in a `fill-catalog` request (up to 50 IDs). This only queues public, embeddable 8–180 second videos; every ID still goes through the normal spoken-Japanese transcript, lesson, and vocabulary checks before it can become live. It does not force-publish a video.
 
 Two pg_cron jobs call it: `fill-jojo-catalog` every 10 minutes with `{}`, and `fill-sori-catalog` at minutes 5, 15, 25, 35, 45, and 55 with `{"language":"ko"}`. The first authorized call stores `project_url`, `admin_token` (the `CRON_FILL_TOKEN`), and `catalog_bearer` in Vault. Do not commit those values.
 
@@ -187,11 +188,13 @@ Dashboard: RevenueCat → Integrations → Meta Ads → Conversions API with you
 Keep Meta “Log in-app events automatically” **off** (RevenueCat sends purchases).
 
 App-side (`MetaAttribution.swift` + FacebookCore SPM):
-1. Add to `Jojo/Config/Secrets.plist`:
-   - `META_APP_ID` = Nagare Meta App ID (`1856489205337782`)
-   - `META_CLIENT_TOKEN` = Meta Developers → App → Settings → Advanced → **Client Token**
-2. After `Purchases.configure`, the app sets `$fbAnonId` + device IDs via `collectDeviceIdentifiers()`.
-3. The tracking prompt appears on first launch, before any ad event. Meta auto purchase logging stays disabled.
+1. The Meta App ID and **Client Token** are both bundled in `Jojo/Info.plist`, as required by the
+   Meta iOS SDK. `Secrets.plist` can override them locally but is no longer required for Meta.
+   Do not put the Meta App Secret or RevenueCat Conversions API token in the app bundle.
+2. The app checks that its effective Meta App ID matches `Info.plist` before initializing the SDK.
+3. After ATT authorization, the app sets `$fbAnonId` + device IDs in RevenueCat via
+   `collectDeviceIdentifiers()`. The tracking prompt appears on first launch, before any ad event.
+   Meta auto purchase logging stays disabled.
 
 Test: sandbox purchase → RevenueCat Customer History → Meta Ads delivery row.
 

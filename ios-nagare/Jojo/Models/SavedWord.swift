@@ -78,20 +78,32 @@ final class SavedWord {
 
     /// Definitions for the active dictionary mode (falls back sensibly).
     func displayDefinitions(mode: DictionaryMode) -> [String] {
+        let values: [String]
         switch mode {
         case .english:
-            return definitions.isEmpty ? jaDefinitions : definitions
+            values = definitions.isEmpty ? jaDefinitions : definitions
         case .japanese:
-            return jaDefinitions.isEmpty ? definitions : jaDefinitions
+            values = jaDefinitions.isEmpty ? definitions : jaDefinitions
         case .both:
             var out = jaDefinitions
             for d in definitions where !out.contains(d) { out.append(d) }
-            return out
+            values = out
         }
+        return uniqueSavedDefinitions(values)
     }
 
     /// Stable dedupe key: dictionary form + reading.
     static func makeKey(surface: String, reading: String) -> String {
         "\(surface)|\(reading)"
+    }
+}
+
+private func uniqueSavedDefinitions(_ values: [String]) -> [String] {
+    var seen = Set<String>()
+    return values.compactMap { value in
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        guard !trimmed.isEmpty, seen.insert(key).inserted else { return nil }
+        return trimmed
     }
 }

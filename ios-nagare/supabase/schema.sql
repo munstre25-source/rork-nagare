@@ -29,7 +29,7 @@ create table if not exists public.clips (
   video_id text not null,            -- 11-char YouTube ID (never re-host video)
   title text not null,
   channel_name text not null,
-  category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming')),
+  category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming','learning')),
   difficulty text not null check (difficulty in ('Beginner','Intermediate','Advanced')),
   source_start_sec numeric not null default 0,
   duration_sec numeric not null,
@@ -61,7 +61,7 @@ create table if not exists public.sori_clips (
   video_id text not null,
   title text not null,
   channel_name text not null,
-  category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming')),
+  category text not null check (category in ('anime','drama','variety','vtuber','interview','kids','gaming','learning')),
   difficulty text not null check (difficulty in ('Beginner','Intermediate','Advanced')),
   source_start_sec numeric not null default 0,
   duration_sec numeric not null,

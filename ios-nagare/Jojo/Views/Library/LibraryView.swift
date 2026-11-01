@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Watched / Saved / Later shelves — Yomi-style Library separate from the infinite feed.
+/// Watched / Liked / Saved / Later shelves separate from the feed.
 struct LibraryView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -100,8 +100,9 @@ struct LibraryView: View {
     private var emptyCopy: String {
         switch shelf {
         case .watched: "Finish a clip in Feed and it lands here."
-        case .saved: "Heart a clip to keep it in Saved."
-        case .later: "Bookmark a clip for Later from the clip menu."
+        case .liked: "Heart a video to shape your For You feed."
+        case .saved: "Bookmark a clip to keep it in Saved."
+        case .later: "Choose Watch later from a clip menu."
         }
     }
 }
@@ -137,6 +138,9 @@ private struct LibraryClipRow: View {
                 }
                 Spacer(minLength: 0)
                 Menu {
+                    Button(app.isLiked(clip.id) ? "Unlike" : "Like") {
+                        _ = app.toggleLike(clip.id)
+                    }
                     if shelf != .saved {
                         Button(app.isFavorite(clip.id) ? "Unsave" : "Save") {
                             _ = app.toggleFavorite(clip.id)

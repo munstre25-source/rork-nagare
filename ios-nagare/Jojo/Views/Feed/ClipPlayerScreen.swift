@@ -77,8 +77,8 @@ struct ClipQueueScreen: View {
                             immersiveFeed: true,
                             videoExpanded: videoExpanded,
                             onToggleVideoSize: {
-                            Haptics.selection()
-                            videoExpanded.toggle()
+                                Haptics.selection()
+                                videoExpanded.toggle()
                             },
                             onActivate: { show(clip.id) },
                             onInfo: { infoClip = clip }
@@ -109,7 +109,19 @@ struct ClipQueueScreen: View {
                 }
                 .accessibilityLabel("Back")
 
-                if !videoExpanded {
+                if videoExpanded {
+                    Button {
+                        Haptics.selection()
+                        videoExpanded = false
+                    } label: {
+                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .frame(minHeight: 40)
+                            .background(.black.opacity(0.55), in: Capsule())
+                    }
+                } else {
                     Text("Explore")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(.white)
@@ -172,6 +184,7 @@ struct ClipQueueScreen: View {
             startLine: (loopPlayback && id == startId) ? startLine : (useStart ? startLine : nil),
             loopLine: loopPlayback || (useStart && loopLine)
         )
+        if !loopPlayback { track("clip_view", props: ["clip": clip.id, "tab": "Explore"]) }
         if let index = clips.firstIndex(where: { $0.id == id }), let next = clips[safe: index + 1] {
             coordinator.preload(next)
         }

@@ -35,7 +35,7 @@ nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
 }
 
 nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
-    case anime, drama, variety, vtuberGaming, interviews, kids
+    case anime, drama, variety, vtuberGaming, interviews, kids, learning
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -45,6 +45,7 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
         case .vtuberGaming: "VTuber & Gaming"
         case .interviews: "Street Interviews"
         case .kids: "Kids' Shows"
+        case .learning: "Learn Japanese"
         }
     }
     var subtitle: String {
@@ -55,6 +56,7 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
         case .vtuberGaming: "Stream chatter & hype"
         case .interviews: "Real people, real answers"
         case .kids: "The easiest way in"
+        case .learning: "Clear speech and useful words"
         }
     }
     var symbol: String {
@@ -65,6 +67,7 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
         case .vtuberGaming: "gamecontroller.fill"
         case .interviews: "mic.fill"
         case .kids: "balloon.2.fill"
+        case .learning: "book.closed.fill"
         }
     }
     var gradient: [String] {
@@ -75,6 +78,7 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
         case .vtuberGaming: ["#1B0F2E", "#5B2A86", "#FF8FAB"]
         case .interviews: ["#10261A", "#2E7D4F", "#F6E27F"]
         case .kids: ["#1E3A5F", "#3FA7D6", "#FFD23F"]
+        case .learning: ["#17322E", "#4B8F7A", "#E6C36A"]
         }
     }
     var categories: [ClipCategory] {
@@ -85,6 +89,7 @@ nonisolated enum Taste: String, CaseIterable, Identifiable, Sendable {
         case .vtuberGaming: [.vtuber, .gaming]
         case .interviews: [.interview]
         case .kids: [.kids]
+        case .learning: [.learning]
         }
     }
 }

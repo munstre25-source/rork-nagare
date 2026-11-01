@@ -55,6 +55,29 @@ const JAPANESE_LANES: Lane[] = [
   { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "集英社オレンジ文庫", tag: "shueisha-orange-bunko" },
   { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "TMSAnimeJP", tag: "tms-anime" },
   { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "PONYCANYON_anime", tag: "pony-canyon-anime" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "japanesethedefinitiveguide2337", tag: "japanese-definitive-guide" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "bachiramylove629", tag: "bachira-my-love" },
+  { category: "kids", difficulty: "Beginner", query: "", channelHandle: "PeppaPigJapaneseOfficial", tag: "peppa-japanese" },
+  { category: "kids", difficulty: "Beginner", query: "", channelHandle: "Bebefinn日本語", tag: "bebefinn-japanese" },
+  { category: "kids", difficulty: "Beginner", query: "", channelHandle: "BlippiJapanese", tag: "blippi-japanese" },
+  { category: "variety", difficulty: "Intermediate", query: "", channelHandle: "QuizKnock", tag: "quizknock" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "japanese_tanakasan", tag: "tanaka-japanese" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "moshimoshi.yusuke", tag: "moshimoshi-yusuke" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "kensanokaeri", tag: "ken-san-okaeri" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "withyuki1030", tag: "with-yuki" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "DailyJapanese", tag: "daily-japanese" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "SpeakJapaneseNaturally", tag: "speak-japanese-naturally" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "JSI55", tag: "jsi55" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "TheNihongoNook", tag: "nihongo-nook" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "KanamatopeJapanese", tag: "kanamatope" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "SayuriSaying", tag: "sayuri-saying" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "the_bitesize_japanese_podcast", tag: "bitesize-japanese" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "tokiwa-japanese", tag: "tokiwa-japanese" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "OkkeiJapanese", tag: "okkei-japanese" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "Akane-JapaneseClass", tag: "akane-japanese" },
+  { category: "learning", difficulty: "Beginner", query: "", channelHandle: "nihongo-no-jikan", tag: "nihongo-no-jikan" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "yuyunihongopodcast", tag: "yuyu-japanese-podcast" },
+  { category: "learning", difficulty: "Intermediate", query: "", channelHandle: "nihongonomori2013", tag: "nihongo-no-mori" },
   // とた is an artist channel; variety is reserved for any spoken interview/behind-the-scenes material.
   { category: "variety", difficulty: "Intermediate", query: "", channelHandle: "tota_3470", tag: "tota-artist" },
   { category: "vtuber", difficulty: "Intermediate", query: "日本語 VTuber 雑談 ショート" },
@@ -71,10 +94,10 @@ const JAPANESE_LANES: Lane[] = [
  * replaced automatically because the count falls back under target.
  */
 const CATALOG_GOALS: Record<CatalogLanguage, { total: number; categoryFloor: number; freshPerDay: number }> = {
-  ja: { total: 600, categoryFloor: 60, freshPerDay: 12 },
+  ja: { total: 2000, categoryFloor: 100, freshPerDay: 24 },
   ko: { total: 300, categoryFloor: 30, freshPerDay: 6 },
 };
-const CATEGORIES = ["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming"];
+const CATEGORIES = ["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning"];
 /**
  * Catalog searches stop once the shared daily YouTube quota passes this mark, keeping
  * the rest for per-candidate checks (1 unit each), the embed audit and in-app search.
@@ -142,7 +165,8 @@ Deno.serve(async (req) => {
     const stats = await catalogStats(supabase, language);
     const goal = CATALOG_GOALS[language];
     const growth = stats.total < goal.total ||
-      CATEGORIES.some((c) => (stats.byCategory.get(c) ?? 0) < goal.categoryFloor);
+      CATEGORIES.filter((c) => language === "ja" || c !== "learning")
+        .some((c) => (stats.byCategory.get(c) ?? 0) < goal.categoryFloor);
     let queuedExplicitly = 0;
     let passLimit = RUN_CANDIDATE_TARGET;
     if (requestedVideoIds.length > 0) {
@@ -151,6 +175,7 @@ Deno.serve(async (req) => {
       queuedExplicitly = seeded.count;
       log("catalog_explicit_candidates_queued", { count: queuedExplicitly });
     }
+    if (language === "ja") await enqueueCuratedVideosIfDue(supabase);
     if (!growth) {
       const freshLeft = goal.freshPerDay - stats.last24h;
       if (freshLeft <= 0) return jsonResponse(summary(published, "target-reached", cronReady, queuedExplicitly));
@@ -179,7 +204,7 @@ Deno.serve(async (req) => {
       if (!result.ok) {
         const keep = result.reason === "gemini-cap" || result.reason === "model_payment" ||
           result.reason.includes("402");
-        if (!keep) await removeQueued(supabase, language, candidate.videoId);
+        if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
         if (result.reason === "gemini-cap") {
           stopped = "gemini-cap";
           return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
@@ -191,7 +216,7 @@ Deno.serve(async (req) => {
         }
         continue;
       }
-      await removeQueued(supabase, language, candidate.videoId);
+      await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
       published.push({
         id: result.id,
         videoId: candidate.videoId,
@@ -217,6 +242,9 @@ const RUN_BUDGET_MS = 110_000;
 const RUN_CANDIDATE_TARGET = 6;
 /** A bad-yield lane must not dump the day's search quota into one pass. */
 const MAX_SEARCHES_PER_PASS = 3;
+const MAX_SOURCE_DURATION_SEC = 1_800;
+const SOURCE_WINDOW_SEC = 90;
+const MAX_WINDOWS_PER_VIDEO = 20;
 /** Keep at least this many unprocessed candidates queued for the language. */
 const QUEUE_TARGET = 15;
 const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
@@ -224,10 +252,19 @@ const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
   ko: ["", "일상회화", "2024", "2025"],
 };
 
+// User-curated playlist IDs. A daily metadata check seeds eligible source videos; the
+// ordinary speech, transcript, embedding and quality gates decide publication.
+const CURATED_JAPANESE_VIDEO_IDS = [
+  "scLWToOqXzA", "Hd6gAtt5BOU", "TA-tUGtjils", "ijzd6W09uB8",
+  "RIKmx-R987A", "e0acNvVwkWI", "W3Rw3GsVjpo", "nX8gk8OLb0U",
+  "NhJJcAiZvFY", "FZUIZYEwHp4", "a9SBvpregYU",
+];
+
 // MARK: - Candidate queue
 
 type QueuedCandidate = {
   videoId: string;
+  windowStartSec: number;
   title: string;
   channelTitle: string;
   durationSec: number;
@@ -263,14 +300,19 @@ async function catalogStats(
   supabase: ReturnType<typeof serviceClient>,
   language: CatalogLanguage,
 ): Promise<CatalogStats> {
-  const { data } = await supabase
-    .from(catalogTable(language))
-    .select("category, difficulty, created_at")
-    .eq("published", true)
-    .limit(5000);
+  const rows: Array<{ category: string; difficulty: string; created_at?: string }> = [];
+  for (let offset = 0; offset < 10_000; offset += 500) {
+    const { data, error } = await supabase.from(catalogTable(language))
+      .select("id, category, difficulty, created_at")
+      .eq("published", true).order("id", { ascending: true })
+      .range(offset, offset + 499);
+    if (error) throw new Error(`catalog-stats: ${error.message}`);
+    rows.push(...((data ?? []) as Array<{ category: string; difficulty: string; created_at?: string }>));
+    if ((data ?? []).length < 500) break;
+  }
   const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
   const stats: CatalogStats = { total: 0, last24h: 0, byCategory: new Map(), byCell: new Map() };
-  for (const row of (data ?? []) as Array<{ category: string; difficulty: string; created_at?: string }>) {
+  for (const row of rows) {
     stats.total++;
     if (row.created_at && Date.parse(row.created_at) >= dayAgo) stats.last24h++;
     stats.byCategory.set(row.category, (stats.byCategory.get(row.category) ?? 0) + 1);
@@ -304,7 +346,7 @@ async function takeQueue(
 ): Promise<QueuedCandidate[]> {
   const { data } = await supabase
     .from(queueTable(language))
-    .select("video_id, title, channel_title, duration_sec, category, difficulty, added_at")
+    .select("video_id, window_start_sec, title, channel_title, duration_sec, category, difficulty, added_at")
     .order("added_at", { ascending: true })
     .limit(200);
   const rows = ((data ?? []) as Array<Record<string, unknown>>).slice();
@@ -327,6 +369,7 @@ async function takeQueue(
   }
   return picked.map((row) => ({
     videoId: String(row.video_id),
+    windowStartSec: Number(row.window_start_sec ?? 0),
     title: String(row.title ?? ""),
     channelTitle: String(row.channel_title ?? ""),
     durationSec: Number(row.duration_sec ?? 0),
@@ -339,8 +382,10 @@ async function removeQueued(
   supabase: ReturnType<typeof serviceClient>,
   language: CatalogLanguage,
   videoId: string,
+  windowStartSec: number,
 ): Promise<void> {
-  await supabase.from(queueTable(language)).delete().eq("video_id", videoId);
+  await supabase.from(queueTable(language)).delete()
+    .eq("video_id", videoId).eq("window_start_sec", windowStartSec);
 }
 
 /**
@@ -380,18 +425,19 @@ async function enqueueFreshCandidates(
       await advanceCursor(supabase, laneKey, found.nextPageToken);
       continue;
     }
-    const rows = found.videos.map((video) => ({
+    const rows = found.videos.slice(0, 3).flatMap((video) => candidateWindows(video.durationSec).map((windowStartSec) => ({
       video_id: video.videoId,
+      window_start_sec: windowStartSec,
       title: video.title.slice(0, 140),
       channel_title: video.channelTitle.slice(0, 80),
       duration_sec: video.durationSec,
       category: lane.category,
       difficulty: lane.difficulty,
       added_at: new Date().toISOString(),
-    }));
+    })));
     const { error, count } = await supabase
       .from(queueTable(language))
-      .upsert(rows, { onConflict: "video_id", count: "exact", ignoreDuplicates: true });
+      .upsert(rows, { onConflict: "video_id,window_start_sec", count: "exact", ignoreDuplicates: true });
     if (error) {
       log("candidate_queue_upsert_failed", { detail: error.message.slice(0, 120) });
       continue;
@@ -478,10 +524,40 @@ function lanesByEmptiness(language: CatalogLanguage, stats: CatalogStats): Lane[
 
 type FreshVideo = { videoId: string; title: string; channelTitle: string; durationSec: number };
 
+function candidateWindows(durationSec: number): number[] {
+  if (durationSec <= 120) return [0];
+  const starts: number[] = [];
+  for (let start = 0; start + 8 <= durationSec && starts.length < MAX_WINDOWS_PER_VIDEO; start += SOURCE_WINDOW_SEC) {
+    starts.push(start);
+  }
+  return starts;
+}
+
+async function enqueueCuratedVideosIfDue(
+  supabase: ReturnType<typeof serviceClient>,
+): Promise<void> {
+  const laneKey = `ja|curated|${CURATED_JAPANESE_VIDEO_IDS.join("|")}`;
+  const { data } = await supabase.from("catalog_search_cursors")
+    .select("updated_at").eq("lane_key", laneKey).maybeSingle();
+  if (data?.updated_at && Date.now() - Date.parse(data.updated_at) < 86_400_000) return;
+  const seeded = await enqueueExplicitVideos(supabase, "ja", CURATED_JAPANESE_VIDEO_IDS, true, "learning");
+  if (!seeded.ok) {
+    log("catalog_curated_seed_failed", { reason: seeded.reason });
+    return;
+  }
+  log("catalog_curated_candidates_queued", { count: seeded.count });
+  await supabase.from("catalog_search_cursors").upsert({
+    lane_key: laneKey, page_token: null, variant: 0,
+    updated_at: new Date().toISOString(),
+  });
+}
+
 async function enqueueExplicitVideos(
   supabase: ReturnType<typeof serviceClient>,
   language: CatalogLanguage,
   videoIds: string[],
+  skipRejected = false,
+  category = "anime",
 ): Promise<{ ok: true; count: number } | { ok: false; reason: string }> {
   if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
     return { ok: false, reason: "youtube-quota" };
@@ -502,26 +578,32 @@ async function enqueueExplicitVideos(
     .select("video_id")
     .in("video_id", ids);
   const knownIds = new Set((catalogRows ?? []).map((row: { video_id: string }) => row.video_id));
+  if (skipRejected) {
+    const { data: rejected } = await supabase.from("catalog_rejections")
+      .select("video_id").in("video_id", ids);
+    for (const row of rejected ?? []) knownIds.add((row as { video_id: string }).video_id);
+  }
   const now = new Date().toISOString();
   const rows = (json.items ?? []).flatMap((item) => {
     const id = item.id;
     const durationSec = parseDurationSec(item.contentDetails?.duration ?? "");
     if (!id || knownIds.has(id) || item.status?.embeddable !== true || item.status?.privacyStatus !== "public") return [];
-    if (durationSec === null || durationSec < 20 || durationSec > 180) return [];
-    return [{
+    if (durationSec === null || durationSec < 8 || durationSec > MAX_SOURCE_DURATION_SEC) return [];
+    return candidateWindows(durationSec).map((windowStartSec) => ({
       video_id: id,
+      window_start_sec: windowStartSec,
       title: item.snippet?.title?.trim().slice(0, 140) || `Clip ${id}`,
       channel_title: item.snippet?.channelTitle?.trim().slice(0, 80) || "Unknown",
       duration_sec: durationSec,
-      category: "anime",
+      category,
       difficulty: "Intermediate",
       added_at: now,
-    }];
+    }));
   });
   if (rows.length === 0) return { ok: true, count: 0 };
   const { error, count } = await supabase
     .from(queueTable(language))
-    .upsert(rows, { onConflict: "video_id", count: "exact", ignoreDuplicates: true });
+    .upsert(rows, { onConflict: "video_id,window_start_sec", count: "exact", ignoreDuplicates: true });
   if (error) {
     log("candidate_queue_upsert_failed", { detail: error.message.slice(0, 120) });
     return { ok: false, reason: "candidate-queue-failed" };
@@ -568,7 +650,7 @@ async function searchFresh(
     type: "video",
     maxResults: "25",
     videoEmbeddable: "true",
-    videoDuration: "short",
+    videoDuration: channelId ? "any" : "short",
     order: "date",
     relevanceLanguage: language,
     regionCode: language === "ko" ? "KR" : "JP",
@@ -616,9 +698,9 @@ async function searchFresh(
     if (!videoId || existingIds.has(videoId)) continue;
     if (item.status?.embeddable !== true || item.status?.privacyStatus !== "public") continue;
     const durationSec = parseDurationSec(item.contentDetails?.duration ?? "");
-    // YouTube's "short" search filter means under four minutes, not a learner-sized
-    // excerpt. Keep only sources we can inspect in one pass and curate into 8–40s clips.
-    if (durationSec === null || durationSec < 12 || durationSec > 180) continue;
+    // Short sources may become complete lessons; longer channel uploads are
+    // processed as bounded 90-second windows with one checked excerpt per window.
+    if (durationSec === null || durationSec < 8 || durationSec > MAX_SOURCE_DURATION_SEC) continue;
     videos.push({
       videoId,
       title: item.snippet?.title?.trim() || `Clip ${videoId}`,
@@ -669,13 +751,16 @@ async function analyzeAndPublish(
 ): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
   const outcome = await analyzeWindow(supabase, {
     videoId: candidate.videoId,
-    windowStart: 0,
-    // A 90s window keeps the heard response small enough for the edge worker's compute
-    // limit; longer sources still yield learner-sized clips from their first 90 seconds.
+    windowStart: candidate.windowStartSec,
+    // Inspect the entire source when it is at most two minutes. Longer sources keep
+    // a bounded search window and yield short feed excerpts.
     // An unknown stored duration (0) must not collapse the window to nothing — fall back
     // to the default 90s window and let the model see the real video (2026-10-30 fix:
     // scraped candidates without a parsed length all failed with "bad window").
-    windowEnd: candidate.durationSec > 0 ? Math.min(candidate.durationSec, 90) : 90,
+    windowEnd: candidate.durationSec > 0
+      ? Math.min(candidate.durationSec, candidate.windowStartSec + (candidate.durationSec <= 120 ? 120 : SOURCE_WINDOW_SEC))
+      : candidate.windowStartSec + SOURCE_WINDOW_SEC,
+    sourceDurationSec: candidate.durationSec,
     language,
     askCategory: false,
     minSpokenSec: 6,
@@ -683,6 +768,7 @@ async function analyzeAndPublish(
   if (!outcome.ok) {
     log("catalog_candidate_rejected", {
       videoId: candidate.videoId,
+      windowStartSec: candidate.windowStartSec,
       reason: outcome.reason,
       detail: outcome.detail,
     });

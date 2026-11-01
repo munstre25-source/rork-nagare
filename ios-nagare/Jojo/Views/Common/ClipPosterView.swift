@@ -10,30 +10,57 @@ extension Clip {
     }
 }
 
-/// Real clip artwork: bundled JPG → first frame of local MP4 → gradient poster.
+/// Real clip artwork: bundled JPG, local frame, or the source video's YouTube thumbnail.
 struct ClipPosterView: View {
     let clip: Clip
     var isAnimating: Bool = false
     var showsSymbol: Bool = true
 
     @State private var generated: UIImage?
+    @State private var generatedClipId: String?
+
+    private var currentGenerated: UIImage? {
+        generatedClipId == clip.id ? generated : nil
+    }
+
+    private var youtubeThumbnail: URL? {
+        guard clip.hasRealVideo else { return nil }
+        return URL(string: "https://i.ytimg.com/vi/\(clip.videoId)/mqdefault.jpg")
+    }
 
     var body: some View {
         ZStack {
-            if let image = clip.bundledPosterImage ?? generated {
+            if let image = clip.bundledPosterImage ?? currentGenerated {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
+            } else if let youtubeThumbnail {
+                AsyncImage(url: youtubeThumbnail) { phase in
+                    if let image = phase.image {
+                        image.resizable().scaledToFill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    } else {
+                        // Keep an identifiable poster while loading or if YouTube has no still.
+                        GradientPoster(clip: clip, isAnimating: isAnimating, showsSymbol: showsSymbol)
+                    }
+                }
             } else {
                 GradientPoster(clip: clip, isAnimating: isAnimating, showsSymbol: showsSymbol)
             }
         }
         .task(id: clip.id) {
-            guard clip.bundledPosterImage == nil, generated == nil,
+            generated = nil
+            generatedClipId = nil
+            guard clip.bundledPosterImage == nil,
                   let url = Clip.bundledVideoURL(for: clip.id) else { return }
-            generated = await Self.frameImage(from: url, at: 1.5)
+            let frame = await Self.frameImage(from: url, at: 1.5)
+            if !Task.isCancelled {
+                generated = frame
+                generatedClipId = clip.id
+            }
         }
     }
 

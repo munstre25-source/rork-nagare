@@ -145,7 +145,7 @@ private struct ExploreClipCard: View {
     var body: some View {
         Color.bgElevatedDark
             .aspectRatio(16 / 9, contentMode: .fit)
-            .overlay { GradientPoster(clip: clip).allowsHitTesting(false) }
+            .overlay { ClipPosterView(clip: clip, showsSymbol: false).allowsHitTesting(false) }
             .overlay(alignment: .topLeading) {
                 Text(clip.difficulty)
                     .font(.caption2.weight(.bold))

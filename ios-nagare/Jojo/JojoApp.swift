@@ -32,6 +32,7 @@ struct JojoApp: App {
                     .modelContainer(session.container)
                     .task {
                         session.app.startRemoteSync()
+                        await InsightsService.shared.flushPendingAcquisition()
                         await session.purchases.refreshCustomerInfo()
                         session.app.refreshAllReminders()
                         WidgetSnapshotPublisher.publish(from: session.app)
@@ -67,6 +68,7 @@ struct JojoApp: App {
             SessionTracker.shared.setPhase(phase)
             guard phase == .active, case .ready(let session) = launch else { return }
             Task {
+                await InsightsService.shared.flushPendingAcquisition()
                 await session.purchases.refreshCustomerInfo()
                 session.app.refreshAllReminders()
             }

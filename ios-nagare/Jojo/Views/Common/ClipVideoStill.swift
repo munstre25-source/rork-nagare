@@ -16,10 +16,12 @@ struct ClipVideoStill: View {
     var body: some View {
         ZStack {
             if let stillURL {
-                AsyncImage(url: stillURL) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Color.bgElevatedDark
+                AsyncImage(url: stillURL) { phase in
+                    if let image = phase.image {
+                        image.resizable().scaledToFill()
+                    } else {
+                        ClipPosterView(clip: clip, showsSymbol: false)
+                    }
                 }
             } else {
                 // Shown while probing and when the video has no stills.

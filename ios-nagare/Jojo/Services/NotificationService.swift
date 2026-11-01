@@ -4,6 +4,7 @@ import UserNotifications
 /// Local notifications: daily streak nudge, review due cards, streak-at-risk, and trial reminder.
 enum NotificationService {
     private static let dailyId = "nagare.daily"
+    private static let reminderHourKey = "jojo.reminderHour"
     private static let reviewId = "nagare.review.due"
     private static let firstReviewId = "nagare.review.first"
     private static let atRiskId = "nagare.streak.atrisk"
@@ -23,8 +24,26 @@ enum NotificationService {
         return settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
     }
 
-    /// Daily streak / study nudge at 19:00 — cites a real clip when available.
-    static func scheduleDailyReminder(clipTitle: String? = nil, channel: String? = nil, clipId: String? = nil) {
+    static var reminderHour: Int {
+        let saved = UserDefaults.standard.object(forKey: reminderHourKey) as? Int ?? 19
+        return min(max(saved, 0), 23)
+    }
+
+    private static func dailyIdentifier(for date: Date) -> String {
+        let day = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return "\(dailyId).\(day.year ?? 0)-\(day.month ?? 0)-\(day.day ?? 0)"
+    }
+
+    /// Schedule seven local days; never nudge after today's goal is complete.
+    static func scheduleDailyReminder(clipTitle: String? = nil, channel: String? = nil,
+                                      clipId: String? = nil, goalReachedToday: Bool = false) {
+        let calendar = Calendar.current
+        let now = Date()
+        let today = calendar.startOfDay(for: now)
+        let days = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [dailyId] + days.map { dailyIdentifier(for: $0) }
+        )
         let content = UNMutableNotificationContent()
         if let clipTitle, !clipTitle.isEmpty {
             content.title = channel.map { "Continue \($0)" } ?? "Your clip is waiting"
@@ -39,10 +58,20 @@ enum NotificationService {
             content.body = "A couple of clips keeps your streak alive. 流れに乗ろう!"
         }
         content.sound = .default
-        var components = DateComponents()
-        components.hour = 19
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        add(UNNotificationRequest(identifier: dailyId, content: content, trigger: trigger))
+        for (offset, day) in days.enumerated() {
+            guard !(offset == 0 && goalReachedToday),
+                  let fire = calendar.date(bySettingHour: reminderHour, minute: 0, second: 0, of: day),
+                  fire > now else { continue }
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            add(UNNotificationRequest(identifier: dailyIdentifier(for: day), content: content, trigger: trigger))
+        }
+    }
+
+    static func cancelDailyReminderToday() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [dailyIdentifier(for: Date())]
+        )
     }
 
     /// Morning review nudge when flashcards are due.
@@ -159,7 +188,12 @@ enum NotificationService {
     }
 
     static func cancelReminders() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyId, reviewId, firstReviewId, atRiskId, trialId])
+        let today = Calendar.current.startOfDay(for: Date())
+        let daily = (0..<8).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: today) }
+            .map { dailyIdentifier(for: $0) }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [dailyId, reviewId, firstReviewId, atRiskId, trialId] + daily
+        )
     }
 
     static func cancelAll() {

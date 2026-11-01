@@ -7,7 +7,7 @@
  * keeps word-level sync, otherwise the line falls back to sentence-level highlighting and its
  * word timings are dropped rather than guessed.
  */
-import { mostlyJapanese, mostlyKorean } from "./validate.ts";
+import { mostlyJapanese, mostlyKorean, translationQualityIssue } from "./validate.ts";
 
 export type TimingMode = "word" | "line";
 export type ClipTimingMode = "word" | "line" | "mixed";
@@ -70,7 +70,8 @@ export function validateLineTimeline(
     if (end - start < 0.2) return { ok: false, error: `line[${i}] too short` };
     if (end - start > 30) return { ok: false, error: `line[${i}] longer than 30s` };
     const translation = typeof row.translation === "string" ? row.translation.trim() : "";
-    if (!translation) return { ok: false, error: `line[${i}] translation required` };
+    const translationIssue = translationQualityIssue(translation);
+    if (translationIssue) return { ok: false, error: `line[${i}] ${translationIssue}` };
     if (!Array.isArray(row.tokens) || row.tokens.length === 0) return { ok: false, error: `line[${i}] no tokens` };
     const tokens: TimedToken[] = [];
     for (let t = 0; t < row.tokens.length; t++) {

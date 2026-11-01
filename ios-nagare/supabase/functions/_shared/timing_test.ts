@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
 import { assessTiming, toClipRelative, validateLineTimeline, wordTimingProblem, type TimedLine } from "./timing.ts";
-import { maybeShiftRelative, parseIsoDurationSec, parseYouTubeUrl } from "./immersion.ts";
+import { maxLessonDuration, maybeShiftRelative, parseIsoDurationSec, parseYouTubeUrl } from "./immersion.ts";
+import { translationQualityIssue } from "./validate.ts";
 
 function line(start: number, end: number, tokens: Array<[string, number, number]>): Record<string, unknown> {
   return {
@@ -68,6 +69,25 @@ Deno.test("line-level problems reject the transcript", () => {
   assert(!validateLineTimeline([{ start: 1, end: 3, tokens: [{ surface: "あ" }] }], 0, 30).ok);
   assert(!validateLineTimeline([line(1, 3, [["hello", 1, 2], ["world", 2, 3]])], 0, 30).ok);
   assert(!validateLineTimeline([], 0, 30).ok);
+});
+
+Deno.test("obvious English translation defects are rejected", () => {
+  for (const translation of ["", "A", "聿衡, my head is dizzy...", "our troupe's,", "We went and"]) {
+    assert(translationQualityIssue(translation) !== null);
+    const candidate = line(1, 3, [["こんにちは", 1, 3]]);
+    candidate.translation = translation;
+    assert(!validateLineTimeline([candidate], 0, 5).ok);
+  }
+  for (const translation of ["Hello.", "Wake up right now.", "Mom seems to have a headache.", "I know."]) {
+    assertEquals(translationQualityIssue(translation), null);
+  }
+});
+
+Deno.test("short sources may remain whole lessons", () => {
+  assertEquals(maxLessonDuration(119), 120);
+  assertEquals(maxLessonDuration(120), 120);
+  assertEquals(maxLessonDuration(121), 40);
+  assertEquals(maxLessonDuration(0), 40);
 });
 
 Deno.test("clip-relative shift moves lines and tokens", () => {

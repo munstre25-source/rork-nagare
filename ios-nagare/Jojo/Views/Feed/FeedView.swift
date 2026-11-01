@@ -33,6 +33,8 @@ struct FeedView: View {
     @State private var clipShownAt: Date = .now
     /// Set right before code (not the learner) changes `currentId`.
     @State private var programmaticClipChange: Bool = false
+    @State private var autoAdvanceTask: Task<Void, Never>?
+    @State private var autoScrollTargetId: String?
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -79,12 +81,12 @@ struct FeedView: View {
                     clip: quizClip,
                     onFinished: {
                         withAnimation(.snappy) { self.quizClip = nil }
-                        advance()
+                        scheduleAutomaticAdvance()
                     },
                     onDisableQuickChecks: {
                         quickChecksEnabled = false
                         withAnimation(.snappy) { self.quizClip = nil }
-                        advance()
+                        scheduleAutomaticAdvance()
                     }
                 )
                 .transition(.opacity)
@@ -110,6 +112,41 @@ struct FeedView: View {
                     guard !Task.isCancelled, app.cameBackToast?.id == toast.id else { return }
                     withAnimation(.snappy) { app.dismissCameBackToast() }
                 }
+            }
+
+            if videoExpanded {
+                HStack(spacing: 10) {
+                    Button {
+                        Haptics.selection()
+                        lookup.dismiss()
+                        videoExpanded = false
+                    } label: {
+                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 44)
+                            .background(.regularMaterial, in: Capsule())
+                    }
+                    .accessibilityHint("Returns to the feed with For You, Explore, and navigation visible")
+                    Spacer(minLength: 0)
+                    if !maximizeNavShown {
+                        Button {
+                            Haptics.selection()
+                            withAnimation(.snappy) { maximizeNavShown = true }
+                        } label: {
+                            Label("Show tabs", systemImage: "square.grid.2x2")
+                                .font(.caption.weight(.bold))
+                                .padding(.horizontal, 12)
+                                .frame(minHeight: 44)
+                                .background(.regularMaterial, in: Capsule())
+                        }
+                    }
+                }
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .zIndex(5)
             }
 
         }
@@ -148,6 +185,7 @@ struct FeedView: View {
         }
         .onChange(of: maximizeNavShown) { _, _ in syncDock() }
         .onDisappear {
+            autoAdvanceTask?.cancel()
             if videoExpanded { app.hidesMainTabBar = false }
         }
         .onChange(of: isActiveTab) { _, active in
@@ -158,6 +196,7 @@ struct FeedView: View {
                 scheduleWatchChromeHide()
                 startGuidedTourSoon()
             } else {
+                autoAdvanceTask?.cancel()
                 coordinator.pause()
                 lookup.dismiss()
                 showWatchChrome()
@@ -175,6 +214,8 @@ struct FeedView: View {
             }
         }
         .onChange(of: currentId) { oldId, newId in
+            autoAdvanceTask?.cancel()
+            if autoScrollTargetId != nil && autoScrollTargetId != newId { autoScrollTargetId = nil }
             lookup.dismiss()
             revealWatchChrome()
             noteClipChange(from: oldId)
@@ -392,6 +433,17 @@ struct FeedView: View {
                     }
                 }
             }
+            .onChange(of: autoScrollTargetId) { _, target in
+                guard let target else { return }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(450))
+                    guard autoScrollTargetId == target, currentId == target else { return }
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { proxy.scrollTo(target, anchor: .top) }
+                    autoScrollTargetId = nil
+                }
+            }
             }
         }
         .clipped()
@@ -486,6 +538,7 @@ struct FeedView: View {
         }
         let kept = Set(clips.prefix(index + 1).map(\.id))
         clips = Array(clips.prefix(index + 1)) + ranked.filter { !kept.contains($0.id) }
+        preloadUpcoming()
     }
 
     private func reloadClips() {
@@ -534,23 +587,31 @@ struct FeedView: View {
               let id = currentId,
               let clip = clips.first(where: { $0.id == id }),
               !ClipQuizBuilder.questions(for: clip, count: 1).isEmpty else {
-            advance()
+            scheduleAutomaticAdvance()
             return
         }
         coordinator.pause()
         withAnimation(.snappy) { quizClip = clip }
     }
 
-    /// Auto-advance to the next clip at the end.
+    private func scheduleAutomaticAdvance() {
+        autoAdvanceTask?.cancel()
+        guard app.profile.autoAdvanceEnabled, let id = currentId else { return }
+        let pause = max(0, min(3, app.profile.autoAdvancePauseSeconds))
+        autoAdvanceTask = Task { @MainActor in
+            if pause > 0 { try? await Task.sleep(for: .seconds(pause)) }
+            guard !Task.isCancelled, isActiveTab, currentId == id, quizClip == nil else { return }
+            advance()
+        }
+    }
+
+    /// Scroll one viewport to the next clip. A final alignment keeps the page exact.
     private func advance() {
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
-        let next = clips.indices.contains(index + 1) ? clips[index + 1] : clips.first
+        guard let next = clips[safe: index + 1] else { return }
         programmaticClipChange = true
-        // A scrolling animation exposes both adjacent pages while the viewport moves
-        // between them. Automatic advance should land on a single full video immediately.
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) { currentId = next?.id }
+        autoScrollTargetId = next.id
+        withAnimation(.easeInOut(duration: 0.42)) { currentId = next.id }
     }
 
     private func openPendingClip() {

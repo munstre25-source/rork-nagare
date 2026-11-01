@@ -87,9 +87,9 @@ struct ClipStageView: View {
     private func expandedVideoSize(in size: CGSize) -> CGSize {
         if isCompactLandscape(size) {
             // Landscape theater: the picture must fit between the title row and the
-            // footer instead of clipping under the status bar.
+            // footer and leave room for the words and minimize rail.
             let maxHeight = max(140, size.height - 140)
-            let width = min(size.width - 24, maxHeight * 16 / 9, 1100)
+            let width = min(size.width - wordsColumnWidth(in: size.width) - 44, maxHeight * 16 / 9, 1100)
             return CGSize(width: width, height: width * 9 / 16)
         }
         let maxHeight = max(0, size.height)
@@ -753,7 +753,7 @@ private struct ClipVideoFrame: ViewModifier {
     }
 }
 
-/// Kiku action chrome under the video: time · 1x · bookmark · play · info · (optional size box).
+/// Action chrome under the video: time · speed · like · bookmark · play · info.
 struct ClipActionRow: View {
     let clip: Clip
     let player: (any ClipPlayer)?
@@ -793,7 +793,7 @@ struct ClipActionRow: View {
             .frame(height: 3)
             .padding(.horizontal, 2)
 
-            HStack(spacing: 4) {
+            HStack(spacing: 2) {
                 Text("\(formatClock(player?.currentTime ?? 0)) / \(formatClock(player?.duration ?? clip.durationSec))")
                     .font(.caption2.weight(.semibold))
                     .monospacedDigit()
@@ -801,7 +801,7 @@ struct ClipActionRow: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
 
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
 
                 Button {
                     Haptics.selection()
@@ -811,12 +811,21 @@ struct ClipActionRow: View {
                         .font(.caption.weight(.bold))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 6)
                         .frame(minHeight: 28)
                         .background(Color.fieldFill, in: Capsule())
                         .frame(minHeight: 44)
                 }
                 .accessibilityLabel("Playback speed \(rateLabel)")
+
+                Button {
+                    Haptics.light()
+                    withAnimation(.snappy) { _ = app.toggleLike(clip.id) }
+                } label: {
+                    rowIcon(app.isLiked(clip.id) ? "heart.fill" : "heart",
+                            tint: app.isLiked(clip.id) ? Color.designOrange : .secondary)
+                }
+                .accessibilityLabel(app.isLiked(clip.id) ? "Unlike video" : "Like video")
 
                 Button {
                     Haptics.light()
@@ -837,7 +846,7 @@ struct ClipActionRow: View {
                         .foregroundStyle(.primary)
                         .frame(width: 28, height: 28)
                         .background(Color.fieldFill, in: Circle())
-                        .frame(width: 34, height: 44)
+                        .frame(width: 30, height: 44)
                 }
                 .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
 
@@ -877,7 +886,7 @@ struct ClipActionRow: View {
         Image(systemName: system)
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(tint)
-            .frame(width: 34, height: 44)
+            .frame(width: 30, height: 44)
             .contentShape(Rectangle())
     }
 }

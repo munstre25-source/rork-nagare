@@ -8,6 +8,7 @@ export const CATEGORIES = new Set([
   "interview",
   "kids",
   "gaming",
+  "learning",
 ]);
 
 export const DIFFICULTIES = new Set(["Beginner", "Intermediate", "Advanced"]);
@@ -33,6 +34,23 @@ export type LineLike = {
 };
 
 export type ValidationResult = { ok: true } | { ok: false; error: string };
+
+/** Catch clear translation defects before a clip reaches the catalog. */
+export function translationQualityIssue(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return "translation required";
+  const text = value.trim();
+  if (/^(?:translation|meaning) (?:unavailable|pending)|^this word$/i.test(text)) {
+    return "translation is a placeholder";
+  }
+  if (/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7a3]/u.test(text)) {
+    return "translation contains untranslated source-language text";
+  }
+  if (/^[a-z]$/i.test(text)) return "translation is a single letter";
+  if (/,\s*["'”’]?$/u.test(text) || /\b(?:and|but|because)\s*$/i.test(text)) {
+    return "translation ends mid-thought";
+  }
+  return null;
+}
 
 function isFiniteNumber(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n);
@@ -136,9 +154,8 @@ export function validateLines(
     }
     prevEnd = line.end;
 
-    if (typeof line.translation !== "string") {
-      return { ok: false, error: `line[${i}] translation required` };
-    }
+    const translationIssue = translationQualityIssue(line.translation);
+    if (translationIssue) return { ok: false, error: `line[${i}] ${translationIssue}` };
 
     if (!Array.isArray(line.tokens) || line.tokens.length === 0) {
       return { ok: false, error: `line[${i}] tokens must be non-empty` };

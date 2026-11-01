@@ -59,11 +59,9 @@ struct TranscriptLineView: View {
                 }
                 if showsTranslation && subtitleMode.showsEnglish {
                     Text(line.translation)
-                        .font(forceDenseAids || raisedCard ? Font.footnote : Font.body)
-                        .fontWeight(raisedCard ? .regular : .semibold)
-                        .foregroundStyle(LearningInk.english.opacity(raisedCard ? 0.78 : 1))
-                        .lineLimit(4)
-                        .minimumScaleFactor(0.85)
+                        .font(forceDenseAids || raisedCard ? Font.subheadline : Font.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(LearningInk.english)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)

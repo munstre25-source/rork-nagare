@@ -28,14 +28,27 @@ struct JojoWidgetProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (JojoWidgetEntry) -> Void) {
-        completion(JojoWidgetEntry(date: Date(), snapshot: WidgetSnapshot.load()))
+        let now = Date()
+        completion(JojoWidgetEntry(date: now, snapshot: WidgetSnapshot.load().current(at: now)))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<JojoWidgetEntry>) -> Void) {
-        let entry = JojoWidgetEntry(date: Date(), snapshot: WidgetSnapshot.load())
-        // Refresh periodically so "minutes left" / due counts stay honest between app opens.
-        let next = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        let now = Date()
+        let snapshot = WidgetSnapshot.load()
+        let horizon = now.addingTimeInterval(86_400)
+        let futureDue = snapshot.upcomingDueDates.filter { $0 > now && $0 <= horizon }.sorted()
+        let dueCheckpoints = Array(futureDue.prefix(40))
+        let refresh = futureDue.count > 40 ? futureDue[40] : horizon
+        var dates = [now] + dueCheckpoints
+        if let midnight = Calendar.current.date(byAdding: .day, value: 1,
+                                                 to: Calendar.current.startOfDay(for: now)),
+           midnight <= refresh {
+            dates.append(midnight)
+        }
+        let entries = Set(dates).sorted().map { date in
+            JojoWidgetEntry(date: date, snapshot: snapshot.current(at: date))
+        }
+        completion(Timeline(entries: entries, policy: .after(refresh)))
     }
 }
 
@@ -155,7 +168,23 @@ struct JojoWidgetView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                if let surface = snapshot.teaserSurface {
+                if snapshot.dueCount == 0, let clipTitle = snapshot.clipTitle {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("UP NEXT")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(paint.accent)
+                        Text(clipTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(paint.ink)
+                            .lineLimit(3)
+                        Text("Watch clip →")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(paint.accent)
+                    }
+                    .frame(width: 110, alignment: .leading)
+                    .padding(8)
+                    .background(paint.chip, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else if let surface = snapshot.teaserSurface {
                     VStack(spacing: 4) {
                         if let reading = snapshot.teaserReading {
                             Text(reading)

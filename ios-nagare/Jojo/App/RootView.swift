@@ -40,6 +40,8 @@ struct MainTabView: View {
     @Environment(AppModel.self) private var app
     @State private var tab: AppTab = .feed
     @State private var showFeedbackPrompt = false
+    @State private var showAcquisitionSurvey = false
+    @AppStorage("jojo.acquisitionPromptDismissed") private var acquisitionPromptDismissed = false
     @State private var showManualFeedback = false
     @State private var showCancellationSurvey = false
     @Query private var savedWords: [SavedWord]
@@ -49,7 +51,12 @@ struct MainTabView: View {
     private let guide = GuidanceCenter.shared
 
     private var anySheetUp: Bool {
-        showFeedbackPrompt || showManualFeedback || showCancellationSurvey
+        showFeedbackPrompt || showAcquisitionSurvey || showManualFeedback || showCancellationSurvey
+    }
+
+    private var shouldOfferAcquisitionSurvey: Bool {
+        app.profile.acquisitionSource.isEmpty && !acquisitionPromptDismissed &&
+        (app.profile.finishedClipIds.count >= 2 || app.totalWatchSeconds >= 120)
     }
 
     /// The badge is a real Vocab notification: cards the learner can review now.
@@ -79,7 +86,8 @@ struct MainTabView: View {
                 .tabItem { Label("Vocab", systemImage: "book") }
                 .tag(AppTab.vocab)
 
-            ProfileView(onGiveFeedback: { showManualFeedback = true })
+            ProfileView(onGiveFeedback: { showManualFeedback = true },
+                        onAcquisitionSurvey: { showAcquisitionSurvey = true })
                 .toolbar(.hidden, for: .tabBar)
                 .background(SystemTabBarHider())
                 .tabItem { Label("Profile", systemImage: "person") }
@@ -174,6 +182,11 @@ struct MainTabView: View {
         .sheet(isPresented: $showFeedbackPrompt) {
             FeedbackFlowSheet { showFeedbackPrompt = false }
         }
+        .sheet(isPresented: $showAcquisitionSurvey, onDismiss: {
+            if app.profile.acquisitionSource.isEmpty { acquisitionPromptDismissed = true }
+        }) {
+            AcquisitionSurveySheet { showAcquisitionSurvey = false }
+        }
         .sheet(isPresented: $showManualFeedback) {
             FeedbackBoardView()
         }
@@ -187,11 +200,11 @@ struct MainTabView: View {
         guide.blockedByPresentation = anySheetUp
     }
 
-    /// The one-time "How's Jojo so far?" prompt: only off the feed (nothing playing), never
-    /// during the tour, another sheet, or speaking practice. Waits a beat, then checks again.
+    /// Ask the acquisition question after real clip use, at a quiet moment off the feed.
+    /// The experience feedback prompt follows on a later visit if it is also due.
     private func scheduleExperiencePrompt() {
         experiencePromptTask?.cancel()
-        guard app.shouldPresentFeedbackPrompt,
+        guard shouldOfferAcquisitionSurvey || app.shouldPresentFeedbackPrompt,
               !app.isReviewSessionActive,
               !app.recentlyEndedReview else { return }
         let requestedTab = tab
@@ -199,7 +212,7 @@ struct MainTabView: View {
             try? await Task.sleep(for: .seconds(FeedbackPromptConfig.calmDelaySeconds))
             guard !Task.isCancelled,
                   tab == requestedTab, tab != .feed,
-                  app.shouldPresentFeedbackPrompt,
+                  (shouldOfferAcquisitionSurvey || app.shouldPresentFeedbackPrompt),
                   !app.isReviewSessionActive,
                   !app.recentlyEndedReview,
                   app.pendingDeepLink == nil,
@@ -208,7 +221,11 @@ struct MainTabView: View {
                   !anySheetUp,
                   !app.hidesMainTabBar,
                   !SpeechPractice.isListening else { return }
-            showFeedbackPrompt = true
+            if shouldOfferAcquisitionSurvey {
+                showAcquisitionSurvey = true
+            } else {
+                showFeedbackPrompt = true
+            }
         }
     }
 }

@@ -23,6 +23,9 @@ export function hearSystem(language: CatalogLanguage): string {
 Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number, ${fields}, "tappable": boolean, "baseForm": string (dictionary form, for conjugated stems), "baseReading": string, "baseRomaji": string } ] } ] }.
 Rules:
 - Transcribe speech you can actually hear. Do not invent dialogue.
+- Make each line a complete spoken thought where the audio permits. Keep a dependent clause with the words that finish it instead of splitting at a pause, particle, or conjunction. Short standalone replies and interjections are fine.
+- Translate each whole line into natural, grammatical English using the surrounding conversation for context. Preserve the speaker's meaning, tense, politeness, and uncertainty; supply ordinary English pronouns or articles when needed. Do not produce word-by-word glosses or untranslated Japanese text in the English field. Romanize spoken names when needed.
+- Do not fill gaps in unclear audio by guessing. If a line cannot be transcribed and translated faithfully, omit it. Before returning, reread every English line for meaning, grammar, and completeness.
 - Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
 - Tokenize into learner-friendly units, with particles as their own tokens. Punctuation may be its own token and is tappable=false.
 - ${script}
@@ -31,11 +34,14 @@ Rules:
 - No markdown.`;
 }
 
-export function hearSystemCatalog(language: CatalogLanguage): string {
+export function hearSystemCatalog(language: CatalogLanguage, maxClipSec = 40, preferWholeVideo = false): string {
+  const selection = preferWholeVideo
+    ? `This source is at most two minutes. Prefer the whole meaningful spoken scene, up to ${maxClipSec} seconds, when it is coherent and mostly speech. Trim intros, music, silence, and unrelated material; choose a shorter complete exchange if the whole scene is not a good lesson.`
+    : `Find one coherent, self-contained exchange in the supplied video window. Prefer 15–30 seconds; never exceed ${maxClipSec} seconds or go below 8 seconds. Keep the full setup and response, and do not cut a sentence or turn in half.`;
   return `${hearSystem(language)}
-- Find one coherent, self-contained exchange in the supplied video window. Prefer 15–40 seconds; never exceed 40 seconds. Keep the full setup and response, and do not cut a sentence or turn in half.
-- Return between 2 and 20 spoken lines from that exchange, with enough context for a learner to understand what is happening. Skip music, titles, silence, and unrelated dialogue.
-- Include numeric "clip_start_sec" and "clip_end_sec" using absolute source-video timestamps. Start shortly before the exchange begins and end shortly after it finishes. The chosen clip must be at least 8 and at most 40 seconds long.
+- ${selection}
+- Return between 2 and ${preferWholeVideo ? 80 : 24} spoken lines from that exchange, with enough context for a learner to understand what is happening. Skip music, titles, silence, and unrelated dialogue.
+- Include numeric "clip_start_sec" and "clip_end_sec" using absolute source-video timestamps. Start shortly before the exchange begins and end shortly after it finishes. The chosen clip must be at least 8 and at most ${maxClipSec} seconds long.
 - Include "video_orientation": "portrait" or "landscape" based on the source video's actual frame shape. A vertical scene letterboxed inside a 16:9 upload is landscape.
 - If this window has no complete, useful exchange in that duration, return {"lines":[]}.
 - Also include "difficulty": "Beginner" or "Intermediate" or "Advanced", judged only from the words and grammar you heard.`;

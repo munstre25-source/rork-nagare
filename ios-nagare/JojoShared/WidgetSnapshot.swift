@@ -32,6 +32,11 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
     /// light or dark.
     var scheme: String
     var updatedAt: Date
+    /// Due dates after `updatedAt`, so the widget can advance without opening the app.
+    var upcomingDueDates: [Date]
+    var lastStudyDay: Date?
+    var clipTitle: String?
+    var clipId: String?
 
     init(
         streak: Int,
@@ -44,7 +49,11 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         teaserReading: String?,
         accent: String,
         scheme: String,
-        updatedAt: Date
+        updatedAt: Date,
+        upcomingDueDates: [Date] = [],
+        lastStudyDay: Date? = nil,
+        clipTitle: String? = nil,
+        clipId: String? = nil
     ) {
         self.streak = streak
         self.dailyGoalMinutes = dailyGoalMinutes
@@ -57,6 +66,10 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         self.accent = accent
         self.scheme = scheme
         self.updatedAt = updatedAt
+        self.upcomingDueDates = upcomingDueDates
+        self.lastStudyDay = lastStudyDay
+        self.clipTitle = clipTitle
+        self.clipId = clipId
     }
 
     static let empty = WidgetSnapshot(
@@ -91,7 +104,30 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         if dueCount > 0 {
             return URL(string: "jojo://review")!
         }
+        if let clipId, !clipId.isEmpty {
+            var components = URLComponents()
+            components.scheme = "jojo"
+            components.host = "feed"
+            components.queryItems = [URLQueryItem(name: "clipId", value: clipId)]
+            if let url = components.url { return url }
+        }
         return URL(string: "jojo://feed")!
+    }
+
+    /// A dated timeline prevents yesterday's minutes and overdue-card count lingering on screen.
+    func current(at date: Date) -> WidgetSnapshot {
+        var copy = self
+        let calendar = Calendar.current
+        if !calendar.isDate(updatedAt, inSameDayAs: date) {
+            copy.minutesWatchedToday = 0
+        }
+        copy.dueCount += upcomingDueDates.filter { $0 <= date }.count
+        if let graceEnd = calendar.date(byAdding: .day, value: 2,
+                                      to: calendar.startOfDay(for: lastStudyDay ?? updatedAt)),
+           date >= graceEnd {
+            copy.streak = 0
+        }
+        return copy
     }
 
     var headline: String {
@@ -133,6 +169,10 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         accent = try c.decodeIfPresent(String.self, forKey: .accent) ?? "orange"
         scheme = try c.decodeIfPresent(String.self, forKey: .scheme) ?? "light"
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        upcomingDueDates = try c.decodeIfPresent([Date].self, forKey: .upcomingDueDates) ?? []
+        lastStudyDay = try c.decodeIfPresent(Date.self, forKey: .lastStudyDay)
+        clipTitle = try c.decodeIfPresent(String.self, forKey: .clipTitle)
+        clipId = try c.decodeIfPresent(String.self, forKey: .clipId)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -148,11 +188,16 @@ nonisolated struct WidgetSnapshot: Codable, Hashable, Sendable {
         try c.encode(accent, forKey: .accent)
         try c.encode(scheme, forKey: .scheme)
         try c.encode(updatedAt, forKey: .updatedAt)
+        try c.encode(upcomingDueDates, forKey: .upcomingDueDates)
+        try c.encodeIfPresent(lastStudyDay, forKey: .lastStudyDay)
+        try c.encodeIfPresent(clipTitle, forKey: .clipTitle)
+        try c.encodeIfPresent(clipId, forKey: .clipId)
     }
 
     private enum CodingKeys: String, CodingKey {
         case streak, dailyGoalMinutes, minutesWatchedToday, dueCount, totalWords
         case teaserSurface, teaserGloss, teaserReading, accent, scheme, updatedAt
+        case upcomingDueDates, lastStudyDay, clipTitle, clipId
     }
 
     func save() {

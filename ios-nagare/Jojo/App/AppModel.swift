@@ -291,12 +291,12 @@ final class AppModel {
             if let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
             return false
         }
-        // The learner catalog is 8–40 second excerpts; anything longer breaks the quick
-        // scroll. Bundled clips predate the rule and stay as they are.
+        // Complete lessons from short source videos can run up to two minutes.
+        // Bundled clips predate the range and stay as they are.
         merged.removeAll { clip in
             clip.hasRealVideo
                 && !seedClips.contains(where: { $0.id == clip.id })
-                && !(8...40.5).contains(clip.durationSec)
+                && !(8...120.5).contains(clip.durationSec)
         }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
@@ -387,7 +387,8 @@ final class AppModel {
     func refreshRemoteClips() async {
         // Avoid overlapping feed-tail and timer refreshes while remaining responsive
         // when users return to For You or reach the end of their current queue.
-        guard Date().timeIntervalSince(lastRemoteClipRefreshAt) >= 45 else { return }
+        let minimumInterval: TimeInterval = clips.count > 500 ? 15 * 60 : 45
+        guard Date().timeIntervalSince(lastRemoteClipRefreshAt) >= minimumInterval else { return }
         lastRemoteClipRefreshAt = .now
         do {
             let rows = try await SupabaseAPI.shared.fetchPublishedClips()
@@ -398,20 +399,27 @@ final class AppModel {
             }
             let publishedIds = Set(rows.map(\.clip.id))
             PlaybackHealth.notePublished(videoIds: Set(rows.map(\.clip.videoId)))
+            var changed = false
             for id in byId.keys where !publishedIds.contains(id) {
-                if let row = byId[id] { context.delete(row) }
+                if let row = byId[id] { context.delete(row); changed = true }
                 byId[id] = nil
             }
             for (clip, json) in rows {
                 if let row = byId[clip.id] {
-                    row.json = json
-                    row.updatedAt = Date()
+                    if row.json != json {
+                        row.json = json
+                        row.updatedAt = Date()
+                        changed = true
+                    }
                 } else {
                     context.insert(RemoteClip(clipId: clip.id, json: json))
+                    changed = true
                 }
             }
-            save()
-            rebuildClips()
+            if changed {
+                save()
+                rebuildClips()
+            }
             print("[AppModel] merged \(rows.count) remote clips")
         } catch {
             print("[AppModel] clip sync skipped: \(error.localizedDescription)")
@@ -557,6 +565,7 @@ final class AppModel {
             profile.firstName,
             profile.finishedClipIds.joined(separator: ","),
             profile.favoriteClipIds.joined(separator: ","),
+            profile.likedClipIds.joined(separator: ","),
             profile.watchLaterClipIds.joined(separator: ","),
             profile.followedChannelNames.joined(separator: ","),
             profile.tasteTrace.joined(separator: ";"),
@@ -591,6 +600,11 @@ final class AppModel {
         if pool.isEmpty { pool = studyLibrary }
 
         let mirror = tasteMirror()
+        let likedIds = Set(profile.likedClipIds)
+        let likedSignals = profile.likedClipIds.suffix(12).compactMap { id -> (Clip, Set<String>)? in
+            guard let likedClip = clip(id: id) else { return nil }
+            return (likedClip, contentWords(in: likedClip))
+        }
         let prior = mirror.positives == 0 ? 1.0 : max(0.3, 1 - Double(mirror.positives) * 0.15)
         let targetLevel = mirroredLevel(fallback: level, mass: mirror.difficultyMass)
 
@@ -609,9 +623,25 @@ final class AppModel {
             s += mirror.category[clip.category] ?? 0
             s += mirror.channel[clip.channelName] ?? 0
             s += mirror.clip[clip.id] ?? 0
+            if !likedSignals.isEmpty {
+                let words = contentWords(in: clip)
+                let similarity = likedSignals.enumerated().map { index, signal -> Double in
+                    let likedClip = signal.0
+                    let recency = 0.6 + 0.4 * Double(index + 1) / Double(likedSignals.count)
+                    let sharedWords = words.intersection(signal.1).count
+                    return recency * (
+                        (clip.category == likedClip.category ? 24.0 : 0) +
+                        (clip.channelName == likedClip.channelName ? 16.0 : 0) +
+                        Double(min(sharedWords, 4)) * 4.0 +
+                        (clip.difficultyKind == likedClip.difficultyKind ? 3.0 : 0)
+                    )
+                }.max() ?? 0
+                s += similarity
+            }
             if clip.category == mirror.lastPositiveCategory { s += 16 }
             if profile.followedChannelNames.contains(clip.channelName) { s += 22 }
             if profile.favoriteClipIds.contains(clip.id) { s += 28 }
+            if likedIds.contains(clip.id) { s -= 80 }
             s -= abs(Double(clip.difficultyKind.rank) - targetLevel) * 8
             s += durationFitScore(for: clip.durationSec, level: profile.readingLevel)
             s += savedVocabularyFitScore(for: clip)
@@ -651,6 +681,14 @@ final class AppModel {
             if lookedUpKeys.contains(key) { matched.insert(key) }
         }
         return min(Double(matched.count), 4) * 1.5
+    }
+
+    private func contentWords(in clip: Clip) -> Set<String> {
+        Set(clip.lines.flatMap(\.tokens).filter { token in
+            let pos = token.pos.lowercased()
+            return token.tappable && (pos.contains("noun") || pos.contains("verb") ||
+                pos.contains("adjective") || pos.contains("adverb"))
+        }.map { Self.wordKey(for: $0) })
     }
 
     /// Recent behavior. Newer marks count more, so the feed follows what they just did.
@@ -747,6 +785,21 @@ final class AppModel {
 
     // MARK: Favorites
 
+    func isLiked(_ clipId: String) -> Bool { profile.likedClipIds.contains(clipId) }
+
+    @discardableResult
+    func toggleLike(_ clipId: String) -> Bool {
+        if let index = profile.likedClipIds.firstIndex(of: clipId) {
+            profile.likedClipIds.remove(at: index)
+        } else {
+            profile.likedClipIds.append(clipId)
+        }
+        tasteRevision += 1
+        save()
+        track(isLiked(clipId) ? "clip_liked" : "clip_unliked", props: ["clip": clipId])
+        return isLiked(clipId)
+    }
+
     func isFavorite(_ clipId: String) -> Bool {
         profile.favoriteClipIds.contains(clipId)
     }
@@ -794,6 +847,7 @@ final class AppModel {
         let ids: [String]
         switch shelf {
         case .watched: ids = profile.finishedClipIds.reversed()
+        case .liked: ids = profile.likedClipIds.reversed()
         case .saved: ids = profile.favoriteClipIds.reversed()
         case .later: ids = profile.watchLaterClipIds.reversed()
         }
@@ -1239,6 +1293,9 @@ final class AppModel {
            let clip = clip(id: due.contextClipId) {
             return (clip.title, clip.channelName, clip.id)
         }
+        if let clip = forYouClips.first(where: { !profile.finishedClipIds.contains($0.id) }) {
+            return (clip.title, clip.channelName, clip.id)
+        }
         if let id = profile.firstClipId, let clip = clip(id: id) {
             return (clip.title, clip.channelName, clip.id)
         }
@@ -1414,6 +1471,7 @@ final class AppModel {
             profile.lastGoalCelebratedDay = key
             goalCelebrationCount += 1
             Haptics.success()
+            NotificationService.cancelDailyReminderToday()
             NotificationService.cancelStreakAtRisk()
             track("daily_goal_reached", props: ["minutes": String(profile.dailyGoalMinutes)])
             persistWatchLog()
@@ -1464,6 +1522,7 @@ final class AppModel {
     func setDailyGoal(_ minutes: Int) {
         profile.dailyGoalMinutes = minutes
         save()
+        refreshAllReminders()
     }
 
     /// Older builds stored the accent in `appearanceMode` (`sakura`, `plum`, `orange`, `system`).
@@ -1558,6 +1617,16 @@ final class AppModel {
         save()
     }
 
+    func setAutoAdvanceEnabled(_ enabled: Bool) {
+        profile.autoAdvanceEnabled = enabled
+        save()
+    }
+
+    func setAutoAdvancePause(_ seconds: Double) {
+        profile.autoAdvancePauseSeconds = min(3, max(0, (seconds * 2).rounded() / 2))
+        save()
+    }
+
     func setGateContentByLevel(_ enabled: Bool) {
         profile.gateContentByLevel = enabled
         save()
@@ -1591,7 +1660,8 @@ final class AppModel {
     func refreshAllReminders() {
         guard profile.remindersEnabled else { return }
         let teaser = reminderClipTeaser()
-        NotificationService.scheduleDailyReminder(clipTitle: teaser?.title, channel: teaser?.channel, clipId: teaser?.clipId)
+        NotificationService.scheduleDailyReminder(clipTitle: teaser?.title, channel: teaser?.channel,
+                                                  clipId: teaser?.clipId, goalReachedToday: isGoalReached)
         NotificationService.scheduleReviewReminder(dueCount: dueWordCount, clipTitle: teaser?.title, clipId: teaser?.clipId)
         if isGoalReached {
             NotificationService.cancelStreakAtRisk()
@@ -1853,6 +1923,7 @@ final class AppModel {
         ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }
         watchLog = [:]
         profile.favoriteClipIds = []
+        profile.likedClipIds = []
         profile.watchLaterClipIds = []
         profile.tasteTrace = []
         profile.lastGoalCelebratedDay = ""
@@ -1900,6 +1971,8 @@ final class AppModel {
         defaults.removeObject(forKey: "nagare.local.anon.id")
         defaults.removeObject(forKey: "nagare.analytics.log")
         defaults.removeObject(forKey: "nagare.explain.calllog")
+        defaults.removeObject(forKey: "jojo.acquisitionPromptDismissed")
+        defaults.removeObject(forKey: InsightsService.pendingAcquisitionKey)
         experiencePrompt.reset()
         GuidanceCenter.shared.resetAll()
         ResumePlaybackStore.clear()

@@ -60,6 +60,8 @@ final class UserProfile {
     var remindersEnabled: Bool = false
     var notificationsAsked: Bool = false
     var favoriteClipIds: [String] = []
+    /// Hearts guide the personal feed; bookmarks remain a separate save action.
+    var likedClipIds: [String] = []
     /// Clip ids the learner has played through. For You keeps these behind clips they have not finished.
     var finishedClipIds: [String] = []
     /// Want-to-watch shelf in Library (Save for later).
@@ -87,6 +89,9 @@ final class UserProfile {
     var hideDailyGoalBar: Bool = false
     /// While a clip is playing, the tab capsule and For You / Explore switch fade until the next touch.
     var fadeWatchChrome: Bool = true
+    var autoAdvanceEnabled: Bool = true
+    /// A short pause after the video or quick check before the next page scrolls up.
+    var autoAdvancePauseSeconds: Double = 0.5
     /// When true, For You only surfaces clips at the user's level or one step harder.
     var gateContentByLevel: Bool = true
 

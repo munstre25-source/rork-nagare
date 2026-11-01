@@ -10,8 +10,12 @@ enum WidgetSnapshotPublisher {
     static func publish(from app: AppModel) {
         let words = (try? app.context.fetch(FetchDescriptor<SavedWord>())) ?? []
         let now = Date()
-        let due = words.filter { $0.dueAt <= now }.sorted { $0.dueAt < $1.dueAt }
+        let reviewable = words.filter { $0.state != .known }
+        let due = reviewable.filter { $0.dueAt <= now }.sorted { $0.dueAt < $1.dueAt }
+        let upcoming = reviewable.filter { $0.dueAt > now }.map(\.dueAt).sorted()
         let teaser = due.first ?? words.sorted { $0.addedAt > $1.addedAt }.first
+        let clip = app.reminderClipTeaser()
+        let lastStudyDay = app.weeklyMinutes.last(where: { $0.minutes >= 1 })?.date
 
         let reading = teaser?.primaryReading ?? ""
         let snapshot = WidgetSnapshot(
@@ -25,9 +29,13 @@ enum WidgetSnapshotPublisher {
             teaserReading: reading.isEmpty || reading == teaser?.surface ? nil : reading,
             accent: app.profile.theme.rawValue,
             scheme: app.profile.scheme.rawValue,
-            updatedAt: now
+            updatedAt: now,
+            upcomingDueDates: upcoming,
+            lastStudyDay: lastStudyDay,
+            clipTitle: clip?.title,
+            clipId: clip?.clipId
         )
-        let fingerprint = "\(snapshot.streak)|\(snapshot.minutesWatchedToday)|\(snapshot.dueCount)|\(snapshot.teaserSurface ?? "")|\(snapshot.teaserReading ?? "")|\(snapshot.accent)|\(snapshot.scheme)|\(snapshot.dailyGoalMinutes)"
+        let fingerprint = "\(snapshot.streak)|\(snapshot.minutesWatchedToday)|\(snapshot.dueCount)|\(snapshot.upcomingDueDates.hashValue)|\(snapshot.clipId ?? "")|\(snapshot.teaserSurface ?? "")|\(snapshot.teaserReading ?? "")|\(snapshot.accent)|\(snapshot.scheme)|\(snapshot.dailyGoalMinutes)"
         snapshot.save()
         guard fingerprint != lastFingerprint else { return }
         lastFingerprint = fingerprint

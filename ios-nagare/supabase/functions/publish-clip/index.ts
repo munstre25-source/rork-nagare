@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ clip: data });
     }
 
-    const duration = Number(clip.duration_sec);
-    if (!Number.isFinite(duration) || duration < 8 || duration > 40) {
-      return errorResponse(422, "Refuse to publish: excerpt must be 8–40 seconds");
+    const durationSec = Number(clip.duration_sec);
+    if (!Number.isFinite(durationSec) || durationSec < 8 || durationSec > 120) {
+      return errorResponse(422, "Refuse to publish: clip duration must be between 8 and 120 seconds");
     }
 
     // Recheck on every publish: owners can change a video's embedding setting

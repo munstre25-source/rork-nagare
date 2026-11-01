@@ -122,7 +122,7 @@ async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Rec
   const offset = Number(job.scan_offset_sec) || 0;
   const windowStart = Math.min(offset, Math.max(0, video.durationSec - 20));
   const windowEnd = Math.min(video.durationSec, windowStart + WINDOW_SEC);
-  if (windowEnd - windowStart < 20) {
+  if (windowEnd - windowStart < 8) {
     await finish(supabase, worker, job, { status: "unprocessable", error_code: "no_japanese_dialogue" });
     return { outcome: "unprocessable", reason: "past_end" };
   }
@@ -131,6 +131,7 @@ async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Rec
     videoId: job.video_id,
     windowStart,
     windowEnd,
+    sourceDurationSec: video.durationSec,
     language: "ja",
     askCategory: true,
     minSpokenSec: 6,

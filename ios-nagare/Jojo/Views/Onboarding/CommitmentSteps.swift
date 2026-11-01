@@ -14,7 +14,7 @@ struct DailyGoalStepView: View {
                     .padding(.bottom, Spacing.xs)
                 OnboardingTitle(title: "How many minutes a day?", subtitle: "This sets your daily goal timer. Change it anytime.")
                     .padding(.bottom, Spacing.s)
-                ForEach([5, 10, 15, 20], id: \.self) { minutes in
+                ForEach([2, 5, 10, 15, 20], id: \.self) { minutes in
                     goalCard(minutes)
                 }
             }

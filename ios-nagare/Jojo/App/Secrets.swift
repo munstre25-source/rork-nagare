@@ -33,9 +33,12 @@ nonisolated enum Secrets {
 
     /// Meta / Facebook app credentials (public App ID + Client Token from Developers → Settings → Advanced).
     /// Used only for install attribution + `$fbAnonId`; purchases go through RevenueCat → Conversions API.
-    static let metaAppID: String = value("META_APP_ID", env: "EXPO_PUBLIC_META_APP_ID", placeholder: "YOUR_META_APP_ID")
-    static let metaClientToken: String = value("META_CLIENT_TOKEN", env: "EXPO_PUBLIC_META_CLIENT_TOKEN", placeholder: "YOUR_META_CLIENT_TOKEN")
-    static var isMetaConfigured: Bool { isReal(metaAppID) && isReal(metaClientToken) }
+    static let metaAppID: String = metaValue("META_APP_ID", env: "EXPO_PUBLIC_META_APP_ID", placeholder: "YOUR_META_APP_ID")
+    static let metaClientToken: String = metaValue("META_CLIENT_TOKEN", env: "EXPO_PUBLIC_META_CLIENT_TOKEN", placeholder: "YOUR_META_CLIENT_TOKEN")
+    static var isMetaConfigured: Bool {
+        isReal(metaAppID) && isReal(metaClientToken)
+            && metaAppID == (Bundle.main.object(forInfoDictionaryKey: "FacebookAppID") as? String)
+    }
 
     private static func isReal(_ value: String) -> Bool {
         !value.isEmpty && !value.hasPrefix(placeholderPrefix)
@@ -48,6 +51,15 @@ nonisolated enum Secrets {
         else { return [:] }
         return dict
     }()
+
+    private static func metaValue(_ key: String, env: String, placeholder: String) -> String {
+        if let v = plist[key] as? String, isReal(v) { return v }
+        if let v = Config.allValues[env], isReal(v) { return v }
+        let infoKey = key == "META_APP_ID" ? "FacebookAppID" : "FacebookClientToken"
+        if let v = Bundle.main.object(forInfoDictionaryKey: infoKey) as? String,
+           isReal(v) { return v }
+        return placeholder
+    }
 
     private static func value(_ key: String, env: String, placeholder: String) -> String {
         if let v = plist[key] as? String, isReal(v) { return v }

@@ -24,7 +24,7 @@ struct ShortsHeader: View {
     }
 }
 
-/// Right-hand Shorts rail: speed, bookmark, captions, info, fullscreen. 44pt targets, white glyphs.
+/// Right-hand Shorts rail: speed, like, bookmark, captions, info, fullscreen.
 struct ShortsRail: View {
     let clip: Clip
     let player: (any ClipPlayer)?
@@ -55,6 +55,16 @@ struct ShortsRail: View {
 
     var body: some View {
         VStack(spacing: 2) {
+            if let onMaximize {
+                railButton("arrow.up.left.and.arrow.down.right", tint: ink, label: "Maximize video") {
+                    onMaximize()
+                }
+            } else if let onMinimize {
+                railButton("arrow.down.right.and.arrow.up.left", tint: ink, label: "Normal video size") {
+                    Haptics.selection()
+                    onMinimize()
+                }
+            }
             Button {
                 Haptics.selection()
                 coordinator.cycleRate()
@@ -66,6 +76,15 @@ struct ShortsRail: View {
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Playback speed \(rateLabel)")
+
+            railButton(
+                app.isLiked(clip.id) ? "heart.fill" : "heart",
+                tint: app.isLiked(clip.id) ? Color.designOrange : ink,
+                label: app.isLiked(clip.id) ? "Unlike video" : "Like video"
+            ) {
+                Haptics.light()
+                withAnimation(.snappy) { _ = app.toggleLike(clip.id) }
+            }
 
             railButton(
                 app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
@@ -91,11 +110,7 @@ struct ShortsRail: View {
                 onToggleCaptions()
             }
 
-            if let onMaximize {
-                railButton("arrow.up.left.and.arrow.down.right", tint: ink, label: "Maximize video") {
-                    onMaximize()
-                }
-            } else if let onFullscreen {
+            if onMaximize == nil, let onFullscreen {
                 railButton(onMinimize == nil ? "arrow.up.left.and.arrow.down.right" : "rotate.right",
                            tint: ink, label: onMinimize == nil ? "Fullscreen" : "Rotate to fullscreen") {
                     Haptics.selection()
@@ -103,12 +118,6 @@ struct ShortsRail: View {
                 }
             }
 
-            if let onMinimize {
-                railButton("arrow.down.right.and.arrow.up.left", tint: ink, label: "Minimize video") {
-                    Haptics.selection()
-                    onMinimize()
-                }
-            }
         }
         .shadow(color: .black.opacity(onPicture ? 0.45 : 0), radius: 6, y: 1)
     }

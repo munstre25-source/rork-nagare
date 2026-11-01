@@ -58,9 +58,22 @@ Deno.serve(async (req) => {
     if (req.method !== "GET") return errorResponse(405, "Method not allowed");
     const url = new URL(req.url);
     const days = Math.min(Math.max(Number(url.searchParams.get("days") ?? "30") || 30, 1), 365);
+    const requestedFrom = url.searchParams.get("from");
+    const requestedTo = url.searchParams.get("to");
+    if ((requestedFrom === null) !== (requestedTo === null)) {
+      return errorResponse(400, "from and to must be supplied together");
+    }
+    const end = requestedTo === null ? new Date() : new Date(requestedTo);
+    const start = requestedFrom === null
+      ? new Date(end.getTime() - days * 86_400_000)
+      : new Date(requestedFrom);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) ||
+        start.getTime() >= end.getTime() || end.getTime() - start.getTime() > 366 * 86_400_000) {
+      return errorResponse(400, "Invalid analytics date range");
+    }
 
     const [metrics, inbox, moderation] = await Promise.all([
-      sb.rpc("admin_dashboard_metrics", { p_days: days }),
+      sb.rpc("admin_dashboard_metrics_range", { p_start: start.toISOString(), p_end: end.toISOString() }),
       sb.from("feedback_items")
         .select("id, app_user_id, enjoyed, category, message, status, source, is_anonymous, app_version, os_version, device_class, created_at")
         .order("created_at", { ascending: false })

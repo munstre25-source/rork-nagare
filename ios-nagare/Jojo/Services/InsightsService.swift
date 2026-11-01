@@ -3,6 +3,8 @@ import Foundation
 /// Client for acquisition + feedback Edge Functions. Failures are silent — never block the UI.
 actor InsightsService {
     static let shared = InsightsService()
+    nonisolated static let pendingAcquisitionKey = "jojo.pendingAcquisition"
+    private var acquisitionFlushInProgress = false
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -17,13 +19,26 @@ actor InsightsService {
         return await send(method: "POST", path: "functions/v1/report-playback", appUserId: appUserId, body: body) != nil
     }
 
-    func submitAcquisition(source: String, detail: String?, appUserId: String) async {
+    func submitAcquisition(source: String, detail: String?, appUserId: String) async -> Bool {
         var body: [String: Any] = ["source": source]
         if let detail {
             let trimmed = detail.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty { body["source_detail"] = trimmed }
         }
-        _ = await send(method: "POST", path: "functions/v1/submit-acquisition", appUserId: appUserId, body: body)
+        return await send(method: "POST", path: "functions/v1/submit-acquisition", appUserId: appUserId, body: body) != nil
+    }
+
+    func flushPendingAcquisition() async {
+        guard !acquisitionFlushInProgress else { return }
+        guard let pending = UserDefaults.standard.dictionary(forKey: Self.pendingAcquisitionKey),
+              let source = pending["source"] as? String,
+              let appUserId = pending["appUserId"] as? String else { return }
+        acquisitionFlushInProgress = true
+        defer { acquisitionFlushInProgress = false }
+        let detail = pending["detail"] as? String
+        if await submitAcquisition(source: source, detail: detail, appUserId: appUserId) {
+            UserDefaults.standard.removeObject(forKey: Self.pendingAcquisitionKey)
+        }
     }
 
     /// Private feedback note. `anonymous` stores no app or user id with the note (so it can't be

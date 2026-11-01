@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
     @AppStorage("jojo.quickChecksEnabled") private var quickChecksEnabled = true
+    @AppStorage("jojo.reminderHour") private var reminderHour = 19
     @Environment(\.marketingScrollsToTheme) private var marketingScrollsToTheme
     @Environment(\.marketingProfileAnchor) private var marketingProfileAnchor
     @Query private var words: [SavedWord]
@@ -23,6 +24,7 @@ struct ProfileView: View {
     @State private var marketingScript: MarketingScript?
     #endif
     var onGiveFeedback: (() -> Void)? = nil
+    var onAcquisitionSurvey: (() -> Void)? = nil
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var known: Int { words.filter { $0.state == .known }.count }
@@ -397,6 +399,32 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
 
             settingsHeader("Playback")
+            settingsToggle(symbol: "arrow.up.to.line", title: "Auto-scroll to next video",
+                           isOn: Binding(
+                            get: { app.profile.autoAdvanceEnabled },
+                            set: { app.setAutoAdvanceEnabled($0) }
+                           ))
+            if app.profile.autoAdvanceEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Pause before next video")
+                            .font(.subheadline)
+                        Spacer()
+                        Text(String(format: "%.1f s", app.profile.autoAdvancePauseSeconds))
+                            .font(.subheadline.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: Binding(
+                        get: { app.profile.autoAdvancePauseSeconds },
+                        set: { app.setAutoAdvancePause($0) }
+                    ), in: 0...3, step: 0.5)
+                    .tint(Color.sakuraPink)
+                }
+                .padding(.leading, 52)
+                .padding(.trailing, 16)
+                .padding(.vertical, 8)
+            }
+            Divider().padding(.leading, 52)
             settingsToggle(symbol: "checkmark.message", title: "Pause for quick checks after videos",
                            isOn: $quickChecksEnabled)
             Divider().padding(.leading, 52)
@@ -435,6 +463,13 @@ struct ProfileView: View {
                 }
                 Divider().padding(.leading, 52)
             }
+            if let onAcquisitionSurvey {
+                SettingsRow(symbol: "megaphone", title: "How did you find Jojo?",
+                            value: AcquisitionSource(rawValue: app.profile.acquisitionSource)?.title ?? "Answer") {
+                    onAcquisitionSurvey()
+                }
+                Divider().padding(.leading, 52)
+            }
 
             settingsHeader("Account")
             SettingsRow(symbol: "target", title: "Daily goal", value: "\(app.profile.dailyGoalMinutes) min") { showGoalPicker = true }
@@ -452,6 +487,22 @@ struct ProfileView: View {
             .padding(.horizontal, Spacing.l)
             .frame(minHeight: 54)
             Divider().padding(.leading, 52)
+            if app.profile.remindersEnabled {
+                HStack(spacing: Spacing.m) {
+                    Image(systemName: "clock")
+                        .foregroundStyle(Color.designOrangeDeep)
+                        .frame(width: 28)
+                    Picker("Daily reminder time", selection: $reminderHour) {
+                        ForEach(0..<24, id: \.self) { hour in
+                            Text(String(format: "%02d:00", hour)).tag(hour)
+                        }
+                    }
+                    .onChange(of: reminderHour) { _, _ in app.refreshAllReminders() }
+                }
+                .padding(.horizontal, Spacing.l)
+                .frame(minHeight: 54)
+                Divider().padding(.leading, 52)
+            }
             SettingsRow(symbol: "star", title: "Manage Subscription", value: planText) {
                 if app.purchases.isConfigured { showCustomerCenter = true } else { showManageSubs = true }
             }
@@ -692,7 +743,7 @@ struct DailyGoalSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach([5, 10, 15, 20], id: \.self) { minutes in
+                ForEach([2, 5, 10, 15, 20], id: \.self) { minutes in
                     Button {
                         Haptics.selection()
                         app.setDailyGoal(minutes)
@@ -722,6 +773,7 @@ struct DailyGoalSheet: View {
 nonisolated enum DailyGoalOption {
     static func caption(_ minutes: Int) -> String {
         switch minutes {
+        case 2: "~1 clip · an easy start"
         case 5: "~1 clip · a quick taste"
         case 10: "~2 clips · steady habit"
         case 15: "~3 clips · real momentum"

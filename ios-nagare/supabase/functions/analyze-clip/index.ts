@@ -53,9 +53,8 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(startSec) || startSec < 0 || !Number.isFinite(endSec) || endSec <= startSec) {
       return errorResponse(400, "startSec and endSec required with 0 <= startSec < endSec");
     }
-    // Catalog excerpts are 8–40 s (immersion.ts MIN_CLIP/MAX_CLIP); the feed is built around that.
-    if (endSec - startSec < 8 || endSec - startSec > 40) {
-      return errorResponse(400, "Segment must be 8–40 seconds");
+    if (endSec - startSec < 8 || endSec - startSec > 120) {
+      return errorResponse(400, "Segment must be between 8 and 120 seconds");
     }
 
     const title = (typeof body.title === "string" && body.title.trim()) ||
@@ -88,10 +87,9 @@ Deno.serve(async (req) => {
     const raw = parseJsonObject(text);
     const validated = validateLines(raw.lines, startSec, endSec, language);
     if (!validated.ok) return errorResponse(422, validated.error);
-    // One pass only: definitions are fetched on tap through explain-word's shared cache.
-    const heard = raw.lines;
-
-    const relativeLines = (heard as LineLike[]).map((line) => {
+    // The hearing pass already returns readings, romaji, part of speech, and level.
+    // Definitions are resolved on demand by explain-word and its shared cache.
+    const relativeLines = (raw.lines as LineLike[]).map((line) => {
       const row = line as Record<string, unknown>;
       const tokens = Array.isArray(row.tokens) ? row.tokens as Array<Record<string, unknown>> : [];
       return {

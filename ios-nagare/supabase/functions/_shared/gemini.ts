@@ -209,7 +209,7 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
       body: JSON.stringify({
         model,
         temperature: 0.2,
-        max_tokens: opts.youtube ? 8192 : 4096,
+        max_tokens: opts.youtube ? (opts.youtube.endSec - opts.youtube.startSec > 60 ? 16384 : 8192) : 4096,
         response_format: { type: "json_object" },
         reasoning: { effort: opts.youtube ? "low" : "minimal", exclude: true },
         usage: { include: true },
@@ -339,7 +339,7 @@ export async function geminiAnalyzeYouTubeSegment(opts: {
     model: opts.model,
     system: opts.system,
     user: opts.user,
-    timeoutMs: ANALYZE_TIMEOUT_MS,
+    timeoutMs: opts.endSec - opts.startSec > 60 ? 120_000 : ANALYZE_TIMEOUT_MS,
     youtube: {
       url: opts.youtubeUrl,
       startSec: opts.startSec,

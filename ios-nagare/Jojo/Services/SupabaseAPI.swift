@@ -101,19 +101,39 @@ nonisolated struct SupabaseAPI: Sendable {
         guard var components = URLComponents(url: baseURL.appending(path: "rest/v1/clips"), resolvingAgainstBaseURL: false) else {
             throw SupabaseError.invalidResponse
         }
-        components.queryItems = [URLQueryItem(name: "published", value: "eq.true"), URLQueryItem(name: "select", value: "*")]
+        components.queryItems = [
+            URLQueryItem(name: "published", value: "eq.true"),
+            URLQueryItem(name: "select", value: "*"),
+            URLQueryItem(name: "order", value: "id.asc")
+        ]
         guard let url = components.url else { throw SupabaseError.invalidResponse }
         var request = URLRequest(url: url)
         authorized(&request)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let (data, response) = try await Self.librarySession.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw SupabaseError.invalidResponse }
-        guard (200..<300).contains(http.statusCode) else { throw SupabaseError.http(http.statusCode) }
-        let rows = try JSONDecoder().decode([LossyRow].self, from: data)
         let encoder = JSONEncoder()
-        return rows.compactMap { row -> (clip: Clip, json: Data)? in
-            guard let clip = row.value?.clip, !clip.lines.isEmpty, let json = try? encoder.encode(clip) else { return nil }
-            return (clip, json)
+        var result: [(clip: Clip, json: Data)] = []
+        let pageSize = 200
+        var offset = 0
+        var total: Int?
+        while true {
+            var pageRequest = request
+            pageRequest.setValue("\(offset)-\(offset + pageSize - 1)", forHTTPHeaderField: "Range")
+            if offset == 0 { pageRequest.setValue("count=exact", forHTTPHeaderField: "Prefer") }
+            let (data, response) = try await Self.librarySession.data(for: pageRequest)
+            guard let http = response as? HTTPURLResponse else { throw SupabaseError.invalidResponse }
+            if http.statusCode == 416 && offset > 0 { return result }
+            guard (200..<300).contains(http.statusCode) else { throw SupabaseError.http(http.statusCode) }
+            if offset == 0, let range = http.value(forHTTPHeaderField: "Content-Range") {
+                total = range.split(separator: "/").last.flatMap { Int($0) }
+            }
+            let rows = try JSONDecoder().decode([LossyRow].self, from: data)
+            result += rows.compactMap { row -> (clip: Clip, json: Data)? in
+                guard let clip = row.value?.clip, !clip.lines.isEmpty,
+                      let json = try? encoder.encode(clip) else { return nil }
+                return (clip, json)
+            }
+            if rows.count < pageSize || offset + rows.count >= (total ?? Int.max) { return result }
+            offset += pageSize
         }
     }
 }

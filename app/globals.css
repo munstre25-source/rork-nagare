@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* The private insights board supports an independent light palette. */
+html[data-insights-theme="dark"] input[type="datetime-local"] { color-scheme: dark; }
+html[data-insights-theme="light"] { color-scheme: light; }
+html[data-insights-theme="light"] [class~="bg-[#0f1115]"] { background-color: #f4f6fa; }
+html[data-insights-theme="light"] [class~="bg-[#171a21]"] { background-color: #fff; }
+html[data-insights-theme="light"] [class~="bg-[#12151c]"] { background-color: #f8fafc; }
+html[data-insights-theme="light"] [class~="bg-[#0c0e13]"] { background-color: #fff; }
+html[data-insights-theme="light"] [class~="bg-white/5"] { background-color: #f1f5f9; }
+html[data-insights-theme="light"] [class~="bg-white/10"] { background-color: #e8edf4; }
+html[data-insights-theme="light"] [class~="bg-black/40"] { background-color: #e2e8f0; }
+html[data-insights-theme="light"] [class~="border-white/10"] { border-color: #d8dee8; }
+html[data-insights-theme="light"] [class~="text-white"] { color: #16202e; }
+html[data-insights-theme="light"] [class~="text-white/90"] { color: #243044; }
+html[data-insights-theme="light"] [class~="text-white/80"] { color: #344256; }
+html[data-insights-theme="light"] [class~="text-white/70"] { color: #46566d; }
+html[data-insights-theme="light"] [class~="text-white/60"] { color: #58677c; }
+html[data-insights-theme="light"] [class~="text-white/55"] { color: #607086; }
+html[data-insights-theme="light"] [class~="text-white/50"] { color: #64748b; }
+html[data-insights-theme="light"] [class~="text-white/45"] { color: #64748b; }
+html[data-insights-theme="light"] [class~="text-white/40"] { color: #64748b; }
+html[data-insights-theme="light"] [class~="text-amber-100"] { color: #92400e; }
+html[data-insights-theme="light"] [class~="text-amber-50"] { color: #92400e; }
+html[data-insights-theme="light"] [class~="text-red-200"] { color: #991b1b; }
+html[data-insights-theme="light"] [class~="text-emerald-200"] { color: #047857; }
+html[data-insights-theme="light"] [class~="text-rose-200"] { color: #be123c; }
+html[data-insights-theme="light"] [class~="text-[#ff8a3d]"] { color: #a63d00; }
+html[data-insights-theme="light"] [class~="text-[#ff6b00]"] { color: #b94400; }

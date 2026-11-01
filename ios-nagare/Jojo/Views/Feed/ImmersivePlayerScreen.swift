@@ -18,9 +18,7 @@ struct ImmersivePlayerScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
-                .opacity(videoExpanded ? 0 : 1)
-                .allowsHitTesting(!videoExpanded)
+            if !videoExpanded { topBar }
             ClipStageView(
                 clip: clip,
                 videoAspect: 16 / 9,
@@ -30,7 +28,7 @@ struct ImmersivePlayerScreen: View {
                 videoExpanded: videoExpanded,
                 onToggleVideoSize: {
                     Haptics.selection()
-                    videoExpanded.toggle()
+                    withAnimation(.easeInOut(duration: 0.25)) { videoExpanded.toggle() }
                 },
                 onActivate: { coordinator.activate(clip, startLine: startLine, loopLine: loopLine) },
                 onInfo: { infoClip = clip }
@@ -49,26 +47,35 @@ struct ImmersivePlayerScreen: View {
                 app?.markClipFinished(clip.id)
             }
             coordinator.activate(clip, startLine: startLine, loopLine: loopLine)
+            track("clip_view", props: ["clip": clip.id, "tab": "Explore"])
         }
         .onDisappear { coordinator.stop() }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(clip: clip)
         }
-        .overlay(alignment: .topLeading) {
+        .overlay(alignment: .top) {
             if videoExpanded {
-                Button {
-                    Haptics.selection()
-                    withAnimation(.snappy) { videoExpanded = false }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .background(.black.opacity(0.45), in: Circle())
+                HStack {
+                    Button {
+                        coordinator.stop()
+                        dismiss()
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                    }
+                    Spacer(minLength: 0)
+                    Button {
+                        Haptics.selection()
+                        withAnimation(.easeInOut(duration: 0.25)) { videoExpanded = false }
+                    } label: {
+                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
+                    }
                 }
-                .padding(.leading, Spacing.m)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, Spacing.m)
                 .padding(.top, Spacing.s)
-                .accessibilityLabel("Minimize")
+                .buttonStyle(.bordered)
+                .tint(.black.opacity(0.55))
             }
         }
     }

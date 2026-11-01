@@ -66,17 +66,32 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
     }
 
     func displayDefinitions(mode: DictionaryMode) -> [String] {
+        let values: [String]
         switch mode {
         case .english:
-            return definitions.isEmpty ? jaDefinitions : definitions
+            values = definitions.isEmpty ? jaDefinitions : definitions
         case .japanese:
-            if !jaDefinitions.isEmpty { return jaDefinitions }
-            // Soft monolingual fallback when JA gloss isn't available yet.
-            return definitions.isEmpty ? ["（定義を準備中）"] : definitions.map { "（英）\($0)" }
+            if !jaDefinitions.isEmpty {
+                values = jaDefinitions
+            } else {
+                // Soft monolingual fallback when JA gloss isn't available yet.
+                values = definitions.isEmpty ? ["（定義を準備中）"] : definitions.map { "（英）\($0)" }
+            }
         case .both:
             var out = jaDefinitions
             for d in definitions where !out.contains(d) { out.append(d) }
-            return out.isEmpty ? ["Meaning available when you're back online"] : out
+            values = out.isEmpty ? ["Meaning available when you're back online"] : out
+        }
+        return Self.uniqueNonEmpty(values)
+    }
+
+    private static func uniqueNonEmpty(_ values: [String]) -> [String] {
+        var seen = Set<String>()
+        return values.compactMap { value in
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            guard !trimmed.isEmpty, seen.insert(key).inserted else { return nil }
+            return trimmed
         }
     }
 
