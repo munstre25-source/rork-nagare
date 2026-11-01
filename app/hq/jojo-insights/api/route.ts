@@ -36,6 +36,21 @@ async function proxyInsights(req: Request) {
   }
 
   const res = await fetch(target, init);
+  if (req.method === "GET" && res.ok) {
+    const insights = await res.json() as Record<string, unknown>;
+    try {
+      const metricsTarget = new URL(`${cfg.supabaseUrl}/functions/v1/admin-dashboard`);
+      metricsTarget.searchParams.set("days", "30");
+      const metricsRes = await fetch(metricsTarget, init);
+      if (!metricsRes.ok) {
+        return NextResponse.json({ ...insights, metrics: null, metrics_error: `HTTP ${metricsRes.status}` });
+      }
+      const dashboard = await metricsRes.json() as { metrics?: unknown };
+      return NextResponse.json({ ...insights, metrics: dashboard.metrics ?? null });
+    } catch {
+      return NextResponse.json({ ...insights, metrics: null, metrics_error: "Request failed" });
+    }
+  }
   const text = await res.text();
   return new NextResponse(text, {
     status: res.status,

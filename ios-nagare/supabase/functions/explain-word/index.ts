@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     // 3) Entitlement (positive + negative results cached for a few minutes).
     const language = parseLanguage(req.headers.get("x-app-language"));
     const entitled = await hasProEntitlement(supabase, appUserId, language);
-    if (!entitled) return errorResponse(403, "Pro entitlement required");
+    if (!entitled) return errorResponse(403, "Active subscription required");
 
     const version = promptVersion();
     const includeSentence = kind === "context" || sentence.trim().length > 0;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AppStoreReviews } from "./AppStoreReviews";
 
 type FeedbackItem = {
   id: number;
@@ -21,6 +22,17 @@ type DirectMessage = {
 };
 
 type InsightsPayload = {
+  metrics?: {
+    dau: number;
+    wau: number;
+    mau: number;
+    new_installs: number;
+    sessions: { count: number; avg_active_seconds: number };
+    feedback: { total: number; positive: number; negative: number };
+    core_funnel: { name: string; users: number }[];
+    errors: { name: string; code: string; n: number }[];
+  } | null;
+  metrics_error?: string;
   acquisition: { total: number; by_source: Record<string, number> };
   feedback: {
     total: number;
@@ -37,7 +49,7 @@ type Thread = { appUserId: string; entries: ThreadEntry[]; latest: string };
 
 function buildThreads(items: FeedbackItem[], messages: DirectMessage[]): Thread[] {
   const ids = new Set<string>();
-  for (const item of items) ids.add(item.app_user_id);
+  for (const item of items) if (item.app_user_id !== "anonymous") ids.add(item.app_user_id);
   for (const message of messages) ids.add(message.app_user_id);
   const copied = new Map<string, Set<string>>();
   for (const message of messages) {
@@ -50,10 +62,11 @@ function buildThreads(items: FeedbackItem[], messages: DirectMessage[]): Thread[
     .map((appUserId) => {
       const entries: ThreadEntry[] = [];
       for (const item of items) {
-        if (item.app_user_id !== appUserId || !item.message || item.message === "Enjoying the app") continue;
-        const labeled = item.category ? `[${item.category}] ${item.message}` : item.message;
+        if (item.app_user_id !== appUserId) continue;
+        const text = item.message || (item.enjoyed === true ? "Enjoying the app" : "Feedback submitted");
+        const labeled = item.category ? `[${item.category}] ${text}` : text;
         const known = copied.get(appUserId);
-        if (known?.has(item.message) || known?.has(labeled)) continue;
+        if (known?.has(text) || known?.has(labeled)) continue;
         entries.push({ key: `f-${item.id}`, at: item.created_at, from: "user", text: labeled });
       }
       for (const message of messages) {
@@ -167,11 +180,46 @@ export function JojoInsightsDashboard() {
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
       ) : null}
 
+      {data?.metrics_error ? (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Product analytics could not load: {data.metrics_error}
+        </p>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Daily active users" value={data?.metrics?.dau ?? "—"} />
+        <Stat label="Weekly active users" value={data?.metrics?.wau ?? "—"} />
+        <Stat label="Monthly active users" value={data?.metrics?.mau ?? "—"} />
+        <Stat label="New installs · 30 days" value={data?.metrics?.new_installs ?? "—"} />
+      </div>
+
+      {data?.metrics ? (
+        <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+          <h2 className="text-lg font-semibold text-white">Learning activity · last 30 days</h2>
+          <p className="mt-2 text-sm text-white/55">
+            {data.metrics.sessions.count} sessions · {Math.round(data.metrics.sessions.avg_active_seconds / 60)} average active minutes
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {data.metrics.core_funnel.map((step) => (
+              <div key={step.name} className="rounded-lg bg-white/5 px-3 py-2 text-sm">
+                <p className="text-white/50">{step.name.replaceAll("_", " ")}</p>
+                <p className="mt-1 font-semibold text-white">{step.users} users</p>
+              </div>
+            ))}
+          </div>
+          {data.metrics.errors.length > 0 ? (
+            <p className="mt-4 text-sm text-amber-100">
+              Recent errors: {data.metrics.errors.slice(0, 3).map((item) => `${item.name}${item.code ? ` (${item.code})` : ""}: ${item.n}`).join(" · ")}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Acquisition answers" value={data?.acquisition.total ?? "—"} />
-        <Stat label="Feedback items" value={data?.feedback.total ?? "—"} />
-        <Stat label="Enjoying · Yes" value={data?.feedback.enjoyed_yes ?? "—"} />
-        <Stat label="Enjoying · No" value={data?.feedback.enjoyed_no ?? "—"} />
+        <Stat label="Feedback items · 30 days" value={data?.metrics?.feedback.total ?? "—"} />
+        <Stat label="Enjoying · Yes" value={data?.metrics?.feedback.positive ?? "—"} />
+        <Stat label="Enjoying · No" value={data?.metrics?.feedback.negative ?? "—"} />
       </div>
 
       <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
@@ -288,6 +336,9 @@ export function JojoInsightsDashboard() {
                 </div>
                 <p className="whitespace-pre-wrap text-sm text-white/90">{item.message}</p>
                 <p className="mt-2 break-all text-xs text-white/40">{item.app_user_id}</p>
+                {item.app_user_id === "anonymous" ? (
+                  <p className="mt-2 text-xs text-white/45">Anonymous feedback cannot receive a private reply.</p>
+                ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(["reviewed", "done", "new"] as const).map((s) => (
                     <button
@@ -305,6 +356,7 @@ export function JojoInsightsDashboard() {
           )}
         </div>
       </section>
+      <AppStoreReviews />
     </div>
   );
 }
