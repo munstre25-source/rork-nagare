@@ -237,8 +237,8 @@ Deno.serve(async (req) => {
 });
 
 const RUN_BUDGET_MS = 110_000;
-/** Candidates pulled from the queue per pass. */
-const RUN_CANDIDATE_TARGET = 6;
+/** One analysis fits the 150-second pg_net deadline, even at the 120-second model timeout. */
+const RUN_CANDIDATE_TARGET = 1;
 /** A bad-yield lane must not dump the day's search quota into one pass. */
 const MAX_SEARCHES_PER_PASS = 3;
 const MAX_SOURCE_DURATION_SEC = 1_800;
