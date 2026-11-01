@@ -358,7 +358,14 @@ async function takeQueue(
   // not hide newer 20–120 second candidates behind the queue's page limit.
   const lessonRank = (row: Record<string, unknown>) => {
     const duration = Number(row.duration_sec ?? 0);
-    return duration >= 20 && duration <= 120 ? 0 : duration < 20 ? 1 : 2;
+    const durationRank = duration >= 20 && duration <= 120 ? 0 : duration < 20 ? 1 : 2;
+    if (language !== "ja" || String(row.category) !== "learning") return durationRank * 3;
+    const title = String(row.title ?? "");
+    // Listening and conversation uploads are more likely to contain full Japanese
+    // exchanges than isolated word-pronunciation or vocabulary Shorts.
+    const dialogueRank = /会話|対話|conversation|dialogue|listening/i.test(title) ? 0
+      : /pronunciation|pitch accent|vocabulary|how to say|単語|発音/i.test(title) ? 2 : 1;
+    return durationRank * 3 + dialogueRank;
   };
   for (const bucket of buckets.values()) bucket.sort((a, b) => lessonRank(a) - lessonRank(b));
   const order = [...buckets.keys()].sort((a, b) => fill(a) - fill(b));
