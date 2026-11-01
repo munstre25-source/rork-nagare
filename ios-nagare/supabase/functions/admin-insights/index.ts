@@ -26,7 +26,9 @@ Deno.serve(async (req) => {
       const body = await readJson<ReplyBody>(req);
       const appUserId = (body.app_user_id ?? "").trim();
       const message = (body.message ?? "").replace(/\s+/g, " ").trim().slice(0, 2000);
-      if (!appUserId || appUserId.length > 128) return errorResponse(400, "Missing user");
+      if (!appUserId || appUserId === "anonymous" || appUserId.length > 128) {
+        return errorResponse(400, "Choose a named feedback user");
+      }
       if (!message) return errorResponse(400, "Write a reply");
       const { data, error } = await sb
         .from("direct_messages")

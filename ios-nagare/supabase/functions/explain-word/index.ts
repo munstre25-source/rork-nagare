@@ -5,8 +5,6 @@ import { serviceClient, buildCacheKey } from "../_shared/supabase.ts";
 import { hasProEntitlement } from "../_shared/revenuecat.ts";
 import {
   tryIncrementExplainIngress,
-  tryIncrementExplainRate,
-  tryIncrementGeminiUsage,
 } from "../_shared/limits.ts";
 import { geminiGenerateJson, parseJsonObject } from "../_shared/gemini.ts";
 import { sanitizeContext, sanitizeLookup } from "../_shared/explain.ts";
@@ -88,7 +86,7 @@ Deno.serve(async (req) => {
     // 3) Entitlement (positive + negative results cached for a few minutes).
     const language = parseLanguage(req.headers.get("x-app-language"));
     const entitled = await hasProEntitlement(supabase, appUserId, language);
-    if (!entitled) return errorResponse(403, "Pro entitlement required");
+    if (!entitled) return errorResponse(403, "Active subscription required");
 
     const version = promptVersion();
     const includeSentence = kind === "context" || sentence.trim().length > 0;
@@ -113,12 +111,6 @@ Deno.serve(async (req) => {
       const examples = otherExamples(cached.payload.examples, sentence);
       if (examples.length > 0) return jsonResponse({ ...cached.payload, examples });
     }
-
-    const underUserLimit = await tryIncrementExplainRate(supabase, appUserId, kind);
-    if (!underUserLimit) return errorResponse(429, "Rate limit exceeded");
-
-    const underGlobal = await tryIncrementGeminiUsage(supabase);
-    if (!underGlobal) return errorResponse(429, "Global Gemini cap exceeded");
 
     const model = geminiModelExplain();
     const system = kind === "lookup" ? lookupSystem(language) : contextSystem(language);
