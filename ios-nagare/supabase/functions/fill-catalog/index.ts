@@ -20,7 +20,14 @@ import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
  * pg_cron job calls this with x-admin-token every 10 minutes.
  */
 
-type Lane = { category: string; difficulty: string; query: string; tag?: string };
+type Lane = {
+  category: string;
+  difficulty: string;
+  query: string;
+  tag?: string;
+  channelId?: string;
+  channelHandle?: string;
+};
 
 const JAPANESE_LANES: Lane[] = [
   { category: "interview", difficulty: "Beginner", query: "日本語 街頭インタビュー ショート" },
@@ -36,6 +43,20 @@ const JAPANESE_LANES: Lane[] = [
   { category: "kids", difficulty: "Beginner", query: "こどもちゃれんじ 絵本 読み聞かせ ショート", tag: "books" },
   { category: "anime", difficulty: "Beginner", query: "日本語 アニメ 日常会話 ショート" },
   { category: "anime", difficulty: "Intermediate", query: "アニメ セリフ 日本語 ショート" },
+  // Official channels requested for curated anime Japanese. Channel-only searches still
+  // pass through the same duration, embed, speech, and transcript validation gates.
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "bluearchive_Global", tag: "bluearchive-global" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelId: "UC0OXPEQRKArB_EVyFMwDbAQ", tag: "tv-tokyo-anitere" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelId: "UC47AYUs8AVU1QsT5LhpXjaw", tag: "shonen-jump" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "studio_pierrot", tag: "studio-pierrot" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "avexpictures", tag: "avex-pictures" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "TOHOanimation", tag: "toho-animation" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "ShochikuAnimeOfficial", tag: "shochiku-anime" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "集英社オレンジ文庫", tag: "shueisha-orange-bunko" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "TMSAnimeJP", tag: "tms-anime" },
+  { category: "anime", difficulty: "Intermediate", query: "", channelHandle: "PONYCANYON_anime", tag: "pony-canyon-anime" },
+  // とた is an artist channel; variety is reserved for any spoken interview/behind-the-scenes material.
+  { category: "variety", difficulty: "Intermediate", query: "", channelHandle: "tota_3470", tag: "tota-artist" },
   { category: "vtuber", difficulty: "Intermediate", query: "日本語 VTuber 雑談 ショート" },
   { category: "gaming", difficulty: "Intermediate", query: "日本語 マイクラ 実況 会話 ショート" },
   { category: "gaming", difficulty: "Intermediate", query: "ゲーム実況 切り抜き 日本語 ショート", tag: "clips" },
@@ -85,6 +106,7 @@ type VideoItem = {
   contentDetails?: { duration?: string };
   snippet?: { title?: string; channelTitle?: string };
 };
+type ChannelItem = { id?: string };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
@@ -93,8 +115,21 @@ Deno.serve(async (req) => {
   try {
     if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
 
-    const body = await readJson<{ language?: string }>(req);
+    const body = await readJson<{ language?: string; videoIds?: unknown }>(req);
     const language = parseLanguage(body.language);
+    const requestedVideoIds = Array.isArray(body.videoIds)
+      ? [...new Set(body.videoIds.filter((id): id is string => typeof id === "string").map((id) => id.trim()))]
+      : [];
+    if (body.videoIds !== undefined && (
+      !Array.isArray(body.videoIds) ||
+      body.videoIds.length > 50 ||
+      body.videoIds.some((id) => typeof id !== "string" || !/^[A-Za-z0-9_-]{11}$/.test(id.trim()))
+    )) {
+      return errorResponse(400, "videoIds must contain at most 50 valid YouTube IDs");
+    }
+    if (requestedVideoIds.length > 0 && language !== "ja") {
+      return errorResponse(400, "videoIds can only be added to the Japanese catalog");
+    }
     const supabase = serviceClient();
     const cronReady = await rememberCronAccess(supabase);
     const published: Array<{ id: string; videoId: string; difficulty: string; category: string }> = [];
@@ -108,10 +143,17 @@ Deno.serve(async (req) => {
     const goal = CATALOG_GOALS[language];
     const growth = stats.total < goal.total ||
       CATEGORIES.some((c) => (stats.byCategory.get(c) ?? 0) < goal.categoryFloor);
+    let queuedExplicitly = 0;
     let passLimit = RUN_CANDIDATE_TARGET;
+    if (requestedVideoIds.length > 0) {
+      const seeded = await enqueueExplicitVideos(supabase, language, requestedVideoIds);
+      if (!seeded.ok) return jsonResponse(summary(published, seeded.reason, cronReady, queuedExplicitly));
+      queuedExplicitly = seeded.count;
+      log("catalog_explicit_candidates_queued", { count: queuedExplicitly });
+    }
     if (!growth) {
       const freshLeft = goal.freshPerDay - stats.last24h;
-      if (freshLeft <= 0) return jsonResponse(summary(published, "target-reached", cronReady));
+      if (freshLeft <= 0) return jsonResponse(summary(published, "target-reached", cronReady, queuedExplicitly));
       // One candidate per pass spreads the daily trickle across the day.
       passLimit = 1;
     }
@@ -140,12 +182,12 @@ Deno.serve(async (req) => {
         if (!keep) await removeQueued(supabase, language, candidate.videoId);
         if (result.reason === "gemini-cap") {
           stopped = "gemini-cap";
-          return jsonResponse(summary(published, stopped, cronReady));
+          return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
         }
         if (result.reason === "model_payment" || result.reason.includes("402")) {
           await pauseFill(supabase, "gemini-payment");
           stopped = "model-payment";
-          return jsonResponse(summary(published, stopped, cronReady));
+          return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
         }
         continue;
       }
@@ -161,7 +203,7 @@ Deno.serve(async (req) => {
       stopped = "no-candidate";
     }
 
-    return jsonResponse(summary(published, stopped, cronReady));
+    return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
     log("catalog_fill_error", { message: message.slice(0, 200) });
@@ -312,7 +354,17 @@ async function enqueueFreshCandidates(
   target: number,
   stats: CatalogStats,
 ): Promise<{ stopped: string | null }> {
-  const lanes = lanesByEmptiness(language, stats);
+  const rankedLanes = lanesByEmptiness(language, stats);
+  const sourceLanes = rankedLanes.filter((lane) => !!lane.channelId || !!lane.channelHandle);
+  const sourceIndex = sourceLanes.length > 0
+    ? Math.floor(Date.now() / (10 * 60 * 1000)) % sourceLanes.length
+    : -1;
+  const featuredSource = sourceIndex >= 0 ? sourceLanes[sourceIndex] : undefined;
+  // Rotate configured source channels to the front on each cron interval, while the
+  // remaining slots continue to favor whichever catalog categories are underfilled.
+  const lanes = featuredSource
+    ? [featuredSource, ...rankedLanes.filter((lane) => lane !== featuredSource)]
+    : rankedLanes;
   let queuedNew = 0;
   let searches = 0;
   for (const lane of lanes) {
@@ -400,10 +452,12 @@ function summary(
   published: Array<{ id: string; videoId: string; difficulty: string; category: string }>,
   stopped: string,
   cronReady: boolean,
+  queuedCandidates = 0,
 ) {
   return {
     published: published.length > 0,
     count: published.length,
+    queuedCandidates,
     stopped,
     cronReady,
     clips: published,
@@ -424,6 +478,57 @@ function lanesByEmptiness(language: CatalogLanguage, stats: CatalogStats): Lane[
 
 type FreshVideo = { videoId: string; title: string; channelTitle: string; durationSec: number };
 
+async function enqueueExplicitVideos(
+  supabase: ReturnType<typeof serviceClient>,
+  language: CatalogLanguage,
+  videoIds: string[],
+): Promise<{ ok: true; count: number } | { ok: false; reason: string }> {
+  if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
+    return { ok: false, reason: "youtube-quota" };
+  }
+  const params = new URLSearchParams({
+    part: "snippet,status,contentDetails",
+    id: videoIds.join(","),
+    key: requireEnv("YOUTUBE_API_KEY"),
+  });
+  const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`);
+  if (!response.ok) return { ok: false, reason: "youtube-videos-failed" };
+  const json = await response.json() as { items?: VideoItem[] };
+  const ids = (json.items ?? []).map((item) => item.id).filter((id): id is string => !!id);
+  if (ids.length === 0) return { ok: true, count: 0 };
+
+  const { data: catalogRows } = await supabase
+    .from(catalogTable(language))
+    .select("video_id")
+    .in("video_id", ids);
+  const knownIds = new Set((catalogRows ?? []).map((row: { video_id: string }) => row.video_id));
+  const now = new Date().toISOString();
+  const rows = (json.items ?? []).flatMap((item) => {
+    const id = item.id;
+    const durationSec = parseDurationSec(item.contentDetails?.duration ?? "");
+    if (!id || knownIds.has(id) || item.status?.embeddable !== true || item.status?.privacyStatus !== "public") return [];
+    if (durationSec === null || durationSec < 20 || durationSec > 180) return [];
+    return [{
+      video_id: id,
+      title: item.snippet?.title?.trim().slice(0, 140) || `Clip ${id}`,
+      channel_title: item.snippet?.channelTitle?.trim().slice(0, 80) || "Unknown",
+      duration_sec: durationSec,
+      category: "anime",
+      difficulty: "Intermediate",
+      added_at: now,
+    }];
+  });
+  if (rows.length === 0) return { ok: true, count: 0 };
+  const { error, count } = await supabase
+    .from(queueTable(language))
+    .upsert(rows, { onConflict: "video_id", count: "exact", ignoreDuplicates: true });
+  if (error) {
+    log("candidate_queue_upsert_failed", { detail: error.message.slice(0, 120) });
+    return { ok: false, reason: "candidate-queue-failed" };
+  }
+  return { ok: true, count: count ?? rows.length };
+}
+
 async function searchFresh(
   supabase: ReturnType<typeof serviceClient>,
   lane: Lane,
@@ -433,17 +538,34 @@ async function searchFresh(
   | { ok: true; videos: FreshVideo[]; nextPageToken: string | null }
   | { ok: false; reason: string }
 > {
+  const ytKey = requireEnv("YOUTUBE_API_KEY");
+  let channelId = lane.channelId;
+  if (!channelId && lane.channelHandle) {
+    if (!(await tryConsumeYoutubeQuota(supabase, 1))) {
+      return { ok: false, reason: "youtube-quota" };
+    }
+    const channelParams = new URLSearchParams({
+      part: "id",
+      forHandle: lane.channelHandle,
+      key: ytKey,
+    });
+    const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?${channelParams}`);
+    if (!channelRes.ok) return { ok: false, reason: "youtube-channel-lookup-failed" };
+    const channelJson = await channelRes.json() as { items?: ChannelItem[] };
+    channelId = channelJson.items?.[0]?.id;
+    if (!channelId) return { ok: false, reason: "youtube-channel-not-found" };
+  }
+
   if (!(await tryConsumeYoutubeQuota(supabase, 100))) {
     return { ok: false, reason: "youtube-quota" };
   }
   const cursor = await loadCursor(supabase, laneKey);
   const variants = QUERY_VARIANTS[language];
   const variant = variants[cursor.variant % variants.length] ?? "";
-  const ytKey = requireEnv("YOUTUBE_API_KEY");
+  const query = `${lane.query} ${variant}`.trim();
   const searchParams = new URLSearchParams({
     part: "snippet",
     type: "video",
-    q: `${lane.query} ${variant}`.trim(),
     maxResults: "25",
     videoEmbeddable: "true",
     videoDuration: "short",
@@ -452,6 +574,8 @@ async function searchFresh(
     regionCode: language === "ko" ? "KR" : "JP",
     key: ytKey,
   });
+  if (query) searchParams.set("q", query);
+  if (channelId) searchParams.set("channelId", channelId);
   if (cursor.pageToken) searchParams.set("pageToken", cursor.pageToken);
   const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?${searchParams}`);
   if (!searchRes.ok) return { ok: false, reason: "youtube-search-failed" };
