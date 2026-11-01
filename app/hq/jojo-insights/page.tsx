@@ -90,13 +90,13 @@ export default async function JojoInsightsPage({
 
   return (
     <div className="min-h-screen bg-[#0f1115] px-5 py-8 text-white sm:px-8">
-      <div className="mx-auto mb-6 flex max-w-5xl items-center justify-between gap-3 text-sm">
+      <div className="mx-auto mb-6 flex max-w-7xl items-center justify-between gap-3 text-sm">
         <Link href="/hq" className="text-white/50 hover:text-white">
           ← Command Centre
         </Link>
         <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/45">robots: noindex</span>
       </div>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
         {!insightsReady ? (
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-50">
             <p className="font-semibold">Env missing</p>

@@ -12,9 +12,9 @@ import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
  * so results are queued and consumed over many passes instead of being dropped when the
  * analysis budget runs out. Publishing itself uses no YouTube quota.
  *
- * The hearing pass is one AI call per clip (dictionary fields ride along; definitions are
- * fetched on tap through the shared word_explanations cache), which keeps the cost per
- * clip low enough for the library to grow by dozens of clips per day.
+ * Hearing and learner enrichment share one model call. Valid Japanese candidates then
+ * get one audio-grounded English review before publication; both calls use the global
+ * cap. Reviewed data is shared across learners and modes; rich lookups keep their cache.
  *
  * Body {"language":"ko"} writes sori_clips. Anything else writes clips. Admin only; a
  * pg_cron job calls this with x-admin-token every 10 minutes.
@@ -175,7 +175,6 @@ Deno.serve(async (req) => {
       queuedExplicitly = seeded.count;
       log("catalog_explicit_candidates_queued", { count: queuedExplicitly });
     }
-    if (language === "ja") await enqueueCuratedVideosIfDue(supabase);
     if (!growth) {
       const freshLeft = goal.freshPerDay - stats.last24h;
       if (freshLeft <= 0) return jsonResponse(summary(published, "target-reached", cronReady, queuedExplicitly));
@@ -251,14 +250,6 @@ const QUERY_VARIANTS: Record<CatalogLanguage, string[]> = {
   ja: ["", "日常会話", "2024", "2025"],
   ko: ["", "일상회화", "2024", "2025"],
 };
-
-// User-curated playlist IDs. A daily metadata check seeds eligible source videos; the
-// ordinary speech, transcript, embedding and quality gates decide publication.
-const CURATED_JAPANESE_VIDEO_IDS = [
-  "scLWToOqXzA", "Hd6gAtt5BOU", "TA-tUGtjils", "ijzd6W09uB8",
-  "RIKmx-R987A", "e0acNvVwkWI", "W3Rw3GsVjpo", "nX8gk8OLb0U",
-  "NhJJcAiZvFY", "FZUIZYEwHp4", "a9SBvpregYU",
-];
 
 // MARK: - Candidate queue
 
@@ -533,25 +524,6 @@ function candidateWindows(durationSec: number): number[] {
   return starts;
 }
 
-async function enqueueCuratedVideosIfDue(
-  supabase: ReturnType<typeof serviceClient>,
-): Promise<void> {
-  const laneKey = `ja|curated|${CURATED_JAPANESE_VIDEO_IDS.join("|")}`;
-  const { data } = await supabase.from("catalog_search_cursors")
-    .select("updated_at").eq("lane_key", laneKey).maybeSingle();
-  if (data?.updated_at && Date.now() - Date.parse(data.updated_at) < 86_400_000) return;
-  const seeded = await enqueueExplicitVideos(supabase, "ja", CURATED_JAPANESE_VIDEO_IDS, true, "learning");
-  if (!seeded.ok) {
-    log("catalog_curated_seed_failed", { reason: seeded.reason });
-    return;
-  }
-  log("catalog_curated_candidates_queued", { count: seeded.count });
-  await supabase.from("catalog_search_cursors").upsert({
-    lane_key: laneKey, page_token: null, variant: 0,
-    updated_at: new Date().toISOString(),
-  });
-}
-
 async function enqueueExplicitVideos(
   supabase: ReturnType<typeof serviceClient>,
   language: CatalogLanguage,
@@ -650,7 +622,9 @@ async function searchFresh(
     type: "video",
     maxResults: "25",
     videoEmbeddable: "true",
-    videoDuration: channelId ? "any" : "short",
+    // Channel uploads favor clips under four minutes. One-hour sources require a
+    // separate cost-bounded extraction path and must not crowd out ready lessons.
+    videoDuration: "short",
     order: "date",
     relevanceLanguage: language,
     regionCode: language === "ko" ? "KR" : "JP",
@@ -708,6 +682,12 @@ async function searchFresh(
       durationSec,
     });
   }
+  // The API returns newest first; within that page prioritize sources that can
+  // become complete 20–120 second lessons before longer excerpt candidates.
+  videos.sort((a, b) => {
+    const score = (seconds: number) => seconds >= 20 && seconds <= 120 ? 0 : seconds < 20 ? 1 : 2;
+    return score(a.durationSec) - score(b.durationSec);
+  });
   return { ok: true, videos, nextPageToken };
 }
 

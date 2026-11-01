@@ -22,6 +22,9 @@ export function AppStoreReviews() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [rating, setRating] = useState("");
+  const [replyState, setReplyState] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +66,15 @@ export function AppStoreReviews() {
     }
   }
 
+  const visibleReviews = reviews.filter((review) => {
+    if (rating && review.rating !== Number(rating)) return false;
+    if (replyState === "unanswered" && review.response) return false;
+    if (replyState === "answered" && !review.response) return false;
+    const search = query.trim().toLocaleLowerCase();
+    return !search || [review.title, review.body, review.nickname, review.territory]
+      .some((value) => value.toLocaleLowerCase().includes(search));
+  });
+
   return (
     <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
       <div className="flex items-center justify-between gap-3">
@@ -74,11 +86,26 @@ export function AppStoreReviews() {
           Refresh
         </button>
       </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <input aria-label="Search App Store reviews" value={query} onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search reviews" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white" />
+        <select aria-label="Filter by rating" value={rating} onChange={(event) => setRating(event.target.value)}
+          className="rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white">
+          <option value="">All ratings</option>
+          {[5, 4, 3, 2, 1].map((stars) => <option key={stars} value={stars}>{stars} stars</option>)}
+        </select>
+        <select aria-label="Filter by reply" value={replyState} onChange={(event) => setReplyState(event.target.value)}
+          className="rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white">
+          <option value="">All replies</option><option value="unanswered">Needs reply</option><option value="answered">Replied</option>
+        </select>
+      </div>
       {error ? <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">{error}</p> : null}
       {loading && reviews.length === 0 ? <p className="mt-4 text-sm text-white/50">Loading reviews…</p> : null}
       {!loading && !error && reviews.length === 0 ? <p className="mt-4 text-sm text-white/50">No App Store reviews yet.</p> : null}
+      {!loading && !error && reviews.length > 0 && visibleReviews.length === 0 ?
+        <p className="mt-4 text-sm text-white/50">No reviews match these filters.</p> : null}
       <div className="mt-4 space-y-3">
-        {reviews.map((review) => (
+        {visibleReviews.map((review) => (
           <article key={review.id} className="rounded-xl border border-white/10 bg-[#12151c] p-4">
             <div className="flex flex-wrap justify-between gap-2 text-xs text-white/50">
               <span>{"★".repeat(Math.max(0, Math.min(5, review.rating)))} · {review.nickname || "Customer"} · {review.territory}</span>

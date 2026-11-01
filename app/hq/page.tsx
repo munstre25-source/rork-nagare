@@ -90,7 +90,7 @@ export default async function HQPage({
 
   return (
     <div className="min-h-screen bg-[#0f1115] px-5 py-8 text-white sm:px-8">
-      <div className="mx-auto mb-6 flex max-w-5xl flex-wrap items-center justify-between gap-3 text-sm">
+      <div className="mx-auto mb-6 flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/40">Jojo · private HQ</p>
         <div className="flex items-center gap-3">
           <Link href="/hq/jojo-insights" className="text-white/55 hover:text-white">
@@ -103,7 +103,7 @@ export default async function HQPage({
           </form>
         </div>
       </div>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
         {!insightsReady ? (
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-50">
             <p className="font-semibold">Supabase env missing</p>

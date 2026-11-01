@@ -63,6 +63,22 @@ type ThreadEntry = { key: string; at: string; from: "user" | "jojo"; text: strin
 
 type Thread = { appUserId: string; entries: ThreadEntry[]; latest: string };
 
+type InsightsPage = "overview" | "learning" | "acquisition" | "playback" | "messages" | "feedback" | "reviews";
+const pages: { id: InsightsPage; label: string; group: string; description: string }[] = [
+  { id: "overview", label: "Overview", group: "Understand", description: "The health of Jojo at a glance" },
+  { id: "learning", label: "Learning", group: "Understand", description: "Video and study engagement" },
+  { id: "acquisition", label: "Acquisition", group: "Understand", description: "Where learners found Jojo" },
+  { id: "playback", label: "Playback", group: "Understand", description: "Video failures and app errors" },
+  { id: "messages", label: "Messages", group: "Respond", description: "Private learner conversations" },
+  { id: "feedback", label: "Feedback", group: "Respond", description: "Review and resolve app feedback" },
+  { id: "reviews", label: "App Store", group: "Respond", description: "Public reviews and replies" },
+];
+
+function pageFromURL(): InsightsPage {
+  const view = new URLSearchParams(window.location.search).get("view");
+  return pages.find((page) => page.id === view)?.id ?? "overview";
+}
+
 function buildThreads(items: FeedbackItem[], messages: DirectMessage[]): Thread[] {
   const ids = new Set<string>();
   for (const item of items) if (item.app_user_id !== "anonymous") ids.add(item.app_user_id);
@@ -102,8 +118,12 @@ function buildThreads(items: FeedbackItem[], messages: DirectMessage[]): Thread[
 }
 
 export function JojoInsightsDashboard() {
+  const [page, setPage] = useState<InsightsPage>("overview");
   const [data, setData] = useState<InsightsPayload | null>(null);
   const [status, setStatus] = useState("");
+  const [messageQuery, setMessageQuery] = useState("");
+  const [messageReplyFilter, setMessageReplyFilter] = useState<"all" | "needs-reply">("all");
+  const [feedbackQuery, setFeedbackQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -114,6 +134,22 @@ export function JojoInsightsDashboard() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [themeReady, setThemeReady] = useState(false);
   const requestSequence = useRef(0);
+
+  useEffect(() => {
+    setPage(pageFromURL());
+    const onPopState = () => setPage(pageFromURL());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function navigate(next: InsightsPage) {
+    setPage(next);
+    const url = new URL(window.location.href);
+    if (next === "overview") url.searchParams.delete("view");
+    else url.searchParams.set("view", next);
+    window.history.pushState(null, "", url);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem("jojo-insights-theme");
@@ -214,39 +250,69 @@ export function JojoInsightsDashboard() {
 
   const bySource = Object.entries(data?.metrics?.acquisition?.by_source ?? {}).sort((a, b) => b[1] - a[1]);
   const threads = buildThreads(data?.feedback.items ?? [], data?.messages ?? []);
-  const visibleFeedback = (data?.feedback.items ?? []).filter((item) => !status || item.status === status);
+  const visibleThreads = threads.filter((thread) => {
+    if (messageReplyFilter === "needs-reply" && thread.entries.at(-1)?.from !== "user") return false;
+    const query = messageQuery.trim().toLocaleLowerCase();
+    return !query || thread.appUserId.toLocaleLowerCase().includes(query) ||
+      thread.entries.some((entry) => entry.text.toLocaleLowerCase().includes(query));
+  });
+  const visibleFeedback = (data?.feedback.items ?? []).filter((item) => {
+    if (status && item.status !== status) return false;
+    const query = feedbackQuery.trim().toLocaleLowerCase();
+    return !query || item.app_user_id.toLocaleLowerCase().includes(query) ||
+      item.message.toLocaleLowerCase().includes(query) || Boolean(item.category?.toLocaleLowerCase().includes(query));
+  });
   const maxSource = Math.max(1, ...bySource.map(([, n]) => n));
   const maxDaily = Math.max(1, ...(data?.metrics?.dau_series ?? []).map((point) => point.users));
+  const selectedPage = pages.find((item) => item.id === page)!;
+  const showsDateRange = page === "overview" || page === "learning" || page === "acquisition" || page === "playback";
 
   return (
-    <div className="space-y-5">
+    <div className="grid min-w-0 gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <aside className="min-w-0 lg:sticky lg:top-6 lg:self-start" aria-label="Insights navigation">
+        <div className="rounded-2xl border border-white/10 bg-[#171a21] p-3">
+          <p className="px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#ff6b00]">Jojo HQ</p>
+          <nav className="flex gap-1 overflow-x-auto lg:block" aria-label="Analytics sections">
+            {pages.map((item, index) => (
+              <div key={item.id} className="shrink-0 lg:shrink">
+                {(index === 0 || pages[index - 1]?.group !== item.group) ? (
+                  <p className="hidden px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-white/40 lg:block">{item.group}</p>
+                ) : null}
+                <button type="button" onClick={() => navigate(item.id)} aria-current={page === item.id ? "page" : undefined}
+                  className={`w-full whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors lg:whitespace-normal ${page === item.id ? "bg-[#ff6b00] text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}>
+                  {item.label}
+                </button>
+              </div>
+            ))}
+          </nav>
+        </div>
+      </aside>
+      <main className="min-w-0 space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b00]">Jojo · noindex</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Insights</h1>
-          <p className="mt-2 max-w-2xl text-sm text-white/55">
-            Acquisition, private feedback, and a one-to-one thread with each learner. Only you and that person see the replies.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b00]">Production insights · {selectedPage.group}</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">{selectedPage.label}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-white/55">{selectedPage.description}</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold">
             {theme === "dark" ? "Light mode" : "Dark mode"}
           </button>
-          <button
+          {page !== "reviews" ? <button
             type="button"
             onClick={() => void load()}
             className="rounded-full bg-[#ff6b00] px-5 py-2.5 text-sm font-bold text-black disabled:opacity-60"
             disabled={loading}
           >
             {loading ? "Loading…" : "Refresh"}
-          </button>
+          </button> : null}
         </div>
       </div>
 
-      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-4">
+      {showsDateRange ? <section className="rounded-2xl border border-white/10 bg-[#171a21] p-4">
         <p className="text-sm font-semibold">Analytics date and time · {range.label}</p>
-        <p className="mt-1 text-xs text-white/50">Presets use your local time. Reports use UTC boundaries; the feedback inbox stays recent.</p>
+        <p className="mt-1 text-xs text-white/50">Presets use your local time. Reports use UTC boundaries; production feedback stays recent.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {([[1, "Today"], [7, "Last 7 days"], [30, "Last 30 days"], [90, "Last 90 days"]] as const).map(([days, label]) => (
             <button key={days} type="button" onClick={() => choosePreset(days, label)}
@@ -263,7 +329,7 @@ export function JojoInsightsDashboard() {
           <button type="button" onClick={applyCustomRange}
             className="rounded-lg bg-[#ff6b00] px-4 py-2 text-xs font-bold text-black">Apply</button>
         </div>
-      </section>
+      </section> : null}
 
       {error ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
@@ -275,14 +341,14 @@ export function JojoInsightsDashboard() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {page === "overview" ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Active users · selected range" value={data?.metrics?.active_users ?? "—"} />
         <Stat label="First-seen users · selected range" value={data?.metrics?.new_installs ?? "—"} />
         <Stat label="Sessions" value={data?.metrics?.sessions.count ?? "—"} />
         <Stat label="Average active minutes" value={data?.metrics ? Math.round(data.metrics.sessions.avg_active_seconds / 60) : "—"} />
-      </div>
+      </div> : null}
 
-      {data?.metrics ? (
+      {page === "overview" && data?.metrics ? (
         <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
           <h2 className="text-lg font-semibold text-white">Return visits and conversion</h2>
           <p className="mt-1 text-xs text-white/50">
@@ -302,7 +368,28 @@ export function JojoInsightsDashboard() {
         </section>
       ) : null}
 
-      {data?.metrics ? (
+      {page === "overview" ? (
+        <section aria-label="Explore detailed reports" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {([
+            ["learning", "Learning", `${data?.metrics?.learning.clip_views ?? "—"} clip views`],
+            ["acquisition", "Acquisition", `${data?.metrics?.acquisition.total ?? "—"} source answers`],
+            ["playback", "Playback", `${data?.metrics?.playback.failure_reports ?? "—"} failure reports`],
+            ["messages", "Messages", `${threads.length} conversations`],
+            ["feedback", "Feedback", `${data?.feedback.total ?? "—"} recent items`],
+            ["reviews", "App Store", "Read and reply to reviews"],
+          ] as const).map(([destination, title, detail]) => (
+            <button key={destination} type="button" onClick={() => navigate(destination)}
+              className="rounded-2xl border border-white/10 bg-[#171a21] p-4 text-left transition-colors hover:bg-white/5">
+              <span className="flex items-center justify-between gap-2 text-sm font-semibold text-white">
+                {title}<span aria-hidden="true" className="text-[#ff6b00]">↗</span>
+              </span>
+              <span className="mt-2 block text-xs text-white/50">{detail}</span>
+            </button>
+          ))}
+        </section>
+      ) : null}
+
+      {page === "learning" && data?.metrics ? (
         <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
           <h2 className="text-lg font-semibold text-white">Learning activity · {range.label}</h2>
           <p className="mt-2 text-sm text-white/55">
@@ -338,36 +425,45 @@ export function JojoInsightsDashboard() {
               </div>
             </div>
           ) : null}
-          {data.metrics.errors.length > 0 ? (
-            <p className="mt-4 text-sm text-amber-100">
-              Errors in range: {data.metrics.errors.slice(0, 3).map((item) => `${item.name}${item.code ? ` (${item.code})` : ""}: ${item.n}`).join(" · ")}
-            </p>
-          ) : null}
-          {data.metrics.playback.top_videos.length > 0 ? (
-            <div className="mt-4 text-sm">
-              <p className="font-semibold">Most reported playback failures</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {data.metrics.playback.top_videos.map((item) => (
-                  <a key={item.video_id} href={`https://www.youtube.com/watch?v=${encodeURIComponent(item.video_id)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10">
-                    {item.video_id} · {item.reports} reports
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </section>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label={`Acquisition answers · ${range.label}`} value={data?.metrics?.acquisition?.total ?? "—"} />
-        <Stat label={`Feedback items · ${range.label}`} value={data?.metrics?.feedback.total ?? "—"} />
-        <Stat label="Enjoying · Yes" value={data?.metrics?.feedback.positive ?? "—"} />
-        <Stat label="Enjoying · No" value={data?.metrics?.feedback.negative ?? "—"} />
-      </div>
+      {page === "playback" ? (
+        <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+          <h2 className="text-lg font-semibold text-white">Playback health · {range.label}</h2>
+          <p className="mt-1 text-sm text-white/50">Reports from real production sessions in the selected time range.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Stat label="Failure reports" value={data?.metrics?.playback.failure_reports ?? "—"} />
+            <Stat label="Affected videos" value={data?.metrics?.playback.affected_videos ?? "—"} />
+          </div>
+          <h3 className="mt-6 text-sm font-semibold text-white">Videos with the most reports</h3>
+          <div className="mt-2 flex flex-wrap gap-2 text-sm">
+            {data?.metrics?.playback.top_videos.length ? data.metrics.playback.top_videos.map((item) => (
+              <a key={item.video_id} href={`https://www.youtube.com/watch?v=${encodeURIComponent(item.video_id)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10">
+                {item.video_id} · {item.reports} reports
+              </a>
+            )) : <p className="text-white/50">No video failures reported.</p>}
+          </div>
+          <h3 className="mt-6 text-sm font-semibold text-white">App errors</h3>
+          <div className="mt-2 space-y-2 text-sm">
+            {data?.metrics?.errors.length ? data.metrics.errors.map((item) => (
+              <div key={`${item.name}:${item.code}`} className="flex justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
+                <span className="break-all text-white/80">{item.name}{item.code ? ` · ${item.code}` : ""}</span>
+                <span className="font-semibold text-white">{item.n}</span>
+              </div>
+            )) : <p className="text-white/50">No app errors reported.</p>}
+          </div>
+        </section>
+      ) : null}
 
-      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+      {page === "acquisition" ? <div className="grid gap-3 sm:grid-cols-2">
+        <Stat label={`Acquisition answers · ${range.label}`} value={data?.metrics?.acquisition?.total ?? "—"} />
+        <Stat label="Distinct sources" value={bySource.length} />
+      </div> : null}
+
+      {page === "acquisition" ? <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
         <h2 className="text-lg font-semibold text-white">Where users found Jojo · {range.label}</h2>
         <div className="mt-4 space-y-3">
           {bySource.length === 0 ? (
@@ -387,18 +483,27 @@ export function JojoInsightsDashboard() {
             ))
           )}
         </div>
-      </section>
+      </section> : null}
 
-      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+      {page === "messages" ? <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
         <h2 className="text-lg font-semibold text-white">Messages</h2>
         <p className="mt-1 text-sm text-white/50">
           Your private board. A reply shows up only in that learner&apos;s app, under Feedback → Messages with Jojo.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <input aria-label="Search conversations" value={messageQuery} onChange={(event) => setMessageQuery(event.target.value)}
+            placeholder="Search conversations" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white" />
+          <select aria-label="Filter conversations" value={messageReplyFilter}
+            onChange={(event) => setMessageReplyFilter(event.target.value as "all" | "needs-reply")}
+            className="rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white">
+            <option value="all">All conversations</option><option value="needs-reply">Needs reply</option>
+          </select>
+        </div>
         <div className="mt-4 space-y-4">
-          {threads.length === 0 ? (
-            <p className="text-sm text-white/45">No conversations yet.</p>
+          {visibleThreads.length === 0 ? (
+            <p className="text-sm text-white/45">No matching conversations.</p>
           ) : (
-            threads.map((thread) => (
+            visibleThreads.map((thread) => (
               <article key={thread.appUserId} className="rounded-xl border border-white/10 bg-[#12151c] p-4">
                 <p className="break-all text-xs text-white/40">{thread.appUserId}</p>
                 <div className="mt-3 space-y-2">
@@ -446,11 +551,19 @@ export function JojoInsightsDashboard() {
             ))
           )}
         </div>
-      </section>
+      </section> : null}
 
-      <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
+      {page === "feedback" ? <div className="grid gap-3 sm:grid-cols-3">
+        <Stat label="Recent feedback" value={data?.feedback.total ?? "—"} />
+        <Stat label="Enjoying · Yes" value={data?.feedback.enjoyed_yes ?? "—"} />
+        <Stat label="Enjoying · No" value={data?.feedback.enjoyed_no ?? "—"} />
+      </div> : null}
+
+      {page === "feedback" ? <section className="rounded-2xl border border-white/10 bg-[#171a21] p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Feedback</h2>
+          <input aria-label="Search feedback" value={feedbackQuery} onChange={(event) => setFeedbackQuery(event.target.value)}
+            placeholder="Search feedback" className="min-w-0 rounded-lg border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm text-white" />
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -464,7 +577,7 @@ export function JojoInsightsDashboard() {
         </div>
         <div className="mt-4 space-y-3">
           {visibleFeedback.length === 0 ? (
-            <p className="text-sm text-white/45">No feedback yet.</p>
+            <p className="text-sm text-white/45">No matching feedback.</p>
           ) : (
             visibleFeedback.map((item) => (
               <article key={item.id} className="rounded-xl border border-white/10 bg-[#12151c] p-4">
@@ -500,8 +613,9 @@ export function JojoInsightsDashboard() {
             ))
           )}
         </div>
-      </section>
-      <AppStoreReviews />
+      </section> : null}
+      {page === "reviews" ? <AppStoreReviews /> : null}
+      </main>
     </div>
   );
 }
