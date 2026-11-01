@@ -241,7 +241,7 @@ const RUN_BUDGET_MS = 110_000;
 const RUN_CANDIDATE_TARGET = 1;
 /** A bad-yield lane must not dump the day's search quota into one pass. */
 const MAX_SEARCHES_PER_PASS = 3;
-const MAX_SOURCE_DURATION_SEC = 1_800;
+const MAX_SOURCE_DURATION_SEC = 240;
 const SOURCE_WINDOW_SEC = 90;
 const MAX_WINDOWS_PER_VIDEO = 20;
 /** Keep at least this many unprocessed candidates queued for the language. */
@@ -283,6 +283,11 @@ async function pruneQueue(
 ): Promise<void> {
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   await supabase.from(queueTable(language)).delete().lt("added_at", cutoff);
+  if (language === "ja") {
+    // Older searches admitted long sources; clear those pending windows so they
+    // cannot crowd out quick lessons or keep the queue above its refill target.
+    await supabase.from(queueTable(language)).delete().gt("duration_sec", MAX_SOURCE_DURATION_SEC);
+  }
 }
 
 type CatalogStats = { total: number; last24h: number; byCategory: Map<string, number>; byCell: Map<string, number> };
@@ -339,7 +344,7 @@ async function takeQueue(
     .from(queueTable(language))
     .select("video_id, window_start_sec, title, channel_title, duration_sec, category, difficulty, added_at")
     .order("added_at", { ascending: true })
-    .limit(200);
+    .limit(500);
   const rows = ((data ?? []) as Array<Record<string, unknown>>).slice();
   const fill = (category: string) => (stats.byCategory.get(category) ?? 0) / Math.max(1, categoryFloor);
   // Round-robin across categories ordered by fill ratio, so one pass mixes categories.
@@ -349,6 +354,13 @@ async function takeQueue(
     if (!buckets.has(category)) buckets.set(category, []);
     buckets.get(category)!.push(row);
   }
+  // Favor short, complete lessons within each category. Older long sources must
+  // not hide newer 20–120 second candidates behind the queue's page limit.
+  const lessonRank = (row: Record<string, unknown>) => {
+    const duration = Number(row.duration_sec ?? 0);
+    return duration >= 20 && duration <= 120 ? 0 : duration < 20 ? 1 : 2;
+  };
+  for (const bucket of buckets.values()) bucket.sort((a, b) => lessonRank(a) - lessonRank(b));
   const order = [...buckets.keys()].sort((a, b) => fill(a) - fill(b));
   const picked: Array<Record<string, unknown>> = [];
   while (picked.length < limit && order.some((c) => (buckets.get(c)?.length ?? 0) > 0)) {
