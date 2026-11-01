@@ -81,7 +81,11 @@ actor WordExplainService {
 
     func context(token: Token, sentence: String, appUserId: String, fallback: ContextExplanation) async -> ContextOutcome {
         let key = Self.contextKey(for: token, sentence: sentence)
-        if let cached = memoryCache[key], let decoded = try? JSONDecoder().decode(ContextExplanation.self, from: cached) {
+        if let cached = memoryCache[key],
+           let decoded = try? JSONDecoder().decode(ContextExplanation.self, from: cached),
+           decoded.examples.contains(where: {
+               $0.components(separatedBy: " — ").first?.trimmingCharacters(in: .whitespacesAndNewlines) != sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+           }) {
             return ContextOutcome(context: decoded, newCache: nil)
         }
         guard api.isConfigured else { return ContextOutcome(context: fallback, newCache: nil) }

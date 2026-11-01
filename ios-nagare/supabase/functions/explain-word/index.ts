@@ -40,9 +40,22 @@ function contextSystem(language: "ja" | "ko"): string {
   return `You are a ${name} language tutor. Respond with a single JSON object only.
 Keys: contextual_explanation (string), examples (string[]), related_words (string[]).
 contextual_explanation is 2-3 short English sentences about THIS sentence only. Start with "In this sentence, 「word」 (reading) means ...". Then say what the speaker is doing with the word. Do not list dictionary senses.
-examples: up to 2 short ${name} sentences that use the word the same way, each followed by " — " and an English translation.
+examples: exactly 2 short, distinct ${name} sentences that use the word the same way, each followed by " — " and an English translation. Neither may repeat the supplied sentence.
 related_words: up to 4 short ${name} words (synonym, polite form, or same family).
 No markdown.`;
+}
+
+function otherExamples(value: unknown, sourceSentence: string): string[] {
+  if (!Array.isArray(value)) return [];
+  const source = sourceSentence.trim().normalize("NFKC");
+  const seen = new Set<string>();
+  return value.filter((entry): entry is string => {
+    if (typeof entry !== "string") return false;
+    const japanese = entry.split(" — ")[0].split("\n")[0].trim().normalize("NFKC");
+    if (!japanese || japanese === source || seen.has(japanese)) return false;
+    seen.add(japanese);
+    return true;
+  });
 }
 
 Deno.serve(async (req) => {
@@ -93,8 +106,12 @@ Deno.serve(async (req) => {
       .select("payload")
       .eq("cache_key", cacheKey)
       .maybeSingle();
+    // Older context responses could contain zero examples. Regenerate those rather
+    // than keeping an empty Examples tab indefinitely.
     if (cached?.payload) {
-      return jsonResponse(cached.payload);
+      if (kind !== "context") return jsonResponse(cached.payload);
+      const examples = otherExamples(cached.payload.examples, sentence);
+      if (examples.length > 0) return jsonResponse({ ...cached.payload, examples });
     }
 
     const underUserLimit = await tryIncrementExplainRate(supabase, appUserId, kind);
@@ -122,7 +139,12 @@ Deno.serve(async (req) => {
     const payload = kind === "lookup"
       ? sanitizeLookup(raw, word)
       : sanitizeContext(raw);
-    if (!payload) return errorResponse(502, "Invalid model response");
+    if (payload && "examples" in payload) {
+      payload.examples = otherExamples(payload.examples, sentence);
+    }
+    if (!payload || ("examples" in payload && payload.examples.length === 0)) {
+      return errorResponse(502, "Invalid model response");
+    }
 
     await supabase.from("word_explanations").upsert({
       cache_key: cacheKey,
