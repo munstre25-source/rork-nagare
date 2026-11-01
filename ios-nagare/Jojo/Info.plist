@@ -23,6 +23,8 @@
 	</array>
 	<key>FacebookAppID</key>
 	<string>1856489205337782</string>
+	<key>FacebookClientToken</key>
+	<string>612155ab2de0aa8fef6debe1499aa83b</string>
 	<key>FacebookDisplayName</key>
 	<string>Jojo</string>
 	<key>FacebookAutoLogAppEventsEnabled</key>

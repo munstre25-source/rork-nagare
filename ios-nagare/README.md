@@ -1,7 +1,7 @@
 # Nagare 流れ — Scroll, Listen, Flow into Japanese
 
-Native SwiftUI (iOS 17+), SwiftData, Observation, Swift concurrency. The only third-party package is
-RevenueCat (`purchases-ios-spm`). Supabase is called over plain URLSession. Gemini is only reached
+Native SwiftUI (iOS 17+), SwiftData, Observation, Swift concurrency. The third-party packages are
+RevenueCat (`purchases-ios-spm`) and Meta FacebookCore. Supabase is called over plain URLSession. Gemini is only reached
 through the Supabase Edge Function, so there is no Gemini key in the app.
 
 ## Secrets
@@ -11,7 +11,8 @@ synchronized target folder), then fill in:
 - `SUPABASE_ANON_KEY`
 - `REVENUECAT_API_KEY`: the public iOS SDK key (`appl_…`)
 
-Any value still starting with `YOUR_` is treated as not configured, and the app runs fully offline.
+Any value still starting with `YOUR_` is treated as not configured. The Meta App ID and client token
+are bundled separately in `Jojo/Info.plist`, so Meta attribution works from a clean checkout.
 
 ## Record marketing videos (screen recording)
 DEBUG only. From splash debug buttons, or **Profile → Debug · Marketing**.
@@ -187,11 +188,13 @@ Dashboard: RevenueCat → Integrations → Meta Ads → Conversions API with you
 Keep Meta “Log in-app events automatically” **off** (RevenueCat sends purchases).
 
 App-side (`MetaAttribution.swift` + FacebookCore SPM):
-1. Add to `Jojo/Config/Secrets.plist`:
-   - `META_APP_ID` = Nagare Meta App ID (`1856489205337782`)
-   - `META_CLIENT_TOKEN` = Meta Developers → App → Settings → Advanced → **Client Token**
-2. After `Purchases.configure`, the app sets `$fbAnonId` + device IDs via `collectDeviceIdentifiers()`.
-3. The tracking prompt appears on first launch, before any ad event. Meta auto purchase logging stays disabled.
+1. The Meta App ID and **Client Token** are both bundled in `Jojo/Info.plist`, as required by the
+   Meta iOS SDK. `Secrets.plist` can override them locally but is no longer required for Meta.
+   Do not put the Meta App Secret or RevenueCat Conversions API token in the app bundle.
+2. The app checks that its effective Meta App ID matches `Info.plist` before initializing the SDK.
+3. After ATT authorization, the app sets `$fbAnonId` + device IDs in RevenueCat via
+   `collectDeviceIdentifiers()`. The tracking prompt appears on first launch, before any ad event.
+   Meta auto purchase logging stays disabled.
 
 Test: sandbox purchase → RevenueCat Customer History → Meta Ads delivery row.
 

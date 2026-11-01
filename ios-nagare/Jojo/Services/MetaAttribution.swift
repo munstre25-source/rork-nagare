@@ -4,6 +4,7 @@ import UserNotifications
 import FacebookCore
 import RevenueCat
 import AppTrackingTransparency
+import AdSupport
 
 /// Boots the Meta (Facebook) SDK for install/attribution matching and pushes
 /// `$fbAnonId` / device IDs into RevenueCat so the Meta Ads Conversions API can match purchases.
@@ -25,8 +26,9 @@ enum MetaAttribution {
         "onboarding_appreview_rated",
         "onboarding_valueprop_word_tapped",
         "onboarding_completed",
-        "feedback_enjoyed_yes",
-        "feedback_enjoyed_no"
+        "feedback_prompt_positive",
+        "feedback_prompt_negative",
+        "feedback_submitted"
     ]
 
     /// Call from `UIApplicationDelegate.didFinishLaunching`. Safe if Meta secrets are missing.
@@ -36,11 +38,14 @@ enum MetaAttribution {
         launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         guard Secrets.isMetaConfigured else { return false }
-        guard !didPrepare else {
-            return ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
-        }
+        guard !didPrepare else { return true }
+        // Info.plist supplies the app ID and disables automatic events during
+        // initialization. Meta v18 requires initialization before setting appID.
+        let initialized = ApplicationDelegate.shared.application(
+            application, didFinishLaunchingWithOptions: launchOptions
+        )
+        guard initialized else { return false }
         didPrepare = true
-
         Settings.shared.appID = Secrets.metaAppID
         Settings.shared.clientToken = Secrets.metaClientToken
         Settings.shared.displayName = "Jojo"
@@ -48,9 +53,7 @@ enum MetaAttribution {
         Settings.shared.isAutoLogAppEventsEnabled = false
         // Stay off until the system tracking prompt is allowed. The Info.plist flag is also false.
         Settings.shared.isAdvertiserIDCollectionEnabled = false
-        Settings.shared.isAdvertiserTrackingEnabled = false
-
-        return ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
+        return true
     }
 
     static func handleOpenURL(_ url: URL) -> Bool {
@@ -85,7 +88,6 @@ enum MetaAttribution {
     static func syncToRevenueCat() {
         guard Secrets.isMetaConfigured, Purchases.isConfigured else { return }
         guard ATTrackingManager.trackingAuthorizationStatus == .authorized else { return }
-        Settings.shared.isAdvertiserTrackingEnabled = true
         Settings.shared.isAdvertiserIDCollectionEnabled = true
         Purchases.shared.attribution.collectDeviceIdentifiers()
         let anon = AppEvents.shared.anonymousID
@@ -116,7 +118,6 @@ enum MetaAttribution {
         }
 
         let authorized = ATTrackingManager.trackingAuthorizationStatus == .authorized
-        Settings.shared.isAdvertiserTrackingEnabled = authorized
         Settings.shared.isAdvertiserIDCollectionEnabled = authorized
         guard authorized, Secrets.isMetaConfigured else { return }
         syncToRevenueCat()
