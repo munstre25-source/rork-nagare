@@ -127,6 +127,13 @@ final class WordLookupController {
         }
     }
 
+    func retryContext(app: AppModel) {
+        contextTask?.cancel()
+        context = nil
+        isLoadingContext = false
+        loadContextIfNeeded(app: app)
+    }
+
     func dismiss() {
         lookupTask?.cancel()
         contextTask?.cancel()

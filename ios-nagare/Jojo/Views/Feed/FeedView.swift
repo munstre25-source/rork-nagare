@@ -65,7 +65,6 @@ struct FeedView: View {
                         .allowsHitTesting(watchChromeVisible)
                         header
                     }
-                    .environment(\.colorScheme, .dark)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
                 }

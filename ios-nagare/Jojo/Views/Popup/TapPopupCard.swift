@@ -645,7 +645,8 @@ struct TapPopupCard: View {
             let currentSentence = lookup.selection?.sentence ?? ""
             let examples = uniqueNonEmpty(context.examples)
                 .filter { example in
-                    let japaneseText = example.components(separatedBy: .newlines).first ?? example
+                    let japaneseText = example.components(separatedBy: " — ").first?
+                        .components(separatedBy: .newlines).first ?? example
                     return japaneseText.trimmingCharacters(in: .whitespacesAndNewlines) != currentSentence
                 }
             let relatedWords = uniqueNonEmpty(context.relatedWords)
@@ -663,9 +664,23 @@ struct TapPopupCard: View {
                         .background(Color.definitionTints[(index + 1) % 3], in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 if examples.isEmpty {
-                    Text("No other example sentences are available yet.")
-                        .font(.footnote)
-                        .foregroundStyle(inkSoft)
+                    if lookup.isLoadingContext {
+                        HStack(spacing: Spacing.s) {
+                            ProgressView().tint(ink)
+                            Text("Finding more examples…")
+                                .font(.footnote)
+                                .foregroundStyle(inkSoft)
+                        }
+                    } else {
+                        Text("No other example sentences are available right now.")
+                            .font(.footnote)
+                            .foregroundStyle(inkSoft)
+                        if !lookup.offlineOnly && !lookup.previewOnly {
+                            Button("Try again") { lookup.retryContext(app: app) }
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(LearningInk.selected)
+                        }
+                    }
                 }
                 if !relatedWords.isEmpty {
                     Text("Related: " + relatedWords.joined(separator: " · "))
