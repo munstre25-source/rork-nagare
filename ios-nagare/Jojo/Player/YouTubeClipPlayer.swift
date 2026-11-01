@@ -396,6 +396,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             token: &spokenToken
         )
         clock = currentTime
+        // A seek can jump the reported clock without decoding a single frame.
+        lastReportedTime = -1
+        lastProgressAt = Date()
         runCommand("seekTo", "\(sourceStart + currentTime),true")
     }
 
@@ -447,7 +450,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                     self.fail(code: PlaybackHealth.stalledCode)
                     return
                 }
-                if self.isPlaying {
+                if self.isPlaying, self.hasRenderedVideo,
+                   Date().timeIntervalSince(self.lastProgressAt) < 1 {
                     self.watchAccumulator += Double(Self.pollMilliseconds) / 1000
                     if self.watchAccumulator >= 1 {
                         self.onWatchTick?(self.watchAccumulator)
@@ -472,6 +476,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         case "ready":
             loadWatchdog?.cancel()
             lastProgressAt = Date()
+            lastReportedTime = -1
             isReady = true
             embedFailed = false
             embedErrorCode = nil
@@ -482,10 +487,14 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if wantsPlay { play() }
         case "time":
             guard let value else { return }
-            if abs(value - lastReportedTime) > 0.05 {
-                lastReportedTime = value
+            // The initial seek and buffering updates can change currentTime while the
+            // picture is frozen. Only continuous forward movement confirms playback.
+            let advanced = wantsPlay && lastReportedTime >= 0 &&
+                value > lastReportedTime + 0.05 && value - lastReportedTime < 2
+            lastReportedTime = value
+            if advanced {
                 lastProgressAt = Date()
-                if isReady {
+                if isReady && !hasRenderedVideo {
                     hasRenderedVideo = true
                     YouTubeSession.shared.noteSuccess()
                     PlaybackHealth.noteSuccessfulPlayback()
@@ -507,13 +516,13 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 finish()
             }
         case "state":
-            // 0 ended, 1 playing, 2 paused
+            // 0 ended, 1 playing, 2 paused, 3 buffering.
             if value == 0, !didFinish { finish() }
             if value == 1 {
                 isPlaying = true
-                hasRenderedVideo = true
-                YouTubeSession.shared.noteSuccess()
                 if !isMuted { runCommand("unMute") }
+            } else if value == 2 || value == 3 {
+                isPlaying = false
             }
         case "error":
             let code = value.map { Int($0) } ?? 0
