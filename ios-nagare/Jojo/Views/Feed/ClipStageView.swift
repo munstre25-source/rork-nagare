@@ -37,6 +37,7 @@ struct ClipStageView: View {
     @State private var wordSavedHint: String?
     /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
+    @ScaledMetric(relativeTo: .body) private var shortsWordsHeight: CGFloat = 220
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
@@ -489,103 +490,94 @@ struct ClipStageView: View {
         let player = coordinator.player(for: clip)
         let card = CGSize(width: max(0, min(size.width - 12, size.height < size.width ? size.height * 0.68 : 620)), height: max(0, size.height - 6))
         let maximized = videoExpanded
-        // Resting: the picture owns the top band of the split card. Theater: the picture
-        // grows into the largest true 9:16 frame the card holds and the words dock onto
-        // its bottom as a solid floating panel — the words still never paint on the picture.
-        let videoHeight = maximized
-            ? min(card.height - 16, card.width * 16 / 9)
-            : min(card.height * 0.68, card.width * 16 / 9)
-        let videoWidth = card.width
+        let restingVideoHeight = min(card.height * 0.60, card.width * 16 / 9)
+        let karaokeHeight = min(card.height * (maximized ? 0.25 : 0.30),
+                                shortsWordsHeight * (maximized ? 0.82 : 1))
 
-        return ZStack(alignment: .top) {
-            // Keep one player view in the hierarchy while its frame changes on maximize.
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsControls: false,
-                showsRail: false,
-                compactChrome: true,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                fitsFrame: true,
-                watchChromeHidden: watchChromeHidden,
-                onRevealWatchChrome: onRevealWatchChrome,
-                onSkip: onSkip
-            )
-            .frame(width: videoWidth, height: videoHeight)
-            .frame(width: card.width, height: card.height, alignment: .top)
-            .background(Color.watchBackground)
-            .coachTarget(.video, active: isCoachPage)
+        // Video, words and timer are siblings. The video gets the remaining height on
+        // maximize, so neither a long sentence nor a larger font can cover the footage.
+        return VStack(spacing: 6) {
+            ZStack(alignment: .top) {
+                // Keep this player at the same structural position in both sizes.
+                ClipVideoView(
+                    clip: clip,
+                    player: player,
+                    showsControls: false,
+                    showsRail: false,
+                    compactChrome: true,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
+                    fitsFrame: true,
+                    watchChromeHidden: watchChromeHidden,
+                    onRevealWatchChrome: onRevealWatchChrome,
+                    onSkip: onSkip
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.bgPlayer)
+                .coachTarget(.video, active: isCoachPage)
 
-            VStack(spacing: 4) {
-                // Words flow under the picture at rest; in theater the block docks onto
-                // the picture's bottom edge.
-                Color.clear.frame(height: maximized ? 0 : videoHeight)
-                if showsShortsCaptions {
-                    shortsKaraoke(player: player, maxHeight: card.height * (maximized ? 0.32 : 0.25))
-                        .frame(maxWidth: .infinity, alignment: .top)
-                        .padding(.horizontal, maximized ? 10 : 12)
-                        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                }
-                // Kiku's vertical Shorts order: the karaoke section follows the video;
-                // the clip timer sits under that section.
-                ShortsFooter(clip: clip, player: player, onPicture: maximized)
-                    .frame(width: videoWidth)
-                    .padding(.top, 4)
-                    .padding(.bottom, maximized ? 16 : 10)
-                if !maximized {
+                ShortsHeader(clip: clip)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 10)
+                    .opacity(watchChromeHidden ? 0 : 1)
+
+                HStack {
                     Spacer(minLength: 0)
+                    shortsRail(player: player)
                 }
+                .padding(.trailing, 4)
+                // The dictionary card owns the page while it is up.
+                .opacity(isPopupHere ? 0 : 1)
+                .animation(.easeInOut(duration: 0.2), value: isPopupHere)
             }
-            .frame(width: card.width, height: card.height, alignment: maximized ? .bottom : .top)
-            .background(alignment: .bottom) {
-                if maximized {
-                    // The light bottom wash (55%) keeps the white timer glyphs readable
-                    // over the footage in theater.
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.55), .clear],
-                        startPoint: .bottom,
-                        endPoint: .top
-                    )
-                    .frame(height: 150)
-                    .allowsHitTesting(false)
-                }
+            .frame(maxWidth: .infinity, minHeight: 0,
+                   maxHeight: maximized ? .infinity : restingVideoHeight)
+            .clipped()
+            .modifier(FrameBottomReader(bottom: $videoBottom))
+
+            if showsShortsCaptions {
+                shortsKaraoke(player: player, maxHeight: karaokeHeight)
+                    .padding(.horizontal, 10)
+                    .frame(height: karaokeHeight)
+                    .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .layoutPriority(1)
             }
 
-            ShortsHeader(clip: clip)
-                .frame(width: videoWidth, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .top)
-                .padding(.top, 10)
-                .opacity(watchChromeHidden ? 0 : 1)
-
-            HStack {
-                Spacer(minLength: 0)
-                // This rail is over the video in both sizes, including its black letterboxing.
-                shortsRail(player: player)
-            }
-            .frame(width: card.width, height: videoHeight, alignment: .trailing)
-            .padding(.trailing, 4)
-            // The centered dictionary card owns the page while it is up; the rail steps back.
-            .opacity(isPopupHere ? 0 : 1)
-            .animation(.easeInOut(duration: 0.2), value: isPopupHere)
+            ShortsFooter(clip: clip, player: player, onPicture: false)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
         }
-        .frame(width: card.width, height: card.height)
+        .frame(width: card.width, height: card.height, alignment: .top)
+        .background(Color.watchBackground)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .frame(maxWidth: .infinity)
         .padding(.top, 2)
     }
 
     private func shortsRail(player: (any ClipPlayer)?) -> some View {
-        ShortsRail(
-            clip: clip,
-            player: player,
-            showsCaptions: showsShortsCaptions,
-            onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
-            onInfo: onInfo,
-            onMaximize: videoExpanded ? nil : onToggleVideoSize,
-            onMinimize: videoExpanded ? onToggleVideoSize : nil,
-            onPicture: true
-        )
+        // Small screens can make the full rail taller than the available video. Scroll
+        // the controls within that region rather than drawing them over the karaoke.
+        GeometryReader { geometry in
+            ScrollView(.vertical, showsIndicators: false) {
+                ShortsRail(
+                    clip: clip,
+                    player: player,
+                    showsCaptions: showsShortsCaptions,
+                    onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
+                    onInfo: onInfo,
+                    onMaximize: videoExpanded ? nil : onToggleVideoSize,
+                    onMinimize: videoExpanded ? onToggleVideoSize : nil,
+                    onPicture: true
+                )
+                .padding(.vertical, 4)
+                .frame(minHeight: geometry.size.height, alignment: .center)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .frame(width: 44)
         // Keep video controls legible while the surrounding navigation chrome fades.
     }
 
