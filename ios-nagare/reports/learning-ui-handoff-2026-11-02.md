@@ -2,13 +2,16 @@
 
 These changes are native iOS only. No Supabase migration or AI processing is needed. The separately edited HANDOFF-SIMULATOR.md has been left untouched.
 
-## Maximized playback
+## Playback layout and paging — updated after screenshot review
 
-- For You, Shorts, Explore single/queued playback and the onboarding demo hide playback/navigation controls on entry to maximize.
-- A short downward swipe reveals controls; upward swipe hides them. During playback they hide after four seconds without interaction. Paused playback, open settings/options and VoiceOver keep revealed controls available.
-- Landscape-video theater uses an active-sentence panel and a responsive horizontal toolbar when revealed. The vertical rail no longer collides with the footer.
-- Shorts keep video, karaoke and any visible timer in separate regions. Hiding controls gives the video that space back.
-- Video aspect fitting and stored subtitle times are preserved.
+- Shorts always show a dedicated playback row immediately below the full video, in normal and maximized modes. Play/pause, speed, save/like, subtitle help, options, size control and the playback clock stay reachable before karaoke. Their colors follow the page appearance, with dark ink on the light surface.
+- Landscape-video theater keeps controls hidden until a downward swipe, then auto-hides them after four seconds of idle playback. Pausing, open dialogs and VoiceOver keep revealed controls available.
+- A landscape picture is centered near the safe viewport's vertical midpoint, with a bounded karaoke panel below. It shifts only as needed to fit visible controls and larger text. The picture never extends underneath the status bar.
+- Rotated wide screens center the complete picture beside the bounded sentence panel.
+- Shorts reserve explicit height for video, the measured playback row, and scrollable karaoke; none overlaps the others.
+- Explore queues are preserved. Opening a selected clip starts that clip within its queue. For You, Explore queues and onboarding use the same snapping rule and exact viewport-sized, clipped pages, re-anchored after rotation/maximize/minimize. One complete clip occupies each settled page; the next appears after a swipe.
+- Back/navigation in Explore occupies a real row above the pager and uses appearance-aware colors.
+- No subtitle times, translations, catalog publication flags or AI processing changed.
 
 ## Vocabulary progress
 
@@ -51,8 +54,11 @@ Swift syntax was checked with a temporary parser; AppModel has the same existing
 
 On macOS, pull main safely and run Jojo's Xcode build and test target. Verify:
 
-1. Both video orientations in light and dark modes, small/large phones, tablet and rotation. Maximize/minimize repeatedly without player restart, seek or karaoke overlap.
-2. Swipe down/up; pause and wait; play and wait four seconds; open More and Subtitle help and wait longer than four seconds. Controls must remain while a dialog is open. Repeat in Explore queue/single playback and onboarding. VoiceOver must have Show playback controls.
-3. A word-timed clip moves the word cursor; a sentence-only clip highlights the sentence, not an invented word. Seek/pause/resume and change subtitle modes without resetting playback. Test Reduce Motion.
-4. Review the same word twice and mark another Known: daily practice counts distinct words; learned count follows Known state. Adjust target, relaunch, change filters and cross local midnight. Filters do not alter overall progress.
-5. Reach the watch goal with/without due words: celebrate once, optional review opens the real queue, close/timeout removes it, and a later visit does not restore the completed meter.
+1. Both video orientations in light and dark modes, small/large phones, tablet and rotation. Maximize/minimize repeatedly without player restart, seek, status-bar cropping or karaoke overlap. Shorts controls must remain visible in every state, ahead of karaoke.
+2. For landscape theater, swipe down/up; pause and wait; play and wait four seconds; open More and Subtitle help and wait longer than four seconds. Controls must remain while a dialog is open. Repeat in Explore queue/single playback and onboarding. VoiceOver must have Show playback controls.
+3. Open a clip from the middle of an Explore list or from Vocab. Preserve the selected clip/sentence and any queue. At rest show exactly one clip per screen; swipe once for the next. Rotate and maximize/minimize at the first, middle and last pages without a neighboring clip peeking into the same frame.
+4. A word-timed clip moves the word cursor; a sentence-only clip highlights the sentence, not an invented word. Seek/pause/resume and change subtitle modes without resetting playback. Test Reduce Motion.
+5. Review the same word twice and mark another Known: daily practice counts distinct words; learned count follows Known state. Adjust target, relaunch, change filters and cross local midnight. Filters do not alter overall progress.
+6. Reach the watch goal with/without due words: celebrate once, optional review opens the real queue, close/timeout removes it, and a later visit does not restore the completed meter.
+
+Native regression cases now also cover centered full-video containment and shared pager snapping. These require the macOS test target; geometry and Swift syntax checks on Windows are not a native UI build.

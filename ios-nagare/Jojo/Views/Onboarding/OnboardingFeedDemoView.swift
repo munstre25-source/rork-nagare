@@ -20,33 +20,47 @@ struct OnboardingFeedDemoView: View {
         VStack(spacing: 0) {
             hint
             GeometryReader { geo in
-                ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(clips) { clip in
-                            ClipStageView(
-                                clip: clip,
-                                showsChannelRow: true,
-                                immersiveFeed: true,
-                                videoExpanded: videoExpanded,
-                                showsTheaterControls: showsTheaterControls,
-                                onTheaterPresentationChange: { theaterOptionsPresented = $0 },
-                                onToggleVideoSize: {
-                                    Haptics.selection()
-                                    videoExpanded.toggle()
-                                },
-                        onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) },
-                        onFullscreen: nil,
-                        onSkip: { skipClip() }
-                    )
-                            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
-                            .id(clip.id)
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(clips) { clip in
+                                ClipStageView(
+                                    clip: clip,
+                                    showsChannelRow: true,
+                                    immersiveFeed: true,
+                                    videoExpanded: videoExpanded,
+                                    showsTheaterControls: showsTheaterControls,
+                                    onTheaterPresentationChange: { theaterOptionsPresented = $0 },
+                                    onToggleVideoSize: {
+                                        Haptics.selection()
+                                        videoExpanded.toggle()
+                                    },
+                            onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) },
+                            onFullscreen: nil,
+                            onSkip: { skipClip() }
+                        )
+                                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                                .clipped()
+                                .id(clip.id)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollTargetBehavior(SingleClipPerSwipeBehavior())
+                    .scrollPosition(id: $currentId, anchor: .top)
+                    .scrollDisabled(lookup.isPresented)
+                    .clipped()
+                    .onChange(of: geo.size) { _, _ in
+                        guard let id = currentId else { return }
+                        Task { @MainActor in
+                            await Task.yield()
+                            guard currentId == id else { return }
+                            var transaction = Transaction()
+                            transaction.disablesAnimations = true
+                            withTransaction(transaction) { proxy.scrollTo(id, anchor: .top) }
                         }
                     }
-                    .scrollTargetLayout()
                 }
-                .scrollTargetBehavior(.paging)
-                .scrollPosition(id: $currentId)
-                .scrollDisabled(lookup.isPresented)
             }
             if didOpenDictionary, lookup.selection == nil {
                 Button("Continue") {

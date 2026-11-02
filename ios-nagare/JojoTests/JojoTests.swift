@@ -292,6 +292,50 @@ struct JojoTests {
         #expect(VocabularyProgress(words: [word], dailyGoal: 1).fraction == 1)
     }
 
+    @Test func landscapeTheaterCentersTheCompleteVideoWhenItFits() {
+        let size = CGSize(width: 402, height: 800)
+        let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
+        #expect(abs(layout.videoTop + layout.videoSize.height / 2 - size.height / 2) < 0.01)
+        #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
+        #expect(layout.videoTop > 12)
+        #expect(layout.videoSize.width <= size.width - 24)
+        #expect(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight <= size.height - 12)
+    }
+
+    @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
+        for size in [CGSize(width: 320, height: 480), CGSize(width: 393, height: 650),
+                     CGSize(width: 430, height: 820), CGSize(width: 768, height: 900)] {
+            for captionHeight: CGFloat in [0, 220, 440] {
+                for controlsHeight: CGFloat in [0, 88, 140] {
+                    let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: captionHeight,
+                                                              controlsHeight: controlsHeight)
+                    let gaps = CGFloat((layout.captionHeight > 0 ? 1 : 0) + (layout.controlsHeight > 0 ? 1 : 0)) * 6
+                    #expect(layout.videoTop >= 0)
+                    #expect(layout.videoSize.height > 0)
+                    #expect(layout.controlsHeight == controlsHeight)
+                    #expect(layout.videoTop + layout.videoSize.height + layout.captionHeight
+                            + layout.controlsHeight + gaps <= size.height - 12 + 0.01)
+                }
+            }
+        }
+    }
+
+    @Test func allFeedPagersSnapToOneCompleteViewport() {
+        #expect(SingleClipPerSwipeBehavior.settledOffset(original: 0, proposed: 850,
+                                                        viewportHeight: 700, contentHeight: 2800) == 700)
+        #expect(SingleClipPerSwipeBehavior.settledOffset(original: 700, proposed: 2500,
+                                                        viewportHeight: 700, contentHeight: 2800) == 1400)
+        #expect(SingleClipPerSwipeBehavior.settledOffset(original: 2100, proposed: 4000,
+                                                        viewportHeight: 700, contentHeight: 2800) == 2100)
+        #expect(SingleClipPerSwipeBehavior.settledOffset(original: 0, proposed: -400,
+                                                        viewportHeight: 700, contentHeight: 2800) == 0)
+        for height: CGFloat in [480, 620, 780] {
+            let offset = SingleClipPerSwipeBehavior.settledOffset(original: height * 2, proposed: height * 2 + 30,
+                                                                 viewportHeight: height, contentHeight: height * 5)
+            #expect(offset == height * 2)
+        }
+    }
+
     private func makeWord(_ key: String, state: SRSState, due: Date, seen: Int) -> SavedWord {
         let word = SavedWord(key: key, surface: key, readings: [], romaji: key, pos: "noun",
                              conjugationClass: nil, jlpt: nil, definitions: [key])

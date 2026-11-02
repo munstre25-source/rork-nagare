@@ -69,90 +69,104 @@ struct ClipQueueScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(clips) { clip in
-                        ClipStageView(
-                            clip: clip,
-                            showsChannelRow: false,
-                            immersiveFeed: true,
-                            videoExpanded: videoExpanded,
-                            showsTheaterControls: showsTheaterControls,
-                            onTheaterPresentationChange: { theaterOptionsPresented = $0 },
-                            onToggleVideoSize: {
-                                Haptics.selection()
-                                videoExpanded.toggle()
-                            },
-                            onActivate: { show(clip.id) },
-                            onInfo: { infoClip = clip }
-                        )
-                        .containerRelativeFrame(.vertical)
-                        .id(clip.id)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentId)
-            .scrollDisabled(lookup.isPresented)
-            .scrollIndicators(.hidden)
-            .background(Color.watchBackground)
-            .clipped()
-
-            // ULTIMATE Explore chrome: back + title + flag.
-            HStack(spacing: 10) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .background(videoExpanded ? .black.opacity(0.45) : .clear, in: Circle())
-                }
-                .accessibilityLabel("Back")
-
-                if videoExpanded {
+        VStack(spacing: 0) {
+            if !videoExpanded || showsTheaterControls {
+                // ULTIMATE Explore chrome: back + title + flag.
+                HStack(spacing: 10) {
                     Button {
-                        Haptics.selection()
-                        videoExpanded = false
+                        dismiss()
                     } label: {
-                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .frame(minHeight: 40)
-                            .background(.black.opacity(0.55), in: Capsule())
-                    }
-                } else {
-                    Text("Explore")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
-                }
-
-                Spacer(minLength: 0)
-
-                if !videoExpanded {
-                    Button {
-                        if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
-                            infoClip = clip
-                        }
-                    } label: {
-                        Image(systemName: "flag")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.75))
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(.primary)
                             .frame(width: 40, height: 40)
+                            .background(Color.fieldFill, in: Circle())
                     }
-                    .accessibilityLabel("Report clip")
+                    .accessibilityLabel("Back")
+
+                    if videoExpanded {
+                        Button {
+                            Haptics.selection()
+                            videoExpanded = false
+                        } label: {
+                            Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.primary)
+                                .padding(.horizontal, 10)
+                                .frame(minHeight: 40)
+                                .background(Color.fieldFill, in: Capsule())
+                        }
+                    } else {
+                        Text("Explore")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    if !videoExpanded {
+                        Button {
+                            if let id = currentId, let clip = clips.first(where: { $0.id == id }) {
+                                infoClip = clip
+                            }
+                        } label: {
+                            Image(systemName: "flag")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 40, height: 40)
+                        }
+                        .accessibilityLabel("Report clip")
+                    }
+                }
+                .padding(.leading, Spacing.m)
+                .padding(.trailing, Spacing.m)
+                .padding(.top, Spacing.s)
+            }
+            GeometryReader { viewport in
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(clips) { clip in
+                                ClipStageView(
+                                    clip: clip,
+                                    showsChannelRow: false,
+                                    immersiveFeed: true,
+                                    videoExpanded: videoExpanded,
+                                    showsTheaterControls: showsTheaterControls,
+                                    onTheaterPresentationChange: { theaterOptionsPresented = $0 },
+                                    onToggleVideoSize: {
+                                        Haptics.selection()
+                                        videoExpanded.toggle()
+                                    },
+                                    onActivate: { show(clip.id) },
+                                    onInfo: { infoClip = clip }
+                                )
+                                .frame(width: viewport.size.width, height: viewport.size.height)
+                                .clipped()
+                                .id(clip.id)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollTargetBehavior(SingleClipPerSwipeBehavior())
+                    .scrollPosition(id: $currentId, anchor: .top)
+                    .scrollDisabled(lookup.isPresented)
+                    .scrollIndicators(.hidden)
+                    .background(Color.watchBackground)
+                    .clipped()
+                    .onChange(of: viewport.size) { _, _ in
+                        guard let id = currentId else { return }
+                        Task { @MainActor in
+                            await Task.yield()
+                            guard currentId == id else { return }
+                            var transaction = Transaction()
+                            transaction.disablesAnimations = true
+                            withTransaction(transaction) { proxy.scrollTo(id, anchor: .top) }
+                        }
+                    }
                 }
             }
-            .padding(.leading, Spacing.m)
-            .padding(.trailing, Spacing.m)
-            .padding(.top, Spacing.s)
-            .opacity(!videoExpanded || showsTheaterControls ? 1 : 0)
-            .allowsHitTesting(!videoExpanded || showsTheaterControls)
-            .accessibilityHidden(videoExpanded && !showsTheaterControls)
+
         }
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)

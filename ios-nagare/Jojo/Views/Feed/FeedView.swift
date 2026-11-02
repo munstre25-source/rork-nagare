@@ -78,9 +78,6 @@ struct FeedView: View {
                     .zIndex(1)
                 }
                 feedPager
-                    // Theater owns the screen edge to edge; resting keeps the picture
-                    // below the status bar and the For You / Explore row.
-                    .ignoresSafeArea(edges: videoExpanded ? .top : [])
             }
 
             if let quizClip {
@@ -709,16 +706,24 @@ struct FeedView: View {
 }
 
 /// Keep each feed gesture to one clip, regardless of swipe velocity.
-private struct SingleClipPerSwipeBehavior: ScrollTargetBehavior {
+nonisolated struct SingleClipPerSwipeBehavior: ScrollTargetBehavior {
     func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
-        let pageHeight = context.containerSize.height
-        guard pageHeight > 0 else { return }
+        target.rect.origin.y = Self.settledOffset(
+            original: context.originalTarget.rect.minY,
+            proposed: target.rect.minY,
+            viewportHeight: context.containerSize.height,
+            contentHeight: context.contentSize.height
+        )
+    }
 
-        let currentPage = Int((context.originalTarget.rect.minY / pageHeight).rounded())
-        let proposedPage = Int((target.rect.minY / pageHeight).rounded())
-        let lastPage = Int(max(0, (context.contentSize.height - pageHeight) / pageHeight).rounded(.down))
+    static func settledOffset(original: CGFloat, proposed: CGFloat,
+                              viewportHeight: CGFloat, contentHeight: CGFloat) -> CGFloat {
+        guard viewportHeight > 0 else { return original }
+        let currentPage = Int((original / viewportHeight).rounded())
+        let proposedPage = Int((proposed / viewportHeight).rounded())
+        let lastPage = Int(max(0, (contentHeight / viewportHeight - 1).rounded(.down)))
         let onePageAtATime = min(max(proposedPage, currentPage - 1), currentPage + 1)
         let destination = min(max(onePageAtATime, 0), lastPage)
-        target.rect.origin.y = CGFloat(destination) * pageHeight
+        return CGFloat(destination) * viewportHeight
     }
 }

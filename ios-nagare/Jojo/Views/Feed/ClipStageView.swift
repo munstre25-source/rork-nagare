@@ -40,6 +40,7 @@ struct ClipStageView: View {
     /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
     @ScaledMetric(relativeTo: .body) private var shortsWordsHeight: CGFloat = 220
+    @State private var playbackControlsHeight: CGFloat = 88
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
@@ -90,15 +91,17 @@ struct ClipStageView: View {
     private func expandedVideoSize(in size: CGSize) -> CGSize {
         if isCompactLandscape(size) {
             // Reserve room only for visible controls and the separate words column.
-            let controlsHeight: CGFloat = showsTheaterControls ? 100 : 0
+            let controlsHeight: CGFloat = showsTheaterControls ? playbackControlsHeight + 8 : 0
             let maxHeight = max(0, size.height - controlsHeight - 18)
             let wordsWidth = showsShortsCaptions ? wordsColumnWidth(in: size.width) + 14 : 0
             let width = min(max(0, size.width - wordsWidth - 24), maxHeight * 16 / 9, 1100)
             return CGSize(width: width, height: width * 9 / 16)
         }
-        let maxHeight = max(0, size.height)
-        let width = min(size.width, maxHeight * 16 / 9)
-        return CGSize(width: width, height: width * 9 / 16)
+        return LandscapeTheaterGeometry.make(
+            in: size,
+            preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
+            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0
+        ).videoSize
     }
 
     /// Landscape phones: the stage is wider than tall. Stacking video over words there
@@ -309,7 +312,7 @@ struct ClipStageView: View {
     ) -> some View {
         let wordsWidth = wordsColumnWidth(in: stageSize.width)
         return VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -329,16 +332,13 @@ struct ClipStageView: View {
 
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
-                        .frame(width: wordsWidth)
-                        .frame(maxHeight: .infinity, alignment: .top)
+                        .frame(width: wordsWidth, height: min(shortsWordsHeight, max(0, stageSize.height - 18 - (showsTheaterControls ? playbackControlsHeight + 8 : 0))))
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
             if showsTheaterControls {
-                theaterControls(player: player)
-                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                    .fixedSize(horizontal: false, vertical: true)
+                playbackControls(player: player, sourceMark: "YouTube")
             }
         }
         .padding(.horizontal, 12)
@@ -347,8 +347,13 @@ struct ClipStageView: View {
     }
 
     private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
+        let theater = LandscapeTheaterGeometry.make(
+            in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
+            preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
+            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0
+        )
         return VStack(spacing: 0) {
-            if showsChannelRow && (!maximized || showsTheaterControls) {
+            if showsChannelRow && !maximized {
                 ChannelRow(
                     clip: clip,
                     trailing: maximized ? nil : channelTrailing,
@@ -363,7 +368,7 @@ struct ClipStageView: View {
             }
 
             if maximized {
-                Color.clear.frame(height: 8)
+                Color.clear.frame(height: theater.videoTop)
             } else {
                 Color.clear.frame(height: 18)
             }
@@ -400,27 +405,17 @@ struct ClipStageView: View {
 
             if maximized {
                 if showsTheaterControls {
-                    theaterControls(player: player)
+                    playbackControls(player: player, sourceMark: "YouTube")
                         .padding(.horizontal, 12)
-                        .padding(.top, 8)
+                        .padding(.top, LandscapeTheaterGeometry.spacing)
                 }
-
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
                         .padding(.horizontal, 16)
-                        .frame(maxWidth: 620, maxHeight: .infinity, alignment: .top)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                } else {
-                    Spacer(minLength: 0)
+                        .frame(height: theater.captionHeight)
+                        .padding(.top, LandscapeTheaterGeometry.spacing)
                 }
-
-                if showsTheaterControls {
-                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 12)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Spacer(minLength: 0)
             } else {
                 if immersiveFeed {
                     ClipActionRow(
@@ -449,17 +444,18 @@ struct ClipStageView: View {
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
-        let card = CGSize(width: max(0, min(size.width - 12, size.height < size.width ? size.height * 0.68 : 620)), height: max(0, size.height - 6))
-        let maximized = videoExpanded
-        let restingVideoHeight = min(card.height * 0.60, card.width * 16 / 9)
-        let karaokeHeight = min(card.height * (maximized ? 0.25 : 0.30),
-                                shortsWordsHeight * (maximized ? 0.82 : 1))
+        let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
+        let karaokeHeight = showsShortsCaptions
+            ? min(card.height * (videoExpanded ? 0.25 : 0.30), shortsWordsHeight * (videoExpanded ? 0.82 : 1))
+            : 0
+        let gaps: CGFloat = showsShortsCaptions ? 12 : 6
+        let videoHeight = max(0, min(card.width * 16 / 9,
+                                    card.height - karaokeHeight - playbackControlsHeight - gaps))
 
-        // Video, words and timer are siblings. The video gets the remaining height on
-        // maximize, so neither a long sentence nor a larger font can cover the footage.
+        // Explicit regions prevent flexible overlays from collapsing or covering each other.
+        // Shorts playback controls are always visible, including while maximized.
         return VStack(spacing: 6) {
             ZStack(alignment: .top) {
-                // Keep this player at the same structural position in both sizes.
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -469,34 +465,26 @@ struct ClipStageView: View {
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     fitsFrame: true,
-                    watchChromeHidden: watchChromeHidden,
+                    watchChromeHidden: false,
                     onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: card.width, height: videoHeight)
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
                 ShortsHeader(clip: clip)
                     .padding(.horizontal, 10)
                     .padding(.top, 10)
-                    .opacity(watchChromeHidden || (maximized && !showsTheaterControls) ? 0 : 1)
-
-                HStack {
-                    Spacer(minLength: 0)
-                    shortsRail(player: player)
-                }
-                .padding(.trailing, 4)
-                // The dictionary card owns the page while it is up.
-                .opacity(isPopupHere || (maximized && !showsTheaterControls) ? 0 : 1)
-                .allowsHitTesting(!isPopupHere && (!maximized || showsTheaterControls))
-                .accessibilityHidden(isPopupHere || (maximized && !showsTheaterControls))
-                .animation(.easeInOut(duration: 0.2), value: isPopupHere)
+                    .opacity(watchChromeHidden || videoExpanded ? 0 : 1)
             }
-            .frame(maxWidth: .infinity, minHeight: 0,
-                   maxHeight: maximized ? .infinity : restingVideoHeight)
+            .frame(width: card.width, height: videoHeight)
             .clipped()
             .modifier(FrameBottomReader(bottom: $videoBottom))
+
+            playbackControls(player: player, sourceMark: "Shorts")
+                .padding(.horizontal, 8)
+                .layoutPriority(1)
 
             if showsShortsCaptions {
                 shortsKaraoke(player: player, maxHeight: karaokeHeight)
@@ -506,51 +494,36 @@ struct ClipStageView: View {
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .layoutPriority(1)
             }
-
-            if !maximized || showsTheaterControls {
-                ShortsFooter(clip: clip, player: player, onPicture: false)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 8)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .layoutPriority(1)
-            }
         }
-        .frame(width: card.width, height: card.height, alignment: .top)
+        .frame(width: card.width, height: card.height, alignment: .center)
         .background(Color.watchBackground)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .frame(maxWidth: .infinity)
         .padding(.top, 2)
     }
 
-    private func shortsRail(player: (any ClipPlayer)?) -> some View {
-        // Small screens can make the full rail taller than the available video. Scroll
-        // the controls within that region rather than drawing them over the karaoke.
-        GeometryReader { geometry in
-            ScrollView(.vertical, showsIndicators: false) {
-                ShortsRail(
-                    clip: clip,
-                    player: player,
-                    showsCaptions: showsShortsCaptions,
-                    onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
-                    onInfo: onInfo,
-                    onMaximize: videoExpanded ? nil : onToggleVideoSize,
-                    onMinimize: videoExpanded ? onToggleVideoSize : nil,
-                    onPicture: true,
-                    onPresentationChange: onTheaterPresentationChange
-                )
-                .padding(.vertical, 4)
-                .frame(minHeight: geometry.size.height, alignment: .center)
-            }
-            .scrollBounceBehavior(.basedOnSize)
+    private func playbackControls(player: (any ClipPlayer)?, sourceMark: String) -> some View {
+        VStack(spacing: 2) {
+            theaterControls(player: player)
+            ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: sourceMark)
         }
-        .frame(width: 44)
-        // Keep video controls legible while the surrounding navigation chrome fades.
+        .padding(.vertical, 4)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color.bgSurfaceDark)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            if height.isFinite, height > 0, abs(height - playbackControlsHeight) > 1 {
+                playbackControlsHeight = height
+            }
+        }
     }
 
     private func theaterControls(player: (any ClipPlayer)?) -> some View {
         TheaterPlaybackControls(
             clip: clip,
             player: player,
+            expanded: videoExpanded,
             showsCaptions: $showsShortsCaptions,
             onInfo: onInfo,
             onMinimize: onToggleVideoSize,
@@ -690,6 +663,7 @@ struct ClipStageView: View {
 private struct TheaterPlaybackControls: View {
     let clip: Clip
     let player: (any ClipPlayer)?
+    var expanded: Bool = true
     @Binding var showsCaptions: Bool
     var onInfo: (() -> Void)?
     var onMinimize: (() -> Void)?
@@ -712,6 +686,11 @@ private struct TheaterPlaybackControls: View {
         ViewThatFits(in: .horizontal) {
             controls(compact: false)
             controls(compact: true)
+            ScrollView(.horizontal, showsIndicators: false) {
+                controls(compact: true)
+            }
+            .frame(height: 44)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 2)
@@ -746,6 +725,8 @@ private struct TheaterPlaybackControls: View {
                 Text(rateLabel)
                     .font(.caption.weight(.bold))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
             }
@@ -779,8 +760,8 @@ private struct TheaterPlaybackControls: View {
             .accessibilityLabel("More playback options")
 
             if let onMinimize {
-                control("arrow.down.right.and.arrow.up.left", label: "Normal video size",
-                        action: onMinimize)
+                control(expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                        label: expanded ? "Normal video size" : "Maximize video", action: onMinimize)
             }
         }
         .fixedSize(horizontal: true, vertical: false)
