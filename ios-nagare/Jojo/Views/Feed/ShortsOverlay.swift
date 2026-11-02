@@ -44,6 +44,7 @@ struct ShortsRail: View {
     @Environment(PlaybackCoordinator.self) private var coordinator
 
     private var ink: Color { onPicture ? .white : .primary }
+    private var activeInk: Color { onPicture ? .videoControlAccent : .designOrange }
 
     private var rateLabel: String {
         switch coordinator.preferredRate {
@@ -74,12 +75,14 @@ struct ShortsRail: View {
                     .monospacedDigit()
                     .foregroundStyle(ink)
                     .frame(width: 44, height: 44)
+                    .modifier(VideoControlSurface(onPicture: onPicture))
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Playback speed \(rateLabel)")
 
             railButton(
                 app.isLiked(clip.id) ? "heart.fill" : "heart",
-                tint: app.isLiked(clip.id) ? Color.designOrange : ink,
+                tint: app.isLiked(clip.id) ? activeInk : ink,
                 label: app.isLiked(clip.id) ? "Unlike video" : "Like video"
             ) {
                 Haptics.light()
@@ -88,14 +91,14 @@ struct ShortsRail: View {
 
             railButton(
                 app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
-                tint: app.isFavorite(clip.id) ? Color.designOrange : ink,
+                tint: app.isFavorite(clip.id) ? activeInk : ink,
                 label: app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip"
             ) {
                 Haptics.light()
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             }
 
-            TranscriptDisplayMenu(tint: ink, compact: true)
+            TranscriptDisplayMenu(tint: ink, compact: true, onPicture: onPicture)
 
             if let onInfo {
                 railButton("info.circle", tint: ink, label: "Clip info", action: onInfo)
@@ -103,7 +106,7 @@ struct ShortsRail: View {
 
             railButton(
                 showsCaptions ? "captions.bubble.fill" : "captions.bubble",
-                tint: showsCaptions ? Color.designOrange : ink,
+                tint: showsCaptions ? activeInk : ink,
                 label: showsCaptions ? "Hide words" : "Show words"
             ) {
                 Haptics.selection()
@@ -130,7 +133,9 @@ struct ShortsRail: View {
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
+                .modifier(VideoControlSurface(onPicture: onPicture))
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }
@@ -139,6 +144,7 @@ struct ShortsRail: View {
 struct TranscriptDisplayMenu: View {
     var tint: Color = .secondary
     var compact: Bool = false
+    var onPicture: Bool = false
 
     @Environment(AppModel.self) private var app
     @State private var showsSettings = false
@@ -153,6 +159,7 @@ struct TranscriptDisplayMenu: View {
                 .foregroundStyle(tint)
                 .frame(width: compact ? 44 : 34, height: 44)
                 .contentShape(Rectangle())
+                .modifier(VideoControlSurface(onPicture: onPicture))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Subtitle help")
@@ -174,6 +181,7 @@ struct ShortsFooter: View {
     var sourceMark: String = "Shorts"
 
     private var ink: Color { onPicture ? .white : .primary }
+    private var activeInk: Color { onPicture ? .videoControlAccent : .designOrange }
 
     private var progress: Double {
         let duration = max(player?.duration ?? clip.durationSec, 0.001)
@@ -186,7 +194,7 @@ struct ShortsFooter: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(ink.opacity(0.22))
                     Capsule()
-                        .fill(Color.designOrange)
+                        .fill(activeInk)
                         .frame(width: max(3, proxy.size.width * progress))
                 }
             }
@@ -208,6 +216,31 @@ struct ShortsFooter: View {
                 .accessibilityLabel(sourceMark == "Shorts" ? "YouTube Shorts" : "YouTube")
             }
         }
+        .padding(.horizontal, onPicture ? 10 : 0)
+        .padding(.vertical, onPicture ? 6 : 0)
+        .background {
+            if onPicture {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.videoControlBackground)
+            }
+        }
         .allowsHitTesting(false)
+    }
+}
+
+/// A predictable backing for glyphs over video, including bright frames and black letterboxing.
+struct VideoControlSurface: ViewModifier {
+    var onPicture: Bool = true
+
+    func body(content: Content) -> some View {
+        content.background {
+            if onPicture {
+                Circle()
+                    .fill(Color.videoControlBackground)
+                    .overlay {
+                        Circle().strokeBorder(.white.opacity(0.18), lineWidth: 0.75)
+                    }
+            }
+        }
     }
 }

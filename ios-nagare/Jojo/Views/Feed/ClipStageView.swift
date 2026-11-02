@@ -560,7 +560,8 @@ struct ClipStageView: View {
 
             HStack {
                 Spacer(minLength: 0)
-                shortsRail(player: player, onPicture: maximized)
+                // This rail is over the video in both sizes, including its black letterboxing.
+                shortsRail(player: player)
             }
             .frame(width: card.width, height: videoHeight, alignment: .trailing)
             .padding(.trailing, 4)
@@ -574,7 +575,7 @@ struct ClipStageView: View {
         .padding(.top, 2)
     }
 
-    private func shortsRail(player: (any ClipPlayer)?, onPicture: Bool) -> some View {
+    private func shortsRail(player: (any ClipPlayer)?) -> some View {
         ShortsRail(
             clip: clip,
             player: player,
@@ -583,10 +584,9 @@ struct ClipStageView: View {
             onInfo: onInfo,
             onMaximize: videoExpanded ? nil : onToggleVideoSize,
             onMinimize: videoExpanded ? onToggleVideoSize : nil,
-            onPicture: onPicture
+            onPicture: true
         )
-        .opacity(watchChromeHidden ? 0.35 : 1)
-        .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+        // Keep video controls legible while the surrounding navigation chrome fades.
     }
 
     /// Height of the words zone on the maximized landscape page: comfortable for the
@@ -724,12 +724,12 @@ struct VideoSizeBox: View {
                   ? "arrow.down.right.and.arrow.up.left"
                   : "arrow.up.left.and.arrow.down.right")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(Color.videoControlBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.85), lineWidth: 1.6)
+                        .strokeBorder(Color.white.opacity(0.85), lineWidth: 1.6)
                 )
         }
         .frame(width: 44, height: 44)

@@ -271,7 +271,7 @@ struct ClipVideoView: View {
         VStack(spacing: Spacing.s) {
             RailButton(
                 systemImage: app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
-                tint: app.isFavorite(clip.id) ? .jojoOrange : .white,
+                tint: app.isFavorite(clip.id) ? .videoControlAccent : .white,
                 label: app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip"
             ) {
                 Haptics.light()
@@ -283,7 +283,7 @@ struct ClipVideoView: View {
             if let onInfo {
                 RailButton(systemImage: "info.circle", label: "Clip info", action: onInfo)
             }
-            RailButton(systemImage: "lightbulb.fill", tint: .jojoOrange, label: "Request a feature") {
+            RailButton(systemImage: "lightbulb.fill", tint: .videoControlAccent, label: "Request a feature") {
                 openFeatureRequest()
             }
             if !compactChrome, let onFullscreen {
@@ -310,7 +310,7 @@ struct ClipVideoView: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10)
                             .frame(minWidth: 44, minHeight: 30)
-                            .background(.white.opacity(0.16), in: Capsule())
+                            .background(Color.videoControlBackground, in: Capsule())
                             .frame(minHeight: 44)
                     }
                     .accessibilityLabel("Playback speed \(rateLabel)")
@@ -334,7 +334,7 @@ struct ClipVideoView: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 10)
                             .frame(minWidth: 44, minHeight: 30)
-                            .background(.white.opacity(0.16), in: Capsule())
+                            .background(Color.videoControlBackground, in: Capsule())
                             .frame(minHeight: 44)
                     }
                     .accessibilityLabel("Playback speed \(rateLabel)")
@@ -343,7 +343,7 @@ struct ClipVideoView: View {
                         if player == nil { onActivate() }
                         player?.toggleLoopCurrentLine()
                     } label: {
-                        ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .jojoOrange : .white)
+                        ControlIcon(systemImage: "repeat", tint: player?.loopRange != nil ? .videoControlAccent : .white)
                     }
                     .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
                     if let onFullscreen {
@@ -365,7 +365,7 @@ struct ClipVideoView: View {
             Scrubber(clip: clip, player: player)
         }
         .background(
-            LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [.black.opacity(0.62), .black.opacity(0.8)], startPoint: .top, endPoint: .bottom)
                 .allowsHitTesting(false)
         )
     }
@@ -474,8 +474,9 @@ private struct RailButton: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 44, height: 44)
-                .background(.black.opacity(0.35), in: Circle())
+                .modifier(VideoControlSurface())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }

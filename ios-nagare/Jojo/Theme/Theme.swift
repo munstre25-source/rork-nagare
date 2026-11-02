@@ -73,6 +73,14 @@ extension Color {
     // MARK: Backgrounds
     /// Pure black for the video frame itself — never lightens with appearance.
     static let bgPlayer = Color(hex: "#000000")
+    /// Video chrome needs contrast against footage, regardless of the page appearance.
+    static let videoControlBackground = Color.black.opacity(0.72)
+    static var videoControlAccent: Color {
+        switch JojoPalette.theme {
+        case .sakura: Color(hex: "#FF7EB8")
+        case .amber: Color(hex: "#FFB020")
+        }
+    }
     /// Page behind a playing clip. White in light mode, pure black in dark mode.
     static let watchBackground = Color.adaptive(light: "#FFFFFF", dark: "#000000")
     /// Raised chrome under the transcript / feed cards. White in light, near-black in dark.
