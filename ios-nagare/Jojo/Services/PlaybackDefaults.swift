@@ -11,7 +11,7 @@ enum PlaybackDefaults {
         switch category {
         case .anime, .kids:
             return Profile(rate: 0.75, preferLineLoop: true)
-        case .drama, .interview, .learning:
+        case .drama, .interview, .learning, .podcast:
             return Profile(rate: 1.0, preferLineLoop: false)
         case .variety, .vtuber, .gaming:
             return Profile(rate: 0.75, preferLineLoop: false)
