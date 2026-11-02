@@ -29,6 +29,25 @@ struct ExploreHomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 0) {
+                        Color.clear.frame(width: 44, height: 44)
+                        Spacer(minLength: 0)
+                        CenteredModeSwitch(
+                            forYouSelected: false,
+                            onForYou: onOpenFeed,
+                            onExplore: {}
+                        )
+                        Spacer(minLength: 0)
+                        Button {
+                            path.append(LearningPath.jlpt)
+                        } label: {
+                            Image(systemName: "map")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .accessibilityLabel("My Path")
+                    }
                     StudySessionClock(running: scenePhase == .active)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if !app.profile.hideDailyGoalBar {
@@ -47,25 +66,6 @@ struct ExploreHomeView: View {
                             .foregroundStyle(Color.studyMuted)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
-                    }
-                    HStack(spacing: 0) {
-                        Color.clear.frame(width: 40, height: 40)
-                        Spacer(minLength: 0)
-                        CenteredModeSwitch(
-                            forYouSelected: false,
-                            onForYou: onOpenFeed,
-                            onExplore: {}
-                        )
-                        Spacer(minLength: 0)
-                        Button {
-                            path.append(LearningPath.jlpt)
-                        } label: {
-                            Image(systemName: "map")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 40, height: 40)
-                        }
-                        .accessibilityLabel("My Path")
                     }
                     searchEntry
                     Button {
@@ -112,7 +112,6 @@ struct ExploreHomeView: View {
                     captureRow
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)

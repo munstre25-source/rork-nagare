@@ -29,7 +29,7 @@ struct CenteredModeSwitch: View {
                     .fill(selected ? Color.sakuraPink : Color.clear)
                     .frame(width: 36, height: 3)
             }
-            .frame(minHeight: 40)
+            .frame(minHeight: 44)
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

@@ -47,6 +47,9 @@ struct FeedView: View {
             VStack(spacing: 0) {
                 if !videoExpanded {
                     VStack(spacing: 0) {
+                        // Navigation stays directly below the safe area; progress and resume
+                        // details must not push the For You / Explore links down.
+                        header
                         VStack(spacing: 0) {
                             DailyGoalBar()
                             if showResumeChip, let resumeSnapshot {
@@ -65,7 +68,6 @@ struct FeedView: View {
                         }
                         .opacity(watchChromeVisible ? 1 : 0)
                         .allowsHitTesting(watchChromeVisible)
-                        header
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
@@ -263,7 +265,7 @@ struct FeedView: View {
         }
     }
 
-    /// Feed navigation layered over the video: centered For You / Explore switch and search.
+    /// Feed navigation just below the status bar, above progress and the video.
     private var header: some View {
         HStack(spacing: 0) {
             Button {
