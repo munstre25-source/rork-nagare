@@ -34,11 +34,15 @@ struct LiveTranscriptPanel: View {
                     ForEach(Array(stride(from: max(0, followingLines), through: 0, by: -1)), id: \.self) { extra in
                         paddedWindow(following: extra)
                     }
-                    ScrollView(.vertical, showsIndicators: true) {
-                        paddedWindow(following: 0)
+                    // The reset id must live inside a wrapper: an explicit id directly on a
+                    // ViewThatFits child collides with the ForEach ids (0...n) and SwiftUI traps.
+                    VStack(spacing: 0) {
+                        ScrollView(.vertical, showsIndicators: true) {
+                            paddedWindow(following: 0)
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .id(currentLine) // New sentences start at the top after a long-line scroll.
                     }
-                    .scrollBounceBehavior(.basedOnSize)
-                    .id(currentLine) // New sentences start at the top after a long-line scroll.
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if onlyCurrentLine {
