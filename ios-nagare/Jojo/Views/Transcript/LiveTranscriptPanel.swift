@@ -34,10 +34,11 @@ struct LiveTranscriptPanel: View {
                     ForEach(Array(stride(from: max(0, followingLines), through: 0, by: -1)), id: \.self) { extra in
                         paddedWindow(following: extra)
                     }
-                    ScrollView(.vertical, showsIndicators: false) {
+                    ScrollView(.vertical, showsIndicators: true) {
                         paddedWindow(following: 0)
                     }
                     .scrollBounceBehavior(.basedOnSize)
+                    .id(currentLine) // New sentences start at the top after a long-line scroll.
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             } else if onlyCurrentLine {
@@ -74,6 +75,7 @@ struct LiveTranscriptPanel: View {
             .padding(.top, tooltip == nil ? Spacing.s : 40)
             .padding(.bottom, Spacing.m)
             .frame(maxWidth: .infinity, alignment: .topLeading)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var windowStack: some View { windowStack(following: followingLines) }

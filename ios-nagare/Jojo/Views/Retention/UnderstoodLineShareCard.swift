@@ -22,9 +22,7 @@ struct UnderstoodLineShareCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Jojo 流れ")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.sakuraPink)
+            JojoBrandIcon(size: 44)
             Text("I understood this line")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)

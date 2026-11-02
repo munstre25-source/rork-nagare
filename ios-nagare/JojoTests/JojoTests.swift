@@ -301,7 +301,8 @@ struct JojoTests {
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
         #expect(layout.videoTop > 12)
         #expect(layout.videoSize.width <= size.width - 24)
-        #expect(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight <= size.height - 12)
+        #expect(layout.captionHeight > 220)
+        #expect(abs(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight - (size.height - 12)) < 0.01)
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
@@ -315,8 +316,12 @@ struct JojoTests {
                     #expect(layout.videoTop >= 0)
                     #expect(layout.videoSize.height > 0)
                     #expect(layout.controlsHeight == controlsHeight)
-                    #expect(layout.videoTop + layout.videoSize.height + layout.captionHeight
-                            + layout.controlsHeight + gaps <= size.height - 12 + 0.01)
+                    let contentBottom = layout.videoTop + layout.videoSize.height + layout.captionHeight
+                        + layout.controlsHeight + gaps
+                    #expect(contentBottom <= size.height - 12 + 0.01)
+                    if captionHeight > 0 {
+                        #expect(abs(contentBottom - (size.height - 12)) < 0.01)
+                    }
                 }
             }
         }

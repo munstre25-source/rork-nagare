@@ -46,6 +46,7 @@ struct MainTabView: View {
     @State private var showCancellationSurvey = false
     @Query private var savedWords: [SavedWord]
     @State private var showingExplore = false
+    @State private var feedHomeRequest = 0
     @State private var welcome: (due: Int, streak: Int)?
     @State private var experiencePromptTask: Task<Void, Never>?
     private let guide = GuidanceCenter.shared
@@ -75,7 +76,9 @@ struct MainTabView: View {
         TabView(selection: $tab) {
             FeedTab(
                 showingExplore: $showingExplore,
-                feedActive: tab == .feed
+                feedActive: tab == .feed,
+                homeRequest: feedHomeRequest,
+                onOpenFeed: openDefaultFeed
             )
             .toolbar(.hidden, for: .tabBar)
             .background(SystemTabBarHider())
@@ -102,7 +105,7 @@ struct MainTabView: View {
             // Feed focus may fade its video controls, but navigation stays available.
             // Only explicit maximize or a pushed screen hides the dock.
             if !app.hidesMainTabBar {
-                JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount)
+                JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount, onFeedTap: openDefaultFeed)
                     .background(Color.canvas.ignoresSafeArea(edges: .bottom))
             }
         }
@@ -140,6 +143,7 @@ struct MainTabView: View {
             case .review:
                 tab = .vocab
             case .feed:
+                showingExplore = false
                 tab = .feed
                 app.clearDeepLink()
             case nil:
@@ -195,6 +199,18 @@ struct MainTabView: View {
         .sheet(isPresented: $showCancellationSurvey) {
             CancellationSurveySheet { showCancellationSurvey = false }
         }
+    }
+
+    private func openDefaultFeed() {
+        experiencePromptTask?.cancel()
+        showingExplore = false
+        tab = .feed
+        app.pendingFeedClipId = nil
+        app.clearDeepLink()
+        app.feedChromeHidden = false
+        app.hidesMainTabBar = false
+        // A real home action must also fire when the Feed tab is already selected.
+        feedHomeRequest &+= 1
     }
 
     private func syncGuideVisibility() {
@@ -259,19 +275,22 @@ private struct SystemTabBarHider: UIViewControllerRepresentable {
 private struct FeedTab: View {
     @Binding var showingExplore: Bool
     var feedActive: Bool
+    var homeRequest: Int
+    var onOpenFeed: () -> Void
 
     var body: some View {
         ZStack {
             FeedView(
                 isActiveTab: feedActive && !showingExplore,
-                onOpenExplore: { showingExplore = true }
+                onOpenExplore: { showingExplore = true },
+                homeRequest: homeRequest
             )
             .opacity(showingExplore ? 0 : 1)
             .allowsHitTesting(!showingExplore)
             .accessibilityHidden(showingExplore)
 
             if showingExplore {
-                ExploreHomeView(onOpenFeed: { showingExplore = false })
+                ExploreHomeView(onOpenFeed: onOpenFeed)
             }
         }
     }
@@ -282,17 +301,17 @@ private struct FeedTab: View {
 struct JojoDock: View {
     @Binding var selection: AppTab
     var vocabBadge: Int = 0
+    var onFeedTap: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 2) {
             dockItem(.vocab, title: "Vocab", symbol: "rectangle.stack", hint: vocabHint) {
                 badge
             }
-            dockItem(.feed, title: "Feed", symbol: nil, hint: "Watch clips") {
-                JojoMascot(height: 24, floats: false, pose: .book)
-                    .frame(width: 28, height: 28)
-                    .opacity(selection == .feed ? 1 : 0.6)
-                    .saturation(selection == .feed ? 1 : 0.35)
+            dockItem(.feed, title: "Feed", symbol: nil, hint: "Return to your For You feed") {
+                JojoBrandIcon(size: 38)
+                    .opacity(selection == .feed ? 1 : 0.85)
+                    .accessibilityHidden(true)
             }
             dockItem(.profile, title: "Profile", symbol: "person", hint: "Progress and settings") { EmptyView() }
         }
@@ -338,9 +357,10 @@ struct JojoDock: View {
         let selected = selection == tab
         let tint: Color = selected ? .designOrange : .secondary
         return Button {
-            guard selection != tab else { return }
+            guard selection != tab || tab == .feed else { return }
             Haptics.selection()
             selection = tab
+            if tab == .feed { onFeedTap?() }
         } label: {
             VStack(spacing: 2) {
                 ZStack {
@@ -351,7 +371,7 @@ struct JojoDock: View {
                     }
                     icon()
                 }
-                .frame(height: 30)
+                .frame(height: 40)
                 Text(title)
                     .font(.system(size: 11, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xLarge)

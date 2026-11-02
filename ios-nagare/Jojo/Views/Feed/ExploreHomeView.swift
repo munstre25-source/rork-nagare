@@ -207,7 +207,11 @@ struct ExploreHomeView: View {
 
     private var topBar: some View {
         HStack(spacing: 8) {
-            JojoWordmark(size: 28)
+            Button(action: onOpenFeed) {
+                JojoBrandIcon(size: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Go to For You")
             Spacer(minLength: 0)
             NavigationLink(value: SearchRoute.search) {
                 Image(systemName: "magnifyingglass")

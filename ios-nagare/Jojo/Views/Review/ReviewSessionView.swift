@@ -463,17 +463,10 @@ struct ReviewStageBackground: View {
     }
 }
 
-/// JOJO wordmark with the accent blossom.
+/// Compact mascot branding shared with the feed and Explore.
 struct ReviewWordmark: View {
     var body: some View {
-        HStack(spacing: 5) {
-            Text("JOJO")
-                .font(.system(size: 22, weight: .heavy, design: .rounded))
-            Blossom(size: 16, color: Color.sakuraPink)
-        }
-        .foregroundStyle(Color.sakuraPink)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Jojo")
+        JojoBrandIcon(size: 40)
     }
 }
 

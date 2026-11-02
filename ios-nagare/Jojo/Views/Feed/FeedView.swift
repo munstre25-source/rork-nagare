@@ -41,6 +41,7 @@ struct FeedView: View {
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
+    var homeRequest: Int = 0
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     var body: some View {
@@ -187,6 +188,18 @@ struct FeedView: View {
                 showWatchChrome()
                 ImmersionIsland.end()
             }
+        }
+        .onChange(of: homeRequest) { _, _ in
+            autoAdvanceTask?.cancel()
+            lookup.dismiss()
+            quizClip = nil
+            bornCard = nil
+            videoExpanded = false
+            maximizeNavShown = false
+            theaterOptionsPresented = false
+            coordinator.endHoldSlow()
+            showWatchChrome()
+            resumeIfPossible()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {

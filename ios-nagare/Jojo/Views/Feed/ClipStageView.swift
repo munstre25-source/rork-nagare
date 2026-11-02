@@ -332,7 +332,7 @@ struct ClipStageView: View {
 
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
-                        .frame(width: wordsWidth, height: min(shortsWordsHeight, max(0, stageSize.height - 18 - (showsTheaterControls ? playbackControlsHeight + 8 : 0))))
+                        .frame(width: wordsWidth, height: max(0, stageSize.height - 18 - (showsTheaterControls ? playbackControlsHeight + 8 : 0)))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

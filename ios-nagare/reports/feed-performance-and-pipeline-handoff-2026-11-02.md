@@ -56,3 +56,11 @@ On macOS, pull main, build Jojo, and run JojoTests. Profile cold and warm feed e
 A bounded manual follow-up may continue alongside cron until its pass or spending limit. Every attempt is recorded in the same dashboard, uses the same queue leases, and respects the catalog cap. Do not start a separate unguarded publisher.
 
 The separately edited ios-nagare/HANDOFF-SIMULATOR.md was left untouched.
+
+## Subsequent karaoke and navigation refinements
+
+Maximized landscape pictures sit near the upper third. The karaoke panel now fills the remaining viewport below the picture, including space previously left blank, and uses the full available column height when the phone is rotated. Long sentences keep their natural wrapping height and scroll only when they exceed actual available space; each new sentence starts at the top.
+
+The dock mascot is now 38 points, with aligned navigation labels. Every Feed tap explicitly returns to For You, including when the Feed tab is already selected but Explore is showing. It closes inline feed overlays and exits maximize without recreating the player. The Explore mascot uses the same home action. Compact review and share headers also use the mascot; existing onboarding mascot/wordmark lockups and meaningful product-name text are retained.
+
+Simulator checks: open Explore and its nested routes, tap Feed repeatedly, switch from Vocab and Profile, and use Feed after revealing the dock in maximize. Confirm For You opens, only one video plays, and the current player does not reload. Check long Japanese sentences with furigana, romaji, English, and large text sizes; all available karaoke space should be used and overflow should scroll visibly.

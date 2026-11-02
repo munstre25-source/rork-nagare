@@ -382,6 +382,19 @@ struct JojoMascot: View {
     }
 }
 
+/// Static, centered mascot for navigation and compact brand headers.
+struct JojoBrandIcon: View {
+    var size: CGFloat = 40
+
+    var body: some View {
+        Image(MascotPose.book.rawValue)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityLabel("Jojo")
+    }
+}
+
 /// Head-and-shoulders crop in a cream disc — the recurring guide avatar.
 struct JojoMascotAvatar: View {
     var size: CGFloat = 56
