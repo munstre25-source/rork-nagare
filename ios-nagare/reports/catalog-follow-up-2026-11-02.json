@@ -1,0 +1,3378 @@
+{
+  "asOfUTC": "2026-11-02T10:43:27.86556+00:00",
+  "summary": {
+    "live": 205,
+    "budget": {
+      "cap_usd": 8.994361125,
+      "spent_usd": 5.86326575,
+      "reserved_usd": 0.5,
+      "lookup_spent_usd": 0,
+      "lookup_reserved_usd": 0,
+      "lookup_allowance_usd": 1.79
+    },
+    "drafts": 2,
+    "stalled": 0,
+    "publisher": {
+      "pause_reason": null,
+      "paused_until": null
+    },
+    "processing": 1,
+    "current_held": 0,
+    "learner_jobs": {
+      "succeeded": 3
+    },
+    "held_in_range": 19,
+    "queued_videos": 52,
+    "current_failed": 0,
+    "queued_windows": 54,
+    "failed_in_range": 65,
+    "last_attempt_at": "2026-11-02T10:42:54.555048+00:00",
+    "current_excluded": 83,
+    "rejected_in_range": 238,
+    "reviewed_in_range": 159,
+    "history_started_at": "2026-11-02T04:50:45.257044+00:00",
+    "policy_passed_live": 92,
+    "published_in_range": 15,
+    "needs_policy_review": 113,
+    "unpublished_in_range": 0,
+    "current_queued_retries": 9,
+    "legacy_rejections_in_range": 351
+  },
+  "additionalCatalogSpendUSD": 0.868904625,
+  "estimatedOpenRouterBalanceUSD": 4.921095375,
+  "protectedDefinitionAllowanceUSD": 1.79,
+  "channels": [
+    {
+      "live": 4,
+      "title": "ブリッピー☆BLIPPI",
+      "handle": "BlippiJapanese",
+      "verified": 4,
+      "channel_id": "UC4o2BenUFOlycRMJ5j0pwoQ",
+      "checked_at": "2026-11-02T10:26:16.409+00:00",
+      "queued_videos": 14,
+      "queued_windows": 14,
+      "discovery_status": "eligible"
+    },
+    {
+      "live": 4,
+      "title": "TOHO animation チャンネル",
+      "handle": "TOHOanimation",
+      "verified": 4,
+      "channel_id": "UC14Yc2Qv92DMuyNRlHvpo2Q",
+      "checked_at": "2026-11-02T10:26:13.761+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "eligible"
+    },
+    {
+      "live": 3,
+      "title": "Learn Japanese with Tanaka san",
+      "handle": "japanese_tanakasan",
+      "verified": 1,
+      "channel_id": "UCvryaJCRHcTVjOC_DcuYxGg",
+      "checked_at": "2026-11-02T00:14:32.242797+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 2,
+      "title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "handle": "PeppaPigJapaneseOfficial",
+      "verified": 2,
+      "channel_id": "UCldXjuJ7Qg8wTNktOnVXkGw",
+      "checked_at": "2026-11-02T10:26:15.53+00:00",
+      "queued_videos": 13,
+      "queued_windows": 15,
+      "discovery_status": "eligible"
+    },
+    {
+      "live": 2,
+      "title": "Japanese super immersion",
+      "handle": "JSI55",
+      "verified": 1,
+      "channel_id": "UCLp9rnRAcrFSzsoXsjXYJYA",
+      "checked_at": "2026-11-02T00:14:20.394161+00:00",
+      "queued_videos": 4,
+      "queued_windows": 4,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 2,
+      "title": "OkkeiJapanese",
+      "handle": "OkkeiJapanese",
+      "verified": 1,
+      "channel_id": "UCx1pODtr3fv_WtVKst7mwYQ",
+      "checked_at": "2026-11-02T00:14:28.259947+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 1,
+      "title": "あかね的日本語教室",
+      "handle": "Akane-JapaneseClass",
+      "verified": 1,
+      "channel_id": "UCh-GhnQ7qDQmS6Bz3pGc1Mw",
+      "checked_at": "2026-11-02T00:14:36.55136+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 1,
+      "title": "Daily Japanese with Naoko",
+      "handle": "DailyJapanese",
+      "verified": 1,
+      "channel_id": "UCMNVKIaw8hV8ln3dDE5z-hA",
+      "checked_at": "2026-11-02T00:14:24.621935+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 1,
+      "title": "YUYUの日本語Podcast",
+      "handle": "yuyunihongopodcast",
+      "verified": 0,
+      "channel_id": "UC8dWfySP_cKDMFj6aFfQbFA",
+      "checked_at": "2026-11-02T00:14:29.762594+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    {
+      "live": 1,
+      "title": "もしもしゆうすけ",
+      "handle": "moshimoshi.yusuke",
+      "verified": 1,
+      "channel_id": "UCcCeJ3pQYFgvfVuMxVRWhoA",
+      "checked_at": "2026-11-02T00:14:33.147809+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "QuizKnock",
+      "handle": "QuizKnock",
+      "verified": 0,
+      "channel_id": "UCQ_MqAw18jFTlBB-f8BP7dw",
+      "checked_at": "2026-11-02T10:26:14.58+00:00",
+      "queued_videos": 18,
+      "queued_windows": 18,
+      "discovery_status": "eligible"
+    },
+    {
+      "live": 0,
+      "title": "日本語の森",
+      "handle": "nihongonomori2013",
+      "verified": 0,
+      "channel_id": "UCVx6RFaEAg46xfAsD2zz16w",
+      "checked_at": "2026-11-02T00:14:31.475817+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "bachiRa",
+      "handle": "bachiramylove629",
+      "verified": 0,
+      "channel_id": "UCKmqmuYSDgElkH4QS-7LQ-Q",
+      "checked_at": "2026-11-02T00:14:18.708707+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "Bite Size Japanese",
+      "handle": "the_bitesize_japanese_podcast",
+      "verified": 0,
+      "channel_id": "UCc8QJqwkWe9RcKYZTY2Ezuw",
+      "checked_at": "2026-11-02T00:14:26.432182+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    {
+      "live": 0,
+      "title": "Sayuri Saying",
+      "handle": "SayuriSaying",
+      "verified": 0,
+      "channel_id": "UCqMY-cp1He6IAi1cIz-gX1g",
+      "checked_at": "2026-11-02T00:14:25.519343+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    {
+      "live": 0,
+      "title": "Speak Japanese Naturally",
+      "handle": "SpeakJapaneseNaturally",
+      "verified": 0,
+      "channel_id": "UCSbH_BPR_AoARW6RDYLlLog",
+      "checked_at": "2026-11-02T10:26:17.144+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "eligible"
+    },
+    {
+      "live": 0,
+      "title": "The Nihongo Nook",
+      "handle": "TheNihongoNook",
+      "verified": 0,
+      "channel_id": "UCYGUwnflqHJ3MlCAbaggqSQ",
+      "checked_at": "2026-11-02T00:14:21.406688+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "tokiwa-japanese",
+      "handle": "tokiwa-japanese",
+      "verified": 0,
+      "channel_id": "UC_zK6VCNpr4IRCa2qm8r8AA",
+      "checked_at": "2026-11-02T00:14:27.366851+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "かなまとぺ Kanamatope",
+      "handle": "KanamatopeJapanese",
+      "verified": 0,
+      "channel_id": "UCa_BBcTJHGtE09C9xMQaA-g",
+      "checked_at": "2026-11-02T00:14:22.352985+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "けんさんおかえり Japanese",
+      "handle": "kensanokaeri",
+      "verified": 0,
+      "channel_id": "UCaXIrZ5Ere4lC4cdPE_ujXA",
+      "checked_at": "2026-11-02T00:14:23.10168+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    {
+      "live": 0,
+      "title": "にほんごのじかん | Japanese Comprehensible Input (CI)",
+      "handle": "nihongo-no-jikan",
+      "verified": 0,
+      "channel_id": "UCdZHET-9_Comx6UaVTSETiQ",
+      "checked_at": "2026-11-02T00:14:37.370477+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    {
+      "live": 0,
+      "title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "handle": "Bebefinn日本語",
+      "verified": 0,
+      "channel_id": "UChU1SYl5xjQT72r3kcfPz0w",
+      "checked_at": "2026-11-02T00:14:34.892748+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    {
+      "live": 0,
+      "title": "日本語で話そう with Yuki",
+      "handle": "withyuki1030",
+      "verified": 0,
+      "channel_id": "UCL1YI9ozHAFRvgjru7vhbqQ",
+      "checked_at": "2026-11-02T00:14:23.86409+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    }
+  ],
+  "requestedVideos": [
+    {
+      "videoId": "scLWToOqXzA",
+      "durationSec": 3604,
+      "title": "Let’s Learn Japanese with Minecraft! #1 – Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "Hd6gAtt5BOU",
+      "durationSec": 3646,
+      "title": "Let’s Learn Japanese with Minecraft! #2 – Immersion & Comprehensible Input | The Hunt for Iron",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "TA-tUGtjils",
+      "durationSec": 3768,
+      "title": "Let’s Learn Japanese with Minecraft! #3 – Discovering a New Land | Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "ijzd6W09uB8",
+      "durationSec": 3751,
+      "title": "Let’s Learn Japanese with Minecraft! #4 – Immersion & Comprehensible Input | Building a New Home",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "RIKmx-R987A",
+      "durationSec": 3745,
+      "title": "I Made a Fatal Mistake | Learn Japanese with Minecraft! Ep5",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "e0acNvVwkWI",
+      "durationSec": 3863,
+      "title": "I Found a Massive Cave! | Learn Japanese with Minecraft! Ep6 – Master 670 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "W3Rw3GsVjpo",
+      "durationSec": 3848,
+      "title": "A New Friend Appears! | Learn Japanese with Minecraft! Ep7 – Master 579 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "nX8gk8OLb0U",
+      "durationSec": 3780,
+      "title": "Defending the Village's Love from a Zombie Attack! | Learn Japanese with Minecraft! Ep8",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "NhJJcAiZvFY",
+      "durationSec": 7712,
+      "title": "Learn Japanese with Minecraft! Ep9 | LIVE Cave Exploration",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "FZUIZYEwHp4",
+      "durationSec": 3652,
+      "title": "Learn Japanese with Minecraft! Ep10 | Master 674 Words in a New Adventure",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    },
+    {
+      "videoId": "a9SBvpregYU",
+      "durationSec": 5214,
+      "title": "Learn Japanese with Minecraft! Ep11 | I Seriously Leveled the Land!!",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes",
+      "state": "blocked_source_over_4_minutes"
+    }
+  ],
+  "queuedSources": [
+    {
+      "title": "Japanese Words Foreigners Struggle With#japanese#shorts#learnjapanese #japaneselanguage #nihongo",
+      "category": "learning",
+      "video_id": "6xW3XfAaxiw",
+      "duration_sec": 0,
+      "channel_title": "Japanese super immersion",
+      "next_attempt_at": "2026-11-02T10:43:09.651+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "触る/touch #japanese#shorts#learnjapanese #japaneselanguage #nihongo#にほんご",
+      "category": "learning",
+      "video_id": "7RhWdAiJFOM",
+      "duration_sec": 0,
+      "channel_title": "Japanese super immersion",
+      "next_attempt_at": "2026-11-02T10:45:13.469+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "仕方がない(しかたがない)It can't be helped.#japanese#shorts#learnjapanese #japaneselanguage #nihongo#にほんご",
+      "category": "learning",
+      "video_id": "jAAfBZl4ic0",
+      "duration_sec": 0,
+      "channel_title": "Japanese super immersion",
+      "next_attempt_at": "2026-11-02T10:51:47.361+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "寝る/sleep Japanese immersion #japanese#shorts#learnjapanese #japaneselanguage #nihongo#にほんご",
+      "category": "learning",
+      "video_id": "P-91hz5fiH0",
+      "duration_sec": 0,
+      "channel_title": "Japanese super immersion",
+      "next_attempt_at": "2026-11-02T10:50:42.782+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【クイズで注文】答えが好物になるように問題文を選ぼう🍹後編 #Shorts #コラボカフェ",
+      "category": "variety",
+      "video_id": "7dzqsHGsi2g",
+      "duration_sec": 109,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "当てはまる言葉を答えろ🍞 #Shorts",
+      "category": "variety",
+      "video_id": "cw4NA_efYwM",
+      "duration_sec": 57,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "くじ引きで好きな映画を当てろ！クイズチャレンジ！前編 #Shorts",
+      "category": "variety",
+      "video_id": "ekSpefRSQI4",
+      "duration_sec": 73,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【8ゲーム】条件を増やしながら8まで数えろ！⑧ #Shorts",
+      "category": "variety",
+      "video_id": "kE3VlSz_zqI",
+      "duration_sec": 44,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:00:58.097326+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【8ゲーム】だんだんルールが増えるゲーム #Shorts",
+      "category": "variety",
+      "video_id": "Lv9INelT6cQ",
+      "duration_sec": 108,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "下品クイズ【天下一品】 #Shorts",
+      "category": "variety",
+      "video_id": "lWn9OrFySGQ",
+      "duration_sec": 57,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🌀ざっくりした歌詞から察するクイズ #Shorts",
+      "category": "variety",
+      "video_id": "mW7gD2r2tJA",
+      "duration_sec": 44,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:00:58.097326+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【クイズで注文】答えが好物になるように問題文を選ぼう🍽️ 前編 #Shorts #コラボカフェ",
+      "category": "variety",
+      "video_id": "mYHK1JNOAiM",
+      "duration_sec": 83,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🏁キューブを揃えて解答せよ！ #Shorts",
+      "category": "variety",
+      "video_id": "OWeGh51-0Ms",
+      "duration_sec": 59,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ガチあるなしクイズ！ #Shorts",
+      "category": "variety",
+      "video_id": "PFzse9nPVUI",
+      "duration_sec": 51,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "当てはまる言葉を答えろ🚀 #Shorts",
+      "category": "variety",
+      "video_id": "RrosFjCHyHg",
+      "duration_sec": 44,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "双子一致ゲーム🍏🍎 #Shorts",
+      "category": "variety",
+      "video_id": "sU8atkDFQkE",
+      "duration_sec": 61,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🍪ざっくりした歌詞から察するクイズ #Shorts",
+      "category": "variety",
+      "video_id": "t8tlXuUwyck",
+      "duration_sec": 65,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【ベン図】当てはまる都道府県を答えろ #Shorts",
+      "category": "variety",
+      "video_id": "UEsEycaRXVw",
+      "duration_sec": 34,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:40:30.038+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🧠めっっちゃ知識が必要ななぞかけ #Shorts",
+      "category": "variety",
+      "video_id": "wk7IOpaNlUU",
+      "duration_sec": 76,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🎨いらすとやクイズ【漢数字編】 #Shorts",
+      "category": "variety",
+      "video_id": "X9GIAc7JeRc",
+      "duration_sec": 47,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ソーラン節 自由形 クイズの舞 #Shorts",
+      "category": "variety",
+      "video_id": "XLyhEdb3ZRY",
+      "duration_sec": 51,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "くじ引きで好きな映画を当てろ！クイズチャレンジ！後編 #Shorts",
+      "category": "variety",
+      "video_id": "Zqj_rnpdh-c",
+      "duration_sec": 59,
+      "channel_title": "QuizKnock",
+      "next_attempt_at": "2026-11-02T10:26:14.574721+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "『ポップパップポルターズ』第4話本編切り抜き動画②",
+      "category": "anime",
+      "video_id": "KJKdsQIWkWE",
+      "duration_sec": 26,
+      "channel_title": "TOHO animation チャンネル",
+      "next_attempt_at": "2026-11-02T10:52:44.387+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "【日本語オノマトペ】べろべろ　#japaneseonomatopoeia",
+      "category": "learning",
+      "video_id": "GEPrWa4QCYw",
+      "duration_sec": 0,
+      "channel_title": "あかね的日本語教室",
+      "next_attempt_at": "2026-11-02T10:44:09.33+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ゆきあそび #ブリッピー ☃️🔍 #こども #shorts",
+      "category": "kids",
+      "video_id": "5Kh4byhOhvY",
+      "duration_sec": 36,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ブリッピーとししまい 🦁💃 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "68b6Pvy6VWU",
+      "duration_sec": 41,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "こおりのだいぼうけん #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "7J9ECv91j_8",
+      "duration_sec": 34,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ゴミ収集車の冒険！🚛🗑️ #ブリッピー #こども #アニメ",
+      "category": "kids",
+      "video_id": "CBvDx6h03eQ",
+      "duration_sec": 33,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ちまきとゲームのひ 🥟🎮 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "dVX95LWL1Ak",
+      "duration_sec": 45,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "おおきなきょうりゅう🦕📏#ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "eoAtLlO8yp8",
+      "duration_sec": 28,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "さいしょのくるま 🚗🚘 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "g-gr9JnRSUM",
+      "duration_sec": 33,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "きょうりゅうソング 🦖🦕 | ブリッピーのツリーハウス | ブリッピ 日本語 - 幼児向け教育動画 Blippi",
+      "category": "kids",
+      "video_id": "KL4KlXaGEUo",
+      "duration_sec": 52,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "虹の色🌈🎨 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "qJV1RtxFTAI",
+      "duration_sec": 61,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "アリとどうぶつ 🐜🦁#ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "s7wkwRb4YWo",
+      "duration_sec": 36,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ブリッピーとハチのぼうけん 🐝 🍯 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "uQWvmz9iRIw",
+      "duration_sec": 58,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "けんせつと工事のうた🏗️🚧 | ブリッピーのツリーハウス | ブリッピ 日本語 - 幼児向け教育動画 Blippi",
+      "category": "kids",
+      "video_id": "WLmCUAVQBuM",
+      "duration_sec": 55,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ペット 🐾🐶 | ブリッピーのツリーハウス | ブリッピ 日本語 - 幼児向け教育動画 Blippi",
+      "category": "kids",
+      "video_id": "wSR17kjaxuk",
+      "duration_sec": 47,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ホーカーってなに？🍜👨‍🍳 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "yE5sxbbZflc",
+      "duration_sec": 57,
+      "channel_title": "ブリッピー☆BLIPPI",
+      "next_attempt_at": "2026-11-02T10:26:16.401494+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "ちからを あわせて ゴール！⚽️ #shorts",
+      "category": "kids",
+      "video_id": "2-MSxIa7vpw",
+      "duration_sec": 30,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "にげる ダディピッグの にもつを おいかけよう！#shorts",
+      "category": "kids",
+      "video_id": "37bd1BXlbVs",
+      "duration_sec": 31,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "みんなで なかよく あそべるかな？#shorts",
+      "category": "kids",
+      "video_id": "e3PDB7GL-iQ",
+      "duration_sec": 31,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "👀 みんな どこに かくれてるのかな？ #shorts",
+      "category": "kids",
+      "video_id": "kywgRt3g7eE",
+      "duration_sec": 30,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "くねくね〰️！ミミズに なりたい！#shorts",
+      "category": "kids",
+      "video_id": "M1O_8LUhCs8",
+      "duration_sec": 31,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🧸オモチャのおでかけ #shorts",
+      "category": "kids",
+      "video_id": "mLzpFUzwzvw",
+      "duration_sec": 36,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "たいへん！デパートで まいごに なっちゃった👀 #shorts",
+      "category": "kids",
+      "video_id": "NH8Av6tk3jU",
+      "duration_sec": 36,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🦖きょうりゅうを たすけて！#shorts",
+      "category": "kids",
+      "video_id": "QaFD5zdar1k",
+      "duration_sec": 33,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "🥁うるさい おとが すき! #shorts",
+      "category": "kids",
+      "video_id": "sFk7K3zQauA",
+      "duration_sec": 37,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "よーい どん！🔴🔵🟡 #shorts",
+      "category": "kids",
+      "video_id": "w-FivMlx1tk",
+      "duration_sec": 29,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T11:02:45.782+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "はが いたいよ 🦷 あかちゃんの はが はえてきた！ | にゅうしがはえてきた | 子ども向けアニメ | 赤ちゃんが泣き止む | ペッパピッグ - Peppa Pig Japanese",
+      "category": "kids",
+      "video_id": "x1WNuwdyUfM",
+      "duration_sec": 186,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "はが いたいよ 🦷 あかちゃんの はが はえてきた！ | にゅうしがはえてきた | 子ども向けアニメ | 赤ちゃんが泣き止む | ペッパピッグ - Peppa Pig Japanese",
+      "category": "kids",
+      "video_id": "x1WNuwdyUfM",
+      "duration_sec": 186,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 90
+    },
+    {
+      "title": "あさは いつも バタバタ💦 いっしょに おでかけの じゅんびしよう！| あさはおおいそがし | 子ども向けアニメ | 赤ちゃんが泣き止む | ペッパピッグ - Peppa Pig Japanese",
+      "category": "kids",
+      "video_id": "x2ctx_slUR0",
+      "duration_sec": 173,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "あさは いつも バタバタ💦 いっしょに おでかけの じゅんびしよう！| あさはおおいそがし | 子ども向けアニメ | 赤ちゃんが泣き止む | ペッパピッグ - Peppa Pig Japanese",
+      "category": "kids",
+      "video_id": "x2ctx_slUR0",
+      "duration_sec": 173,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 90
+    },
+    {
+      "title": "ドーナツこうじょうで なにが おきたのかな? #shorts",
+      "category": "kids",
+      "video_id": "z9kfUAk-ReM",
+      "duration_sec": 29,
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "next_attempt_at": "2026-11-02T10:26:15.523958+00:00",
+      "window_start_sec": 0
+    },
+    {
+      "title": "けんさ【JLPT N3】 #shorts #nihongo #nihongonomori  #kaiwa #slang #japanes #jlpt",
+      "category": "learning",
+      "video_id": "Jnl42OjIqIE",
+      "duration_sec": 0,
+      "channel_title": "日本語の森",
+      "next_attempt_at": "2026-11-02T10:46:11.644+00:00",
+      "window_start_sec": 0
+    }
+  ],
+  "excludedSources": [
+    {
+      "at": "2026-11-02T10:05:06.065+00:00",
+      "id": "dcfaa32b-6a2e-402e-b008-0e8a9dd3c147",
+      "stage": "quality_gate",
+      "title": "SUKUNA MANGA ANiMATION IN COLOR",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "7I2mQd_NXc4",
+      "channel_name": "bachiRa"
+    },
+    {
+      "at": "2026-11-02T10:37:47.896+00:00",
+      "id": "f030f33e-2cec-4bcd-87ff-e05e93cbfb04",
+      "stage": "quality_gate",
+      "title": "Gojo vs Toji Fushiguro edit #shorts #animeedit #jujutsukaisen #gojosatoruedit",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "f2xhkkZCn00",
+      "channel_name": "bachiRa"
+    },
+    {
+      "at": "2026-11-02T10:05:25.267+00:00",
+      "id": "b9dbad68-20ce-4e1a-b474-25b49af20265",
+      "stage": "quality_gate",
+      "title": "Sukuna jujutsu kaisen[AMV//edit] [4k full HD]",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "G0iVwg22Bqw",
+      "channel_name": "bachiRa"
+    },
+    {
+      "at": "2026-11-02T10:06:10.239+00:00",
+      "id": "908da74c-e6fe-4110-bb75-9b5f0ac1ffd9",
+      "stage": "quality_gate",
+      "title": "Stand proud sukuna you are strong 💪 #shorts #jujutsukaisen #gojo #fypシ",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "K2xXD9gFbfc",
+      "channel_name": "bachiRa"
+    },
+    {
+      "at": "2026-11-02T10:05:40.461+00:00",
+      "id": "a654585d-8931-46c1-ad5c-a87147f356f2",
+      "stage": "quality_gate",
+      "title": "Your name edit #shorts #beautiful #animeedit #fypシ #yourname",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "YpB2iCkZ43I",
+      "channel_name": "bachiRa"
+    },
+    {
+      "at": "2026-11-02T09:45:14.794+00:00",
+      "id": "3bb5e132-59a7-4f96-b658-6675e1984ad6",
+      "stage": "quality_gate",
+      "title": "Let's memorize Japanese counters with the song:)/ learning Japanese song /日本語の助数詞を歌で覚えよう♪",
+      "detail": "line[2] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "RkloecX_1no",
+      "channel_name": "Daily Japanese with Naoko"
+    },
+    {
+      "at": "2026-11-02T02:50:27.389+00:00",
+      "id": "730bb50f-8e96-4657-8dee-5ba2a0e9fbc2",
+      "stage": "quality_gate",
+      "title": "polite vs native learn Japanese#japanese#shorts#learnjapanese #japaneselanguage #nihongo#にほんご",
+      "detail": "line[5] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "-wMTXj7k7mI",
+      "channel_name": "Japanese super immersion"
+    },
+    {
+      "at": "2026-11-02T06:40:49.981+00:00",
+      "id": "341c1af1-d563-4b15-9ab7-46308429f4cd",
+      "stage": "quality_gate",
+      "title": "Fun Japanese Word: 花金 (hanakin) “Flower Friday”?! #japanese #japaneseword #tanakasan",
+      "detail": "English subtitles are burned into the source video at 0.4–2.2s: (Just five more minutes...)",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "iZGx_P__g7o",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "at": "2026-11-02T06:50:49.087+00:00",
+      "id": "f80c39bd-90cd-438a-9779-46adbf9547f5",
+      "stage": "quality_gate",
+      "title": "Japanese Idiom: へそを曲げる (hesowo mageru) “Bend the belly button”?! #shorts #japanese",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "UC6EC4GxmYA",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "at": "2026-11-02T09:44:06.348+00:00",
+      "id": "12410895-0aba-4e86-a79f-6f946d798328",
+      "stage": "quality_gate",
+      "title": "Take a Screenshot! Who is Your Friend for Today? #japanese #onomatopoeia",
+      "detail": "English subtitles are burned into the source video at 0–1s: A hippo who makes sleeping anytime feel perfect",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "WO0fmdhdxAs",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "at": "2026-11-02T03:00:09.598+00:00",
+      "id": "ee889a36-8b33-491d-8c1c-57a137273a9a",
+      "stage": "quality_gate",
+      "title": "5 Steps to Self-Study Kanji with Kanji Camp✨ #kanjicamp #kanji #japanese",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "X_UEE0rh_Bk",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "at": "2026-11-02T03:30:47.258+00:00",
+      "id": "e2b6a250-c1c5-47f8-9a43-42c76b259ddd",
+      "stage": "quality_gate",
+      "title": "N5 Easy Japanese | About travel",
+      "detail": "line[4] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "AnUtZdYskUc",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "at": "2026-11-02T03:40:35.661+00:00",
+      "id": "90bc4827-6c88-4948-b560-ecfb050e46ed",
+      "stage": "quality_gate",
+      "title": "Slow Japanese Vlog - A Rainy Walk in Japan",
+      "detail": "line[0] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "fowKCgLrR8w",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "at": "2026-11-02T06:30:54.716+00:00",
+      "id": "ad6df4c1-7a1a-4d24-a215-37fa1fa8767b",
+      "stage": "quality_gate",
+      "title": "The Way Okinawa People Speak",
+      "detail": "English subtitles are burned into the source video at 0–5s: in Okinawa, my sister-in-law's husband is...",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "iREzYxu5joE",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "at": "2026-11-02T03:20:38.495+00:00",
+      "id": "326a76fd-18a3-4552-803a-4221fa9cb903",
+      "stage": "quality_gate",
+      "title": "N2-N1 Japanese - How I learned English through music",
+      "detail": "line[0] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ThAiVjlKZNg",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "at": "2026-11-02T00:50:51.731+00:00",
+      "id": "6da14e54-8946-463a-b3b2-85702e5a20c0",
+      "stage": "quality_gate",
+      "title": "N3-N1 Japanese Listening - Locked out in Japan",
+      "detail": "line[0] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "xfEeITWighk",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "at": "2026-11-02T10:21:19.716+00:00",
+      "id": "d4285eda-3570-42e9-b6ff-531133997654",
+      "stage": "quality_gate",
+      "title": "相方が答えろ！二人羽織クイズ！ #Shorts",
+      "detail": "line[2] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "_CG1XRDBfIE",
+      "channel_name": "QuizKnock"
+    },
+    {
+      "at": "2026-11-02T10:22:03.009+00:00",
+      "id": "c14f4fa0-8228-44c9-b7e4-7408cb5f91ec",
+      "stage": "quality_gate",
+      "title": "【10本指スマ】絶対に負けられない戦い【いっせーの】 #Shorts",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "vLphol5F_SY",
+      "channel_name": "QuizKnock"
+    },
+    {
+      "at": "2026-11-02T10:29:43.217+00:00",
+      "id": "25b06a1e-f0f4-418a-852e-e3fefce9fb37",
+      "stage": "quality_gate",
+      "title": "Join Me in Japan This June 🌸 | Homestay Program",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "5apXfvBeOA4",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:27:31.488+00:00",
+      "id": "abb6b3c3-cb27-4747-a8ba-db36d62d4aff",
+      "stage": "quality_gate",
+      "title": "How to Pronounce きょうと",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "6gscX5HEBZ0",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:28:56.643+00:00",
+      "id": "029bdc35-8119-4c63-bda2-86c93c22c7b9",
+      "stage": "quality_gate",
+      "title": "Create Your Japanese Brain!",
+      "detail": "line[0] outside window",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "a0KSNfCYt7M",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:29:13.939+00:00",
+      "id": "2f32cd28-8ccc-4297-b7ba-a224718e6d13",
+      "stage": "quality_gate",
+      "title": "How to Pronounce まっちゃ",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "b_JgCahlmbI",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T06:20:09.254+00:00",
+      "id": "e5e24822-1716-439e-b7e8-20f22431f26e",
+      "stage": "quality_gate",
+      "title": "Do You Mean Grapes or Martial Arts?",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "dWtDVevOoIk",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T07:10:12.454+00:00",
+      "id": "088fe7e9-a6f5-490d-9046-815f7c5b4abc",
+      "stage": "quality_gate",
+      "title": "The Pitch Accent of なし",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "gICY0ThO-vo",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T01:10:10.475+00:00",
+      "id": "05cdd0b5-0649-4a38-bfa8-5e29dfc4d3bf",
+      "stage": "quality_gate",
+      "title": "How to Pronounce おおさか",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "gSfVJCCwWYk",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:28:01.464+00:00",
+      "id": "1667aef3-64c3-4ee8-881d-9c47e70cdf84",
+      "stage": "quality_gate",
+      "title": "How to Pronounce かわいい",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "J7Q4ngOc_sQ",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:26:25.095+00:00",
+      "id": "2a09fb34-60fa-48d2-8685-4a040dbb24a3",
+      "stage": "quality_gate",
+      "title": "How to pronounce つなみ",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "j9RdgBEgNjE",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T07:00:13.196+00:00",
+      "id": "6f7a1b1d-9815-45db-8cef-168f5476bab1",
+      "stage": "quality_gate",
+      "title": "The Small Tsu Is the Most Important Part #japanesepronunciation",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "jGXiYfMwiIQ",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:28:29.497+00:00",
+      "id": "b28a56ac-c0b6-4eb1-802b-f2b47f14ca89",
+      "stage": "quality_gate",
+      "title": "Do you want to speak with Japanese people?",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "kaI2vJfqYsU",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:27:15.925+00:00",
+      "id": "278d7314-f725-4448-8fd7-c98ee128e0a1",
+      "stage": "quality_gate",
+      "title": "How to Pronounce とうきょう",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "kOKyHWt9xqM",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:28:13.808+00:00",
+      "id": "6ce1b43f-fd95-4e30-9531-577dff5b6193",
+      "stage": "quality_gate",
+      "title": "How to Pronounce きんつぎ",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "lenIWy4MTjI",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:27:48.577+00:00",
+      "id": "531e70e1-c354-438a-99db-614f6fe08ce2",
+      "stage": "quality_gate",
+      "title": "How to Pronounce もったいない",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "qOCWQtrhbNE",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:26:56.734+00:00",
+      "id": "f3dac85c-783c-4272-b673-554815c3857e",
+      "stage": "quality_gate",
+      "title": "How to Pronounce ください #pitchaccent",
+      "detail": "too little speech",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "sPliptG3lVU",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T10:29:26.978+00:00",
+      "id": "84b9fac2-d10b-45e5-911c-7e45c22516f1",
+      "stage": "quality_gate",
+      "title": "Join a Japanese Festival Normally Only Locals Can Join 🇯🇵",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "us3qqJm9_O4",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T01:00:12.594+00:00",
+      "id": "9c6d3678-eada-4fe2-a859-974f64a52d87",
+      "stage": "quality_gate",
+      "title": "How to pronounce Pokemon in Japanese",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "Y3IpqOIN_4E",
+      "channel_name": "Speak Japanese Naturally"
+    },
+    {
+      "at": "2026-11-02T09:44:24.829+00:00",
+      "id": "689bad89-cb85-41eb-8ab5-635453ed23a0",
+      "stage": "quality_gate",
+      "title": "Peaceful Morning 🌄 #日本 #languagelearning #japan",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "J7yIrrw_TW0",
+      "channel_name": "The Nihongo Nook"
+    },
+    {
+      "at": "2026-11-02T04:00:10.524+00:00",
+      "id": "3e5fb45a-77a1-452f-aa41-a02bdd49608e",
+      "stage": "quality_gate",
+      "title": "#japan #japaneseculture #street #osaka",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "uP1KdhqIVg4",
+      "channel_name": "The Nihongo Nook"
+    },
+    {
+      "at": "2026-11-02T03:50:16.37+00:00",
+      "id": "63c6726b-c5fd-4c1f-9fdf-8baca3b21c3d",
+      "stage": "quality_gate",
+      "title": "100,000 Subscribers. Thank you all for the support & Keep learning. #youtubecreatorawards #youtube",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "UyBMpWNO7uo",
+      "channel_name": "The Nihongo Nook"
+    },
+    {
+      "at": "2026-11-02T10:38:14.788+00:00",
+      "id": "5d0c16b1-46a9-4947-9e60-728f64bc085f",
+      "stage": "quality_gate",
+      "title": "A closer look at our Jujutsu Kaisen cardigans",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "-EMVyBgRRVI",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:34:01.718+00:00",
+      "id": "07780d18-c4a7-48b3-a065-50349f1a3844",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第4話本編切り抜き動画③",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "7j2HAcW_Nyg",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:35:06.528+00:00",
+      "id": "f9351e85-1558-41af-86b8-0e0e8e973613",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第4話本編切り抜き動画④",
+      "detail": "line[0] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "CFohF4wCEvc",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:13:27.384+00:00",
+      "id": "8a2a0a4a-7a4b-404c-95a1-9f7a9f38d829",
+      "stage": "quality_gate",
+      "title": "Kaiju No. 8 | Defense Force Acrylic Stands",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "CrPuFffCYhc",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:38:05.125+00:00",
+      "id": "40887b8e-f33f-4c6c-8681-5f293bc1ca9d",
+      "stage": "quality_gate",
+      "title": "Which My Hero Academia keychain would you choose?",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "gMze-eaxOlA",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:38:26.586+00:00",
+      "id": "3f4a3549-2e6b-47c3-ba36-925b10d5ca8b",
+      "stage": "quality_gate",
+      "title": "[ENGLISH DUB] \"Because at this point, words are meaningless!\" Ep59 Highlights | JUJUTSU KAISEN",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "jbQvyi4vQ28",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:32:01.655+00:00",
+      "id": "f7c74da7-f0d7-420d-93a5-4e0e7944b50f",
+      "stage": "quality_gate",
+      "title": "『劇場版 怪獣８号』スーパーティザービジュアル解禁映像／2027年公開決定",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "mrAj1c2iAuE",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:12:56.707+00:00",
+      "id": "62a32f41-b7a6-4c29-a79c-435df63256ea",
+      "stage": "quality_gate",
+      "title": "『薬屋のひとりごと』第3期 第54話「紙の村」予告【11/6(金) 23：30～ 放送】",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "nG5c4mVxWvI",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:33:44.444+00:00",
+      "id": "503225d8-86f3-4ff1-8560-e58367fa7c14",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第4話本編切り抜き動画①",
+      "detail": "line[3] failed sourceMatchesAudio, meaningAccurate, grammarCorrect, timingMatchesAudio",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "OqH28fH4WpE",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:34:16.236+00:00",
+      "id": "546ce261-5f60-4961-a51e-adf698d0331e",
+      "stage": "quality_gate",
+      "title": "[ENGLISH DUB] \"Alright, just this once.\" Ep59 Highlights |  JUJUTSU KAISEN The Culling Game Part 1",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "rIXNhEpVtG0",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:13:14.414+00:00",
+      "id": "90f7926e-2d6d-4354-b7c4-3fb7caa30038",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第3話本編切り抜き動画③",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "sMa5NghESCE",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:32:25.792+00:00",
+      "id": "ac6278d3-0a7f-4051-9778-70307cc72c38",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第2話本編切り抜き動画②",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ThCcuj5SOa0",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:12:43.424+00:00",
+      "id": "7e56d132-d8b6-4060-801a-184df2e64795",
+      "stage": "quality_gate",
+      "title": "『薬屋のひとりごと』第3期 第53話「白蛇仙女」予告【10/30(金) 23：40～ 放送】",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ti5HVf4RCh8",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:34:35.865+00:00",
+      "id": "0e171d92-635b-463e-93f6-17dbcc2efc65",
+      "stage": "quality_gate",
+      "title": "『ポップパップポルターズ』第3話本編切り抜き動画②",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "WKCHiDzjd6g",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:12:27.394+00:00",
+      "id": "ee1cb9b4-e9e2-40fe-9587-eda6dab51b64",
+      "stage": "quality_gate",
+      "title": "『薬屋のひとりごと』第3期 第52話「最後の一冊」予告【10/23(金) 23：00～ 放送】",
+      "detail": "1 lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "zjnLm8YeDYY",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "at": "2026-11-02T09:43:27.716+00:00",
+      "id": "48b10d6b-21b1-4ce7-b656-169d99df45f0",
+      "stage": "quality_gate",
+      "title": "“Too ...” in Japanese 🌊😱 #learnjapanese #animation",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "I5kyivEnB30",
+      "channel_name": "tokiwa-japanese"
+    },
+    {
+      "at": "2026-11-02T09:42:14.584+00:00",
+      "id": "d8dd0423-bb3a-45f8-9d92-282c1b39adbd",
+      "stage": "quality_gate",
+      "title": "When You Say ありがとう in Japan 👏 #japanese",
+      "detail": "English subtitles are burned into the source video at 0–2.1s: Your Japanese is so good!",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "kiAmbHkx8Xk",
+      "channel_name": "tokiwa-japanese"
+    },
+    {
+      "at": "2026-11-02T07:40:28.941+00:00",
+      "id": "9dd14e20-90ab-4fc4-9ce1-8e952b331f95",
+      "stage": "quality_gate",
+      "title": "“I Want to ...” in Japanese 🦒😱 #learnjapanese #animation",
+      "detail": "English subtitles are burned into the source video at 0.2–1.8s: I want to see the giraffe!",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "SFhsf8lvRb8",
+      "channel_name": "tokiwa-japanese"
+    },
+    {
+      "at": "2026-11-02T07:20:28.543+00:00",
+      "id": "41f68e0e-5d36-4a14-a148-ab2b62ce3417",
+      "stage": "quality_gate",
+      "title": "“Shall I ...?” in Japanese ☂️😱 #learnjapanese #animation",
+      "detail": "English subtitles are burned into the source video at 1–2.2s: Shall I take you to the station?",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "UwWnjwJ3o04",
+      "channel_name": "tokiwa-japanese"
+    },
+    {
+      "at": "2026-11-02T09:43:03.883+00:00",
+      "id": "e88f2525-e831-49d3-a1ed-241bf44a1b93",
+      "stage": "quality_gate",
+      "title": "He Jumped in the Bath. Then He Asked Permission 🦝♨️ (入ってもいいですか) #learnjapanese #animation #funny",
+      "detail": "English subtitles are burned into the source video at 0.1–0.9s: Hey!",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ZQGTXuLhnMk",
+      "channel_name": "tokiwa-japanese"
+    },
+    {
+      "at": "2026-11-02T04:10:56.971+00:00",
+      "id": "a73daf7e-9f33-4c01-b4b3-a1261980c623",
+      "stage": "quality_gate",
+      "title": "【日本語の敬語】拝見する／Japanese Honorifics",
+      "detail": "line[4] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "8l13ewnUYlE",
+      "channel_name": "あかね的日本語教室"
+    },
+    {
+      "at": "2026-11-02T09:52:39.77+00:00",
+      "id": "236d73c5-fb9c-4175-b2d7-a18032259693",
+      "stage": "quality_gate",
+      "title": "#日本語文法 〜わりに",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "dcTo5OXezmM",
+      "channel_name": "あかね的日本語教室"
+    },
+    {
+      "at": "2026-11-02T05:11:22.407+00:00",
+      "id": "ac2481f0-96e5-4bf1-8f77-56ac1dc2dab1",
+      "stage": "quality_gate",
+      "title": "日本語オノマトペ",
+      "detail": "line[9] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "urgzd_GA6D4",
+      "channel_name": "あかね的日本語教室"
+    },
+    {
+      "at": "2026-11-02T09:57:29.337+00:00",
+      "id": "4978f1a4-0ce8-46c7-ab1e-96ef8a53476e",
+      "stage": "quality_gate",
+      "title": "\"Excuse me, can I order?\" in Japanese🇯🇵",
+      "detail": "line[0] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "0CDeCJ0p2Fs",
+      "channel_name": "かなまとぺ Kanamatope"
+    },
+    {
+      "at": "2026-11-02T09:58:11.947+00:00",
+      "id": "eb73c4e2-5a12-490d-a4f3-f4bb90590833",
+      "stage": "quality_gate",
+      "title": "\"How many people?\" in Japanese🇯🇵",
+      "detail": "English subtitles are burned into the source video at 2–3s: Did you catch it?",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "3OS4MeUIIfI",
+      "channel_name": "かなまとぺ Kanamatope"
+    },
+    {
+      "at": "2026-11-02T06:00:39.374+00:00",
+      "id": "0b9b9e46-315b-49c0-bb1c-d0b8d18f3959",
+      "stage": "quality_gate",
+      "title": "\"One order of Gyoza, please.\" in Japanese🇯🇵",
+      "detail": "line[1] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "LCWl09QbxbM",
+      "channel_name": "かなまとぺ Kanamatope"
+    },
+    {
+      "at": "2026-11-02T05:50:42.875+00:00",
+      "id": "acdcb213-230e-41fe-adff-d7b564ac362f",
+      "stage": "quality_gate",
+      "title": "\"Will that be all?\" in Japanese🇯🇵",
+      "detail": "English subtitles are burned into the source video at 7.5–8.5s: Did you catch it?",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "m7lyyWOELik",
+      "channel_name": "かなまとぺ Kanamatope"
+    },
+    {
+      "at": "2026-11-02T05:20:37.128+00:00",
+      "id": "60c501b9-44e9-4ec9-bbe0-a67b6fc2533e",
+      "stage": "quality_gate",
+      "title": "\"That'll be all.\" in Japanese🇯🇵",
+      "detail": "English subtitles are burned into the source video at 0–2.5s: Will that be all?",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "u8cHrSBMTsU",
+      "channel_name": "かなまとぺ Kanamatope"
+    },
+    {
+      "at": "2026-11-02T10:40:14.531+00:00",
+      "id": "52a3c617-32de-4a59-b88c-ad63c598ff2e",
+      "stage": "quality_gate",
+      "title": "クレーン 🏗️🦩#ブリッピー #こども #shorts",
+      "detail": "line[3] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "3uvYpDM3b1M",
+      "channel_name": "ブリッピー☆BLIPPI"
+    },
+    {
+      "at": "2026-11-02T10:41:49.529+00:00",
+      "id": "847a0c8e-1583-40b4-82b6-8e7799c2d6e5",
+      "stage": "quality_gate",
+      "title": "☀️あさは いつも ドタバタ！#shorts",
+      "detail": "line[0] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "3U-QOYXqaQs",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:41:10.912+00:00",
+      "id": "a94f9a01-b991-462d-bf2b-6980cb483c0b",
+      "stage": "quality_gate",
+      "title": "👭おねえちゃんに なれるかな？#shorts",
+      "detail": "line[1] failed sourceMatchesAudio",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "5vx70a_B4N0",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:09:54.204+00:00",
+      "id": "a279f453-bc7c-46f9-a909-d5411cbeadcc",
+      "stage": "quality_gate",
+      "title": "えーん、おくちの なかが あつい！#shorts",
+      "detail": "line[0] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "7TaUNZ-Qtdw",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:19:23+00:00",
+      "id": "c5333e3a-ea18-46a9-82e0-e13066d765a4",
+      "stage": "quality_gate",
+      "title": "ペッパと いっしょに じてんしゃに のってみよう🚲 #shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "VB_770iNl10",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "at": "2026-11-02T09:48:25.781+00:00",
+      "id": "370bfe73-7206-4945-8e7c-26a1a684d6f5",
+      "stage": "quality_gate",
+      "title": "たいへん！きゅうに ☔️あめが ふってきたよ! #shorts",
+      "detail": "line[1] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "wJls4xSXf04",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "at": "2026-11-02T10:18:15.674+00:00",
+      "id": "9bfd893c-c8a5-4055-a424-26c1819a3a7e",
+      "stage": "quality_gate",
+      "title": "わー！ミイラがやってくる！😱 #shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "EY6nN3qZ89A",
+      "channel_name": "べべフィン Bebefinn - 童謡とキッズ動画"
+    },
+    {
+      "at": "2026-11-02T10:17:58.224+00:00",
+      "id": "72ddf4b8-0798-48a8-90a3-a7094b67812c",
+      "stage": "quality_gate",
+      "title": "ぶたさんの なきごえは どんなこえ？🐷 #shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ig28eRQ4zMA",
+      "channel_name": "べべフィン Bebefinn - 童謡とキッズ動画"
+    },
+    {
+      "at": "2026-11-02T10:10:24.773+00:00",
+      "id": "ab9a62f7-6743-4336-b525-ce5cc0cb4a86",
+      "stage": "quality_gate",
+      "title": "ベベフィンといっしょに👣 あるいて あるいて！#shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "SjIQqJBcDEE",
+      "channel_name": "べべフィン Bebefinn - 童謡とキッズ動画"
+    },
+    {
+      "at": "2026-11-02T10:10:13.37+00:00",
+      "id": "df67190d-dd15-4b71-b7af-ec1d91defe8d",
+      "stage": "quality_gate",
+      "title": "ベベフィンかぞくを しょうかいします！🧑‍🧑‍🧒‍🧒 #shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "UiSw7N_Ho-A",
+      "channel_name": "べべフィン Bebefinn - 童謡とキッズ動画"
+    },
+    {
+      "at": "2026-11-02T10:17:42.469+00:00",
+      "id": "f994998a-495c-4624-9efb-1eec2803e14d",
+      "stage": "quality_gate",
+      "title": "ベベフィンのハロウィン仮装パーティ👻 #shorts",
+      "detail": "model returned no lines",
+      "reason": "no_dialogue",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "ZQ6e-3lQQu4",
+      "channel_name": "べべフィン Bebefinn - 童謡とキッズ動画"
+    },
+    {
+      "at": "2026-11-02T00:20:56.673+00:00",
+      "id": "0b9bc6c1-4411-4f9d-90af-f0b9793ddd6e",
+      "stage": "quality_gate",
+      "title": "レッスン A / ダービッドさん　#japaneselistening",
+      "detail": "line[0] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "C3dxnqmYOTQ",
+      "channel_name": "もしもしゆうすけ"
+    },
+    {
+      "at": "2026-11-02T00:31:17.493+00:00",
+      "id": "a2b13da3-a246-4b39-b03c-9058fbdb9508",
+      "stage": "quality_gate",
+      "title": "amazon コンビニ受け取り　[ File.24 ]　#japaneselistening",
+      "detail": "line[4] overlaps previous line",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "vQnGwQRPgTU",
+      "channel_name": "もしもしゆうすけ"
+    },
+    {
+      "at": "2026-11-02T01:50:58.143+00:00",
+      "id": "efdf297d-9d3f-47ff-b999-fef8c5bcbb33",
+      "stage": "quality_gate",
+      "title": "⭐#05 日本語簡単！「～んじゃない」",
+      "detail": "English subtitles are burned into the source video at 0.3–3.8s: Teacher, don't you think it will rain tomorrow?",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "BN52l0t9ZRI",
+      "channel_name": "日本語の森"
+    },
+    {
+      "at": "2026-11-02T01:20:50.671+00:00",
+      "id": "a0673968-dfa6-4a7f-a16f-7602725fa19b",
+      "stage": "quality_gate",
+      "title": "合格した皆さん、おめでとうございます！🎉今回合格できなかった皆さんも、落ち込まないでね。JLPTは1年に2回あるので、まだチャンスはあります！次の試験に向けて、また一緒に頑張ろう！💪📚",
+      "detail": "line[3] translation ends mid-thought",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "NGxJTx3HTMw",
+      "channel_name": "日本語の森"
+    },
+    {
+      "at": "2026-11-02T02:00:42.261+00:00",
+      "id": "a681f5e6-d632-44d2-9733-8375b530c36c",
+      "stage": "quality_gate",
+      "title": "⭐#07 日本語簡単！「わかんない」",
+      "detail": "line[3] multiple translated sentences must be separate lines",
+      "reason": "transcript_invalid",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "t606GhjUZOI",
+      "channel_name": "日本語の森"
+    },
+    {
+      "at": "2026-11-02T01:40:47.445+00:00",
+      "id": "8b8f0c72-079e-430a-8318-d040323a50a0",
+      "stage": "quality_gate",
+      "title": "⭐#02 日本語簡単！「(ら)れる」",
+      "detail": "English subtitles are burned into the source video at 0–2.1s: Japanese is easy!",
+      "reason": "translation_unverified",
+      "source": "automatic",
+      "status": "excluded",
+      "video_id": "xZAR6rTjrE4",
+      "channel_name": "日本語の森"
+    }
+  ],
+  "liveClips": [
+    {
+      "id": "boss-rush-live-09",
+      "title": "Boss Rush: Attempt #37",
+      "category": "gaming",
+      "video_id": "8jJ_NDh2Ylc",
+      "channel_name": "GameNama"
+    },
+    {
+      "id": "counting-kuma-03",
+      "title": "Counting with Kuma",
+      "category": "kids",
+      "video_id": "GINghDX1-VQ",
+      "channel_name": "Hiyoko Kids"
+    },
+    {
+      "id": "harajuku-street-02",
+      "title": "What's Your Favorite Food?",
+      "category": "interview",
+      "video_id": "7XgJ81N8svY",
+      "channel_name": "Machi no Koe"
+    },
+    {
+      "id": "hoshizora-academy-07",
+      "title": "The Promise on the Rooftop",
+      "category": "anime",
+      "video_id": "pbb2DE9x2yg",
+      "channel_name": "Hoshizora Anime Club"
+    },
+    {
+      "id": "immersion-_8b_ERSJ6_Q-5-45",
+      "title": "初級日本語げんき 会話ビデオ GENKI Dialogue Videos Lesson 1 あたらしいともだち",
+      "category": "learning",
+      "video_id": "_8b_ERSJ6_Q",
+      "channel_name": "ジャパンタイムズ出版"
+    },
+    {
+      "id": "immersion-_ONDIagmaPE-1-51",
+      "title": "英語がペラペラに！ネイティブが使う簡単英会話フレーズ100選！#英語 #英会話 #聞き流し #初心者 #初級 #ネイティブ #ペラペラ",
+      "category": "drama",
+      "video_id": "_ONDIagmaPE",
+      "channel_name": "日常英会話school ksp English"
+    },
+    {
+      "id": "immersion-_s7_XETTrU0-78-89",
+      "title": "おはよー！最近やりすぎじゃね？？#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "gaming",
+      "video_id": "_s7_XETTrU0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion--TGoiR4GWCQ-33-48",
+      "title": "09  死役所#裏社会政府#クリップ #ドラマ #YouTube #ショートプレイ #fyp",
+      "category": "drama",
+      "video_id": "-TGoiR4GWCQ",
+      "channel_name": "華流5分劇場"
+    },
+    {
+      "id": "immersion--trocZ1u204-14-35",
+      "title": "カスの日本語教室がこちらｗｗｗｗｗ【CoD:BO7】#shorts #切り抜き",
+      "category": "gaming",
+      "video_id": "-trocZ1u204",
+      "channel_name": "おぬーくん"
+    },
+    {
+      "id": "immersion-02Wc9acjA6A-24-40",
+      "title": "「もう我慢しない」正体を隠していた日本一の令嬢が完全にブチギレた瞬間 #shorts #スカッと",
+      "category": "drama",
+      "video_id": "02Wc9acjA6A",
+      "channel_name": "まる子の短編ドラマ"
+    },
+    {
+      "id": "immersion-0FJvvV6uGJ0-33-59",
+      "title": "〔Mondo切り抜き〕韓国語勉強方法のおすすめは？本？アニメ？会話？〔雑談〕",
+      "category": "gaming",
+      "video_id": "0FJvvV6uGJ0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-0jAzZogkBYU-17-48",
+      "title": "厨二病フレーズを日常会話で使ってみた！Unleashing Chuunibyou in Daily Conversation 🇯🇵 🇫🇷 🇺🇸 🇪🇸 #japan",
+      "category": "anime",
+      "video_id": "0jAzZogkBYU",
+      "channel_name": "@Nihon go MieTF 日本語 MieTF"
+    },
+    {
+      "id": "immersion-0qITlsOy4LU-0-12",
+      "title": "【60歳から話せる韓国語】韓国の幼稚園児が覚える挨拶と基本表現50選｜初心者・独学・聞き流し・超入門におすすめ",
+      "category": "learning",
+      "video_id": "0qITlsOy4LU",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-1OjuYw8k2Sc-38-55",
+      "title": "㊗️330万回再生！！【地獄】日本語だからと油断していたら理解されていた兎田ぺこら #shorts #ホロライブ切り抜き 【  #兎田ぺこら #森カリオペ 】",
+      "category": "gaming",
+      "video_id": "1OjuYw8k2Sc",
+      "channel_name": "ホロライブ スマイルクリップ"
+    },
+    {
+      "id": "immersion-3__2dFAV_bU-18-42",
+      "title": "【日本語吹き替え】いじめられていた少女は、なんとギャングのリーダーの妻だった！その正体が明らかになると、部屋の空気は一瞬にして凍りついた。#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "3__2dFAV_bU",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-3rGXMj2vGjI-47-60",
+      "title": "細すぎて伝わらない日本ネタwish【NCTwish】〈切り抜き/日本語字幕〉",
+      "category": "variety",
+      "video_id": "3rGXMj2vGjI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-4auggVQ7H8s-0-13",
+      "title": "日本人が思うフランス【海外親日国 美女に街頭インタビュー】 What Japanese People Think Of France?",
+      "category": "interview",
+      "video_id": "4auggVQ7H8s",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-4CPiPemG9h0-25-42",
+      "title": "やさい なあに？ 野菜の名前 ひらがな 幼児向け 知育 お勉強 子ども向け 日本語 Hiragana Aiueo Japanese",
+      "category": "kids",
+      "video_id": "4CPiPemG9h0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-5kXOkOpkYJ8-78-90",
+      "title": "【#Warframe】おはよー！！日課！！！？#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "5kXOkOpkYJ8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-5U8vAa94rFo-28-49",
+      "title": "あつ森の住民に日本語でブチギレたり変な声でアテレコするアルバーンが面白すぎるw【にじさんじ 切り抜き/アルバーン・ノックス/日本語翻訳】",
+      "category": "vtuber",
+      "video_id": "5U8vAa94rFo",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-89",
+      "title": "おはよー！！雨すごかった！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "5Vz_nVN1PrM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-90",
+      "title": "おはよー！！雨すごかった！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "5Vz_nVN1PrM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-67G_CfyZHp0-102-116",
+      "title": "Minecraft #2 — Yusuke & Yuma",
+      "category": "gaming",
+      "video_id": "67G_CfyZHp0",
+      "channel_name": "Yusuke & Yuma"
+    },
+    {
+      "id": "immersion-6bAtb5gwX1Y-5-45",
+      "title": "翻訳できない日本語の繊細さ。 #マツコ  #月曜から夜ふかし #お笑い #おもしろ動画",
+      "category": "interview",
+      "video_id": "6bAtb5gwX1Y",
+      "channel_name": "Lạc Rang"
+    },
+    {
+      "id": "immersion-7dbIWMbxDfg-12-41",
+      "title": "【日本語吹き替え】いじめを受けていた少女は、なんと大金持ちの娘だった！両親が迎えに来ると、現場の空気は一瞬にして凍りついた...#キスシーン#中国ドラマ",
+      "category": "anime",
+      "video_id": "7dbIWMbxDfg",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-7kk3VajdeaM-0-13",
+      "title": "憧れの​ @DidiKoreanPodcast さんに日本語でインタビュー！  (Japanese Radio for Listening Practice)",
+      "category": "interview",
+      "video_id": "7kk3VajdeaM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-7llJyPmqglg-0-18",
+      "title": "くしゃみ 🤧💨 #ブリッピー #こども #アニメ",
+      "category": "kids",
+      "video_id": "7llJyPmqglg",
+      "channel_name": "ブリッピー☆BLIPPI"
+    },
+    {
+      "id": "immersion-8miK-6nV7Gw-0-32",
+      "title": "【デヴィッド・ボウイ】1983年 オーストラリアのトーク番組 インタビュー #short #関西弁 #和訳",
+      "category": "interview",
+      "video_id": "8miK-6nV7Gw",
+      "channel_name": "トミー関口のガラスのタマネギTV"
+    },
+    {
+      "id": "immersion-8VFGRv8bfZA-0-34",
+      "title": "台詞より先に、心が揺れた💕#BL #ドラマ #ショート #shorts",
+      "category": "drama",
+      "video_id": "8VFGRv8bfZA",
+      "channel_name": "DramaSugar ドラマ【公式】"
+    },
+    {
+      "id": "immersion-9BZDEidV5LU-12-32",
+      "title": "発語トレーニング　「あいさつ」　幼稚園、保育園の先生方や、特別支援学校や支援学級の先生方、保護者の皆様に文字指導のヒントになる、教育動画です。",
+      "category": "kids",
+      "video_id": "9BZDEidV5LU",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-9OYewGtGVQw-0-23",
+      "title": "ペンペンの春休み『Roblox(日本語歌）ショート切り抜き動画』★ホラーゲーム実況",
+      "category": "gaming",
+      "video_id": "9OYewGtGVQw",
+      "channel_name": "やっちゅ"
+    },
+    {
+      "id": "immersion-A3HGH6ZBMNs-25-46",
+      "title": "どうぶつ なあに？？ パンダ ライオン きりん 犬 猫 ひらがな 幼児向け 知育 お勉強 子ども向け 日本語 Hiragana animal Japanese",
+      "category": "kids",
+      "video_id": "A3HGH6ZBMNs",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-AFLDx5Bf63g-0-12",
+      "title": "【100万回再生！】ネイティブの英語が聞き取れるようになる！海外アニメで英語リスニング with Curious George #1",
+      "category": "learning",
+      "video_id": "AFLDx5Bf63g",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-aglOdAXsKEQ-6-30",
+      "title": "【胸糞】頭のケガで苦しむ私に「離婚届を出せ！」と暴力を振るう狂気の義母。帰宅したクズ夫も別の女に夢中…限界の私が即サインして地狱へ落とした結果ｗｗ #shorts #修羅場",
+      "category": "drama",
+      "video_id": "aglOdAXsKEQ",
+      "channel_name": "まる子の短編ドラマ"
+    },
+    {
+      "id": "immersion-alMu3OeXJHk-10-24",
+      "title": "【日本語吹き替え】彼は私の信頼をすべて奪い去りました。もう彼を愛していません... 彼に代償を払わせてやる！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "alMu3OeXJHk",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-AoZugwG4meE-0-17",
+      "title": "成人向け紙芝居 #お笑い #コント #ショートコント #あるある #ネタ #潟 #おすすめ",
+      "category": "variety",
+      "video_id": "AoZugwG4meE",
+      "channel_name": "潟<せき>【新潟お笑い】"
+    },
+    {
+      "id": "immersion-APCLPl0N3p0-52-74",
+      "title": "【日本語吹き替え】婚約前に死を偽装して私を弄んだ彼。命を絶とうとした私は「名前を変えて」別人に…再会後、必死に復縁を乞う彼を冷たく突き放す！",
+      "category": "drama",
+      "video_id": "APCLPl0N3p0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-aqjddUenT8A-0-26",
+      "title": "どんどん増えていくヴェリティ、ピンクの名前は？【海外マイクラ/切り抜き動画/xqree】【日本語字幕】#ショート #shorts",
+      "category": "gaming",
+      "video_id": "aqjddUenT8A",
+      "channel_name": "ねねこ(翻訳)チャンネル"
+    },
+    {
+      "id": "immersion-aSzjC9npiW0-44-56",
+      "title": "【#マイクラ】深夜テンションで会話が終わり散らかしている人達#short動画#切り抜き# #ゲーム実況",
+      "category": "gaming",
+      "video_id": "aSzjC9npiW0",
+      "channel_name": "海坊主の家だ"
+    },
+    {
+      "id": "immersion-ATjZGX5AGQE-7-28",
+      "title": "ブリッピーとどうぶつ #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "ATjZGX5AGQE",
+      "channel_name": "ブリッピー☆BLIPPI"
+    },
+    {
+      "id": "immersion-au2w4AeWyd8-80-99",
+      "title": "Minecraft #4 — Yusuke & Yuma",
+      "category": "gaming",
+      "video_id": "au2w4AeWyd8",
+      "channel_name": "Yusuke & Yuma"
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-33-50",
+      "title": "同期にも言ってない！狂蘭メロコデビュー秘話！第1回日本語雑談 野生のハム太郎も登場！【Meloco Kyoran / NIJISANJI EN / 切り抜き】",
+      "category": "vtuber",
+      "video_id": "AUrfD-1sqM8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-35-51",
+      "title": "同期にも言ってない！狂蘭メロコデビュー秘話！第1回日本語雑談 野生のハム太郎も登場！【Meloco Kyoran / NIJISANJI EN / 切り抜き】",
+      "category": "vtuber",
+      "video_id": "AUrfD-1sqM8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-bIusvG8CJ_A-13-22",
+      "title": "皆が持つハーフのイメージ～原宿街角インタビュー～",
+      "category": "variety",
+      "video_id": "bIusvG8CJ_A",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-bjnXO_u8JO8-43-59",
+      "title": "ゼロからはじめる日常会話 / 聞き流し【日本語→スペイン語】",
+      "category": "learning",
+      "video_id": "bjnXO_u8JO8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-bPqxKdMdXMA-0-19",
+      "title": "【日本語吹き替え】前世、渣夫とその愛人に虐められて死んだ美女社長が人生をやり直す！貢いだ全財産を奪い戻し、一家全体を破滅させる！#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "drama",
+      "video_id": "bPqxKdMdXMA",
+      "channel_name": "サクラのショート恋ドラ"
+    },
+    {
+      "id": "immersion-bUG_c_Q2eQs-53-71",
+      "title": "【#Minecraft】おはよー！！今日も楽しむ！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "bUG_c_Q2eQs",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-butabara-steam",
+      "title": "One-Pan Pork and Cabbage",
+      "category": "variety",
+      "video_id": "UP2qvbhbuuU",
+      "channel_name": "デリッシュキッチン"
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-41",
+      "title": "【日本語吹き替え】幼なじみ2人に捨てられた彼、海外へ旅立った…数年後、逆襲の人生に彼女たちは後悔！",
+      "category": "anime",
+      "video_id": "COb5aAy5CJ0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-42",
+      "title": "【日本語吹き替え】幼なじみ2人に捨てられた彼、海外へ旅立った…数年後、逆襲の人生に彼女たちは後悔！",
+      "category": "anime",
+      "video_id": "COb5aAy5CJ0",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-cT-o8IXg6CI-0-15",
+      "title": "【シクフォニ】逆再生したら日本語になる いるま【切り抜き】#シクフォニ  #シクフォニ切り抜き #いるま #いるまにあふぁみりー #shorts",
+      "category": "gaming",
+      "video_id": "cT-o8IXg6CI",
+      "channel_name": "スタイル万丈@🎼切り抜き"
+    },
+    {
+      "id": "immersion-CW0juiwikkQ-43-63",
+      "title": "【総集編】VTuberになりたい人に正直な本音と厳しい現実をガチアドバイスするホロメン23選【ホロライブ/星街すいせい/癒月ちょこ/ときのそら/白銀ノエル/切り抜き】",
+      "category": "vtuber",
+      "video_id": "CW0juiwikkQ",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-dcxmIs4colE-0-13",
+      "title": "日本語訳あり【川崎宗則の英語】NHKインタビューで日本語話すことを拒否！、2014年8月",
+      "category": "interview",
+      "video_id": "dcxmIs4colE",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-dipjaCmYris-7-31",
+      "title": "『劇場版 薬屋のひとりごと 亡妃の秘宝』 若晴・銀山PV｜2026年12月11日（金）公開",
+      "category": "anime",
+      "video_id": "dipjaCmYris",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "id": "immersion-Dmi0T9qyPJA-30-55",
+      "title": "【日本語吹き替え】「夫も子供もあなたにあげる」27歳に逆戻りした私が、真っ先に離婚届を持って初恋女の元へ向かった結果…",
+      "category": "anime",
+      "video_id": "Dmi0T9qyPJA",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-dO0rqWQo2Ok-7-26",
+      "title": "「はじめまして！今日からともだち（日本語版）」",
+      "category": "kids",
+      "video_id": "dO0rqWQo2Ok",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-DR-aIuLRg80-36-57",
+      "title": "【日本語吹き替え】すべてがリセットされた！すべてを失った彼女は、復讐を決意し、かつて自分のものだったすべてを取り戻す！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "DR-aIuLRg80",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-E2xV_3JtBik-15-41",
+      "title": "【小学生英語】きほんの会話表現｜あいさつ・あいづちなど｜聞き流し｜中学準備｜無料プリント付",
+      "category": "kids",
+      "video_id": "E2xV_3JtBik",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-EBvfRfK4U40-0-28",
+      "title": "Learn N5 Japanese Conversation",
+      "category": "learning",
+      "video_id": "EBvfRfK4U40",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "id": "immersion-eihkCy4rlg4-26-41",
+      "title": "【日本語吹き替え】10年尽くした花嫁を捨てた代償。特許剥奪で会社は停止、全てを失った男たちが知る「嘘つき妹」の正体とは…？",
+      "category": "anime",
+      "video_id": "eihkCy4rlg4",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-eRli8xZeH_A-0-13",
+      "title": "「かなり冷静な判断」 #あるある #コント #お笑い #ヴェルナー #ヴェルナーのおショート #shorts #映画 #ドラマ #名シーン #君の名は #新海誠 #冷静 #判断 #錯覚 #漫才",
+      "category": "variety",
+      "video_id": "eRli8xZeH_A",
+      "channel_name": "ヴェルナーのお漫才"
+    },
+    {
+      "id": "immersion-eWich9B5BnQ-11-28",
+      "title": "ケネディのラジオトークショー #01(日本語): 遂にナイジェリア連合会ケネディ会長が語る！",
+      "category": "variety",
+      "video_id": "eWich9B5BnQ",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-eYobmHuR5y8-0-53",
+      "title": "ヨドバシカメラで買い物　[ File.24 ]　#japaneselistening",
+      "category": "learning",
+      "video_id": "eYobmHuR5y8",
+      "channel_name": "もしもしゆうすけ"
+    },
+    {
+      "id": "immersion-f1sMviR6foU-7-28",
+      "title": "【日本語吹き替え】婚約破棄した元カノが後悔！山奥から来た俺を拾ったのは、街一番の美少女令嬢でした。",
+      "category": "anime",
+      "video_id": "f1sMviR6foU",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-flkYw9WQdJU-5-36",
+      "title": "50音を学ぼう！ひらがなのうた | ドーナツたちと歌おう｜A-I-U-E-O Hiragana Song｜Learn Japanese｜赤ちゃんが喜ぶ｜知育｜子どもの歌｜どーなっぴー【公式】",
+      "category": "kids",
+      "video_id": "flkYw9WQdJU",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-fN-AnuwRds4-1-12",
+      "title": "ミラノにて日本語で会話するサナと坂口健太郎　#kpop #twice",
+      "category": "variety",
+      "video_id": "fN-AnuwRds4",
+      "channel_name": "Terminal 2"
+    },
+    {
+      "id": "immersion-fOfIHF2JjI8-18-30",
+      "title": "【超面白まとめ】\\\"あの不破湊\\\"を凌駕するレベルの意味不明さを持つ大型新人登場に脳が破壊されるローレンwwww【ローレン・イロアス/切り抜き/不破湊/叢雲カゲツ/にじさんじ/Fall guys】",
+      "category": "vtuber",
+      "video_id": "fOfIHF2JjI8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-FsDBrkP_DjA-0-26",
+      "title": "【日本語吹き替え】離婚成立：覚醒妻の選択 |  結婚7年目、夫は愛人と娘に私の誕生日を祝わせていた…。#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "drama",
+      "video_id": "FsDBrkP_DjA",
+      "channel_name": "サクラのショート恋ドラ"
+    },
+    {
+      "id": "immersion-FSWrbmRV1JA-0-18",
+      "title": "日本語でトーク✨️ #大爆笑 #オリックス #千葉ロッテ #オールスター",
+      "category": "variety",
+      "video_id": "FSWrbmRV1JA",
+      "channel_name": "BsTV - オリックス・バファローズ 公式"
+    },
+    {
+      "id": "immersion-fWjmJVoDEUc-24-44",
+      "title": "5分で泣かせます。心に響くアニメの名言集【明日への扉】",
+      "category": "anime",
+      "video_id": "fWjmJVoDEUc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-Fysq68xUbFI-0-23",
+      "title": "【日本語吹き替え】復讐から始まる二度目の人生：妻に裏切られた億万長者の復讐劇...全財産を奪われた男の第二の人生がヤバすぎる！ #中国ドラマ#短編ドラマ #アニメフル全話#無料全話",
+      "category": "drama",
+      "video_id": "Fysq68xUbFI",
+      "channel_name": "毎日ミニドラマ"
+    },
+    {
+      "id": "immersion-gFLvb0SIIn0-39-121",
+      "title": "【日本語吹き替え】双子姉妹、15歳に双子重生！妹は前世の欲望を引きずり、今世は両親を独占するも、実は「残された」姉こそが真の勝者だった…！？…#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "anime",
+      "video_id": "gFLvb0SIIn0",
+      "channel_name": "サクラのショート恋ドラ"
+    },
+    {
+      "id": "immersion-gHezMlReAH8-0-27",
+      "title": "かんたん自己紹介！Video for very beginners. ０から始める日本語 Basic conversation in JAPANESE. Listening Practice",
+      "category": "learning",
+      "video_id": "gHezMlReAH8",
+      "channel_name": "Japanese super immersion"
+    },
+    {
+      "id": "immersion-gyPaUw_5BLc-50-63",
+      "title": "【N5-N3】街頭インタビュー（旅行） - 簡単な日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "video_id": "gyPaUw_5BLc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-h1XUU_Wq9ks-1-21",
+      "title": "【ひらがなであそぼう】あいうえおでいないいないばあ！知育【赤ちゃん・子供向けアニメ】Let's play with Japanese hiragana",
+      "category": "kids",
+      "video_id": "h1XUU_Wq9ks",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-h6ObOK-Xwmc-0-18",
+      "title": "途中からスイッチが入る放送委員 #コント #コントチャンネル #ショートコント #お笑い #1分漫才 #いらすとや",
+      "category": "variety",
+      "video_id": "h6ObOK-Xwmc",
+      "channel_name": "ショートコント保管庫"
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-0-13",
+      "title": "香港＆台湾人の中国人に対する本音を街頭インタビューしたら驚きの結果に、、！",
+      "category": "interview",
+      "video_id": "hDfAn3KfBjk",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-13-30",
+      "title": "香港＆台湾人の中国人に対する本音を街頭インタビューしたら驚きの結果に、、！",
+      "category": "interview",
+      "video_id": "hDfAn3KfBjk",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-heb1S4dWKk4-0-13",
+      "title": "【日本語吹き替え】「もうお前はいらない」と未亡人を選んだ夫。妻の才能が開花し国一番の商人になった時、跪いて復縁を乞う元夫の末路…",
+      "category": "anime",
+      "video_id": "heb1S4dWKk4",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-hhg7zQYSijk-60-87",
+      "title": "僕たちのパパは大金持ち！——  5 年前の一夜の相手は… 最強社長！私は双子を産んでいた1",
+      "category": "drama",
+      "video_id": "hhg7zQYSijk",
+      "channel_name": "Iubire și Secret"
+    },
+    {
+      "id": "immersion-hIc-kxqq5dA-26-45",
+      "title": "【さくらみこ切り抜き】日本語に関してはみこちを信用していないスバル【ホロライブ】 #shorts #さくらみこ #大空スバル #みこスバ #hololive #ホロライブ #ショート",
+      "category": "gaming",
+      "video_id": "hIc-kxqq5dA",
+      "channel_name": "み切恥 【みこちの切り抜きはじめました】"
+    },
+    {
+      "id": "immersion-HJdyF2rcZb0-0-21",
+      "title": "どんなリクエストだよ！！#manzai #radio #owarai #comedy #comedyshorts #コント #一分漫才 #conte #お笑い #一分間劇場 #漫才 #shorts",
+      "category": "variety",
+      "video_id": "HJdyF2rcZb0",
+      "channel_name": "妻と秋刀魚"
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "title": "日本ドラマの不自然な英語セリフ #Shorts",
+      "category": "drama",
+      "video_id": "hYLf9yxkDBE",
+      "channel_name": "Kevin's English Room / 掛山ケビ志郎"
+    },
+    {
+      "id": "immersion-iHS1jowmzXY-19-41",
+      "title": "【日本語吹き替え】5年間、生きる希望は娘だけだった。英雄となって帰国した父が見た、衝撃の現実とは…。",
+      "category": "drama",
+      "video_id": "iHS1jowmzXY",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-Ir35SAOZ5nY-0-30",
+      "title": "【日本語吹き替え】偽物令嬢の代わりに死人と結婚させられた真令嬢…しかし夫は生きていた！しかも超溺愛！？#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "anime",
+      "video_id": "Ir35SAOZ5nY",
+      "channel_name": "サクラのショート恋ドラ"
+    },
+    {
+      "id": "immersion-Is7v3JNydkk-2-44",
+      "title": "日本語は異次元にかわいいらしい、、#shorts #日本 #sagirix",
+      "category": "drama",
+      "video_id": "Is7v3JNydkk",
+      "channel_name": "SAGIRIX"
+    },
+    {
+      "id": "immersion-iUyX27UkWDs-23-55",
+      "title": "【日本語吹き替え】結婚式で義弟を優先し40分放置した婚約者。「もう遅い」と全契約と資産を回収して海外へ逃亡したら、家族全員が絶望して崩壊…",
+      "category": "anime",
+      "video_id": "iUyX27UkWDs",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-iYjjpFZTAZA-0-32",
+      "title": "Casual Japanese Conversation: あ〜、わかる。 #japanese #japaneseconversation",
+      "category": "learning",
+      "video_id": "iYjjpFZTAZA",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "id": "immersion-J3XHFIJafkM-81-89",
+      "title": "【#warframe】おはにょっこ！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "J3XHFIJafkM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-J7WIN1G11eI-0-31",
+      "title": "Casual Japanese Conversation: ちょっと...。 #japanese #japaneseconversation",
+      "category": "learning",
+      "video_id": "J7WIN1G11eI",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "id": "immersion-jJrWJqUJ-NM-21-29",
+      "title": "マイクラのショート動画でよく見るやつらの瞬間",
+      "category": "gaming",
+      "video_id": "jJrWJqUJ-NM",
+      "channel_name": "ごをくんな動画ch"
+    },
+    {
+      "id": "immersion-jK3PBGZkCkA-3-13",
+      "title": "『ポップパップポルターズ』第3話本編切り抜き動画①",
+      "category": "kids",
+      "video_id": "jK3PBGZkCkA",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "id": "immersion-jUZY_gpOaQA-50-62",
+      "title": "【海外の反応】海外でバズった“世界の違い”に外国人が大混乱",
+      "category": "variety",
+      "video_id": "jUZY_gpOaQA",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-KDfG1K1IgZc-18-37",
+      "title": "言葉遣いが厳しいバイト先… #飲食店あるある #接客 #ショートドラマ",
+      "category": "drama",
+      "video_id": "KDfG1K1IgZc",
+      "channel_name": "【キナリムービー】"
+    },
+    {
+      "id": "immersion-kE23CnwTzKI-0-35",
+      "title": "ドラマのセリフが聞き取れる？－超簡単な中1英語です！ #英会話リスニング #英語発音トレーニング #海外ドラマ",
+      "category": "learning",
+      "video_id": "kE23CnwTzKI",
+      "channel_name": "Yumi's English Boot Camp"
+    },
+    {
+      "id": "immersion-kh_PnQ5mY2Y-0-11",
+      "title": "野良に日本語分からんと言われ英語を話した結果 #柊ツルギ #valorant #英語",
+      "category": "gaming",
+      "video_id": "kh_PnQ5mY2Y",
+      "channel_name": "茶蕎麦"
+    },
+    {
+      "id": "immersion-Ki8uOm2QNOk-2-26",
+      "title": "【スカッと】離婚直後、クズ義母「うちが買った服も全部置いていけ！」→その場で服を脱ぎ捨て、元夫に結婚指輪を叩きつけてやった結果ｗｗ #shorts #修羅場#大逆転",
+      "category": "drama",
+      "video_id": "Ki8uOm2QNOk",
+      "channel_name": "まる子の短編ドラマ"
+    },
+    {
+      "id": "immersion-kids-aisatsu",
+      "title": "Greetings for Kids",
+      "category": "kids",
+      "video_id": "Px0yvMoeRro",
+      "channel_name": "みゆちゃんねる"
+    },
+    {
+      "id": "immersion-kK0WIY5KY8k-43-57",
+      "title": "【日本語吹き替え】ギャングのリーダーが気弱な少女として生まれ変わる。彼女の記憶を知った彼女は、怒りに燃え、復讐の旅に出る！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "kK0WIY5KY8k",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-komeda-order",
+      "title": "Morning Order at Komeda Coffee",
+      "category": "drama",
+      "video_id": "YtvaKiCj84M",
+      "channel_name": "コミュ症チャンネル"
+    },
+    {
+      "id": "immersion-konbini-sayaka",
+      "title": "Ordering at the Convenience Store",
+      "category": "drama",
+      "video_id": "goM53XUkblA",
+      "channel_name": "NihongoDekita with Sayaka"
+    },
+    {
+      "id": "immersion-kR8YoH2mOZ8-28-44",
+      "title": "プリを撮る時あるある　#あるある",
+      "category": "anime",
+      "video_id": "kR8YoH2mOZ8",
+      "channel_name": "混血のカレコレ"
+    },
+    {
+      "id": "immersion-KsAiA8Ow9zg-32-53",
+      "title": "【陥落】「勘违いしないで」から「もう离れないで」#shorts #ドラマ#张翅师#胸キュン",
+      "category": "drama",
+      "video_id": "KsAiA8Ow9zg",
+      "channel_name": "まる子の短編ドラマ"
+    },
+    {
+      "id": "immersion-kZE9GVEQiKQ-38-47",
+      "title": "日本語吹き替え| 田舎の養豚娘が姉に代わり病弱令息と政略結婚→相手は仮病のCEO！嘘から始まった結婚が溺愛生活へ急展開！#ショートドラマ #恋愛ドラマ #ラブコメ #逆転ラブ",
+      "category": "drama",
+      "video_id": "kZE9GVEQiKQ",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-l4VGSWLZCqI-0-13",
+      "title": "[藤井風]ペラペラ英語NY🇺🇸で街頭インタビュー?! 日本語訳しながら口語英語を学ぼう😉 #fujiikaze",
+      "category": "podcast",
+      "video_id": "l4VGSWLZCqI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-LKV14c88JKI-26-56",
+      "title": "【ころね集】戌神ころねのワードセンス、世界観詰め合わせ【ホロライブ切り抜き】",
+      "category": "gaming",
+      "video_id": "LKV14c88JKI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-4-25",
+      "title": "【日本語吹き替え】15年愛した妻の裏切り。才能も捨てて尽くした夫が名を変えて海外へ消えた時、妻は狂ったように夫を捜し始める……。😭💔",
+      "category": "drama",
+      "video_id": "lnd2SjFMJXI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-51-76",
+      "title": "【日本語吹き替え】15年愛した妻の裏切り。才能も捨てて尽くした夫が名を変えて海外へ消えた時、妻は狂ったように夫を捜し始める……。😭💔",
+      "category": "anime",
+      "video_id": "lnd2SjFMJXI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-LuADPqD93nM-0-14",
+      "title": "会議中寝てた大統領 #コント",
+      "category": "variety",
+      "video_id": "LuADPqD93nM",
+      "channel_name": "大統領のひとりごと"
+    },
+    {
+      "id": "immersion-MblKNliC6uc-15-45",
+      "title": "♡子供向け♡ いろんなあいさつを学ぶためのビデオ 勉強＆練習 知育ビデオ Let's learn Japanese Greetings!",
+      "category": "kids",
+      "video_id": "MblKNliC6uc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-MDtiDGr_-GY-3-17",
+      "title": "バラエティ能力が高い声優3選#shorts #アニメ #声優",
+      "category": "variety",
+      "video_id": "MDtiDGr_-GY",
+      "channel_name": "ちゃまはし【アニメ・声優】"
+    },
+    {
+      "id": "immersion-Me5ZmclOAKo-0-25",
+      "title": "N5 Japanese Conversation",
+      "category": "learning",
+      "video_id": "Me5ZmclOAKo",
+      "channel_name": "OkkeiJapanese"
+    },
+    {
+      "id": "immersion-mn7T-ksVZvk-32-57",
+      "title": "日本語吹替 無料放送 | 祖母の葬式の日に家を追い出された私、実は本物の令嬢だった！#恋愛 #全話 #無料 #イケメン #ショートドラマ #中国ドラマ",
+      "category": "drama",
+      "video_id": "mn7T-ksVZvk",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-mSycuOff7YQ-70-84",
+      "title": "【#Minecraft】黄昏冒険するぞー！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "mSycuOff7YQ",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-MvpI0G6ETqA-0-12",
+      "title": "寝てないマウントをとるおばあちゃん #お笑い #コント #ショートコント #あるある #ネタ #潟 #おすすめ",
+      "category": "variety",
+      "video_id": "MvpI0G6ETqA",
+      "channel_name": "潟<せき>【新潟お笑い】"
+    },
+    {
+      "id": "immersion-n9jnD_8JeLc-28-49",
+      "title": "おはよう☀️起きる時間だよ | 朝のあいさつ | 生活習慣 | あさになったら、はみがきしょう、おでかけの歌 他 | 子どもの歌 | ピンキッツ・ベイビーシャーク",
+      "category": "kids",
+      "video_id": "n9jnD_8JeLc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-N9KUoHnewXA-0-13",
+      "title": "【ショートコント】スカイダイビング  #年モロ #コント #お笑い #芸人 #大学生  #あるある #プロポーズ #自然 #結婚 #カップル #ドッキリ",
+      "category": "variety",
+      "video_id": "N9KUoHnewXA",
+      "channel_name": "年金モロヘイヤ"
+    },
+    {
+      "id": "immersion-nfmMuGsqK8Q-14-34",
+      "title": "〝無限〟を見る方法 #ゲーム実況 #ゲーム配信 #ゲーム #portal #ショート",
+      "category": "gaming",
+      "video_id": "nfmMuGsqK8Q",
+      "channel_name": "かてあき"
+    },
+    {
+      "id": "immersion-Njk2kfY4irI-40-54",
+      "title": "日本語NG縛りでエクスが喋る適当すぎる英語に大爆笑する葛葉たち【にじさんじ/切り抜き/まとめ】",
+      "category": "vtuber",
+      "video_id": "Njk2kfY4irI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-NmnmYrvZdyc-16-53",
+      "title": "あいうえお表でひらがなのれんしゅうをしよう！知育【赤ちゃん・子供向けアニメ】Learn Japanese hiragana",
+      "category": "kids",
+      "video_id": "NmnmYrvZdyc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-nSNgOkDFacs-48-66",
+      "title": "#17 日本についてどう思う？香港の人々に街頭インタビュー",
+      "category": "interview",
+      "video_id": "nSNgOkDFacs",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-o8uPdpOu9BQ-0-20",
+      "title": "『漫才とコントの違い』 #まごおば #孫が嫌いなおばあちゃん #孫とおばあちゃん #家族 #孫 #ドラマ #ショートドラマ#お笑い #コント #漫才 #演劇 #議論",
+      "category": "variety",
+      "video_id": "o8uPdpOu9BQ",
+      "channel_name": "最弱パーティー"
+    },
+    {
+      "id": "immersion-Ok-NOx-TzTc-4-35",
+      "title": "『#薬屋のひとりごと』第3期好評放送＆配信中✨",
+      "category": "anime",
+      "video_id": "Ok-NOx-TzTc",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "id": "immersion-oN4DNLhbzUE-32-42",
+      "title": "【ULTIMATE CHICKEN HORSE】回転タレット怖すぎだって！ -切り抜き- #Shorts",
+      "category": "gaming",
+      "video_id": "oN4DNLhbzUE",
+      "channel_name": "4次元ポケット【4PP】"
+    },
+    {
+      "id": "immersion-oprmLoaKVQA-0-17",
+      "title": "「まったく恥ずかしいヤツらだ...」【「鳴海の平日」Day4 同期のキズナ編】好評配信中！｜『怪獣８号』オリジナルショートアニメ",
+      "category": "anime",
+      "video_id": "oprmLoaKVQA",
+      "channel_name": "TOHO animation チャンネル"
+    },
+    {
+      "id": "immersion-Ovl6nYvihh8-18-36",
+      "title": "生活習慣☆あいさつをおぼえよう♪あいさつのうた☆子供向け知育動画 | 赤ちゃんが喜ぶ歌 | 子供の歌 | 童謡 | アニメ | 動画 | ベビーバス| BabyBus",
+      "category": "kids",
+      "video_id": "Ovl6nYvihh8",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-OX1f13PB53E-0-12",
+      "title": "おなだんのアニメトーク！【おなだん切り抜き】",
+      "category": "variety",
+      "video_id": "OX1f13PB53E",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-p_TCfcWsDwE-10-53",
+      "title": "TEST - queue path verification",
+      "category": "interview",
+      "video_id": "p_TCfcWsDwE",
+      "channel_name": "TestChannel"
+    },
+    {
+      "id": "immersion-p8FcqzboayU-0-11",
+      "title": "最後まで分からない告白 #コント #コントチャンネル #ショートコント #お笑い #1分漫才 #いらすとや",
+      "category": "anime",
+      "video_id": "p8FcqzboayU",
+      "channel_name": "ショートコント保管庫"
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "title": "Discordの使い方あるある #shorts #あるある #discord",
+      "category": "variety",
+      "video_id": "pd-5GK2JdQk",
+      "channel_name": "CTT_office"
+    },
+    {
+      "id": "immersion-pI6TGEHnKo4-3-23",
+      "title": "【ベトナム語】フォンチーの超やさしいベトナム語講座♪「挨拶編」初級🇻🇳",
+      "category": "kids",
+      "video_id": "pI6TGEHnKo4",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-plZKAqFYcLE-9-23",
+      "title": "トランプ大統領 イラン国民への直接メッセージ！【日本語】#ショート動画#国際情勢#トランプ#ニュース解説#時事問題",
+      "category": "interview",
+      "video_id": "plZKAqFYcLE",
+      "channel_name": "国際ニュース英語塾"
+    },
+    {
+      "id": "immersion-PspjY7iElx4-0-20",
+      "title": "【アツクラ】実は英語ペラペラ！突然始まる日本語禁止縛りで会話してしまう2人！【ドズル社切り抜き】",
+      "category": "gaming",
+      "video_id": "PspjY7iElx4",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-q89xqLs-eNY-30-50",
+      "title": "０から始める日本語会話｜N5レベルで１時間会話｜ EASY JAPANESE　CONVERSAITON",
+      "category": "kids",
+      "video_id": "q89xqLs-eNY",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-QDGzU8DZjkc-21-34",
+      "title": "【日本語吹き替え】妊娠中に500円で捨てられた妻。5年後、病院食堂で娘と震える私に前夫が「子供で乞食か」と暴言…→衝撃の証拠で億万長者の前夫を地獄へ落とす！",
+      "category": "anime",
+      "video_id": "QDGzU8DZjkc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-QgQ8_7zSv7s-26-41",
+      "title": "日本語と英語が飛び交う中、フランス語で場を沸かせる伊波w",
+      "category": "vtuber",
+      "video_id": "QgQ8_7zSv7s",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-qmIqft4YtKs-0-16",
+      "title": "しんたろう　ショート漫談「色気」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "video_id": "qmIqft4YtKs",
+      "channel_name": "しんたろうチャンネル"
+    },
+    {
+      "id": "immersion-QThN_GUATTY-19-34",
+      "title": "日本語NG #shorts #マイクラ",
+      "category": "gaming",
+      "video_id": "QThN_GUATTY",
+      "channel_name": "おんりー / ドズル社"
+    },
+    {
+      "id": "immersion-qyf1ko1juRo-0-14",
+      "title": "「年確前に気づきたかった」 #あるある #コント #お笑い #ヴェルナー #ヴェルナーのおショート #shorts #店員 #買い物 #年齢 #成人 #保育園 #子供 #m1 #漫才",
+      "category": "variety",
+      "video_id": "qyf1ko1juRo",
+      "channel_name": "ヴェルナーのお漫才"
+    },
+    {
+      "id": "immersion-QyXHpGahA1I-12-24",
+      "title": "聞き流しロシア語講座【あいさつ編】50単語 初級初心者向けЗдравствуйте!",
+      "category": "kids",
+      "video_id": "QyXHpGahA1I",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-r34OGOpTOs0-5-45",
+      "title": "北朝鮮の子供の挨拶と日本語",
+      "category": "variety",
+      "video_id": "r34OGOpTOs0",
+      "channel_name": "葵蓮華"
+    },
+    {
+      "id": "immersion-r7ytNplrDCA-0-17",
+      "title": "世の中は明日から三連休『リトルナイトメア(日本語)ショート切り抜き動画』ホラーゲーム実況",
+      "category": "gaming",
+      "video_id": "r7ytNplrDCA",
+      "channel_name": "やっちゅ"
+    },
+    {
+      "id": "immersion-R9NwPxYOxSw-7-35",
+      "title": "450万円相当の... #ラジオ #切り抜き #文字起こし #結婚 #披露宴 #例え",
+      "category": "variety",
+      "video_id": "R9NwPxYOxSw",
+      "channel_name": "13番出口の入り口"
+    },
+    {
+      "id": "immersion-r9OpcwiLSLA-0-26",
+      "title": "日本語吹き替え版の映画、元の英語よりもダンディ過ぎるあるある #Shorts",
+      "category": "drama",
+      "video_id": "r9OpcwiLSLA",
+      "channel_name": "Kevin's English Room / 掛山ケビ志郎"
+    },
+    {
+      "id": "immersion-RaLvdToF4fw-23-45",
+      "title": "【日本語吹き替え】「彼は彼女以外の誰とも結婚しないし、彼女も彼以外の誰とも結婚しない！」8年間の誤解と片思いが、この瞬間についに解けた…#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "RaLvdToF4fw",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-rCm8SVKlw7Y-79-89",
+      "title": "おはよー！！！塗り絵のデータが…；；#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "rCm8SVKlw7Y",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-rf0yeyxGVhI-7-15",
+      "title": "🚲じてんしゃで どろんこの みずたまりを わたろう！ #shorts",
+      "category": "kids",
+      "video_id": "rf0yeyxGVhI",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "id": "immersion-rgC7fyTx1nI-16-43",
+      "title": "ブロッコリーアイスクリームはすき？「Do You Like Broccoli Ice Cream?」| こどものうた | Super Simple 日本語",
+      "category": "kids",
+      "video_id": "rgC7fyTx1nI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-rina_LPQ17A-0-11",
+      "title": "しんたろう　ショート漫談「フードコート」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "video_id": "rina_LPQ17A",
+      "channel_name": "しんたろうチャンネル"
+    },
+    {
+      "id": "immersion-rKBRaSdM2y0-0-10",
+      "title": "【実況】ポケモン不思議のダンジョン救助隊DX日本語迷子シーンまとめ #Shorts #ポケモン   #ゲーム実況",
+      "category": "gaming",
+      "video_id": "rKBRaSdM2y0",
+      "channel_name": "がう🐺"
+    },
+    {
+      "id": "immersion-RkloecX_1no-125-147",
+      "title": "Let's memorize Japanese counters with the song:)/ learning Japanese song /日本語の助数詞を歌で覚えよう♪",
+      "category": "learning",
+      "video_id": "RkloecX_1no",
+      "channel_name": "Daily Japanese with Naoko"
+    },
+    {
+      "id": "immersion-roZJa9Z6S1I-31-43",
+      "title": "#短編ドラマ #恋愛   #ショートドラマ #ceo #love",
+      "category": "drama",
+      "video_id": "roZJa9Z6S1I",
+      "channel_name": "恋愛ショートストーリー"
+    },
+    {
+      "id": "immersion-rpm3okWS2j4-9-24",
+      "title": "\\\"およそ1か月で\\\"にじさんじENの配信が聞き取れた長尾景の英語リスニング勉強法とは【闇ノシュウ/ヴォックス・アクマ/アルバーン・ノックス】",
+      "category": "vtuber",
+      "video_id": "rpm3okWS2j4",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-rxaioH1kb0o-7-23",
+      "title": "たいへん！いえの なかが めちゃくちゃに なっちゃった！🤖 #shorts",
+      "category": "kids",
+      "video_id": "rxaioH1kb0o",
+      "channel_name": "ペッパピッグ Peppa Pig - 公式チャンネル"
+    },
+    {
+      "id": "immersion-rXF2YFvMxKY-32-58",
+      "title": "パパ活④こんな女子ってどう？ #ショートドラマ　#ショートムービー#ショートフィルム #longervideos #感動 #感動ドラマ  #演じてみた #shortstory",
+      "category": "drama",
+      "video_id": "rXF2YFvMxKY",
+      "channel_name": "ショートドラマ"
+    },
+    {
+      "id": "immersion-sapLlgWryNI-0-25",
+      "title": "街頭インタビュー！「今何聴いてますか？」#shorts",
+      "category": "interview",
+      "video_id": "sapLlgWryNI",
+      "channel_name": "音楽深化論"
+    },
+    {
+      "id": "immersion-SBOS-_a9QAA-45-58",
+      "title": "【日本語吹き替え】ギャンブル依存症の夫と重病の娘を抱えるギャンブル王の妻は、カジノに戻るしか選択肢がなかった！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "SBOS-_a9QAA",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-Se0hX91JpI8-0-14",
+      "title": "「行きは良い良い帰りは怖い」 #あるある #コント #お笑い #ヴェルナー #ヴェルナーのおショート #shorts #車 #ドライブ #逮捕 #違反 #ドライバー #運転免許 #免許返納 #漫才",
+      "category": "variety",
+      "video_id": "Se0hX91JpI8",
+      "channel_name": "ヴェルナーのお漫才"
+    },
+    {
+      "id": "immersion-SF-EoJkMhBc-0-16",
+      "title": "しんたろう　ショート漫談「老眼」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "video_id": "SF-EoJkMhBc",
+      "channel_name": "しんたろうチャンネル"
+    },
+    {
+      "id": "immersion-swE3eLyJXOM-132-164",
+      "title": "【N4-N3】Easy Japanese street interview / Is Nagoya boring place to be??",
+      "category": "interview",
+      "video_id": "swE3eLyJXOM",
+      "channel_name": "Japanese with Shun"
+    },
+    {
+      "id": "immersion-t5Y5Q0HZbuA-16-30",
+      "title": "【朝刊ニュース ショート】日本語教員試験の得点力アップ｜2026/03/17",
+      "category": "learning",
+      "video_id": "t5Y5Q0HZbuA",
+      "channel_name": "Archive News"
+    },
+    {
+      "id": "immersion-u1xEGyinMzY-51-63",
+      "title": "眠くなるマイクラ雑談🤍初見さんいらっしゃい！【縦型/#short】",
+      "category": "vtuber",
+      "video_id": "u1xEGyinMzY",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-UFECXYIQfic-59-73",
+      "title": "日本の居心地の良さを語るマリアマリオネット【にじさんじEN切り抜き（日本語訳）】",
+      "category": "vtuber",
+      "video_id": "UFECXYIQfic",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-uFRyW_SchMY-61-70",
+      "title": "おはよー！まだ眠いっ！！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "gaming",
+      "video_id": "uFRyW_SchMY",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-ufsQBZGxqV8-7-28",
+      "title": "ブリッピーとおおきなどうぶつやちいさないきもの 🐘🐭 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "ufsQBZGxqV8",
+      "channel_name": "ブリッピー☆BLIPPI"
+    },
+    {
+      "id": "immersion-uL2ABO6yMwM-8-26",
+      "title": "はたらく日本語　⑭挨拶～挨拶(あいさつ)～",
+      "category": "kids",
+      "video_id": "uL2ABO6yMwM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-VBd50awmtxg-59-89",
+      "title": "【#Minecraft】朝活マイクラ！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "VBd50awmtxg",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-VFMFI1yj2wY-0-10",
+      "title": "【実況】サウンドノベル 街 ～運命の交差点～ 日本語迷子集⑤ #Shorts #サウンドノベル  #ゲーム実況",
+      "category": "gaming",
+      "video_id": "VFMFI1yj2wY",
+      "channel_name": "がう🐺"
+    },
+    {
+      "id": "immersion-VFX9q3P6cw0-0-16",
+      "title": "選挙【スナフキンズのショートコント】#お笑い#Shorts#コント",
+      "category": "variety",
+      "video_id": "VFX9q3P6cw0",
+      "channel_name": "スナフキンズONLINE"
+    },
+    {
+      "id": "immersion-vHl7ZLRskIY-9-21",
+      "title": "伝説のあざと女子、降臨。富豪を味方につけ、宿敵を叩き潰し、御曹司まで完全攻略！私は大儲け、アイツらは地獄行きよ！",
+      "category": "drama",
+      "video_id": "vHl7ZLRskIY",
+      "channel_name": "あるあるショードラ"
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-18-35",
+      "title": "【N4-N3】街頭インタビュー - やさしい日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "video_id": "VI44EvFkQ7w",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-19-35",
+      "title": "【N4-N3】街頭インタビュー - やさしい日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "video_id": "VI44EvFkQ7w",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-VJyFtWJ_36k-61-73",
+      "title": "【日本語吹き替え】「まだ彼なの！？」彼女の「優しい夫」は、自分がこんなに恐ろしい力を持っているとは知らなかった…#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "VJyFtWJ_36k",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-vtuber-faucet",
+      "title": "Why Does That Faucet Exist?",
+      "category": "vtuber",
+      "video_id": "sDeMwZYV6CE",
+      "channel_name": "勿忘らるむ"
+    },
+    {
+      "id": "immersion-vWoGWKtatQ8-0-26",
+      "title": "I will publish a book on Japanese grammar📘",
+      "category": "learning",
+      "video_id": "vWoGWKtatQ8",
+      "channel_name": "あかね的日本語教室"
+    },
+    {
+      "id": "immersion-Wdw_HjSp7GQ-19-38",
+      "title": "【日本語吹き替え】「あなたを愛したことは私の人生最大の間違いです！」彼女は裕福な相続人でしたが、彼を無条件に愛していました...#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "Wdw_HjSp7GQ",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-WkJcGj9R7Fk-38-54",
+      "title": "【日本語吹き替え「私のもの、全部取り戻す！」あの日、彼女は養父母に家を追い出された…。すべてを失った彼女の復讐の道が始まった！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "WkJcGj9R7Fk",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-WNQCXxF4uFM-11-33",
+      "title": "急に敬語でLINEしてきた彼女、怒ってる理由が小さすぎたw",
+      "category": "drama",
+      "video_id": "WNQCXxF4uFM",
+      "channel_name": "マメ兄"
+    },
+    {
+      "id": "immersion-WrvJl1guK7c-0-19",
+      "title": "ブリッピーとあたらしいどうぶつのともだち 🐱🐶 #ブリッピー #こども #shorts",
+      "category": "kids",
+      "video_id": "WrvJl1guK7c",
+      "channel_name": "ブリッピー☆BLIPPI"
+    },
+    {
+      "id": "immersion-wZiyL0z-r-g-62-71",
+      "title": "おはよー！雑談しながらゲームの配色考えるよ！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "video_id": "wZiyL0z-r-g",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-x-Mav4_8LGM-8-22",
+      "title": "【日本語吹き替え】彼女の10年間の結婚生活は詐欺であり、自分の娘さえも彼女を嫌っていたことが判明しました...#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "x-Mav4_8LGM",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-xoI1Gzd8Yog-1-22",
+      "title": "アメリカのドラマでよくあるウザいセリフ VS 現実#Shorts",
+      "category": "drama",
+      "video_id": "xoI1Gzd8Yog",
+      "channel_name": "Kevin's English Room / 掛山ケビ志郎"
+    },
+    {
+      "id": "immersion-y3issC4ELx4-5-32",
+      "title": "韓国ドラマ 愛の不時着. #愛の不時着 #韓国ドラマ #名セリフ #ウサギとオオカミ #アニメ風 #感動ショート #韓国語勉強 #胸キュン",
+      "category": "learning",
+      "video_id": "y3issC4ELx4",
+      "channel_name": "ジョンくん / Jung-kun "
+    },
+    {
+      "id": "immersion-Y7kYPuCduwk-0-21",
+      "title": "ゴリゴリの関西人が標準語を話すとこうなるww #マイクラ #shorts #関西弁 #ゲーム実況",
+      "category": "gaming",
+      "video_id": "Y7kYPuCduwk",
+      "channel_name": "但野リス / Tadano Risu"
+    },
+    {
+      "id": "immersion-yGOkIy78MRM-63-87",
+      "title": "독도는 우리땅～日本語～　セリフ　서　영석　訳詞　徐　英錫　作詞曲　박　문영　Ｃｏｖｅｒ",
+      "category": "anime",
+      "video_id": "yGOkIy78MRM",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-yHAx_QnCVSE-0-27",
+      "title": "Real-Life Japanese You say without Thinking",
+      "category": "learning",
+      "video_id": "yHAx_QnCVSE",
+      "channel_name": "Learn Japanese with Tanaka san"
+    },
+    {
+      "id": "immersion-ykw9D1hq1hc-5-23",
+      "title": "どんな読み間違いしてんのwwww  #shorts  #キヨ #切り抜き　#ゲーム実況",
+      "category": "gaming",
+      "video_id": "ykw9D1hq1hc",
+      "channel_name": "キヨの切り抜き屋。"
+    },
+    {
+      "id": "immersion-yLB0JwdA_ek-0-10",
+      "title": "人類はケツバットを克服しました #お笑い #コント #漫才 #ケツバット #野球 #物理",
+      "category": "variety",
+      "video_id": "yLB0JwdA_ek",
+      "channel_name": "13番出口の入り口"
+    },
+    {
+      "id": "immersion-yU72X91jPMI-0-16",
+      "title": "【日本語吹き替え】「絶対に許さない！」 出産を終えたばかりの妻が離婚届を受け取った…。#キスシーン#中国ドラマ",
+      "category": "drama",
+      "video_id": "yU72X91jPMI",
+      "channel_name": "もう一度、君に会いたい"
+    },
+    {
+      "id": "immersion-yWy6wBKTicc-8-22",
+      "title": "中国美女たちに日本人男性はアリか本音を聞いてみた　衝撃です(泣)【中国街頭インタビュー】",
+      "category": "interview",
+      "video_id": "yWy6wBKTicc",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-Z_leh6MUPHI-72-86",
+      "title": "【日本語吹き替え】3年間見下した無能な婿を捨てた元妻。離婚直後、彼が総資産100億の超大物だと判明！エリート美女と再婚し大逆転ｗｗ",
+      "category": "anime",
+      "video_id": "Z_leh6MUPHI",
+      "channel_name": ""
+    },
+    {
+      "id": "immersion-ZFcKi6dxHmA-0-39",
+      "title": "【日本語吹き替え】13年ずっと想い続けたあの子に再会！彼は「今度は離さない」と決意、彼女を自分のものにするべく動き出した。#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "drama",
+      "video_id": "ZFcKi6dxHmA",
+      "channel_name": "サクラのショート恋ドラ"
+    },
+    {
+      "id": "immersion-ZoRxlkhH1iA-0-24",
+      "title": "マイクラアレイ様新拠点『Minecraftマインクラフト(日本語）ショート切り抜き動画』★ホラーゲーム実況",
+      "category": "gaming",
+      "video_id": "ZoRxlkhH1iA",
+      "channel_name": "やっちゅ"
+    },
+    {
+      "id": "immersion-ZU96He9CmtM-98-117",
+      "title": "Minecraft #3 — Yusuke & Yuma",
+      "category": "learning",
+      "video_id": "ZU96He9CmtM",
+      "channel_name": "Yusuke & Yuma"
+    },
+    {
+      "id": "immersion-zw9pEP67DDA-0-15",
+      "title": "しんたろう　ショート漫談「英語の歌詞」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "video_id": "zw9pEP67DDA",
+      "channel_name": "しんたろうチャンネル"
+    },
+    {
+      "id": "kissa-stories-01",
+      "title": "Rainy Afternoon at the Kissaten",
+      "category": "drama",
+      "video_id": "m4yJzEGcHgk",
+      "channel_name": "Kissa Stories"
+    },
+    {
+      "id": "kitsune-yuki-stream-01",
+      "title": "Evening Stream Opening",
+      "category": "vtuber",
+      "video_id": "0ZYJkcNHFNY",
+      "channel_name": "Kitsune Yuki Ch."
+    },
+    {
+      "id": "konbini-diaries-01",
+      "title": "Late Night Onigiri Run",
+      "category": "drama",
+      "video_id": "nACwMFy3BIE",
+      "channel_name": "Konbini Diaries"
+    },
+    {
+      "id": "neko-cafe-02",
+      "title": "A New Friend at the Neko Café",
+      "category": "anime",
+      "video_id": "CY5J2CLozlo",
+      "channel_name": "Mochi Animation"
+    },
+    {
+      "id": "piyo-picnic-01",
+      "title": "Piyo's Picnic",
+      "category": "kids",
+      "video_id": "gmTLiz1n5Gs",
+      "channel_name": "Hiyoko Kids"
+    },
+    {
+      "id": "quiz-showdown-11",
+      "title": "Final Round: Landmarks",
+      "category": "variety",
+      "video_id": "rgXw4VWQKOw",
+      "channel_name": "Waiwai Variety"
+    },
+    {
+      "id": "ramen-road-trip-03",
+      "title": "Tonkotsu in Fukuoka",
+      "category": "variety",
+      "video_id": "YOBPp4m5MQQ",
+      "channel_name": "Tabi Tabi TV"
+    },
+    {
+      "id": "speedrun-commentary-02",
+      "title": "The Frame-Perfect Jump",
+      "category": "gaming",
+      "video_id": "z-4E2ii8zWE",
+      "channel_name": "GameNama"
+    },
+    {
+      "id": "tsukimi-rin-zatsudan-05",
+      "title": "Late-Night Zatsudan",
+      "category": "vtuber",
+      "video_id": "4YmjVPjA8To",
+      "channel_name": "Tsukimi Rin Ch."
+    },
+    {
+      "id": "words-that-matter-04",
+      "title": "Words That Matter",
+      "category": "interview",
+      "video_id": "2uuaak0kXOg",
+      "channel_name": "Machi no Koe"
+    }
+  ],
+  "reviewVerification": {
+    "applied": 14,
+    "changedEnglishLines": 5,
+    "timingAndJapanesePreserved": true,
+    "publicationFlagsPreserved": true,
+    "categoryCorrections": [
+      {
+        "id": "immersion-y3issC4ELx4-5-32",
+        "before": "drama",
+        "after": "learning"
+      },
+      {
+        "id": "immersion-0FJvvV6uGJ0-33-59",
+        "before": "anime",
+        "after": "gaming"
+      },
+      {
+        "id": "immersion-OX1f13PB53E-0-12",
+        "before": "anime",
+        "after": "variety"
+      },
+      {
+        "id": "immersion-LKV14c88JKI-26-56",
+        "before": "vtuber",
+        "after": "gaming"
+      },
+      {
+        "id": "immersion-l4VGSWLZCqI-0-13",
+        "before": "interview",
+        "after": "podcast"
+      },
+      {
+        "id": "immersion-fN-AnuwRds4-1-12",
+        "before": "interview",
+        "after": "variety"
+      },
+      {
+        "id": "immersion-0qITlsOy4LU-0-12",
+        "before": "kids",
+        "after": "learning"
+      }
+    ]
+  },
+  "publisherJobs": [
+    {
+      "active": true,
+      "jobname": "fill-jojo-catalog",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "active": true,
+      "jobname": "fill-sori-catalog",
+      "schedule": "5-59/10 * * * *"
+    }
+  ]
+}

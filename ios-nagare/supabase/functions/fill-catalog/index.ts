@@ -197,39 +197,55 @@ Deno.serve(async (req) => {
       }
     }
 
-    const queue = await takeQueue(supabase, language, passLimit, stats, goal.categoryFloor);
+    const queue = await takeQueue(supabase, language, language === "ja" ? passLimit * 5 : passLimit, stats, goal.categoryFloor);
+    let processed = 0;
     for (const candidate of queue) {
-      if (Date.now() - started >= RUN_BUDGET_MS) break;
-      const result = await analyzeAndPublish(supabase, candidate, language);
-      if (!result.ok) {
-        const keep = failureStatus(result.reason, result.detail ?? "") !== "rejected";
-        if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
-        else {
-          // Rotate transient failures behind other candidates instead of repeatedly
-          // charging for the same empty response while ready sources wait.
-          const retryAt = new Date(Date.now() + 20 * 60_000).toISOString();
-          await supabase.from(queueTable(language)).update(language === "ja"
-            ? { next_attempt_at: retryAt } : { added_at: new Date().toISOString() })
-            .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec);
-        }
-        if (result.reason === "gemini-cap") {
-          stopped = "gemini-cap";
-          return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
-        }
-        if (result.reason === "model_payment" || result.reason.includes("402")) {
-          await pauseFill(supabase, "gemini-payment");
-          stopped = "model-payment";
-          return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
-        }
-        continue;
+      if (Date.now() - started >= RUN_BUDGET_MS || processed >= passLimit) break;
+      let lease: string | null = null;
+      if (language === "ja") {
+        const claim = await supabase.rpc("claim_catalog_candidate", {
+          p_video_id: candidate.videoId, p_window_start_sec: candidate.windowStartSec,
+        });
+        if (claim.error || typeof claim.data !== "string") continue;
+        lease = claim.data;
       }
-      await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
-      published.push({
-        id: result.id,
-        videoId: candidate.videoId,
-        difficulty: result.difficulty,
-        category: result.category,
-      });
+      processed += 1;
+      try {
+        const result = await analyzeAndPublish(supabase, candidate, language);
+        if (!result.ok) {
+          const keep = failureStatus(result.reason, result.detail ?? "") !== "rejected";
+          if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
+          else {
+            // Rotate transient failures behind other candidates instead of repeatedly
+            // charging for the same empty response while ready sources wait.
+            const retryAt = new Date(Date.now() + 20 * 60_000).toISOString();
+            await supabase.from(queueTable(language)).update(language === "ja"
+              ? { next_attempt_at: retryAt } : { added_at: new Date().toISOString() })
+              .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec);
+          }
+          if (result.reason === "gemini-cap") {
+            stopped = "gemini-cap";
+            return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
+          }
+          if (result.reason === "model_payment" || result.reason.includes("402")) {
+            await pauseFill(supabase, "gemini-payment");
+            stopped = "model-payment";
+            return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
+          }
+          continue;
+        }
+        await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
+        published.push({
+          id: result.id,
+          videoId: candidate.videoId,
+          difficulty: result.difficulty,
+          category: result.category,
+        });
+      } finally {
+        if (lease) await supabase.rpc("release_catalog_candidate", {
+          p_video_id: candidate.videoId, p_window_start_sec: candidate.windowStartSec, p_lease_token: lease,
+        });
+      }
     }
     if (published.length === 0 && stopped === "time-budget" && queue.length === 0) {
       stopped = "no-candidate";

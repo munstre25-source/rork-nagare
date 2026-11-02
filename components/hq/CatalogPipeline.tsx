@@ -87,7 +87,7 @@ export function CatalogPipeline({ from, to, refreshKey }: { from: string; to: st
     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={auto} onChange={e=>setAuto(e.target.checked)} /> Refresh every 30 seconds</label>
    </div>
    <p className="mt-3 text-sm text-white/60">Queued → source and embed check → transcription and timing → English meaning, grammar and visual subtitle review → publication.</p>
-   <p className="mt-2 text-xs text-white/45">A queued video can contain multiple candidate windows. Publication history records actual transitions from this deployment onward; older creation dates are not counted as publication events.</p>
+   <p className="mt-2 text-xs text-white/45">Queue inventory includes in-flight windows until their attempts finish; processing is also shown separately. One video can contain multiple candidate windows. Publication history records actual transitions from this deployment onward; older creation dates are not counted as publication events.</p>
    <div className="mt-4 flex flex-wrap gap-3 text-sm">
     <span>Catalog allowance remaining <b>{money(catalogRemaining)}</b> · reserved {money(b?.reserved_usd)}</span>
     <span>User definition reserve <b>{money(lookupRemaining)}</b> · video calls cannot use it</span>

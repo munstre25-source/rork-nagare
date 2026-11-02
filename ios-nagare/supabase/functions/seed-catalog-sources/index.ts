@@ -31,7 +31,11 @@ export async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
   if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
   try {
-    const body = await readJson<{ handles?: string[]; videoIds?: string[]; apply?: boolean }>(req);
+    const body = await readJson<{ handles?: string[]; videoIds?: string[]; apply?: boolean; maxVideosPerChannel?: number }>(req);
+    const perChannel = body.maxVideosPerChannel ?? 5;
+    if (!Number.isInteger(perChannel) || perChannel < 1 || perChannel > 20) {
+      return errorResponse(400, "maxVideosPerChannel must be between 1 and 20");
+    }
     const handles = [...new Set(body.handles ?? [])];
     const ids = [...new Set(body.videoIds ?? [])];
     if (!Array.isArray(body.handles ?? []) || handles.length > 5 ||
@@ -80,10 +84,21 @@ export async function handler(req: Request): Promise<Response> {
       const videos = videoIds.length
         ? await youtube("videos", { part: "snippet,status,contentDetails", id: videoIds.join(",") }) as Video[]
         : [];
+      // Discovery must advance past previously screened sources, including rejected
+      // ones. Temporary failures already own a queued retry; never seed them again.
+      if (videoIds.length) {
+        const seen = await Promise.all([
+          supabase.from("catalog_video_sources").select("video_id").in("video_id", videoIds),
+          supabase.from("catalog_candidate_queue").select("video_id").in("video_id", videoIds),
+          supabase.from("catalog_rejections").select("video_id").in("video_id", videoIds),
+        ]);
+        if (seen.some((result) => result.error)) throw new Error("source_history_read_failed");
+        for (const result of seen) for (const row of result.data ?? []) known.add(row.video_id);
+      }
       const eligible = videos.filter((video) => video.status?.privacyStatus === "public" && video.status.embeddable === true &&
         windowStarts(parseIsoDurationSec(video.contentDetails?.duration ?? "") ?? 0).length > 0 && !known.has(video.id))
         .sort((a, b) => (parseIsoDurationSec(a.contentDetails?.duration ?? "") ?? 0) - (parseIsoDurationSec(b.contentDetails?.duration ?? "") ?? 0))
-        .slice(0, 5);
+        .slice(0, perChannel);
       const rows = eligible.flatMap((video) => {
         const duration = parseIsoDurationSec(video.contentDetails?.duration ?? "") ?? 0;
         return windowStarts(duration).map((start) => ({
