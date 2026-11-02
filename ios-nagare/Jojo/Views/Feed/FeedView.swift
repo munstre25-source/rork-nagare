@@ -24,6 +24,7 @@ struct FeedView: View {
     /// a swipe up tucks it away again — no need to minimize first.
     @State private var maximizeNavShown: Bool = false
     @State private var theaterOptionsPresented = false
+    @State private var goalCompletionVisible = false
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
@@ -54,7 +55,8 @@ struct FeedView: View {
                         header
                         VStack(spacing: 0) {
                             DailyGoalBar(hidesAfterCompletion: true, dueWords: dueReviewKeys.count,
-                                         onReview: openDueReview)
+                                         onReview: openDueReview,
+                                         onCompletionVisibilityChange: { goalCompletionVisible = $0 })
                             if showResumeChip, let resumeSnapshot {
                                 ResumeChip(
                                     title: resumeSnapshot.title,
@@ -156,6 +158,9 @@ struct FeedView: View {
         .onChange(of: maximizeNavShown) { _, shown in
             syncDock()
             if shown { revealWatchChrome() }
+        }
+        .onChange(of: goalCompletionVisible) { _, visible in
+            if visible { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
         .onChange(of: theaterOptionsPresented) { _, presented in
             if presented { chromeHideTask?.cancel() } else { scheduleWatchChromeHide() }
@@ -684,6 +689,7 @@ struct FeedView: View {
             guard coordinator.player?.isPlaying == true,
                   !voiceOverEnabled,
                   !theaterOptionsPresented,
+                  !goalCompletionVisible,
                   !showSearch, !showLibrary,
                   // Keep the Vocab dock visible while the guided tour may point at it.
                   GuidanceCenter.shared.tourStep == nil,

@@ -38,6 +38,7 @@ struct DailyGoalBar: View {
     var hidesAfterCompletion = false
     var dueWords = 0
     var onReview: (() -> Void)?
+    var onCompletionVisibilityChange: (Bool) -> Void = { _ in }
 
     @Environment(AppModel.self) private var app
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
@@ -60,6 +61,8 @@ struct DailyGoalBar: View {
                 withAnimation(.easeInOut(duration: 0.2)) { showsCompletion = true }
             }
         }
+        .onChange(of: showsCompletion) { _, visible in onCompletionVisibilityChange(visible) }
+        .onDisappear { onCompletionVisibilityChange(false) }
         .task(id: showsCompletion && !voiceOverEnabled) {
             guard showsCompletion, hidesAfterCompletion, !voiceOverEnabled else { return }
             do { try await Task.sleep(for: .seconds(6)) } catch { return }
