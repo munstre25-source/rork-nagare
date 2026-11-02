@@ -17,8 +17,10 @@ nonisolated struct LandscapeTheaterGeometry {
         let width = min(max(0, size.width - 24), 1100, available * 16 / 9)
         let video = CGSize(width: width, height: width * 9 / 16)
         let latestTop = max(0, height - 12 - video.height - captions - controls - gaps)
-        let centeredTop = max(12, height / 2 - video.height / 2)
-        return Self(videoSize: video, videoTop: min(centeredTop, latestTop),
+        // Lift the picture gently above center without changing its full-frame size.
+        let upwardOffset = min(56, height * 0.06)
+        let preferredTop = max(12, height / 2 - video.height / 2 - upwardOffset)
+        return Self(videoSize: video, videoTop: min(preferredTop, latestTop),
                     captionHeight: captions, controlsHeight: controls)
     }
 }
