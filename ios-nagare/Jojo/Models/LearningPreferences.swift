@@ -1,6 +1,66 @@
 import Foundation
 import SwiftUI
 
+/// Rendering presets for the same enriched transcript; independent of content difficulty.
+nonisolated enum LearningMode: String, CaseIterable, Identifiable, Sendable {
+    case beginner, guided, advanced
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .beginner: "Beginner"
+        case .guided: "Guided Immersion"
+        case .advanced: "Full Immersion"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .beginner: "leaf"
+        case .guided: "safari"
+        case .advanced: "laurel.leading"
+        }
+    }
+    var display: SubtitleDisplaySettings {
+        switch self {
+        case .beginner: SubtitleDisplaySettings(furigana: true, romaji: true, english: .shown)
+        case .guided: SubtitleDisplaySettings(furigana: true, romaji: false, english: .onTap)
+        case .advanced: SubtitleDisplaySettings(furigana: false, romaji: false, english: .hidden)
+        }
+    }
+}
+
+nonisolated enum EnglishVisibility: String, CaseIterable, Identifiable, Sendable {
+    case shown, onTap, hidden
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .shown: "On"
+        case .onTap: "Tap"
+        case .hidden: "Hidden"
+        }
+    }
+    var next: Self {
+        switch self {
+        case .shown: .onTap
+        case .onTap: .hidden
+        case .hidden: .shown
+        }
+    }
+}
+
+nonisolated struct SubtitleDisplaySettings: Equatable, Sendable {
+    var japanese: Bool = true
+    var furigana: Bool
+    var romaji: Bool
+    var english: EnglishVisibility
+    var tapWords: Bool = true
+
+    var learningMode: LearningMode? {
+        LearningMode.allCases.first { $0.display == self }
+    }
+    var minimalJapanese: Bool { japanese && !furigana && !romaji && english == .hidden }
+}
+
 /// The two accents. Light and dark are versions of whichever one is selected.
 nonisolated enum AccentTheme: String, CaseIterable, Identifiable, Sendable {
     case sakura, amber

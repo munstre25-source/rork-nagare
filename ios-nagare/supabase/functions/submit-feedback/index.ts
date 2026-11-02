@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     const message = (body.message ?? "").trim().slice(0, 2000);
     const source = FEEDBACK_SOURCES.has(body.source ?? "") ? body.source! : null;
     const anonymous = body.anonymous === true;
+    const environment = req.headers.get("x-jojo-environment") === "production" ? "production" : "test";
 
     const isCancellation = category?.startsWith("cancel_") === true;
     if (enjoyed === false && !message && !category) return errorResponse(400, "Tell us a bit more");
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
       build: cleanText(body.build, 16) || null,
       os_version: cleanText(body.os_version, 16) || null,
       device_class: cleanText(body.device_class, 16) || null,
+      environment,
     });
     if (error) return errorResponse(500, "Failed to save feedback");
 
@@ -73,6 +75,7 @@ Deno.serve(async (req) => {
         app_user_id: identity.appUserId,
         sender: "user",
         body: note.slice(0, 2000),
+        environment,
       });
     }
 

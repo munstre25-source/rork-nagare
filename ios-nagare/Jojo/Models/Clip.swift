@@ -230,7 +230,7 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
 }
 
 nonisolated enum ClipCategory: String, CaseIterable, Codable, Sendable, Identifiable {
-    case anime, drama, variety, vtuber, interview, kids, gaming, learning
+    case anime, drama, variety, vtuber, interview, kids, gaming, learning, podcast
 
     var id: String { rawValue }
 
@@ -244,6 +244,7 @@ nonisolated enum ClipCategory: String, CaseIterable, Codable, Sendable, Identifi
         case .kids: "Kids"
         case .gaming: "Gaming"
         case .learning: "Learn Japanese"
+        case .podcast: "Podcasts"
         }
     }
 
@@ -257,13 +258,14 @@ nonisolated enum ClipCategory: String, CaseIterable, Codable, Sendable, Identifi
         case .kids: "balloon.2.fill"
         case .gaming: "gamecontroller.fill"
         case .learning: "book.closed.fill"
+        case .podcast: "waveform"
         }
     }
 
     var sourceType: SourceType {
         switch self {
         case .anime, .kids: .animated
-        case .drama, .variety, .interview, .learning: .liveAction
+        case .drama, .variety, .interview, .learning, .podcast: .liveAction
         case .vtuber, .gaming: .streamer
         }
     }

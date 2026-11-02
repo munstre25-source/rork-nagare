@@ -5,3 +5,7 @@ node_modules
 .expo
 .rork
 .kiku-ref/
+
+.env.*
+!.env.example
+**/supabase/.temp/

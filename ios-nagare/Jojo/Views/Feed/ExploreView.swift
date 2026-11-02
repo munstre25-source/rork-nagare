@@ -17,18 +17,20 @@ struct ExploreView: View {
     @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
-        let base = app.studyLibrary.filter { clip in
-            let categoryOK = lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)
-            let difficultyOK = (lockedDifficulty ?? difficulty) == nil || clip.difficultyKind == (lockedDifficulty ?? difficulty)
-            return categoryOK
-                && difficultyOK
-                && (topic == nil || clip.categoryKind == topic)
-                && (source == nil || clip.categoryKind.sourceType == source)
-                && (!favoritesOnly || app.isFavorite(clip.id))
-        }
-        guard !leadingClips.isEmpty else { return base }
-        let ids = Set(leadingClips.map(\.id))
-        return leadingClips + base.filter { !ids.contains($0.id) }
+        let base = app.studyLibrary.filter(matchesFilters)
+        let leading = leadingClips.filter(matchesFilters)
+        guard !leading.isEmpty else { return base }
+        var seen = Set<String>()
+        return (leading + base).filter { seen.insert($0.id).inserted }
+    }
+
+    private func matchesFilters(_ clip: Clip) -> Bool {
+        let selectedDifficulty = lockedDifficulty ?? difficulty
+        return (lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind))
+            && (selectedDifficulty == nil || clip.difficultyKind == selectedDifficulty)
+            && (topic == nil || clip.categoryKind == topic)
+            && (source == nil || clip.categoryKind.sourceType == source)
+            && (!favoritesOnly || app.isFavorite(clip.id))
     }
 
     var body: some View {

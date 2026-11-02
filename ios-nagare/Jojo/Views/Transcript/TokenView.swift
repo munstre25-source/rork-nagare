@@ -18,6 +18,9 @@ struct TokenView: View {
     var tooltip: String?
     var showFurigana: Bool = true
     var showRomaji: Bool = true
+    var tapEnabled: Bool = true
+    /// Full immersion keeps the Japanese quiet while retaining the spoken cursor and lookup.
+    var minimalStyling: Bool = false
     let onTap: () -> Void
 
     @Environment(AppModel.self) private var app
@@ -28,7 +31,7 @@ struct TokenView: View {
     @State private var tapBounce: Bool = false
 
     var body: some View {
-        if token.tappable {
+        if token.tappable && tapEnabled {
             Button {
                 withAnimation(Motion.tapBounce) { tapBounce = true }
                 onTap()
@@ -42,7 +45,8 @@ struct TokenView: View {
                 .accessibilityHint("Explains the word and adds it to your flashcards")
         } else {
             content
-                .accessibilityHidden(true)
+                .accessibilityLabel(accessibilityText)
+                .accessibilityHidden(token.isPunctuation)
         }
     }
 
@@ -115,7 +119,7 @@ struct TokenView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(LearningInk.spoken.opacity(0.16))
         case .normal:
-            if mastery == .known || mastery == .easy {
+            if minimalStyling || mastery == .known || mastery == .easy {
                 Color.clear
             } else if highlight {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -143,10 +147,10 @@ struct TokenView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(LearningInk.selected, lineWidth: 2.4)
         case .normal:
-            if mastery == .known {
+            if !minimalStyling && mastery == .known {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(LearningInk.known, lineWidth: 2)
-            } else if mastery == .easy {
+            } else if !minimalStyling && mastery == .easy {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(LearningInk.easy, lineWidth: 1.6)
             }
@@ -156,7 +160,13 @@ struct TokenView: View {
     @ViewBuilder
     private var underline: some View {
         // Underlines carry POS when still New; mastery ink otherwise. Hidden under boxes / known.
-        if token.tappable, state == .normal, mastery != .known, mastery != .easy {
+        if minimalStyling, state == .spoken {
+            Capsule()
+                .fill(LearningInk.spoken)
+                .frame(height: 3)
+                .padding(.horizontal, 4)
+                .offset(y: 3)
+        } else if !minimalStyling, token.tappable, state == .normal, mastery != .known, mastery != .easy {
             Capsule()
                 .fill(underlineColor)
                 .frame(height: 3)
@@ -170,7 +180,7 @@ struct TokenView: View {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
         case .normal:
-            guard token.tappable else { return LearningInk.japanese }
+            guard token.tappable && !minimalStyling else { return LearningInk.japanese }
             return LearningInk.mastery(mastery)
         }
     }
@@ -204,9 +214,9 @@ struct TokenView: View {
 
     private var accessibilityText: String {
         var parts = [token.surface]
-        if let reading = token.reading { parts.append(reading) }
-        if let meaning = token.definitions.first { parts.append(meaning) }
-        if let mastery { parts.append(mastery.title) }
+        if showFurigana, let reading = token.reading { parts.append(reading) }
+        if !minimalStyling, tapEnabled, let meaning = token.definitions.first { parts.append(meaning) }
+        if !minimalStyling, let mastery { parts.append(mastery.title) }
         return parts.joined(separator: ", ")
     }
 

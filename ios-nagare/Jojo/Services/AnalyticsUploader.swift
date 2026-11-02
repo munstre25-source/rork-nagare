@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 
 /// First-party, privacy-conscious analytics transport.
 ///
@@ -46,6 +47,18 @@ nonisolated enum InstallIdentity {
 
 /// App/OS context attached to events and sessions. Contains no device identifiers.
 nonisolated enum AnalyticsContext {
+    // Only a verified App Store app transaction counts as production.
+    static func environment() async -> String {
+        #if targetEnvironment(simulator)
+        return "test"
+        #elseif DEBUG
+        return "test"
+        #else
+        guard let result = try? await AppTransaction.shared,
+              case .verified(let transaction) = result else { return "test" }
+        return transaction.environment == .production ? "production" : "test"
+        #endif
+    }
     static let appVersion: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     static let build: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
     static let osVersion: String = {
@@ -200,6 +213,7 @@ actor AnalyticsUploader {
         request.setValue(Secrets.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(await AnalyticsContext.environment(), forHTTPHeaderField: "x-jojo-environment")
         request.httpBody = Self.body(installId: InstallIdentity.id, events: batch, sessions: sessionBatch)
 
         let status: Int

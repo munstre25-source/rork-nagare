@@ -227,6 +227,7 @@ struct ShadowingOverlay: View {
         listening = false
         switch result {
         case .heard(let text, let onDevice):
+            DailyPlanProgress.mark(.speak)
             heard = text
             let similarity = SpeechScoring.score(heard: text, target: line.text)
             score = similarity

@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
       sb.rpc("admin_dashboard_metrics_range", { p_start: start.toISOString(), p_end: end.toISOString() }),
       sb.from("feedback_items")
         .select("id, app_user_id, enjoyed, category, message, status, source, is_anonymous, app_version, os_version, device_class, created_at")
+        .eq("environment", "production")
         .order("created_at", { ascending: false })
         .limit(150),
       sb.from("feedback_posts")

@@ -85,6 +85,9 @@ final class UserProfile {
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     var showRomaji: Bool = false
+    /// Additive defaults preserve older profiles and their existing subtitle choices.
+    var englishVisibility: String = EnglishVisibility.shown.rawValue
+    var tapWordsEnabled: Bool = true
     var dictionaryMode: String = DictionaryMode.english.rawValue
     var hideDailyGoalBar: Bool = false
     /// While a clip is playing, the tab capsule and For You / Explore switch fade until the next touch.
@@ -156,6 +159,16 @@ final class UserProfile {
     var subtitles: SubtitleMode {
         get { SubtitleMode(rawValue: subtitleMode) ?? .both }
         set { subtitleMode = newValue.rawValue }
+    }
+
+    var subtitleDisplay: SubtitleDisplaySettings {
+        SubtitleDisplaySettings(
+            japanese: subtitles.showsJapanese,
+            furigana: showFurigana,
+            romaji: showRomaji,
+            english: subtitles.showsEnglish ? (EnglishVisibility(rawValue: englishVisibility) ?? .shown) : .hidden,
+            tapWords: tapWordsEnabled
+        )
     }
 
     var dictionary: DictionaryMode {

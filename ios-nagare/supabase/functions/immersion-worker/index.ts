@@ -211,6 +211,10 @@ async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Rec
     case "enrichment_failed":
       await retryOrFail(supabase, worker, job, "model_unavailable", outcome.detail);
       return { outcome: "retry", reason: outcome.reason };
+    case "translation_unverified":
+      // Unclear audio or unsupported meaning needs review, not another guess.
+      await finish(supabase, worker, job, { status: "failed", error_code: "transcript_invalid" });
+      return { outcome: "failed", reason: outcome.reason };
     case "transcript_invalid":
       await retryOrFail(supabase, worker, job, "transcript_invalid", outcome.detail);
       return { outcome: "retry", reason: outcome.reason };

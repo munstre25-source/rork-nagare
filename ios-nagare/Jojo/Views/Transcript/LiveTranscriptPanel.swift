@@ -86,6 +86,9 @@ struct LiveTranscriptPanel: View {
                     pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
                     isPulsing: isPulsing,
                     tooltip: index == currentLine ? tooltip : nil,
+                    // Preview the next Japanese phrase without revealing its English
+                    // before the playhead reaches it. The active phrase owns its translation.
+                    showsTranslation: index == currentLine,
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
                     respectsProfileDisplay: respectsProfileDisplay,

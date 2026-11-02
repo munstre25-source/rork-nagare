@@ -332,16 +332,16 @@ enum DailyPlanProgress {
         case review, watch, speak, capture
     }
 
-    private static func key(_ step: Step) -> String {
-        let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
+    private static func key(_ step: Step, on date: Date) -> String {
+        let day = Calendar.current.startOfDay(for: date).timeIntervalSince1970
         return "jojo.plan.\(Int(day)).\(step.rawValue)"
     }
 
-    static func mark(_ step: Step) {
-        UserDefaults.standard.set(true, forKey: key(step))
+    static func mark(_ step: Step, on date: Date = Date(), defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: key(step, on: date))
     }
 
-    static func isDone(_ step: Step) -> Bool {
-        UserDefaults.standard.bool(forKey: key(step))
+    static func isDone(_ step: Step, on date: Date = Date(), defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: key(step, on: date))
     }
 }

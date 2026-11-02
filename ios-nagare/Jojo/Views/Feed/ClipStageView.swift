@@ -140,8 +140,11 @@ struct ClipStageView: View {
                 stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
             }
         }
+        .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
+            if !enabled && isPopupHere { dismiss() }
+        }
         .frame(maxWidth: .infinity, maxHeight: immersiveFeed ? .infinity : nil, alignment: .top)
-        .background(showsMaximizedLandscape ? Color.black : (usesFlexibleVideo || immersiveFeed ? Color.canvas : Color.clear))
+        .background(usesFlexibleVideo || immersiveFeed ? Color.watchBackground : Color.clear)
         .coordinateSpace(name: StageSpace.name)
         .overlay {
             if isPopupHere { popupLayer }
@@ -511,7 +514,7 @@ struct ClipStageView: View {
             )
             .frame(width: videoWidth, height: videoHeight)
             .frame(width: card.width, height: card.height, alignment: .top)
-            .background(Color.black)
+            .background(Color.watchBackground)
             .coachTarget(.video, active: isCoachPage)
 
             VStack(spacing: 4) {
@@ -596,21 +599,25 @@ struct ClipStageView: View {
         player: (any ClipPlayer)?,
         maxHeight: CGFloat
     ) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                transcript(player: player)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .coachTarget(.transcript, active: isCoachPage)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .onChange(of: player?.currentLineIndex) { _, index in
-                guard let index else { return }
-                withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
-            }
-            .onAppear {
-                if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
+        VStack(spacing: 4) {
+            SubtitleLearningControls()
+                .padding(.horizontal, 10)
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    transcript(player: player, showsLearningControls: false)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .coachTarget(.transcript, active: isCoachPage)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .onChange(of: player?.currentLineIndex) { _, index in
+                    guard let index else { return }
+                    withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
+                }
+                .onAppear {
+                    if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
+                }
             }
         }
         .frame(maxHeight: maxHeight)
@@ -642,26 +649,31 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, following: Int? = nil) -> some View {
-        TranscriptSection(
-            clip: clip,
-            player: player,
-            onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
-            pulseTokenIndex: pulseTokenIndex,
-            isPulsing: isPulsing,
-            tooltip: tooltip,
-            forceDenseAids: immersiveFeed,
-            respectsProfileDisplay: immersiveFeed,
-            onReportLine: { lineIndex in
-                coordinator.pauseForPopup()
-                transcriptReportLineIndex = lineIndex
-                showTranscriptReport = true
-            },
-            windowMode: immersiveFeed,
-            // Keep the active line plus one upcoming line visible. This preserves context
-            // while keeping the player as the visual focus.
-            followingLines: following ?? 1
-        )
+    private func transcript(player: (any ClipPlayer)?, following: Int? = nil, showsLearningControls: Bool = true) -> some View {
+        VStack(spacing: Spacing.s) {
+            if immersiveFeed && showsLearningControls {
+                SubtitleLearningControls()
+            }
+            TranscriptSection(
+                clip: clip,
+                player: player,
+                onlyCurrentLine: immersiveFeed ? false : onlyCurrentLine,
+                pulseTokenIndex: pulseTokenIndex,
+                isPulsing: isPulsing,
+                tooltip: tooltip,
+                forceDenseAids: immersiveFeed,
+                respectsProfileDisplay: immersiveFeed,
+                onReportLine: { lineIndex in
+                    coordinator.pauseForPopup()
+                    transcriptReportLineIndex = lineIndex
+                    showTranscriptReport = true
+                },
+                windowMode: immersiveFeed,
+                // Keep the active line plus one upcoming line visible. This preserves context
+                // while keeping the player as the visual focus.
+                followingLines: following ?? 1
+            )
+        }
     }
 
     /// Kiku's dictionary card floats at the DEAD CENTRE of the page on every feed layout —
@@ -679,9 +691,9 @@ struct ClipStageView: View {
                     .accessibilityHidden(true)
                 TapPopupCard(
                     compact: true,
-                    scrollableMiddleHeight: stageHeight * 0.38
+                    scrollableMiddleHeight: stageHeight * 0.30
                 )
-                .frame(maxWidth: 420)
+                .frame(maxWidth: 390)
                 .frame(maxHeight: stageHeight * 0.85)
                 .coachTarget(.popupCard, active: isCoachPage)
             }

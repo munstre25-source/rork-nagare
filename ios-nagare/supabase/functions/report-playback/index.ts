@@ -20,6 +20,10 @@ type Body = { videoId?: unknown; clipId?: unknown; code?: unknown };
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsPreflight();
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
+  // Simulator and beta failures are environmental evidence, not catalog verdicts.
+  if (req.headers.get("x-jojo-environment") !== "production") {
+    return jsonResponse({ ok: true, unpublished: false, test: true });
+  }
 
   try {
     const sb = serviceClient();

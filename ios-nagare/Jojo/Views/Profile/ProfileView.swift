@@ -19,6 +19,7 @@ struct ProfileView: View {
     @State private var restoreMessage: String?
     @State private var confirmDeleteAccount: Bool = false
     @State private var showHelp: Bool = false
+    @State private var showLibrary = false
     #if DEBUG
     @State private var confirmReset: Bool = false
     @State private var marketingScript: MarketingScript?
@@ -28,24 +29,14 @@ struct ProfileView: View {
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var known: Int { words.filter { $0.state == .known }.count }
-    private var familiar: Int { words.filter { $0.state == .familiar }.count }
-    private var learning: Int { words.filter { $0.state == .learning }.count }
-    private var newCount: Int { words.filter { $0.state == .new }.count }
 
     private var greeting: String {
         app.profile.firstName.isEmpty ? "Welcome back" : "Welcome back, \(app.profile.firstName)"
     }
 
-    /// JLPT level estimate from known + learning words.
-    private var level: (jlpt: String, label: String) {
-        let score = known * 2 + learning
-        switch score {
-        case ..<40: return ("N5", "Beginner")
-        case ..<120: return ("N4", "Beginner")
-        case ..<300: return ("N3", "Intermediate")
-        case ..<700: return ("N2", "Intermediate")
-        default: return ("N1", "Advanced")
-        }
+    private var reviewPool: [SavedWord] {
+        _ = app.reviewAvailabilityRevision
+        return ReviewQueue.session(in: words)
     }
 
     var body: some View {
@@ -83,30 +74,33 @@ struct ProfileView: View {
                     weeklyChart
                     mastery
                     Button {
-                        let due = words.filter { $0.dueAt <= Date() }.sorted { $0.dueAt < $1.dueAt }
-                        let pool = due.isEmpty ? words.shuffled() : due
-                        let keys = Array(pool.prefix(10).map(\.key))
+                        let keys = reviewPool.map(\.key)
                         guard !keys.isEmpty else { return }
                         Haptics.medium()
-                        reviewSession = ReviewSessionConfig(title: "Review", keys: keys)
+                        reviewSession = ReviewSessionConfig(title: ReviewQueue.label(for: reviewPool), keys: keys)
                     } label: {
-                        Label("Review 10 cards", systemImage: "play.fill")
+                        Label(ReviewQueue.label(for: reviewPool), systemImage: "rectangle.stack")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: 48)
                             .background {
-                                Capsule().fill(words.isEmpty ? Color.accentDisabled : Color.sakuraButton)
+                                Capsule().fill(reviewPool.isEmpty ? Color.accentDisabled : Color.sakuraButton)
                             }
                     }
                     .buttonStyle(ChunkyPressStyle())
-                    .disabled(words.isEmpty)
+                    .disabled(reviewPool.isEmpty)
                     if words.isEmpty {
                         Text("Reviews unlock after you tap your first word in the feed.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
+                    }
+                    if !words.isEmpty && reviewPool.isEmpty {
+                        Text("Your saved words are marked Known. Find more in clips, or practice a deck in Vocab.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     settings
                     Text("Jojo 流れ · Scroll, Listen, Flow into Japanese.")
@@ -141,6 +135,7 @@ struct ProfileView: View {
         }
         #endif
         .sheet(isPresented: $showGoalPicker) { DailyGoalSheet() }
+        .sheet(isPresented: $showLibrary) { LibraryView(presentedModally: true) }
         .manageSubscriptionsSheet(isPresented: $showManageSubs)
         .sheet(isPresented: $showCustomerCenter) { JojoCustomerCenter() }
         .alert("Restore Purchases", isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } })) {
@@ -181,9 +176,7 @@ struct ProfileView: View {
                     .contentTransition(.numericText(value: Double(known)))
                     .animation(.snappy, value: known)
                 Text("Words you know").font(.subheadline).foregroundStyle(.secondary)
-                Text(known == 0
-                     ? "A word counts as known once you can recall it with 3 weeks between reviews."
-                     : "Recalled with 3+ weeks between reviews.")
+                Text("Marked Known by you or through spaced reviews.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -191,8 +184,9 @@ struct ProfileView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 6) {
-                JLPTBadge(level: level.jlpt)
-                Text(level.label)
+                Text("Feed level")
+                    .font(.caption2).foregroundStyle(.secondary)
+                Text(app.profile.readingLevel.difficulty.rawValue)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -278,9 +272,7 @@ struct ProfileView: View {
         let total = max(words.count, 1)
         return VStack(alignment: .leading, spacing: Spacing.m) {
             Text("Mastery overview").font(.headline)
-            Text(words.isEmpty
-                 ? "Words you look up start as New, then move to Learning, Familiar and Known as you review them."
-                 : "Each review moves a word one step closer to Known.")
+            Text("Review your saved words, or choose a familiarity mark in the word popup.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -288,21 +280,23 @@ struct ProfileView: View {
                 if words.isEmpty {
                     Capsule().fill(Color.primary.opacity(0.1))
                 } else {
-                    HStack(spacing: 2) {
-                        Capsule().fill(Color.gray.opacity(0.45)).frame(width: proxy.size.width * CGFloat(newCount) / CGFloat(total))
-                        Capsule().fill(Color.sakuraPinkSoft).frame(width: proxy.size.width * CGFloat(learning) / CGFloat(total))
-                        Capsule().fill(Color.designOrange).frame(width: proxy.size.width * CGFloat(familiar) / CGFloat(total))
-                        Capsule().fill(Color.spokenGreen)
+                    HStack(spacing: 0) {
+                        ForEach(SRSState.allCases, id: \.rawValue) { state in
+                            let count = words.filter { $0.state == state }.count
+                            Rectangle().fill(LearningInk.mastery(state))
+                                .frame(width: proxy.size.width * CGFloat(count) / CGFloat(total))
+                        }
                     }
+                    .clipShape(Capsule())
                 }
             }
             .frame(height: 12)
             .accessibilityHidden(true)
-            HStack {
-                MasteryStat(color: .gray.opacity(0.7), label: "New", value: newCount)
-                MasteryStat(color: Color.sakuraPinkSoft, label: "Learning", value: learning)
-                MasteryStat(color: .designOrange, label: "Familiar", value: familiar)
-                MasteryStat(color: .spokenGreen, label: "Known", value: known)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88))], alignment: .leading, spacing: 10) {
+                ForEach(SRSState.allCases, id: \.rawValue) { state in
+                    MasteryStat(color: LearningInk.mastery(state), label: state.title,
+                                value: words.filter { $0.state == state }.count)
+                }
             }
         }
         .padding(Spacing.l)
@@ -351,6 +345,29 @@ struct ProfileView: View {
 
             settingsHeader("Subtitles & reading")
             Menu {
+                ForEach(LearningMode.allCases) { mode in
+                    Button(mode.title) { app.setLearningMode(mode) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "slider.horizontal.3", title: "Learning mode",
+                                 value: app.profile.subtitleDisplay.learningMode?.title ?? "Custom")
+            }
+            Divider().padding(.leading, 52)
+            Menu {
+                ForEach(EnglishVisibility.allCases) { visibility in
+                    Button(visibility == .onTap ? "Tap to reveal" : visibility.title) {
+                        app.setEnglishVisibility(visibility)
+                    }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "eye", title: "English assistance",
+                                 value: app.profile.subtitleDisplay.english.title)
+            }
+            Divider().padding(.leading, 52)
+            settingsToggle(symbol: "hand.tap", title: "Tap words to look up",
+                           isOn: Binding(get: { app.profile.tapWordsEnabled }, set: { app.setTapWordsEnabled($0) }))
+            Divider().padding(.leading, 52)
+            Menu {
                 ForEach(SubtitleMode.allCases) { mode in
                     Button(mode.title) { app.setSubtitleMode(mode) }
                 }
@@ -358,7 +375,7 @@ struct ProfileView: View {
                 SettingsRowLabel(symbol: "captions.bubble", title: "Subtitles", value: app.profile.subtitles.title)
             }
             Divider().padding(.leading, 52)
-            settingsToggle(symbol: "textformat.ja", title: "Furigana on cards",
+            settingsToggle(symbol: "textformat.ja", title: "Furigana above Japanese",
                            isOn: Binding(get: { app.profile.showFurigana }, set: { app.setShowFurigana($0) }))
             Divider().padding(.leading, 52)
             settingsToggle(symbol: "character", title: "Romaji under words",
@@ -374,6 +391,10 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
 
             settingsHeader("Study focus")
+            SettingsRow(symbol: "books.vertical", title: "Clip Library", value: "Watched & saved") {
+                showLibrary = true
+            }
+            Divider().padding(.leading, 52)
             Menu {
                 ForEach(ReadingLevel.allCases) { level in
                     Button(level.title) { app.setReadingLevel(level) }
@@ -382,7 +403,7 @@ struct ProfileView: View {
                 SettingsRowLabel(symbol: "chart.bar.fill", title: "Content level", value: app.profile.readingLevel.title)
             }
             Divider().padding(.leading, 52)
-            settingsToggle(symbol: "lock.open", title: "Unlock by level",
+            settingsToggle(symbol: "lock.open", title: "Match For You to my level",
                            isOn: Binding(get: { app.profile.gateContentByLevel }, set: { app.setGateContentByLevel($0) }))
             Divider().padding(.leading, 52)
             settingsToggle(symbol: "timer", title: "Daily progress on Explore",

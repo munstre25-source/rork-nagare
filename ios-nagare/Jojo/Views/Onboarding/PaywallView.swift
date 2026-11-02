@@ -12,11 +12,11 @@ struct PaywallView: View {
 
     @Environment(AppModel.self) private var app
     @State private var plan: PlanChoice = .yearly
+    @State private var userSelectedPlan = false
     @State private var errorMessage: String?
     @State private var didTrackView: Bool = false
     @State private var appeared = false
     @State private var strokeProgress: CGFloat = 0
-    @State private var showPlans = false
     @State private var peekIn = false
     @State private var kenBurns = false
     @State private var offeringTimedOut = false
@@ -24,28 +24,12 @@ struct PaywallView: View {
     @State private var restoreAlert: String?
 
     private var purchases: PurchaseManager { app.purchases }
-    private var showsRemotePaywall: Bool {
-        purchases.offering?.hasPaywall == true
-    }
-
     var body: some View {
-        Group {
-            if let offering = purchases.offering, offering.hasPaywall {
-                RemotePaywallView(
-                    offering: offering,
-                    onSubscribed: {
-                        scheduleTrialReminderNow(trialDays: nil)
-                        onSubscribed()
-                    },
-                    onRestoreFailed: { message in restoreAlert = message }
-                )
-                .overlay(alignment: .top) { savedLookChip }
-            } else {
-                nativePaywall
-            }
-        }
+        // The annual-first native comparison is the canonical onboarding offer.
+        // RevenueCat still supplies products, localized prices, trials and entitlements.
+        nativePaywall
         #if DEBUG
-        .overlay(alignment: .bottom) {
+        .overlay(alignment: .topTrailing) {
             if allowsDebugBypass {
                 Button("DEBUG · Skip paywall") {
                     purchases.activateDebugBypass()
@@ -56,7 +40,8 @@ struct PaywallView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
                 .background(Color.black.opacity(0.48), in: Capsule())
-                .padding(.bottom, 14)
+                .padding(.top, 8)
+                .padding(.trailing, 8)
                 .accessibilityHint("Available only in DEBUG builds")
             }
         }
@@ -74,7 +59,8 @@ struct PaywallView: View {
                 didTrackView = true
                 track("onboarding_paywall_view", props: [
                     "offering_loaded": purchases.offering == nil ? "0" : "1",
-                    "remote": showsRemotePaywall ? "1" : "0"
+                    "remote": "0",
+                    "plan": "yearly"
                 ])
                 if purchases.offering == nil { Task { await purchases.loadOffering() } }
                 watchOfferingLoad()
@@ -83,18 +69,20 @@ struct PaywallView: View {
                 withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { strokeProgress = 1 }
                 withAnimation(.spring(response: 0.7, dampingFraction: 0.78).delay(0.15)) { peekIn = true }
                 withAnimation(.easeInOut(duration: 14).repeatForever(autoreverses: true)) { kenBurns = true }
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(700))
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) { showPlans = true }
-                }
             }
             .onChange(of: purchases.isSubscribed) { _, subscribed in
                 if subscribed { onSubscribed() }
             }
             .onChange(of: plansReady) { _, ready in
-                if ready { offeringTimedOut = false }
+                if ready {
+                    offeringTimedOut = false
+                    if !userSelectedPlan, yearlyPrice != nil { plan = .yearly }
+                }
             }
             .onChange(of: anyPlanReady) { _, _ in selectAvailablePlan() }
+            .onChange(of: purchases.isLoadingOffering) { _, loading in
+                if !loading { selectAvailablePlan() }
+            }
             .onChange(of: offeringTimedOut) { _, _ in selectAvailablePlan() }
     }
 
@@ -108,9 +96,9 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     wordmark
                     headline
-                    benefitRow
                     yearlyCard
                     monthlyCard
+                    benefitRow
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.subheadline.weight(.semibold))
@@ -119,15 +107,6 @@ struct PaywallView: View {
                             .padding(Spacing.m)
                             .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
-                    Group {
-                        if offeringUnavailable {
-                            offeringRetry
-                        } else {
-                            purchaseButton
-                        }
-                    }
-                        .opacity(showPlans ? 1 : 0)
-                        .offset(y: showPlans ? 0 : 24)
                     VStack(spacing: 8) {
                         Text(trialCaption)
                             .font(.subheadline.weight(.semibold))
@@ -158,6 +137,22 @@ struct PaywallView: View {
                 .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom, spacing: 0) { purchaseDock }
+    }
+
+    private var purchaseDock: some View {
+        VStack(spacing: 8) {
+            if offeringUnavailable { offeringRetry } else { purchaseButton }
+            Text(trialCaption)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .background(Color(hex: "#140C2E").opacity(0.97))
     }
 
     private var paywallBackdrop: some View {
@@ -202,24 +197,6 @@ struct PaywallView: View {
         .accessibilityLabel("Jojo Pro")
     }
 
-    private var savedLookLine: String {
-        let look = "\(app.profile.theme.title) \(app.profile.scheme.title.lowercased()) · \(app.profile.glow.title) glow"
-        return "\(look) is saved. You can change it anytime in Profile settings."
-    }
-
-    private var savedLookChip: some View {
-        Text(savedLookLine)
-            .font(.caption.weight(.bold))
-            .foregroundStyle(.white)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .padding(.top, 8)
-            .padding(.horizontal, Spacing.l)
-            .allowsHitTesting(false)
-    }
-
     private var headline: some View {
         let name = app.profile.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         let lead = name.isEmpty ? "Your feed is ready" : "\(name), your feed is ready"
@@ -240,10 +217,6 @@ struct PaywallView: View {
                 .offset(y: -6)
             Text("Scroll real Japanese. The dictionary opens on the word you tap, and that word becomes a flashcard.")
                 .font(.body)
-                .foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(savedLookLine)
-                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -291,7 +264,8 @@ struct PaywallView: View {
 
     /// "Start Free Trial" only when the selected product really offers one to this user.
     private var primaryCTATitle: String {
-        selectedPackageHasTrial ? "Start Free Trial" : "Continue"
+        guard selectedPlanReady else { return "Loading Plans…" }
+        return plan == .yearly && selectedPackageHasTrial ? "Start Free Trial" : "Continue"
     }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
@@ -313,7 +287,8 @@ struct PaywallView: View {
     private var plansReady: Bool { yearlyPrice != nil && monthlyPrice != nil }
     /// At least one plan can be bought; each plan is purchasable on its own.
     private var anyPlanReady: Bool { yearlyPrice != nil || monthlyPrice != nil }
-    private var selectedPlanReady: Bool { purchases.priceText(selectedPackage) != nil }
+    private var selectedPlanLoaded: Bool { purchases.priceText(selectedPackage) != nil }
+    private var selectedPlanReady: Bool { selectedPlanLoaded && !purchases.isLoadingOffering }
     /// Offerings failed, or nothing has arrived within 8 seconds.
     private var offeringUnavailable: Bool {
         !anyPlanReady && (purchases.offeringFailed || offeringTimedOut)
@@ -325,7 +300,7 @@ struct PaywallView: View {
 
     private var perMonthLine: String? {
         guard let amount = purchases.perMonthText(purchases.yearly) else { return nil }
-        return "Only \(amount)/month"
+        return "Equivalent to \(amount)/month"
     }
 
     private var saveBadge: String? {
@@ -340,7 +315,7 @@ struct PaywallView: View {
                     Image(systemName: plan == .yearly ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundStyle(plan == .yearly ? PaywallInk.pink : PaywallInk.ink)
-                    Text("Yearly")
+                    Text("Annual")
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(PaywallInk.ink)
                     Spacer(minLength: 8)
@@ -355,7 +330,7 @@ struct PaywallView: View {
                 }
                 if let yearlyPrice, let period = purchases.periodSuffix(purchases.yearly) {
                     Text("\(yearlyPrice) / \(period)")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .font(.system(.title, design: .rounded, weight: .bold))
                         .foregroundStyle(PaywallInk.ink)
                 } else if offeringUnavailable || planMissing {
                     Text(planMissing ? "Not available right now" : "Plans didn’t load")
@@ -365,10 +340,27 @@ struct PaywallView: View {
                     ProgressView().tint(PaywallInk.pink)
                 }
                 if let perMonthLine {
-                    Text(perMonthLine)
-                        .font(.subheadline.weight(.medium))
+                    HStack(spacing: 8) {
+                        if purchases.annualComparison?.hasSavings == true, let monthlyPrice {
+                            Text("\(monthlyPrice)/mo")
+                                .strikethrough()
+                                .font(.subheadline)
+                                .foregroundStyle(PaywallInk.ink.opacity(0.6))
+                        }
+                        Text(perMonthLine)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(PaywallInk.ink)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                if let savings = purchases.yearlySavingsText() {
+                    Text("Save \(savings) over 12 monthly payments")
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(PaywallInk.ink)
                 }
+                Text("One payment for a full year of Jojo Pro")
+                    .font(.caption)
+                    .foregroundStyle(PaywallInk.ink.opacity(0.8))
                 HStack(spacing: 0) {
                     planMeta("play.rectangle.fill", "Whole feed")
                     planMeta("text.magnifyingglass", "Every word")
@@ -377,14 +369,14 @@ struct PaywallView: View {
                 .padding(.top, 4)
             }
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: Self.planCardHeight, maxHeight: Self.planCardHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(PaywallInk.pink, lineWidth: plan == .yearly ? 2.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
-                Label("Most Popular", systemImage: "crown.fill")
+                Label(purchases.annualComparison?.hasSavings == true ? "Best Value" : "Recommended", systemImage: "crown.fill")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
@@ -410,7 +402,7 @@ struct PaywallView: View {
                 }
                 if let monthlyPrice, let period = purchases.periodSuffix(purchases.monthly) {
                     Text("\(monthlyPrice) / \(period)")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .font(.system(plan == .monthly ? .title : .title2, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
                 } else if offeringUnavailable || planMissing {
                     Text(planMissing ? "Not available right now" : "Plans didn’t load")
@@ -419,9 +411,14 @@ struct PaywallView: View {
                 } else {
                     ProgressView().tint(.white)
                 }
-                Text("Same feed, billed each month")
+                Text("Same access, billed monthly")
                     .font(.subheadline)
                     .foregroundStyle(.white)
+                if let total = purchases.monthlyYearTotalText() {
+                    Text("\(total) over 12 monthly payments")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
                 HStack(spacing: 16) {
                     Label("Whole feed", systemImage: "checkmark")
                     Label("Cancel anytime", systemImage: "checkmark")
@@ -431,7 +428,7 @@ struct PaywallView: View {
                 .padding(.top, 2)
             }
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: Self.planCardHeight, maxHeight: Self.planCardHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
             .background(PaywallInk.monthly, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -443,12 +440,15 @@ struct PaywallView: View {
     private func planButton<Label: View>(_ choice: PlanChoice, @ViewBuilder label: () -> Label) -> some View {
         Button {
             Haptics.selection()
+            userSelectedPlan = true
             withAnimation(.snappy) { plan = choice }
+            track("onboarding_plan_selected", props: ["plan": choice == .yearly ? "yearly" : "monthly"])
         } label: {
             label()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(PressableStyle())
+        .disabled(purchases.isPurchasing || purchases.isRestoring)
         .accessibilityAddTraits(plan == choice ? .isSelected : [])
     }
 
@@ -511,9 +511,6 @@ struct PaywallView: View {
               let period = purchases.periodSuffix(selectedPackage) else {
             return "Loading plans from the App Store"
         }
-        if selectedPackageHasTrial, let days = purchases.trialLengthDays(selectedPackage) {
-            return "\(days) days free  ·  Then \(price)/\(period)"
-        }
         if selectedPackageHasTrial, !trialLine.isEmpty {
             return "\(trialLine)  ·  Then \(price)/\(period)"
         }
@@ -559,38 +556,36 @@ struct PaywallView: View {
     }
 
     private var legalRow: some View {
-        HStack(spacing: 8) {
-            if let terms = StoreConstants.termsURL {
-                Link("Terms of Service", destination: terms)
+        VStack(spacing: 0) {
+            HStack(spacing: 18) {
+                if let terms = StoreConstants.termsURL { Link("Terms of Service", destination: terms) }
+                if let privacy = StoreConstants.privacyURL { Link("Privacy Policy", destination: privacy) }
             }
-            Text("|").foregroundStyle(.white)
-            if let privacy = StoreConstants.privacyURL {
-                Link("Privacy Policy", destination: privacy)
+            .frame(minHeight: 44)
+            HStack(spacing: 18) {
+                if let support = StoreConstants.supportURL { Link("Support", destination: support) }
+                Button("Restore Purchases") { Task { await restore() } }
+                    .disabled(purchases.isRestoring || purchases.isPurchasing)
             }
-            Text("|").foregroundStyle(.white)
-            if let support = StoreConstants.supportURL {
-                Link("Support", destination: support)
-            }
-            Text("|").foregroundStyle(.white)
-            Button("Restore Purchases") { Task { await restore() } }
-                .disabled(purchases.isRestoring || purchases.isPurchasing)
+            .frame(minHeight: 44)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 44)
     }
 
     private func buy() async {
         Haptics.medium()
         withAnimation { errorMessage = nil }
-        track("onboarding_payment_start", props: ["plan": plan == .yearly ? "yearly" : "monthly"])
-        let outcome = await purchases.purchase(selectedPackage)
+        let purchasingPlan = plan
+        let package = selectedPackage
+        track("onboarding_payment_start", props: ["plan": purchasingPlan == .yearly ? "yearly" : "monthly"])
+        let outcome = await purchases.purchase(package)
         switch outcome {
         case .success:
             Haptics.success()
-            track("onboarding_payment_success", props: ["plan": plan == .yearly ? "yearly" : "monthly"])
-            scheduleTrialReminderNow(trialDays: purchases.trialLengthDays(selectedPackage))
+            track("onboarding_payment_success", props: ["plan": purchasingPlan == .yearly ? "yearly" : "monthly"])
+            scheduleTrialReminderNow(trialDays: purchases.trialLengthDays(package))
             onSubscribed()
         case .cancelled:
             track("onboarding_payment_cancelled")
@@ -626,8 +621,8 @@ struct PaywallView: View {
 
     /// If the chosen plan never loads but the other did, switch to the one that can be bought.
     private func selectAvailablePlan() {
-        guard anyPlanReady, !selectedPlanReady else { return }
-        if purchases.offeringFailed || offeringTimedOut || plansReady {
+        guard anyPlanReady, !selectedPlanLoaded else { return }
+        if purchases.offeringFailed || offeringTimedOut || plansReady || !purchases.isLoadingOffering {
             plan = (plan == .yearly) ? .monthly : .yearly
         }
     }
@@ -649,14 +644,9 @@ struct PaywallView: View {
         case .cancelled, .pending:
             break
         case .failed(let message):
-            withAnimation { errorMessage = message }
+            restoreAlert = message
         }
     }
-}
-
-extension PaywallView {
-    /// Both plan cards share one height so Yearly does not grow past Monthly.
-    fileprivate static let planCardHeight: CGFloat = 210
 }
 
 private enum PaywallInk {

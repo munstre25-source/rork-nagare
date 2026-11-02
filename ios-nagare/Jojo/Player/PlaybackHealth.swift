@@ -19,6 +19,7 @@ enum PlaybackHealth {
     /// bumping the key cleared every device's stale blocks.
     private static let blockedKey = "jojo.playback.blockedVideoIds.v2"
     private static let reportedKey = "jojo.playback.reportedVideoIds"
+    private static let publishedClipKey = "jojo.catalog.publishedClipIds"
     private static let publishedKey = "jojo.catalog.publishedVideoIds"
     private static let playedKey = "jojo.playback.hasPlayedSuccessfully"
 
@@ -61,9 +62,14 @@ enum PlaybackHealth {
         UserDefaults.standard.stringArray(forKey: publishedKey).map(Set.init)
     }
 
-    static func notePublished(videoIds: Set<String>) {
-        guard !videoIds.isEmpty else { return }
+    static var publishedClipIds: Set<String>? {
+        UserDefaults.standard.stringArray(forKey: publishedClipKey).map(Set.init)
+    }
+
+    static func notePublished(videoIds: Set<String>, clipIds: Set<String>? = nil) {
+        // A successful empty response is authoritative too; failure never calls this.
         UserDefaults.standard.set(Array(videoIds), forKey: publishedKey)
+        if let clipIds { UserDefaults.standard.set(Array(clipIds), forKey: publishedClipKey) }
     }
 
     /// Records a playback failure. Returns true when the clip should leave this device's feed.

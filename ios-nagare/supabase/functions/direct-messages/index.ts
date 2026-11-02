@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
     }
 
     const sb = serviceClient();
+    const environment = req.headers.get("x-jojo-environment") === "production" ? "production" : "test";
 
     if (req.method === "GET") {
       const { data, error } = await sb
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await sb
       .from("direct_messages")
-      .insert({ app_user_id: appUserId, sender: "user", body: text })
+      .insert({ app_user_id: appUserId, sender: "user", body: text, environment })
       .select("id, sender, body, created_at")
       .single();
     if (error || !data) return errorResponse(500, "Failed to send");

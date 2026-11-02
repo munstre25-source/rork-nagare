@@ -1,0 +1,2066 @@
+{
+  "asOfUTC": "2026-11-02T04:35:45.822491+00:00",
+  "live": 190,
+  "currentPolicyPassedLive": 63,
+  "allUnverifiedLiveIds": [
+    "boss-rush-live-09",
+    "counting-kuma-03",
+    "harajuku-street-02",
+    "hoshizora-academy-07",
+    "immersion-_ONDIagmaPE-1-51",
+    "immersion--trocZ1u204-14-35",
+    "immersion-0FJvvV6uGJ0-33-59",
+    "immersion-0jAzZogkBYU-17-48",
+    "immersion-0qITlsOy4LU-0-12",
+    "immersion-1OjuYw8k2Sc-38-55",
+    "immersion-4auggVQ7H8s-0-13",
+    "immersion-5kXOkOpkYJ8-78-90",
+    "immersion-5U8vAa94rFo-28-49",
+    "immersion-67G_CfyZHp0-102-116",
+    "immersion-6bAtb5gwX1Y-5-45",
+    "immersion-7dbIWMbxDfg-12-41",
+    "immersion-7kk3VajdeaM-0-13",
+    "immersion-8miK-6nV7Gw-0-32",
+    "immersion-8VFGRv8bfZA-0-34",
+    "immersion-9OYewGtGVQw-0-23",
+    "immersion-aglOdAXsKEQ-6-30",
+    "immersion-AoZugwG4meE-0-17",
+    "immersion-aqjddUenT8A-0-26",
+    "immersion-aSzjC9npiW0-44-56",
+    "immersion-au2w4AeWyd8-80-99",
+    "immersion-AUrfD-1sqM8-33-50",
+    "immersion-bPqxKdMdXMA-0-19",
+    "immersion-butabara-steam",
+    "immersion-COb5aAy5CJ0-28-41",
+    "immersion-COb5aAy5CJ0-28-42",
+    "immersion-cT-o8IXg6CI-0-15",
+    "immersion-CW0juiwikkQ-43-63",
+    "immersion-dcxmIs4colE-0-13",
+    "immersion-Dmi0T9qyPJA-30-55",
+    "immersion-DR-aIuLRg80-36-57",
+    "immersion-E2xV_3JtBik-15-41",
+    "immersion-EBvfRfK4U40-0-28",
+    "immersion-eihkCy4rlg4-26-41",
+    "immersion-eWich9B5BnQ-11-28",
+    "immersion-f1sMviR6foU-7-28",
+    "immersion-fN-AnuwRds4-1-12",
+    "immersion-fOfIHF2JjI8-18-30",
+    "immersion-gFLvb0SIIn0-39-121",
+    "immersion-gyPaUw_5BLc-50-63",
+    "immersion-h1XUU_Wq9ks-1-21",
+    "immersion-h6ObOK-Xwmc-0-18",
+    "immersion-hDfAn3KfBjk-13-30",
+    "immersion-heb1S4dWKk4-0-13",
+    "immersion-HJdyF2rcZb0-0-21",
+    "immersion-hYLf9yxkDBE-4-28",
+    "immersion-Ir35SAOZ5nY-0-30",
+    "immersion-Is7v3JNydkk-2-44",
+    "immersion-iUyX27UkWDs-23-55",
+    "immersion-iYjjpFZTAZA-0-32",
+    "immersion-J3XHFIJafkM-81-89",
+    "immersion-J7WIN1G11eI-0-31",
+    "immersion-jUZY_gpOaQA-50-62",
+    "immersion-KDfG1K1IgZc-18-37",
+    "immersion-kh_PnQ5mY2Y-0-11",
+    "immersion-Ki8uOm2QNOk-2-26",
+    "immersion-kids-aisatsu",
+    "immersion-komeda-order",
+    "immersion-konbini-sayaka",
+    "immersion-l4VGSWLZCqI-0-13",
+    "immersion-LKV14c88JKI-26-56",
+    "immersion-lnd2SjFMJXI-51-76",
+    "immersion-LuADPqD93nM-0-14",
+    "immersion-MDtiDGr_-GY-3-17",
+    "immersion-Me5ZmclOAKo-0-25",
+    "immersion-mSycuOff7YQ-70-84",
+    "immersion-n9jnD_8JeLc-28-49",
+    "immersion-N9KUoHnewXA-0-13",
+    "immersion-nfmMuGsqK8Q-14-34",
+    "immersion-Njk2kfY4irI-40-54",
+    "immersion-o8uPdpOu9BQ-0-20",
+    "immersion-Ovl6nYvihh8-18-36",
+    "immersion-OX1f13PB53E-0-12",
+    "immersion-p_TCfcWsDwE-10-53",
+    "immersion-pd-5GK2JdQk-5-45",
+    "immersion-pI6TGEHnKo4-3-23",
+    "immersion-plZKAqFYcLE-9-23",
+    "immersion-PspjY7iElx4-0-20",
+    "immersion-q89xqLs-eNY-30-50",
+    "immersion-QDGzU8DZjkc-21-34",
+    "immersion-QgQ8_7zSv7s-26-41",
+    "immersion-QThN_GUATTY-19-34",
+    "immersion-QyXHpGahA1I-12-24",
+    "immersion-r7ytNplrDCA-0-17",
+    "immersion-R9NwPxYOxSw-7-35",
+    "immersion-r9OpcwiLSLA-0-26",
+    "immersion-rina_LPQ17A-0-11",
+    "immersion-roZJa9Z6S1I-31-43",
+    "immersion-rXF2YFvMxKY-32-58",
+    "immersion-sapLlgWryNI-0-25",
+    "immersion-SBOS-_a9QAA-45-58",
+    "immersion-SF-EoJkMhBc-0-16",
+    "immersion-swE3eLyJXOM-132-164",
+    "immersion-u1xEGyinMzY-51-63",
+    "immersion-uL2ABO6yMwM-8-26",
+    "immersion-VFMFI1yj2wY-0-10",
+    "immersion-VFX9q3P6cw0-0-16",
+    "immersion-VI44EvFkQ7w-18-35",
+    "immersion-VI44EvFkQ7w-19-35",
+    "immersion-VJyFtWJ_36k-61-73",
+    "immersion-Wdw_HjSp7GQ-19-38",
+    "immersion-WkJcGj9R7Fk-38-54",
+    "immersion-WNQCXxF4uFM-11-33",
+    "immersion-xoI1Gzd8Yog-1-22",
+    "immersion-y3issC4ELx4-5-32",
+    "immersion-Y7kYPuCduwk-0-21",
+    "immersion-yGOkIy78MRM-63-87",
+    "immersion-ykw9D1hq1hc-5-23",
+    "immersion-yLB0JwdA_ek-0-10",
+    "immersion-yU72X91jPMI-0-16",
+    "immersion-yWy6wBKTicc-8-22",
+    "immersion-Z_leh6MUPHI-72-86",
+    "immersion-ZoRxlkhH1iA-0-24",
+    "kissa-stories-01",
+    "kitsune-yuki-stream-01",
+    "konbini-diaries-01",
+    "neko-cafe-02",
+    "piyo-picnic-01",
+    "quiz-showdown-11",
+    "ramen-road-trip-03",
+    "speedrun-commentary-02",
+    "tsukimi-rin-zatsudan-05",
+    "words-that-matter-04"
+  ],
+  "confirmedEnglishLiveIds": [
+    "harajuku-street-02",
+    "immersion-_ONDIagmaPE-1-51",
+    "immersion-0jAzZogkBYU-17-48",
+    "immersion-1OjuYw8k2Sc-38-55",
+    "immersion-au2w4AeWyd8-80-99",
+    "immersion-E2xV_3JtBik-15-41",
+    "immersion-EBvfRfK4U40-0-28",
+    "immersion-h1XUU_Wq9ks-1-21",
+    "immersion-hYLf9yxkDBE-4-28",
+    "immersion-Is7v3JNydkk-2-44",
+    "immersion-iYjjpFZTAZA-0-32",
+    "immersion-J7WIN1G11eI-0-31",
+    "immersion-konbini-sayaka",
+    "immersion-r9OpcwiLSLA-0-26",
+    "immersion-sapLlgWryNI-0-25",
+    "immersion-swE3eLyJXOM-132-164",
+    "immersion-VI44EvFkQ7w-18-35",
+    "immersion-VI44EvFkQ7w-19-35",
+    "immersion-xoI1Gzd8Yog-1-22",
+    "immersion-ZoRxlkhH1iA-0-24"
+  ],
+  "publicationFlagsChanged": false,
+  "details": [
+    {
+      "id": "boss-rush-live-09",
+      "video_id": "8jJ_NDh2Ylc",
+      "title": "Boss Rush: Attempt #37",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "boss-rush-live-09",
+        "request_id": 6051,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "counting-kuma-03",
+      "video_id": "GINghDX1-VQ",
+      "title": "Counting with Kuma",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "counting-kuma-03",
+        "request_id": 6349,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "harajuku-street-02",
+      "video_id": "7XgJ81N8svY",
+      "title": "What's Your Favorite Food?",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "harajuku-street-02",
+        "request_id": 6325,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–2s: What kind of food do you like?"
+      }
+    },
+    {
+      "id": "hoshizora-academy-07",
+      "video_id": "pbb2DE9x2yg",
+      "title": "The Promise on the Rooftop",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "hoshizora-academy-07",
+        "request_id": 6054,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-_ONDIagmaPE-1-51",
+      "video_id": "_ONDIagmaPE",
+      "title": "英語がペラペラに！ネイティブが使う簡単英会話フレーズ100選！#英語 #英会話 #聞き流し #初心者 #初級 #ネイティブ #ペラペラ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-_ONDIagmaPE-1-51",
+        "request_id": 6326,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 3–6s: What's wrong?"
+      }
+    },
+    {
+      "id": "immersion--trocZ1u204-14-35",
+      "video_id": "-trocZ1u204",
+      "title": "カスの日本語教室がこちらｗｗｗｗｗ【CoD:BO7】#shorts #切り抜き",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion--trocZ1u204-14-35",
+        "request_id": 6247,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-0FJvvV6uGJ0-33-59",
+      "video_id": "0FJvvV6uGJ0",
+      "title": "〔Mondo切り抜き〕韓国語勉強方法のおすすめは？本？アニメ？会話？〔雑談〕",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-0FJvvV6uGJ0-33-59",
+        "request_id": 6373,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: 00:58\n}"
+      }
+    },
+    {
+      "id": "immersion-0jAzZogkBYU-17-48",
+      "video_id": "0jAzZogkBYU",
+      "title": "厨二病フレーズを日常会話で使ってみた！Unleashing Chuunibyou in Daily Conversation 🇯🇵 🇫🇷 🇺🇸 🇪🇸 #japan",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-0jAzZogkBYU-17-48",
+        "request_id": 6327,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 3.8–8s: This time, I tried using chuunibyou-style phrases in daily conversation."
+      }
+    },
+    {
+      "id": "immersion-0qITlsOy4LU-0-12",
+      "video_id": "0qITlsOy4LU",
+      "title": "【60歳から話せる韓国語】韓国の幼稚園児が覚える挨拶と基本表現50選｜初心者・独学・聞き流し・超入門におすすめ",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-0qITlsOy4LU-0-12",
+        "request_id": 6351,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "Content category or child audience could not be verified"
+      }
+    },
+    {
+      "id": "immersion-1OjuYw8k2Sc-38-55",
+      "video_id": "1OjuYw8k2Sc",
+      "title": "㊗️330万回再生！！【地獄】日本語だからと油断していたら理解されていた兎田ぺこら #shorts #ホロライブ切り抜き 【  #兎田ぺこら #森カリオペ 】",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-1OjuYw8k2Sc-38-55",
+        "request_id": 6328,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 8–8.5s: I understand Japanese!"
+      }
+    },
+    {
+      "id": "immersion-4auggVQ7H8s-0-13",
+      "video_id": "4auggVQ7H8s",
+      "title": "日本人が思うフランス【海外親日国 美女に街頭インタビュー】 What Japanese People Think Of France?",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-4auggVQ7H8s-0-13",
+        "request_id": 6248,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-5kXOkOpkYJ8-78-90",
+      "video_id": "5kXOkOpkYJ8",
+      "title": "【#Warframe】おはよー！！日課！！！？#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-5kXOkOpkYJ8-78-90",
+        "request_id": 6069,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-5U8vAa94rFo-28-49",
+      "video_id": "5U8vAa94rFo",
+      "title": "あつ森の住民に日本語でブチギレたり変な声でアテレコするアルバーンが面白すぎるw【にじさんじ 切り抜き/アルバーン・ノックス/日本語翻訳】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-5U8vAa94rFo-28-49",
+        "request_id": 6070,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-67G_CfyZHp0-102-116",
+      "video_id": "67G_CfyZHp0",
+      "title": "Minecraft #2 — Yusuke & Yuma",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-67G_CfyZHp0-102-116",
+        "request_id": 6073,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-6bAtb5gwX1Y-5-45",
+      "video_id": "6bAtb5gwX1Y",
+      "title": "翻訳できない日本語の繊細さ。 #マツコ  #月曜から夜ふかし #お笑い #おもしろ動画",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-6bAtb5gwX1Y-5-45",
+        "request_id": 6074,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] failed sourceMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-7dbIWMbxDfg-12-41",
+      "video_id": "7dbIWMbxDfg",
+      "title": "【日本語吹き替え】いじめを受けていた少女は、なんと大金持ちの娘だった！両親が迎えに来ると、現場の空気は一瞬にして凍りついた...#キスシーン#中国ドラマ",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-7dbIWMbxDfg-12-41",
+        "request_id": 6075,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-7kk3VajdeaM-0-13",
+      "video_id": "7kk3VajdeaM",
+      "title": "憧れの​ @DidiKoreanPodcast さんに日本語でインタビュー！  (Japanese Radio for Listening Practice)",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-7kk3VajdeaM-0-13",
+        "request_id": 6076,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-8miK-6nV7Gw-0-32",
+      "video_id": "8miK-6nV7Gw",
+      "title": "【デヴィッド・ボウイ】1983年 オーストラリアのトーク番組 インタビュー #short #関西弁 #和訳",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-8miK-6nV7Gw-0-32",
+        "request_id": 6077,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[5] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-8VFGRv8bfZA-0-34",
+      "video_id": "8VFGRv8bfZA",
+      "title": "台詞より先に、心が揺れた💕#BL #ドラマ #ショート #shorts",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-8VFGRv8bfZA-0-34",
+        "request_id": 6078,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-9OYewGtGVQw-0-23",
+      "video_id": "9OYewGtGVQw",
+      "title": "ペンペンの春休み『Roblox(日本語歌）ショート切り抜き動画』★ホラーゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-9OYewGtGVQw-0-23",
+        "request_id": 6080,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-aglOdAXsKEQ-6-30",
+      "video_id": "aglOdAXsKEQ",
+      "title": "【胸糞】頭のケガで苦しむ私に「離婚届を出せ！」と暴力を振るう狂気の義母。帰宅したクズ夫も別の女に夢中…限界の私が即サインして地狱へ落とした結果ｗｗ #shorts #修羅場",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-aglOdAXsKEQ-6-30",
+        "request_id": 6083,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-AoZugwG4meE-0-17",
+      "video_id": "AoZugwG4meE",
+      "title": "成人向け紙芝居 #お笑い #コント #ショートコント #あるある #ネタ #潟 #おすすめ",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-AoZugwG4meE-0-17",
+        "request_id": 6085,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] failed meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-aqjddUenT8A-0-26",
+      "video_id": "aqjddUenT8A",
+      "title": "どんどん増えていくヴェリティ、ピンクの名前は？【海外マイクラ/切り抜き動画/xqree】【日本語字幕】#ショート #shorts",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-aqjddUenT8A-0-26",
+        "request_id": 6087,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-aSzjC9npiW0-44-56",
+      "video_id": "aSzjC9npiW0",
+      "title": "【#マイクラ】深夜テンションで会話が終わり散らかしている人達#short動画#切り抜き# #ゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-aSzjC9npiW0-44-56",
+        "request_id": 6249,
+        "http": 503,
+        "status": "failed",
+        "detail": "AI timeout after 45000ms"
+      }
+    },
+    {
+      "id": "immersion-au2w4AeWyd8-80-99",
+      "video_id": "au2w4AeWyd8",
+      "title": "Minecraft #4 — Yusuke & Yuma",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-au2w4AeWyd8-80-99",
+        "request_id": 6329,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0.2–2s: zombie"
+      }
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-33-50",
+      "video_id": "AUrfD-1sqM8",
+      "title": "同期にも言ってない！狂蘭メロコデビュー秘話！第1回日本語雑談 野生のハム太郎も登場！【Meloco Kyoran / NIJISANJI EN / 切り抜き】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-AUrfD-1sqM8-33-50",
+        "request_id": 6250,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-bPqxKdMdXMA-0-19",
+      "video_id": "bPqxKdMdXMA",
+      "title": "【日本語吹き替え】前世、渣夫とその愛人に虐められて死んだ美女社長が人生をやり直す！貢いだ全財産を奪い戻し、一家全体を破滅させる！#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-bPqxKdMdXMA-0-19",
+        "request_id": 6251,
+        "http": 503,
+        "status": "failed",
+        "detail": ""
+      }
+    },
+    {
+      "id": "immersion-butabara-steam",
+      "video_id": "UP2qvbhbuuU",
+      "title": "One-Pan Pork and Cabbage",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-butabara-steam",
+        "request_id": 6096,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-41",
+      "video_id": "COb5aAy5CJ0",
+      "title": "【日本語吹き替え】幼なじみ2人に捨てられた彼、海外へ旅立った…数年後、逆襲の人生に彼女たちは後悔！",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-COb5aAy5CJ0-28-41",
+        "request_id": 6098,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-42",
+      "video_id": "COb5aAy5CJ0",
+      "title": "【日本語吹き替え】幼なじみ2人に捨てられた彼、海外へ旅立った…数年後、逆襲の人生に彼女たちは後悔！",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-COb5aAy5CJ0-28-42",
+        "request_id": 6099,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[4] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-cT-o8IXg6CI-0-15",
+      "video_id": "cT-o8IXg6CI",
+      "title": "【シクフォニ】逆再生したら日本語になる いるま【切り抜き】#シクフォニ  #シクフォニ切り抜き #いるま #いるまにあふぁみりー #shorts",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-cT-o8IXg6CI-0-15",
+        "request_id": 6100,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[5] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-CW0juiwikkQ-43-63",
+      "video_id": "CW0juiwikkQ",
+      "title": "【総集編】VTuberになりたい人に正直な本音と厳しい現実をガチアドバイスするホロメン23選【ホロライブ/星街すいせい/癒月ちょこ/ときのそら/白銀ノエル/切り抜き】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-CW0juiwikkQ-43-63",
+        "request_id": 6101,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-dcxmIs4colE-0-13",
+      "video_id": "dcxmIs4colE",
+      "title": "日本語訳あり【川崎宗則の英語】NHKインタビューで日本語話すことを拒否！、2014年8月",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-dcxmIs4colE-0-13",
+        "request_id": 6102,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-Dmi0T9qyPJA-30-55",
+      "video_id": "Dmi0T9qyPJA",
+      "title": "【日本語吹き替え】「夫も子供もあなたにあげる」27歳に逆戻りした私が、真っ先に離婚届を持って初恋女の元へ向かった結果…",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Dmi0T9qyPJA-30-55",
+        "request_id": 6386,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[5] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-DR-aIuLRg80-36-57",
+      "video_id": "DR-aIuLRg80",
+      "title": "【日本語吹き替え】すべてがリセットされた！すべてを失った彼女は、復讐を決意し、かつて自分のものだったすべてを取り戻す！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-DR-aIuLRg80-36-57",
+        "request_id": 6385,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-E2xV_3JtBik-15-41",
+      "video_id": "E2xV_3JtBik",
+      "title": "【小学生英語】きほんの会話表現｜あいさつ・あいづちなど｜聞き流し｜中学準備｜無料プリント付",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-E2xV_3JtBik-15-41",
+        "request_id": 6330,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0.2–5s: Good morning."
+      }
+    },
+    {
+      "id": "immersion-EBvfRfK4U40-0-28",
+      "video_id": "EBvfRfK4U40",
+      "title": "Learn N5 Japanese Conversation",
+      "category": "learning",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-EBvfRfK4U40-0-28",
+        "request_id": 6331,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–2.76s: Have you ever been abroad?"
+      }
+    },
+    {
+      "id": "immersion-eihkCy4rlg4-26-41",
+      "video_id": "eihkCy4rlg4",
+      "title": "【日本語吹き替え】10年尽くした花嫁を捨てた代償。特許剥奪で会社は停止、全てを失った男たちが知る「嘘つき妹」の正体とは…？",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-eihkCy4rlg4-26-41",
+        "request_id": 6108,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-eWich9B5BnQ-11-28",
+      "video_id": "eWich9B5BnQ",
+      "title": "ケネディのラジオトークショー #01(日本語): 遂にナイジェリア連合会ケネディ会長が語る！",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-eWich9B5BnQ-11-28",
+        "request_id": 6387,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-f1sMviR6foU-7-28",
+      "video_id": "f1sMviR6foU",
+      "title": "【日本語吹き替え】婚約破棄した元カノが後悔！山奥から来た俺を拾ったのは、街一番の美少女令嬢でした。",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-f1sMviR6foU-7-28",
+        "request_id": 6389,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: 00:29}"
+      }
+    },
+    {
+      "id": "immersion-fN-AnuwRds4-1-12",
+      "video_id": "fN-AnuwRds4",
+      "title": "ミラノにて日本語で会話するサナと坂口健太郎　#kpop #twice",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-fN-AnuwRds4-1-12",
+        "request_id": 6390,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-fOfIHF2JjI8-18-30",
+      "video_id": "fOfIHF2JjI8",
+      "title": "【超面白まとめ】\\\"あの不破湊\\\"を凌駕するレベルの意味不明さを持つ大型新人登場に脳が破壊されるローレンwwww【ローレン・イロアス/切り抜き/不破湊/叢雲カゲツ/にじさんじ/Fall guys】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-fOfIHF2JjI8-18-30",
+        "request_id": 6114,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-gFLvb0SIIn0-39-121",
+      "video_id": "gFLvb0SIIn0",
+      "title": "【日本語吹き替え】双子姉妹、15歳に双子重生！妹は前世の欲望を引きずり、今世は両親を独占するも、実は「残された」姉こそが真の勝者だった…！？…#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-gFLvb0SIIn0-39-121",
+        "request_id": 6254,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-gyPaUw_5BLc-50-63",
+      "video_id": "gyPaUw_5BLc",
+      "title": "【N5-N3】街頭インタビュー（旅行） - 簡単な日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-gyPaUw_5BLc-50-63",
+        "request_id": 6121,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-h1XUU_Wq9ks-1-21",
+      "video_id": "h1XUU_Wq9ks",
+      "title": "【ひらがなであそぼう】あいうえおでいないいないばあ！知育【赤ちゃん・子供向けアニメ】Let's play with Japanese hiragana",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-h1XUU_Wq9ks-1-21",
+        "request_id": 6332,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0.5–3s: Let's play with hiragana"
+      }
+    },
+    {
+      "id": "immersion-h6ObOK-Xwmc-0-18",
+      "video_id": "h6ObOK-Xwmc",
+      "title": "途中からスイッチが入る放送委員 #コント #コントチャンネル #ショートコント #お笑い #1分漫才 #いらすとや",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-h6ObOK-Xwmc-0-18",
+        "request_id": 6255,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[4] failed sourceMatchesAudio, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-13-30",
+      "video_id": "hDfAn3KfBjk",
+      "title": "香港＆台湾人の中国人に対する本音を街頭インタビューしたら驚きの結果に、、！",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-hDfAn3KfBjk-13-30",
+        "request_id": 6125,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-heb1S4dWKk4-0-13",
+      "video_id": "heb1S4dWKk4",
+      "title": "【日本語吹き替え】「もうお前はいらない」と未亡人を選んだ夫。妻の才能が開花し国一番の商人になった時、跪いて復縁を乞う元夫の末路…",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-heb1S4dWKk4-0-13",
+        "request_id": 6126,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] failed sourceMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-HJdyF2rcZb0-0-21",
+      "video_id": "HJdyF2rcZb0",
+      "title": "どんなリクエストだよ！！#manzai #radio #owarai #comedy #comedyshorts #コント #一分漫才 #conte #お笑い #一分間劇場 #漫才 #shorts",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-HJdyF2rcZb0-0-21",
+        "request_id": 6129,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[7] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "video_id": "hYLf9yxkDBE",
+      "title": "日本ドラマの不自然な英語セリフ #Shorts",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-hYLf9yxkDBE-4-28",
+        "request_id": 6333,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 10.5–13.6s: The man run away in that direction!"
+      }
+    },
+    {
+      "id": "immersion-Ir35SAOZ5nY-0-30",
+      "video_id": "Ir35SAOZ5nY",
+      "title": "【日本語吹き替え】偽物令嬢の代わりに死人と結婚させられた真令嬢…しかし夫は生きていた！しかも超溺愛！？#drama #短編ドラマ #恋愛 #夫婦",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Ir35SAOZ5nY-0-30",
+        "request_id": 6132,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-Is7v3JNydkk-2-44",
+      "video_id": "Is7v3JNydkk",
+      "title": "日本語は異次元にかわいいらしい、、#shorts #日本 #sagirix",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Is7v3JNydkk-2-44",
+        "request_id": 6334,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0.2–2.1s: Why are you moaning like that"
+      }
+    },
+    {
+      "id": "immersion-iUyX27UkWDs-23-55",
+      "video_id": "iUyX27UkWDs",
+      "title": "【日本語吹き替え】結婚式で義弟を優先し40分放置した婚約者。「もう遅い」と全契約と資産を回収して海外へ逃亡したら、家族全員が絶望して崩壊…",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-iUyX27UkWDs-23-55",
+        "request_id": 6135,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-iYjjpFZTAZA-0-32",
+      "video_id": "iYjjpFZTAZA",
+      "title": "Casual Japanese Conversation: あ〜、わかる。 #japanese #japaneseconversation",
+      "category": "learning",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-iYjjpFZTAZA-0-32",
+        "request_id": 6336,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–2.5s: (what are you doing right now?)"
+      }
+    },
+    {
+      "id": "immersion-J3XHFIJafkM-81-89",
+      "video_id": "J3XHFIJafkM",
+      "title": "【#warframe】おはにょっこ！！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-J3XHFIJafkM-81-89",
+        "request_id": 6137,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-J7WIN1G11eI-0-31",
+      "video_id": "J7WIN1G11eI",
+      "title": "Casual Japanese Conversation: ちょっと...。 #japanese #japaneseconversation",
+      "category": "learning",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-J7WIN1G11eI-0-31",
+        "request_id": 6335,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–1s: Egg-san."
+      }
+    },
+    {
+      "id": "immersion-jUZY_gpOaQA-50-62",
+      "video_id": "jUZY_gpOaQA",
+      "title": "【海外の反応】海外でバズった“世界の違い”に外国人が大混乱",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-jUZY_gpOaQA-50-62",
+        "request_id": 6337,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: {start:50000}"
+      }
+    },
+    {
+      "id": "immersion-KDfG1K1IgZc-18-37",
+      "video_id": "KDfG1K1IgZc",
+      "title": "言葉遣いが厳しいバイト先… #飲食店あるある #接客 #ショートドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-KDfG1K1IgZc-18-37",
+        "request_id": 6141,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-kh_PnQ5mY2Y-0-11",
+      "video_id": "kh_PnQ5mY2Y",
+      "title": "野良に日本語分からんと言われ英語を話した結果 #柊ツルギ #valorant #英語",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-kh_PnQ5mY2Y-0-11",
+        "request_id": 6143,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-Ki8uOm2QNOk-2-26",
+      "video_id": "Ki8uOm2QNOk",
+      "title": "【スカッと】離婚直後、クズ義母「うちが買った服も全部置いていけ！」→その場で服を脱ぎ捨て、元夫に結婚指輪を叩きつけてやった結果ｗｗ #shorts #修羅場#大逆転",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Ki8uOm2QNOk-2-26",
+        "request_id": 6144,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[7] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-kids-aisatsu",
+      "video_id": "Px0yvMoeRro",
+      "title": "Greetings for Kids",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-kids-aisatsu",
+        "request_id": 6338,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-komeda-order",
+      "video_id": "YtvaKiCj84M",
+      "title": "Morning Order at Komeda Coffee",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-komeda-order",
+        "request_id": 6147,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-konbini-sayaka",
+      "video_id": "goM53XUkblA",
+      "title": "Ordering at the Convenience Store",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-konbini-sayaka",
+        "request_id": 6339,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 8–11s: do you want to warm it up?"
+      }
+    },
+    {
+      "id": "immersion-l4VGSWLZCqI-0-13",
+      "video_id": "l4VGSWLZCqI",
+      "title": "[藤井風]ペラペラ英語NY🇺🇸で街頭インタビュー?! 日本語訳しながら口語英語を学ぼう😉 #fujiikaze",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-l4VGSWLZCqI-0-13",
+        "request_id": 6257,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-LKV14c88JKI-26-56",
+      "video_id": "LKV14c88JKI",
+      "title": "【ころね集】戌神ころねのワードセンス、世界観詰め合わせ【ホロライブ切り抜き】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-LKV14c88JKI-26-56",
+        "request_id": 6405,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: 00:57.5}"
+      }
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-51-76",
+      "video_id": "lnd2SjFMJXI",
+      "title": "【日本語吹き替え】15年愛した妻の裏切り。才能も捨てて尽くした夫が名を変えて海外へ消えた時、妻は狂ったように夫を捜し始める……。😭💔",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-lnd2SjFMJXI-51-76",
+        "request_id": 6260,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-LuADPqD93nM-0-14",
+      "video_id": "LuADPqD93nM",
+      "title": "会議中寝てた大統領 #コント",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-LuADPqD93nM-0-14",
+        "request_id": 6156,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-MDtiDGr_-GY-3-17",
+      "video_id": "MDtiDGr_-GY",
+      "title": "バラエティ能力が高い声優3選#shorts #アニメ #声優",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-MDtiDGr_-GY-3-17",
+        "request_id": 6158,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-Me5ZmclOAKo-0-25",
+      "video_id": "Me5ZmclOAKo",
+      "title": "N5 Japanese Conversation",
+      "category": "learning",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Me5ZmclOAKo-0-25",
+        "request_id": 6410,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: ]}"
+      }
+    },
+    {
+      "id": "immersion-mSycuOff7YQ-70-84",
+      "video_id": "mSycuOff7YQ",
+      "title": "【#Minecraft】黄昏冒険するぞー！#short #shorts #新人VTuber #雑談 #縦型配信 #個人Vtuber",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-mSycuOff7YQ-70-84",
+        "request_id": 6161,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-n9jnD_8JeLc-28-49",
+      "video_id": "n9jnD_8JeLc",
+      "title": "おはよう☀️起きる時間だよ | 朝のあいさつ | 生活習慣 | あさになったら、はみがきしょう、おでかけの歌 他 | 子どもの歌 | ピンキッツ・ベイビーシャーク",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-n9jnD_8JeLc-28-49",
+        "request_id": 6359,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-N9KUoHnewXA-0-13",
+      "video_id": "N9KUoHnewXA",
+      "title": "【ショートコント】スカイダイビング  #年モロ #コント #お笑い #芸人 #大学生  #あるある #プロポーズ #自然 #結婚 #カップル #ドッキリ",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-N9KUoHnewXA-0-13",
+        "request_id": 6412,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: 00:13.466}"
+      }
+    },
+    {
+      "id": "immersion-nfmMuGsqK8Q-14-34",
+      "video_id": "nfmMuGsqK8Q",
+      "title": "〝無限〟を見る方法 #ゲーム実況 #ゲーム配信 #ゲーム #portal #ショート",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-nfmMuGsqK8Q-14-34",
+        "request_id": 6165,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-Njk2kfY4irI-40-54",
+      "video_id": "Njk2kfY4irI",
+      "title": "日本語NG縛りでエクスが喋る適当すぎる英語に大爆笑する葛葉たち【にじさんじ/切り抜き/まとめ】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Njk2kfY4irI-40-54",
+        "request_id": 6166,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-o8uPdpOu9BQ-0-20",
+      "video_id": "o8uPdpOu9BQ",
+      "title": "『漫才とコントの違い』 #まごおば #孫が嫌いなおばあちゃん #孫とおばあちゃん #家族 #孫 #ドラマ #ショートドラマ#お笑い #コント #漫才 #演劇 #議論",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-o8uPdpOu9BQ-0-20",
+        "request_id": 6261,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: ]}"
+      }
+    },
+    {
+      "id": "immersion-Ovl6nYvihh8-18-36",
+      "video_id": "Ovl6nYvihh8",
+      "title": "生活習慣☆あいさつをおぼえよう♪あいさつのうた☆子供向け知育動画 | 赤ちゃんが喜ぶ歌 | 子供の歌 | 童謡 | アニメ | 動画 | ベビーバス| BabyBus",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Ovl6nYvihh8-18-36",
+        "request_id": 6361,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-OX1f13PB53E-0-12",
+      "video_id": "OX1f13PB53E",
+      "title": "おなだんのアニメトーク！【おなだん切り抜き】",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-OX1f13PB53E-0-12",
+        "request_id": 6414,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-p_TCfcWsDwE-10-53",
+      "video_id": "p_TCfcWsDwE",
+      "title": "TEST - queue path verification",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-p_TCfcWsDwE-10-53",
+        "request_id": 6341,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "Content category or child audience could not be verified"
+      }
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "video_id": "pd-5GK2JdQk",
+      "title": "Discordの使い方あるある #shorts #あるある #discord",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-pd-5GK2JdQk-5-45",
+        "request_id": 6175,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[12] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-pI6TGEHnKo4-3-23",
+      "video_id": "pI6TGEHnKo4",
+      "title": "【ベトナム語】フォンチーの超やさしいベトナム語講座♪「挨拶編」初級🇻🇳",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-pI6TGEHnKo4-3-23",
+        "request_id": 6363,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-plZKAqFYcLE-9-23",
+      "video_id": "plZKAqFYcLE",
+      "title": "トランプ大統領 イラン国民への直接メッセージ！【日本語】#ショート動画#国際情勢#トランプ#ニュース解説#時事問題",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-plZKAqFYcLE-9-23",
+        "request_id": 6416,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "Content category or child audience could not be verified"
+      }
+    },
+    {
+      "id": "immersion-PspjY7iElx4-0-20",
+      "video_id": "PspjY7iElx4",
+      "title": "【アツクラ】実は英語ペラペラ！突然始まる日本語禁止縛りで会話してしまう2人！【ドズル社切り抜き】",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-PspjY7iElx4-0-20",
+        "request_id": 6340,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-q89xqLs-eNY-30-50",
+      "video_id": "q89xqLs-eNY",
+      "title": "０から始める日本語会話｜N5レベルで１時間会話｜ EASY JAPANESE　CONVERSAITON",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-q89xqLs-eNY-30-50",
+        "request_id": 6364,
+        "http": 503,
+        "status": "failed",
+        "detail": "Gemini empty response"
+      }
+    },
+    {
+      "id": "immersion-QDGzU8DZjkc-21-34",
+      "video_id": "QDGzU8DZjkc",
+      "title": "【日本語吹き替え】妊娠中に500円で捨てられた妻。5年後、病院食堂で娘と震える私に前夫が「子供で乞食か」と暴言…→衝撃の証拠で億万長者の前夫を地獄へ落とす！",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-QDGzU8DZjkc-21-34",
+        "request_id": 6180,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-QgQ8_7zSv7s-26-41",
+      "video_id": "QgQ8_7zSv7s",
+      "title": "日本語と英語が飛び交う中、フランス語で場を沸かせる伊波w",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-QgQ8_7zSv7s-26-41",
+        "request_id": 6181,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-QThN_GUATTY-19-34",
+      "video_id": "QThN_GUATTY",
+      "title": "日本語NG #shorts #マイクラ",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-QThN_GUATTY-19-34",
+        "request_id": 6183,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-QyXHpGahA1I-12-24",
+      "video_id": "QyXHpGahA1I",
+      "title": "聞き流しロシア語講座【あいさつ編】50単語 初級初心者向けЗдравствуйте!",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-QyXHpGahA1I-12-24",
+        "request_id": 6365,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-r7ytNplrDCA-0-17",
+      "video_id": "r7ytNplrDCA",
+      "title": "世の中は明日から三連休『リトルナイトメア(日本語)ショート切り抜き動画』ホラーゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-r7ytNplrDCA-0-17",
+        "request_id": 6187,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-R9NwPxYOxSw-7-35",
+      "video_id": "R9NwPxYOxSw",
+      "title": "450万円相当の... #ラジオ #切り抜き #文字起こし #結婚 #披露宴 #例え",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-R9NwPxYOxSw-7-35",
+        "request_id": 6188,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[6] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-r9OpcwiLSLA-0-26",
+      "video_id": "r9OpcwiLSLA",
+      "title": "日本語吹き替え版の映画、元の英語よりもダンディ過ぎるあるある #Shorts",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-r9OpcwiLSLA-0-26",
+        "request_id": 6342,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 3–6s: Morning, Tom, Jason."
+      }
+    },
+    {
+      "id": "immersion-rina_LPQ17A-0-11",
+      "video_id": "rina_LPQ17A",
+      "title": "しんたろう　ショート漫談「フードコート」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-rina_LPQ17A-0-11",
+        "request_id": 6423,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "Content category or child audience could not be verified"
+      }
+    },
+    {
+      "id": "immersion-roZJa9Z6S1I-31-43",
+      "video_id": "roZJa9Z6S1I",
+      "title": "#短編ドラマ #恋愛   #ショートドラマ #ceo #love",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-roZJa9Z6S1I-31-43",
+        "request_id": 6196,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-rXF2YFvMxKY-32-58",
+      "video_id": "rXF2YFvMxKY",
+      "title": "パパ活④こんな女子ってどう？ #ショートドラマ　#ショートムービー#ショートフィルム #longervideos #感動 #感動ドラマ  #演じてみた #shortstory",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-rXF2YFvMxKY-32-58",
+        "request_id": 6198,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[4] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-sapLlgWryNI-0-25",
+      "video_id": "sapLlgWryNI",
+      "title": "街頭インタビュー！「今何聴いてますか？」#shorts",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-sapLlgWryNI-0-25",
+        "request_id": 6343,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–1.2s: Excuse me!"
+      }
+    },
+    {
+      "id": "immersion-SBOS-_a9QAA-45-58",
+      "video_id": "SBOS-_a9QAA",
+      "title": "【日本語吹き替え】ギャンブル依存症の夫と重病の娘を抱えるギャンブル王の妻は、カジノに戻るしか選択肢がなかった！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-SBOS-_a9QAA-45-58",
+        "request_id": 6426,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-SF-EoJkMhBc-0-16",
+      "video_id": "SF-EoJkMhBc",
+      "title": "しんたろう　ショート漫談「老眼」 #shorts #お笑い #漫才 #コント #あるある #芸人",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-SF-EoJkMhBc-0-16",
+        "request_id": 6202,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-swE3eLyJXOM-132-164",
+      "video_id": "swE3eLyJXOM",
+      "title": "【N4-N3】Easy Japanese street interview / Is Nagoya boring place to be??",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-swE3eLyJXOM-132-164",
+        "request_id": 6428,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 20–22.8s: To compare"
+      }
+    },
+    {
+      "id": "immersion-u1xEGyinMzY-51-63",
+      "video_id": "u1xEGyinMzY",
+      "title": "眠くなるマイクラ雑談🤍初見さんいらっしゃい！【縦型/#short】",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-u1xEGyinMzY-51-63",
+        "request_id": 6432,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-uL2ABO6yMwM-8-26",
+      "video_id": "uL2ABO6yMwM",
+      "title": "はたらく日本語　⑭挨拶～挨拶(あいさつ)～",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-uL2ABO6yMwM-8-26",
+        "request_id": 6368,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-VFMFI1yj2wY-0-10",
+      "video_id": "VFMFI1yj2wY",
+      "title": "【実況】サウンドノベル 街 ～運命の交差点～ 日本語迷子集⑤ #Shorts #サウンドノベル  #ゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-VFMFI1yj2wY-0-10",
+        "request_id": 6210,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[4] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-VFX9q3P6cw0-0-16",
+      "video_id": "VFX9q3P6cw0",
+      "title": "選挙【スナフキンズのショートコント】#お笑い#Shorts#コント",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-VFX9q3P6cw0-0-16",
+        "request_id": 6211,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[3] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-18-35",
+      "video_id": "VI44EvFkQ7w",
+      "title": "【N4-N3】街頭インタビュー - やさしい日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-VI44EvFkQ7w-18-35",
+        "request_id": 6344,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0.2–2.8s: Hi guys! I'm a Japanese teacher, Shun."
+      }
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-19-35",
+      "video_id": "VI44EvFkQ7w",
+      "title": "【N4-N3】街頭インタビュー - やさしい日本語Vlog / 日本語リスニング練習",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-VI44EvFkQ7w-19-35",
+        "request_id": 6345,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–2.6s: Hi guys! I'm a Japanese teacher, Shun."
+      }
+    },
+    {
+      "id": "immersion-VJyFtWJ_36k-61-73",
+      "video_id": "VJyFtWJ_36k",
+      "title": "【日本語吹き替え】「まだ彼なの！？」彼女の「優しい夫」は、自分がこんなに恐ろしい力を持っているとは知らなかった…#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-VJyFtWJ_36k-61-73",
+        "request_id": 6215,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-Wdw_HjSp7GQ-19-38",
+      "video_id": "Wdw_HjSp7GQ",
+      "title": "【日本語吹き替え】「あなたを愛したことは私の人生最大の間違いです！」彼女は裕福な相続人でしたが、彼を無条件に愛していました...#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Wdw_HjSp7GQ-19-38",
+        "request_id": 6217,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[4] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-WkJcGj9R7Fk-38-54",
+      "video_id": "WkJcGj9R7Fk",
+      "title": "【日本語吹き替え「私のもの、全部取り戻す！」あの日、彼女は養父母に家を追い出された…。すべてを失った彼女の復讐の道が始まった！#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-WkJcGj9R7Fk-38-54",
+        "request_id": 6218,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-WNQCXxF4uFM-11-33",
+      "video_id": "WNQCXxF4uFM",
+      "title": "急に敬語でLINEしてきた彼女、怒ってる理由が小さすぎたw",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-WNQCXxF4uFM-11-33",
+        "request_id": 6219,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[7] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-xoI1Gzd8Yog-1-22",
+      "video_id": "xoI1Gzd8Yog",
+      "title": "アメリカのドラマでよくあるウザいセリフ VS 現実#Shorts",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-xoI1Gzd8Yog-1-22",
+        "request_id": 6346,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 1.6–5s: I'll have myself a Vanilla Frappuccino, please!"
+      }
+    },
+    {
+      "id": "immersion-y3issC4ELx4-5-32",
+      "video_id": "y3issC4ELx4",
+      "title": "韓国ドラマ 愛の不時着. #愛の不時着 #韓国ドラマ #名セリフ #ウサギとオオカミ #アニメ風 #感動ショート #韓国語勉強 #胸キュン",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-y3issC4ELx4-5-32",
+        "request_id": 6437,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "Content category or child audience could not be verified"
+      }
+    },
+    {
+      "id": "immersion-Y7kYPuCduwk-0-21",
+      "video_id": "Y7kYPuCduwk",
+      "title": "ゴリゴリの関西人が標準語を話すとこうなるww #マイクラ #shorts #関西弁 #ゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Y7kYPuCduwk-0-21",
+        "request_id": 6224,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[7] failed sourceMatchesAudio, meaningAccurate"
+      }
+    },
+    {
+      "id": "immersion-yGOkIy78MRM-63-87",
+      "video_id": "yGOkIy78MRM",
+      "title": "독도는 우리땅～日本語～　セリフ　서　영석　訳詞　徐　英錫　作詞曲　박　문영　Ｃｏｖｅｒ",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-yGOkIy78MRM-63-87",
+        "request_id": 6225,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-ykw9D1hq1hc-5-23",
+      "video_id": "ykw9D1hq1hc",
+      "title": "どんな読み間違いしてんのwwww  #shorts  #キヨ #切り抜き　#ゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-ykw9D1hq1hc-5-23",
+        "request_id": 6226,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[2] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-yLB0JwdA_ek-0-10",
+      "video_id": "yLB0JwdA_ek",
+      "title": "人類はケツバットを克服しました #お笑い #コント #漫才 #ケツバット #野球 #物理",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-yLB0JwdA_ek-0-10",
+        "request_id": 6227,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] translation ends mid-thought"
+      }
+    },
+    {
+      "id": "immersion-yU72X91jPMI-0-16",
+      "video_id": "yU72X91jPMI",
+      "title": "【日本語吹き替え】「絶対に許さない！」 出産を終えたばかりの妻が離婚届を受け取った…。#キスシーン#中国ドラマ",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-yU72X91jPMI-0-16",
+        "request_id": 6228,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[6] multiple translated sentences must be separate lines"
+      }
+    },
+    {
+      "id": "immersion-yWy6wBKTicc-8-22",
+      "video_id": "yWy6wBKTicc",
+      "title": "中国美女たちに日本人男性はアリか本音を聞いてみた　衝撃です(泣)【中国街頭インタビュー】",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-yWy6wBKTicc-8-22",
+        "request_id": 6230,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[1] failed sourceMatchesAudio, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "immersion-Z_leh6MUPHI-72-86",
+      "video_id": "Z_leh6MUPHI",
+      "title": "【日本語吹き替え】3年間見下した無能な婿を捨てた元妻。離婚直後、彼が総資産100億の超大物だと判明！エリート美女と再婚し大逆転ｗｗ",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-Z_leh6MUPHI-72-86",
+        "request_id": 6269,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: }"
+      }
+    },
+    {
+      "id": "immersion-ZoRxlkhH1iA-0-24",
+      "video_id": "ZoRxlkhH1iA",
+      "title": "マイクラアレイ様新拠点『Minecraftマインクラフト(日本語）ショート切り抜き動画』★ホラーゲーム実況",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "immersion-ZoRxlkhH1iA-0-24",
+        "request_id": 6348,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "English subtitles are burned into the source video at 0–2.8s: I heard there is a new house for Allays, the kings of the world."
+      }
+    },
+    {
+      "id": "kissa-stories-01",
+      "video_id": "m4yJzEGcHgk",
+      "title": "Rainy Afternoon at the Kissaten",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "kissa-stories-01",
+        "request_id": 6237,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "kitsune-yuki-stream-01",
+      "video_id": "0ZYJkcNHFNY",
+      "title": "Evening Stream Opening",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "kitsune-yuki-stream-01",
+        "request_id": 6238,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "konbini-diaries-01",
+      "video_id": "nACwMFy3BIE",
+      "title": "Late Night Onigiri Run",
+      "category": "drama",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "konbini-diaries-01",
+        "request_id": 6239,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "neko-cafe-02",
+      "video_id": "CY5J2CLozlo",
+      "title": "A New Friend at the Neko Café",
+      "category": "anime",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "neko-cafe-02",
+        "request_id": 6270,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "review is not valid JSON: 00:18}"
+      }
+    },
+    {
+      "id": "piyo-picnic-01",
+      "video_id": "gmTLiz1n5Gs",
+      "title": "Piyo's Picnic",
+      "category": "kids",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "piyo-picnic-01",
+        "request_id": 6369,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "quiz-showdown-11",
+      "video_id": "rgXw4VWQKOw",
+      "title": "Final Round: Landmarks",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "quiz-showdown-11",
+        "request_id": 6242,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "ramen-road-trip-03",
+      "video_id": "YOBPp4m5MQQ",
+      "title": "Tonkotsu in Fukuoka",
+      "category": "variety",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "ramen-road-trip-03",
+        "request_id": 6243,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "speedrun-commentary-02",
+      "video_id": "z-4E2ii8zWE",
+      "title": "The Frame-Perfect Jump",
+      "category": "gaming",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "speedrun-commentary-02",
+        "request_id": 6244,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "tsukimi-rin-zatsudan-05",
+      "video_id": "4YmjVPjA8To",
+      "title": "Late-Night Zatsudan",
+      "category": "vtuber",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "tsukimi-rin-zatsudan-05",
+        "request_id": 6245,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    },
+    {
+      "id": "words-that-matter-04",
+      "video_id": "2uuaak0kXOg",
+      "title": "Words That Matter",
+      "category": "interview",
+      "published": true,
+      "current_policy_passed": false,
+      "review": {
+        "id": "words-that-matter-04",
+        "request_id": 6246,
+        "http": 422,
+        "status": "needs_review",
+        "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+      }
+    }
+  ],
+  "decision": "Keep existing live clips unchanged",
+  "holdApplied": false
+}

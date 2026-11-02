@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     const body = await readJson<Body>(req);
     if (!isUuid(body.install_id)) return errorResponse(400, "Invalid install_id");
     const installId = body.install_id.toLowerCase();
+    const environment = req.headers.get("x-jojo-environment") === "production" ? "production" : "test";
     const events = cleanEvents(body.events);
     const sessions = cleanSessions(body.sessions);
     if (events.length === 0 && sessions.length === 0) return jsonResponse({ accepted: 0 });
@@ -35,11 +36,12 @@ Deno.serve(async (req) => {
     if (installGate.data !== true || ipGate.data !== true) return errorResponse(429, "Too many requests");
 
     const user = ingress.isAuthenticatedUser ? await authedUser(req, sb) : null;
-    const { data, error } = await sb.rpc("analytics_ingest", {
+    const { data, error } = await sb.rpc("analytics_ingest_classified", {
       p_install: installId,
       p_user: user?.id ?? null,
       p_events: events,
       p_sessions: sessions,
+      p_environment: environment,
     });
     if (error) return errorResponse(500, "Ingest failed");
     // Client ids that were sent are acknowledged even when they were duplicates or dropped

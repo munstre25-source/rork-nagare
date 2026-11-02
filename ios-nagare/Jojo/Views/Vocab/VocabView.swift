@@ -25,18 +25,20 @@ struct VocabView: View {
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showDeckBuilder: Bool = false
     @State private var showFilters: Bool = false
+    @State private var buildDeckAfterFilters = false
+    @State private var showClipSearch = false
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var filtered: [SavedWord] {
         var result = words
-        let q = query.trimmingCharacters(in: .whitespaces)
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !q.isEmpty {
             let hq = JapaneseText.hiragana(q)
             let nq = JapaneseText.normalizedRomaji(q)
             result = result.filter { word in
-                word.surface.contains(q)
+                JapaneseText.hiragana(word.surface).contains(hq)
                     || word.readings.contains { JapaneseText.hiragana($0).contains(hq) }
-                    || JapaneseText.normalizedRomaji(word.romaji).contains(nq)
+                    || (!nq.isEmpty && JapaneseText.normalizedRomaji(word.romaji).contains(nq))
                     || word.definitions.contains { $0.localizedStandardContains(q) }
                     || word.jaDefinitions.contains { $0.localizedStandardContains(q) }
             }
@@ -51,13 +53,11 @@ struct VocabView: View {
     }
 
     private var dueWords: [SavedWord] {
-        words.filter { $0.dueAt <= Date() }.sorted { lhs, rhs in
-            if lhs.occurrenceCount != rhs.occurrenceCount {
-                return lhs.occurrenceCount > rhs.occurrenceCount
-            }
-            return lhs.dueAt < rhs.dueAt
-        }
+        _ = app.reviewAvailabilityRevision
+        return ReviewQueue.due(in: words)
     }
+
+    private var hasFilters: Bool { jlpt != nil || posFilter != .all || sourceChannel != nil }
 
     private var channels: [String] {
         Array(Set(words.compactMap { app.clip(id: $0.contextClipId)?.channelName })).sorted()
@@ -66,25 +66,17 @@ struct VocabView: View {
     private var knownCount: Int { words.filter { $0.state == .known }.count }
 
 
-    /// Due cards first, otherwise the words still being learned, capped at a short session.
     private var reviewPool: [SavedWord] {
-        if !dueWords.isEmpty { return Array(dueWords.prefix(10)) }
-        let fresh = words.sorted { lhs, rhs in
-            if lhs.state == .known && rhs.state != .known { return false }
-            if lhs.state != .known && rhs.state == .known { return true }
-            return lhs.occurrenceCount > rhs.occurrenceCount
-        }
-        return Array(fresh.prefix(10))
+        _ = app.reviewAvailabilityRevision
+        return ReviewQueue.session(in: filtered)
     }
 
     private var reviewLabel: String {
-        let count = reviewPool.count
-        if dueWords.isEmpty { return "Review \(count) cards" }
-        return count == 1 ? "Review 1 due card" : "Review \(count) due"
+        filtered.isEmpty && !words.isEmpty ? "No matching cards" : ReviewQueue.label(for: reviewPool)
     }
 
     private var deckDestinations: Int {
-        let levels = ["N5", "N4", "N3"].filter { level in words.contains { $0.jlpt == level } }.count
+        let levels = ["N5", "N4", "N3", "N2", "N1"].filter { level in words.contains { $0.jlpt == level } }.count
         return decks.count + levels
     }
 
@@ -95,11 +87,11 @@ struct VocabView: View {
                     vocabHeader
 
                     HStack(spacing: 10) {
-                        DesignSearchField(text: $query, placeholder: "Search words...")
+                        DesignSearchField(text: $query, placeholder: "Search saved words...")
                         Button {
                             showFilters = true
                         } label: {
-                            Image(systemName: "line.3.horizontal.decrease")
+                            Image(systemName: hasFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.primary)
                                 .frame(width: 48, height: 48)
@@ -107,6 +99,34 @@ struct VocabView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
                         }
                         .accessibilityLabel("Filter words")
+                    }
+
+                    if hasFilters || !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        HStack {
+                            Text("\(filtered.count) of \(words.count) saved words")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Clear search & filters") {
+                                query = ""
+                                jlpt = nil
+                                posFilter = .all
+                                sourceChannel = nil
+                            }
+                            .font(.caption.weight(.semibold))
+                            .frame(minHeight: 44)
+                        }
+                    }
+
+                    if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button {
+                            showClipSearch = true
+                        } label: {
+                            Label("Find examples in clips", systemImage: "headphones")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.studyAccent)
                     }
 
                     OrangePillBar(items: VocabSection.allCases, selection: $section, title: \.rawValue)
@@ -133,17 +153,25 @@ struct VocabView: View {
         .fullScreenCover(item: $reviewSession) { config in
             ReviewSessionView(config: config)
         }
+        .sheet(isPresented: $showClipSearch) {
+            SearchView(initialQuery: query.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
         .sheet(isPresented: $showDeckBuilder) {
             CustomDeckBuilder()
         }
-        .sheet(isPresented: $showFilters) {
+        .sheet(isPresented: $showFilters, onDismiss: {
+            if buildDeckAfterFilters {
+                buildDeckAfterFilters = false
+                showDeckBuilder = true
+            }
+        }) {
             VocabFilterSheet(
                 sort: $sort,
                 jlpt: $jlpt,
                 posFilter: $posFilter,
                 sourceChannel: $sourceChannel,
                 channels: channels,
-                onNewDeck: { showDeckBuilder = true }
+                onNewDeck: { buildDeckAfterFilters = true }
             )
             .presentationDetents([.medium, .large])
         }
@@ -186,17 +214,9 @@ struct VocabView: View {
 
     private var learnSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            RipenTimelineView()
-
             if words.isEmpty {
                 emptyVocab
             } else {
-                WeakWordRadarView(pockets: app.weakWordPockets()) { pocket in
-                    startReviewKeys(pocket.keys, title: pocket.title)
-                }
-                if let next = reviewPool.first {
-                    todaysFocusCard(next)
-                }
                 Button {
                     startReview(reviewPool, title: "Review")
                 } label: {
@@ -207,9 +227,15 @@ struct VocabView: View {
                         .background(Color.sakuraButton, in: Capsule())
                 }
                 .buttonStyle(ChunkyPressStyle())
+                .disabled(reviewPool.isEmpty)
                 .coachTarget(.vocabReview)
-                .task {
+                .task(id: reviewPool.map(\.key)) {
+                    guard !reviewPool.isEmpty else {
+                        GuidanceCenter.shared.withdrawTip(.vocabReview)
+                        return
+                    }
                     try? await Task.sleep(for: .seconds(1.5))
+                    guard !Task.isCancelled else { return }
                     GuidanceCenter.shared.requestTip(.vocabReview)
                 }
                 .onDisappear { GuidanceCenter.shared.withdrawTip(.vocabReview) }
@@ -239,7 +265,7 @@ struct VocabView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
                 }
                 .buttonStyle(.plain)
-                Text("All Vocabulary")
+                Text(hasFilters || !query.isEmpty ? "Matching words" : "All Vocabulary")
                     .font(.headline)
                     .foregroundStyle(.primary)
                 if filtered.isEmpty {
@@ -250,11 +276,29 @@ struct VocabView: View {
                 } else {
                     wordList(filtered)
                 }
+                if !hasFilters && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !reviewPool.isEmpty {
+                    DisclosureGroup("Focus practice") {
+                        if let next = reviewPool.first {
+                            todaysFocusCard(next).padding(.top, 8)
+                        }
+                        WeakWordRadarView(pockets: app.weakWordPockets()) { pocket in
+                            startReviewKeys(pocket.keys, title: pocket.title)
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
             }
+            DisclosureGroup("How words become familiar") {
+                Text("Example only. Your words progress through reviews and the familiarity marks you choose.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.top, 8)
+                RipenTimelineView()
+            }
+            .font(.subheadline.weight(.semibold))
         }
     }
 
-    /// Real next due word with session progress — never sample copy from the mock.
+    /// The next card from the actual due or early-practice queue.
     private func todaysFocusCard(_ word: SavedWord) -> some View {
         let gloss = word.displayDefinitions(mode: app.profile.dictionary).first ?? word.gloss
         let total = max(reviewPool.count, 1)
@@ -291,18 +335,9 @@ struct VocabView: View {
                     .font(.subheadline)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.primary.opacity(0.12))
-                        Capsule().fill(Color.sakuraButton)
-                            .frame(width: proxy.size.width * (1 / CGFloat(total)))
-                    }
-                }
-                .frame(height: 6)
-                Text("1/\(total)")
-                    .font(.caption.weight(.bold))
+                Text("\(total) \(total == 1 ? "card" : "cards") in this session")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.studyMuted)
-                    .monospacedDigit()
             }
             Spacer(minLength: 4)
             JojoMascot(height: 96, floats: false, pose: .peek)
@@ -316,9 +351,6 @@ struct VocabView: View {
         )
         .chromeGlow(Color.sakuraPink, level: app.profile.glow, radius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .onTapGesture {
-            startReview(reviewPool, title: "Review")
-        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Today's focus, \(word.surface), \(gloss)")
     }
@@ -341,12 +373,9 @@ struct VocabView: View {
     }
 
     private func wordList(_ words: [SavedWord]) -> some View {
-        VStack(spacing: 10) {
-            ForEach(Array(words.enumerated()), id: \.element.key) { index, word in
-                NavigationLink(value: word.key) {
-                    VocabStatusRow(word: word, index: index + 1)
-                }
-                .buttonStyle(.plain)
+        LazyVStack(spacing: 10) {
+            ForEach(words, id: \.key) { word in
+                VocabStatusRow(word: word)
             }
         }
     }
@@ -363,7 +392,7 @@ struct VocabView: View {
             }
             VStack(alignment: .leading, spacing: 10) {
                 emptyStep(1, "Watch a clip in the feed.")
-                emptyStep(2, "Tap any underlined word to see what it means.")
+                emptyStep(2, "Turn on Tap Words in the player, then tap a Japanese word.")
                 emptyStep(3, "Come back here to review it before you forget.")
             }
             Button {
@@ -423,7 +452,7 @@ struct VocabView: View {
                     Button {
                         startReview(matching, title: deck.name)
                     } label: {
-                        DeckRow(title: deck.name, subtitle: "\(matching.count) words · \(deck.filterKind == "channel" ? "Show" : "Topic")", symbol: deck.filterKind == "channel" ? "person.crop.square" : "square.grid.2x2")
+                        DeckRow(title: deck.name, subtitle: "\(matching.count) words · \(deck.filterKind == "channel" ? "Channel" : "Topic")", symbol: deck.filterKind == "channel" ? "person.crop.square" : "square.grid.2x2")
                     }
                     .buttonStyle(PressableStyle())
                     .disabled(matching.isEmpty)
@@ -434,7 +463,7 @@ struct VocabView: View {
                         } label: { Label("Delete deck", systemImage: "trash") }
                     }
                 }
-                ForEach(["N5", "N4", "N3"], id: \.self) { level in
+                ForEach(["N5", "N4", "N3", "N2", "N1"], id: \.self) { level in
                     let levelWords = words.filter { $0.jlpt == level }
                     if !levelWords.isEmpty {
                         Button {
@@ -452,8 +481,12 @@ struct VocabView: View {
         guard app.pendingDeepLink == .review else { return }
         app.clearDeepLink()
         section = .learn
-        let pool = dueWords.isEmpty ? words : dueWords
-        startReview(Array(pool), title: "Review")
+        query = ""
+        jlpt = nil
+        posFilter = .all
+        sourceChannel = nil
+        let pool = ReviewQueue.session(in: words)
+        startReview(pool, title: ReviewQueue.label(for: pool))
     }
 
     private func deckWords(_ deck: CustomDeck) -> [SavedWord] {
@@ -551,12 +584,23 @@ struct CustomDeckBuilder: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
 
-    private var channels: [String] { Array(Set(app.clips.map(\.channelName))).sorted() }
+    @Query private var words: [SavedWord]
+    private var channels: [String] {
+        Array(Set(words.compactMap { app.clip(id: $0.contextClipId)?.channelName })).sorted()
+    }
 
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Text("Decks group your saved words by source or topic. New matching words join automatically.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
                 Section("By show / channel") {
+                    if channels.isEmpty {
+                        Text("Look up words in a clip to create a deck from its channel.")
+                            .foregroundStyle(.secondary)
+                    }
                     ForEach(channels, id: \.self) { channel in
                         Button {
                             create(name: channel, kind: "channel", value: channel)
@@ -585,6 +629,11 @@ struct CustomDeckBuilder: View {
     }
 
     private func create(name: String, kind: String, value: String) {
+        let existing = (try? app.context.fetch(FetchDescriptor<CustomDeck>())) ?? []
+        guard !existing.contains(where: { $0.filterKind == kind && $0.filterValue == value }) else {
+            dismiss()
+            return
+        }
         app.context.insert(CustomDeck(name: name, filterKind: kind, filterValue: value))
         app.save()
         Haptics.success()
@@ -595,79 +644,58 @@ struct CustomDeckBuilder: View {
 /// Known words wear a check. Every other word shows how many times it has been met.
 struct VocabStatusRow: View {
     let word: SavedWord
-    var index: Int? = nil
     @Environment(AppModel.self) private var app
 
     private var gloss: String {
         word.displayDefinitions(mode: app.profile.dictionary).first ?? word.gloss
     }
 
-    private var known: Bool { word.state == .known }
-
     var body: some View {
-        HStack(spacing: 12) {
-            Group {
-                if let index {
-                    Text("\(index)")
-                        .font(.caption.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                } else if known {
-                    Image(systemName: "checkmark")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                } else {
-                    Text("\(word.occurrenceCount)")
-                        .font(.caption.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-            }
-            .frame(width: 28, height: 28)
-            .background(known && index == nil ? Color.spokenGreen : Color.studyAccent, in: Circle())
-            .accessibilityLabel(index.map { "Number \($0)" } ?? (known ? "Known" : "Met \(word.occurrenceCount) times"))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(word.surface)
-                    .font(JojoFont.jp(20, bold: true, relativeTo: .title3))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                HStack(spacing: 6) {
-                    if !word.romaji.isEmpty {
-                        Text(word.romaji)
-                            .lineLimit(1)
-                    } else if !word.primaryReading.isEmpty {
-                        Text(word.primaryReading)
-                            .lineLimit(1)
+        HStack(spacing: 8) {
+            NavigationLink(value: word.key) {
+                HStack(spacing: 12) {
+                    Group {
+                        if word.state == .known {
+                            Image(systemName: "checkmark")
+                        } else {
+                            Text("\(word.occurrenceCount)").monospacedDigit()
+                        }
                     }
-                    Text(gloss)
-                        .lineLimit(1)
+                    .font(.caption.weight(.bold)).foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(word.state == .known ? Color.spokenGreen : Color.studyAccent, in: Circle())
+                    .accessibilityLabel(word.state == .known ? "Known" : "Met \(word.occurrenceCount) times")
+                    VStack(alignment: .leading, spacing: 2) {
+                        if app.profile.showFurigana, !word.primaryReading.isEmpty, word.primaryReading != word.surface {
+                            Text(word.primaryReading).font(JojoFont.jp(12, relativeTo: .caption))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(word.surface).font(JojoFont.jp(20, bold: true, relativeTo: .title3))
+                            .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.7)
+                        if app.profile.showRomaji, !word.romaji.isEmpty {
+                            Text(word.romaji).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Text(gloss).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 8)
+            .buttonStyle(.plain)
             Button {
                 SpeechService.shared.speak(word.surface)
             } label: {
-                Image(systemName: "speaker.wave.2")
-                    .foregroundStyle(.primary)
-                    .frame(width: 36, height: 36)
+                Image(systemName: "speaker.wave.2").foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Play \(word.surface)")
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            .accessibilityLabel("Hear \(word.surface)")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.cardStroke))
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.cardStroke))
     }
 }
 
@@ -685,24 +713,24 @@ private struct VocabFilterSheet: View {
             List {
                 Section("Sort") {
                     ForEach(VocabSort.allCases, id: \.self) { option in
-                        Button(option.rawValue) { sort = option }
+                        choice(option.rawValue, selected: sort == option) { sort = option }
                     }
                 }
                 Section("JLPT") {
-                    Button("Any level") { jlpt = nil }
+                    choice("Any level", selected: jlpt == nil) { jlpt = nil }
                     ForEach(["N5", "N4", "N3", "N2", "N1"], id: \.self) { level in
-                        Button(level) { jlpt = level }
+                        choice(level, selected: jlpt == level) { jlpt = level }
                     }
                 }
                 Section("Word type") {
                     ForEach(StudyPosFilter.allCases) { filter in
-                        Button(filter.title) { posFilter = filter }
+                        choice(filter.title, selected: posFilter == filter) { posFilter = filter }
                     }
                 }
                 Section("Source") {
-                    Button("Any source") { sourceChannel = nil }
+                    choice("Any source", selected: sourceChannel == nil) { sourceChannel = nil }
                     ForEach(channels, id: \.self) { channel in
-                        Button(channel) { sourceChannel = channel }
+                        choice(channel, selected: sourceChannel == channel) { sourceChannel = channel }
                     }
                 }
                 Section {
@@ -715,10 +743,29 @@ private struct VocabFilterSheet: View {
             .navigationTitle("Filter")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") {
+                        sort = .recent
+                        jlpt = nil
+                        posFilter = .all
+                        sourceChannel = nil
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
         }
     }
+    private func choice(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title).foregroundStyle(.primary)
+                Spacer()
+                if selected { Image(systemName: "checkmark").foregroundStyle(Color.studyAccent) }
+            }
+        }
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
 }

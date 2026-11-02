@@ -1,10 +1,11 @@
+import { startPipeline, updatePipeline, failureStatus } from "../_shared/pipeline.ts";
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { isAdminOrCron } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { tryConsumeYoutubeQuota } from "../_shared/limits.ts";
 import { catalogTable, parseLanguage, type CatalogLanguage } from "../_shared/catalog.ts";
-import { analyzeWindow, clipId, clipRow, log } from "../_shared/immersion.ts";
+import { analyzeWindow, checkYouTubeVideo, clipId, clipRow, log } from "../_shared/immersion.ts";
 
 /**
  * One scheduled pass: publish learner clips from the candidate queue, and only when the
@@ -97,7 +98,7 @@ const CATALOG_GOALS: Record<CatalogLanguage, { total: number; categoryFloor: num
   ja: { total: 2000, categoryFloor: 100, freshPerDay: 24 },
   ko: { total: 300, categoryFloor: 30, freshPerDay: 6 },
 };
-const CATEGORIES = ["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning"];
+const CATEGORIES = ["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning", "podcast"];
 /**
  * Catalog searches stop once the shared daily YouTube quota passes this mark, keeping
  * the rest for per-candidate checks (1 unit each), the embed audit and in-app search.
@@ -165,7 +166,7 @@ Deno.serve(async (req) => {
     const stats = await catalogStats(supabase, language);
     const goal = CATALOG_GOALS[language];
     const growth = stats.total < goal.total ||
-      CATEGORIES.filter((c) => language === "ja" || c !== "learning")
+      CATEGORIES.filter((c) => language === "ja" || !["learning", "podcast"].includes(c))
         .some((c) => (stats.byCategory.get(c) ?? 0) < goal.categoryFloor);
     let queuedExplicitly = 0;
     let passLimit = RUN_CANDIDATE_TARGET;
@@ -202,7 +203,7 @@ Deno.serve(async (req) => {
       const result = await analyzeAndPublish(supabase, candidate, language);
       if (!result.ok) {
         const keep = result.reason === "gemini-cap" || result.reason === "model_payment" ||
-          result.reason.includes("402");
+          result.reason.includes("402") || ["quota_exhausted", "youtube_unavailable", "pipeline_error", "model_retryable"].includes(result.reason);
         if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
         if (result.reason === "gemini-cap") {
           stopped = "gemini-cap";
@@ -220,7 +221,7 @@ Deno.serve(async (req) => {
         id: result.id,
         videoId: candidate.videoId,
         difficulty: result.difficulty,
-        category: candidate.category,
+        category: result.category,
       });
     }
     if (published.length === 0 && stopped === "time-budget" && queue.length === 0) {
@@ -744,11 +745,38 @@ async function advanceCursor(
 }
 
 async function analyzeAndPublish(
+  supabase: ReturnType<typeof serviceClient>, candidate: QueuedCandidate, language: CatalogLanguage,
+): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string }> {
+  if (language !== "ja") return processCandidate(supabase, candidate, language);
+  const attempt = await startPipeline(supabase, { video_id: candidate.videoId, window_start_sec: candidate.windowStartSec, title: candidate.title, channel_name: candidate.channelTitle, source: "automatic" });
+  try {
+    // Queued metadata can age. Recheck the actual source on every publication attempt.
+    const video = await checkYouTubeVideo(supabase, candidate.videoId);
+    if (!video.ok || video.video.durationSec > MAX_SOURCE_DURATION_SEC) {
+      const reason = video.ok ? "source_over_4_minutes" : video.code;
+      await updatePipeline(supabase, attempt, { status: failureStatus(reason), stage: "source_check", reason, detail: video.ok ? "Source exceeds four-minute publisher policy" : video.detail });
+      return { ok: false, reason };
+    }
+    const result = await processCandidate(supabase, { ...candidate, durationSec: video.video.durationSec }, language, attempt);
+    await updatePipeline(supabase, attempt, result.ok
+      ? { status: "published", stage: "published", clip_id: result.id }
+      : { status: failureStatus(result.reason, result.detail ?? ""), stage: "quality_gate", reason: result.reason, detail: result.detail ?? "" });
+    return result;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Pipeline failed";
+    await updatePipeline(supabase, attempt, { status: "failed", stage: "error", reason: "pipeline_error", detail: detail.slice(0, 300) });
+    return { ok: false, reason: "pipeline_error" };
+  }
+}
+
+async function processCandidate(
   supabase: ReturnType<typeof serviceClient>,
   candidate: QueuedCandidate,
   language: CatalogLanguage,
-): Promise<{ ok: true; id: string; difficulty: string } | { ok: false; reason: string }> {
+  attemptId?: string,
+): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string; detail?: string }> {
   const outcome = await analyzeWindow(supabase, {
+    onStage: attemptId ? (stage) => updatePipeline(supabase, attemptId, { stage }) : undefined,
     videoId: candidate.videoId,
     windowStart: candidate.windowStartSec,
     // Inspect the entire source when it is at most two minutes. Longer sources keep
@@ -761,7 +789,7 @@ async function analyzeAndPublish(
       : candidate.windowStartSec + SOURCE_WINDOW_SEC,
     sourceDurationSec: candidate.durationSec,
     language,
-    askCategory: false,
+    askCategory: language === "ja",
     minSpokenSec: 6,
   });
   if (!outcome.ok) {
@@ -779,7 +807,7 @@ async function analyzeAndPublish(
     });
     if (outcome.reason === "gemini_cap") return { ok: false, reason: "gemini-cap" };
     if (outcome.reason === "model_payment") return { ok: false, reason: "Gemini HTTP 402" };
-    return { ok: false, reason: outcome.reason };
+    return { ok: false, reason: outcome.reason, detail: outcome.detail };
   }
   const prefix = language === "ko" ? "sori" : "immersion";
   const id = clipId(prefix, candidate.videoId, outcome.draft);
@@ -792,14 +820,14 @@ async function analyzeAndPublish(
       durationSec: candidate.durationSec,
     },
     draft: outcome.draft,
-    category: candidate.category,
+    category: outcome.draft.category ?? candidate.category,
     published: true,
     withProvenance: language === "ja",
   });
   const { error } = await supabase.from(catalogTable(language)).upsert(row);
   if (error) return { ok: false, reason: "insert-failed" };
   log("catalog_clip_published", { id, timingMode: outcome.draft.timingMode, model: outcome.draft.model });
-  return { ok: true, id, difficulty: outcome.draft.difficulty };
+  return { ok: true, id, difficulty: outcome.draft.difficulty, category: outcome.draft.category ?? candidate.category };
 }
 
 function parseDurationSec(iso: string): number | null {

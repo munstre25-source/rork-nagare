@@ -20,7 +20,7 @@ struct LibraryView: View {
                     ScrollView {
                         LazyVStack(spacing: Spacing.m) {
                             ForEach(clips) { clip in
-                                LibraryClipRow(clip: clip, shelf: shelf) {
+                                LibraryClipRow(clip: clip) {
                                     playing = clip
                                 }
                             }
@@ -109,62 +109,48 @@ struct LibraryView: View {
 
 private struct LibraryClipRow: View {
     let clip: Clip
-    let shelf: LibraryShelf
     let onPlay: () -> Void
     @Environment(AppModel.self) private var app
 
     var body: some View {
-        Button(action: onPlay) {
-            HStack(spacing: Spacing.m) {
-                ClipPosterView(clip: clip, showsSymbol: false)
-                    .frame(width: 96, height: 64)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(clip.title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    HStack(spacing: 6) {
-                        if let jlpt = clip.dominantJLPT {
-                            Text("\(jlpt) est.")
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(Color.sakuraPink)
-                        }
-                        Text(clip.channelName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+        HStack(spacing: Spacing.s) {
+            Button(action: onPlay) {
+                HStack(spacing: Spacing.m) {
+                    ClipPosterView(clip: clip, showsSymbol: false)
+                        .frame(width: 96, height: 64)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(clip.title).font(.subheadline.weight(.bold))
+                            .foregroundStyle(.primary).lineLimit(2)
+                        Text(clip.channelName).font(.caption)
+                            .foregroundStyle(.secondary).lineLimit(1)
+                        Text(clip.difficulty).font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.studyAccent)
                     }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
-                Menu {
-                    Button(app.isLiked(clip.id) ? "Unlike" : "Like") {
-                        _ = app.toggleLike(clip.id)
-                    }
-                    if shelf != .saved {
-                        Button(app.isFavorite(clip.id) ? "Unsave" : "Save") {
-                            _ = app.toggleFavorite(clip.id)
-                        }
-                    }
-                    if shelf != .later {
-                        Button(app.isWatchLater(clip.id) ? "Remove from Later" : "Watch later") {
-                            _ = app.toggleWatchLater(clip.id)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 36, height: 36)
-                }
+                .contentShape(Rectangle())
             }
-            .padding(12)
-            .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .strokeBorder(Color.cardStroke, lineWidth: 1)
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel("Play \(clip.title)")
+            Menu {
+                Button(app.isLiked(clip.id) ? "Unlike" : "Like") {
+                    _ = app.toggleLike(clip.id)
+                }
+                Button(app.isFavorite(clip.id) ? "Remove from Saved" : "Save clip") {
+                    _ = app.toggleFavorite(clip.id)
+                }
+                Button(app.isWatchLater(clip.id) ? "Remove from Later" : "Watch later") {
+                    _ = app.toggleWatchLater(clip.id)
+                }
+            } label: {
+                Image(systemName: "ellipsis").font(.body.weight(.semibold))
+                    .foregroundStyle(.secondary).frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Options for \(clip.title)")
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Color.cardStroke))
     }
 }

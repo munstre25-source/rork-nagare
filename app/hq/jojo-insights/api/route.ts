@@ -17,7 +17,8 @@ async function proxyInsights(req: Request) {
   }
 
   const incoming = new URL(req.url);
-  const target = new URL(`${cfg.supabaseUrl}/functions/v1/admin-insights`);
+  const pipeline = req.method === "GET" && incoming.searchParams.get("pipeline") === "1";
+  const target = new URL(`${cfg.supabaseUrl}/functions/v1/${pipeline ? "admin-pipeline" : "admin-insights"}`);
   incoming.searchParams.forEach((value, key) => target.searchParams.set(key, value));
 
   const init: RequestInit = {
@@ -36,7 +37,7 @@ async function proxyInsights(req: Request) {
   }
 
   const res = await fetch(target, init);
-  if (req.method === "GET" && res.ok) {
+  if (req.method === "GET" && res.ok && !pipeline) {
     const insights = await res.json() as Record<string, unknown>;
     try {
       const metricsTarget = new URL(`${cfg.supabaseUrl}/functions/v1/admin-dashboard`);

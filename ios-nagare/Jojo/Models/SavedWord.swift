@@ -73,6 +73,10 @@ final class SavedWord {
         set { srsState = newValue.rawValue }
     }
 
+    func isDueForReview(at now: Date = Date()) -> Bool {
+        state != .known && dueAt <= now
+    }
+
     var primaryReading: String { readings.first ?? "" }
     var gloss: String { definitions.first ?? jaDefinitions.first ?? "" }
 

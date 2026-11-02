@@ -1,0 +1,858 @@
+{
+  "checkedClips": 193,
+  "checkedLines": 1209,
+  "unreviewedClipIds": [
+    "boss-rush-live-09",
+    "counting-kuma-03",
+    "harajuku-street-02",
+    "hoshizora-academy-07",
+    "immersion--trocZ1u204-14-35",
+    "immersion-5kXOkOpkYJ8-78-90",
+    "immersion-5U8vAa94rFo-28-49",
+    "immersion-5Vz_nVN1PrM-75-90",
+    "immersion-67G_CfyZHp0-102-116",
+    "immersion-6bAtb5gwX1Y-5-45",
+    "immersion-7dbIWMbxDfg-12-41",
+    "immersion-7kk3VajdeaM-0-13",
+    "immersion-8miK-6nV7Gw-0-32",
+    "immersion-9OYewGtGVQw-0-23",
+    "immersion-aglOdAXsKEQ-6-30",
+    "immersion-AoZugwG4meE-0-17",
+    "immersion-aqjddUenT8A-0-26",
+    "immersion-au2w4AeWyd8-80-99",
+    "immersion-AUrfD-1sqM8-33-50",
+    "immersion-butabara-steam",
+    "immersion-COb5aAy5CJ0-28-41",
+    "immersion-COb5aAy5CJ0-28-42",
+    "immersion-cT-o8IXg6CI-0-15",
+    "immersion-CW0juiwikkQ-43-63",
+    "immersion-dcxmIs4colE-0-13",
+    "immersion-Dmi0T9qyPJA-30-55",
+    "immersion-eihkCy4rlg4-26-41",
+    "immersion-fOfIHF2JjI8-18-30",
+    "immersion-gFLvb0SIIn0-39-121",
+    "immersion-gyPaUw_5BLc-50-63",
+    "immersion-h1XUU_Wq9ks-1-21",
+    "immersion-h6ObOK-Xwmc-0-18",
+    "immersion-hDfAn3KfBjk-13-30",
+    "immersion-HJdyF2rcZb0-0-21",
+    "immersion-hYLf9yxkDBE-4-28",
+    "immersion-Ir35SAOZ5nY-0-30",
+    "immersion-iUyX27UkWDs-23-55",
+    "immersion-iYjjpFZTAZA-0-32",
+    "immersion-J3XHFIJafkM-81-89",
+    "immersion-jJrWJqUJ-NM-21-29",
+    "immersion-KDfG1K1IgZc-18-37",
+    "immersion-kh_PnQ5mY2Y-0-11",
+    "immersion-Ki8uOm2QNOk-2-26",
+    "immersion-komeda-order",
+    "immersion-lnd2SjFMJXI-51-76",
+    "immersion-LuADPqD93nM-0-14",
+    "immersion-MDtiDGr_-GY-3-17",
+    "immersion-mSycuOff7YQ-70-84",
+    "immersion-n9jnD_8JeLc-28-49",
+    "immersion-nfmMuGsqK8Q-14-34",
+    "immersion-Njk2kfY4irI-40-54",
+    "immersion-Ovl6nYvihh8-18-36",
+    "immersion-pd-5GK2JdQk-5-45",
+    "immersion-pI6TGEHnKo4-3-23",
+    "immersion-q89xqLs-eNY-30-50",
+    "immersion-QDGzU8DZjkc-21-34",
+    "immersion-QgQ8_7zSv7s-26-41",
+    "immersion-QThN_GUATTY-19-34",
+    "immersion-QyXHpGahA1I-12-24",
+    "immersion-r7ytNplrDCA-0-17",
+    "immersion-R9NwPxYOxSw-7-35",
+    "immersion-roZJa9Z6S1I-31-43",
+    "immersion-rXF2YFvMxKY-32-58",
+    "immersion-sapLlgWryNI-0-25",
+    "immersion-SF-EoJkMhBc-0-16",
+    "immersion-swE3eLyJXOM-132-164",
+    "immersion-uL2ABO6yMwM-8-26",
+    "immersion-VBd50awmtxg-59-89",
+    "immersion-VFMFI1yj2wY-0-10",
+    "immersion-VFX9q3P6cw0-0-16",
+    "immersion-VI44EvFkQ7w-18-35",
+    "immersion-VJyFtWJ_36k-61-73",
+    "immersion-Wdw_HjSp7GQ-19-38",
+    "immersion-WkJcGj9R7Fk-38-54",
+    "immersion-WNQCXxF4uFM-11-33",
+    "immersion-Y7kYPuCduwk-0-21",
+    "immersion-yGOkIy78MRM-63-87",
+    "immersion-ykw9D1hq1hc-5-23",
+    "immersion-yLB0JwdA_ek-0-10",
+    "immersion-yU72X91jPMI-0-16",
+    "immersion-yWy6wBKTicc-8-22",
+    "immersion-Z_leh6MUPHI-72-86",
+    "immersion-ZXeSXMqsSBQ-24-42",
+    "kissa-stories-01",
+    "kitsune-yuki-stream-01",
+    "konbini-diaries-01",
+    "neko-cafe-02",
+    "piyo-picnic-01",
+    "quiz-showdown-11",
+    "ramen-road-trip-03",
+    "speedrun-commentary-02",
+    "tsukimi-rin-zatsudan-05",
+    "words-that-matter-04"
+  ],
+  "issues": [
+    {
+      "clipId": "hoshizora-academy-07",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "え?嘘でしょ!",
+      "translation": "What? No way!"
+    },
+    {
+      "clipId": "immersion--trocZ1u204-14-35",
+      "lineIndex": 7,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "いいね、いいね。うまい、うまい、うまい。",
+      "translation": "Nice, nice. Good, good, good."
+    },
+    {
+      "clipId": "immersion-5kXOkOpkYJ8-78-90",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "今日はね、ええ、禁断症状、禁断症状。嘘嘘嘘嘘。",
+      "translation": "Today, well, withdrawal symptoms, withdrawal symptoms. Just kidding, just kidding, just kidding, just kidding."
+    },
+    {
+      "clipId": "immersion-5U8vAa94rFo-28-49",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "オッケー。はい。",
+      "translation": "Okay. Yes."
+    },
+    {
+      "clipId": "immersion-67G_CfyZHp0-102-116",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "いる。あ、いいよ。一人一個でいいよ。",
+      "translation": "I do. Ah, okay. One each is fine."
+    },
+    {
+      "clipId": "immersion-67G_CfyZHp0-102-116",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "汲んできてください。いいね、水を汲む。",
+      "translation": "Please go fetch it. Nice phrase, \"fetch water\"."
+    },
+    {
+      "clipId": "immersion-7kk3VajdeaM-0-13",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "こんにちは。ディディです。はじめまして。",
+      "translation": "Hello. I'm Didi. Nice to meet you."
+    },
+    {
+      "clipId": "immersion-8miK-6nV7Gw-0-32",
+      "lineIndex": 5,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "うん、せえねん。もう73年か74年頃にはやめてたわ。",
+      "translation": "Yeah, that's right. I had already stopped by around '73 or '74."
+    },
+    {
+      "clipId": "immersion-9OYewGtGVQw-0-23",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "俺の名前はテンテン。よろしくな。",
+      "translation": "My name is Tenten. Nice to meet you!"
+    },
+    {
+      "clipId": "immersion-aglOdAXsKEQ-6-30",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "それがなんだって言うの？お前を家に入れるのを許したのはただ世話をしてほしかったからよ。",
+      "translation": "What of it? The only reason I allowed you into this house was because I just wanted someone to take care of him."
+    },
+    {
+      "clipId": "immersion-aqjddUenT8A-0-26",
+      "lineIndex": 11,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "フォシティ？お前なのか？",
+      "translation": "Folsie? Is that you?"
+    },
+    {
+      "clipId": "immersion-aqjddUenT8A-0-26",
+      "lineIndex": 12,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ダメ！そっちに行かないで！",
+      "translation": "No! Don't go that way!"
+    },
+    {
+      "clipId": "immersion-au2w4AeWyd8-80-99",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "あ、猫。寝る？",
+      "translation": "Oh, a cat. Are you going to sleep?"
+    },
+    {
+      "clipId": "immersion-AUrfD-1sqM8-33-50",
+      "lineIndex": 1,
+      "issue": "translation ends mid-thought",
+      "japanese": "あのもう普通のオーディションはこうもう閉じますせみたいな感じで",
+      "translation": "Regular auditions were pretty much like, 'We're closing them down,'"
+    },
+    {
+      "clipId": "immersion-COb5aAy5CJ0-28-41",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "隼人、隼人！約束だよ、これから一緒に華原大学に行く。",
+      "translation": "Hayato, Hayato! It's a promise, from now on we go to Kahara University together."
+    },
+    {
+      "clipId": "immersion-COb5aAy5CJ0-28-41",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "そうそう。私たち誰も離れられないわ。幼馴染だもんね。",
+      "translation": "Right, right. None of us can ever be separated. We're childhood friends after all."
+    },
+    {
+      "clipId": "immersion-COb5aAy5CJ0-28-42",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "おお。じゃあ、一緒に華原に行こう。",
+      "translation": "Yeah. Well then, let's go to Kahara together."
+    },
+    {
+      "clipId": "immersion-cT-o8IXg6CI-0-15",
+      "lineIndex": 5,
+      "issue": "translation ends mid-thought",
+      "japanese": "ライブも近いし",
+      "translation": "The live show is coming up soon,"
+    },
+    {
+      "clipId": "immersion-cT-o8IXg6CI-0-15",
+      "lineIndex": 6,
+      "issue": "translation ends mid-thought",
+      "japanese": "盛り上がる曲とかもあるかもな",
+      "translation": "maybe an exciting song or something would be nice,"
+    },
+    {
+      "clipId": "immersion-CW0juiwikkQ-43-63",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "分かったか？まだなるな。",
+      "translation": "Got it? Don't become one yet."
+    },
+    {
+      "clipId": "immersion-CW0juiwikkQ-43-63",
+      "lineIndex": 4,
+      "issue": "translation ends mid-thought",
+      "japanese": "14歳でVTuberになったら、絶対とんでもないやらかしを起こして、",
+      "translation": "If you become a VTuber at 14, you'll definitely mess up big time,"
+    },
+    {
+      "clipId": "immersion-CW0juiwikkQ-43-63",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "分かった？もう少しロムれ。",
+      "translation": "Understand? Lurk a bit more."
+    },
+    {
+      "clipId": "immersion-dcxmIs4colE-0-13",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "殊勲の川崎、",
+      "translation": "The hero of the match, Kawasaki,"
+    },
+    {
+      "clipId": "immersion-dcxmIs4colE-0-13",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "川崎宗則選手にお越しいただきました。見事でした。",
+      "translation": "We are joined by player Munenori Kawasaki. That was splendid!"
+    },
+    {
+      "clipId": "immersion-eihkCy4rlg4-26-41",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "相手の車から酔っ払いが降りて",
+      "translation": "A drunk person got out of the other car,"
+    },
+    {
+      "clipId": "immersion-eihkCy4rlg4-26-41",
+      "lineIndex": 1,
+      "issue": "translation ends mid-thought",
+      "japanese": "ずっと暴言を吐かれて",
+      "translation": "and has been yelling verbal abuse at me,"
+    },
+    {
+      "clipId": "immersion-fOfIHF2JjI8-18-30",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "今日イケボで。いつもです。いつもかっこいいですよ",
+      "translation": "Handsome voice today. It's always handsome! You're always cool!!"
+    },
+    {
+      "clipId": "immersion-fOfIHF2JjI8-18-30",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ああ、いいね、レアだね。いや、全然そんな！そんな言ってくれんの？",
+      "translation": "Ah, nice, that's rare. No, not at all! You're really saying that for me?"
+    },
+    {
+      "clipId": "immersion-gFLvb0SIIn0-39-121",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "パパ、安心して。ママを大切にするし、新しい弟も守る。",
+      "translation": "Dad, don't worry. I'll treasure Mom, and I'll protect my new baby brother too."
+    },
+    {
+      "clipId": "immersion-gyPaUw_5BLc-50-63",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "おー19歳。すごい。大学生？",
+      "translation": "Oh, 19! Wow, are you a university student?"
+    },
+    {
+      "clipId": "immersion-gyPaUw_5BLc-50-63",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "はい、大学生です。大学1年生です。",
+      "translation": "Yes, I am a university student. A first-year college student."
+    },
+    {
+      "clipId": "immersion-gyPaUw_5BLc-50-63",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "大学1年生。今、夏休みですか？",
+      "translation": "First year of college. Is it summer vacation right now?"
+    },
+    {
+      "clipId": "immersion-h1XUU_Wq9ks-1-21",
+      "lineIndex": 1,
+      "issue": "translation is a single letter",
+      "japanese": "あ",
+      "translation": "A"
+    },
+    {
+      "clipId": "immersion-hDfAn3KfBjk-13-30",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "で今回はねどういう動画を撮っていくかっていうと",
+      "translation": "So as for what kind of video I'm going to be filming this time,"
+    },
+    {
+      "clipId": "immersion-hDfAn3KfBjk-13-30",
+      "lineIndex": 1,
+      "issue": "translation ends mid-thought",
+      "japanese": "その香港の人たち、まもしくは香港に遊びに来てる台湾の人たちとかでもいいんですけど",
+      "translation": "well, people from Hong Kong, or even people from Taiwan who are visiting Hong Kong,"
+    },
+    {
+      "clipId": "immersion-hDfAn3KfBjk-13-30",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "香港とか台湾、まこう言う中国とちょっとセンシティブな関係にある人たちが",
+      "translation": "people from Hong Kong or Taiwan who are in a somewhat sensitive relationship with China,"
+    },
+    {
+      "clipId": "immersion-HJdyF2rcZb0-0-21",
+      "lineIndex": 7,
+      "issue": "translation ends mid-thought",
+      "japanese": "絶対、セリーヌ・ディオンの曲じゃないし",
+      "translation": "That's definitely not a Celine Dion song,"
+    },
+    {
+      "clipId": "immersion-hYLf9yxkDBE-4-28",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "はい、お願いします。じゃあ英語のシーンいきます。",
+      "translation": "Okay, please do. All right, let's do the English scene."
+    },
+    {
+      "clipId": "immersion-Ir35SAOZ5nY-0-30",
+      "lineIndex": 6,
+      "issue": "translation ends mid-thought",
+      "japanese": "彼女は男の子が自分を騙したと責めたが",
+      "translation": "She blamed the boy for tricking her, but"
+    },
+    {
+      "clipId": "immersion-iUyX27UkWDs-23-55",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "平気だよ。ただの擦り傷だ。",
+      "translation": "I'm fine. It's just a scrape."
+    },
+    {
+      "clipId": "immersion-iUyX27UkWDs-23-55",
+      "lineIndex": 10,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "聞いたでしょ？あれほど冷たくされてもかばってくれてるのよ。",
+      "translation": "You heard him, right? Even after being treated so coldly by you, he's still defending you."
+    },
+    {
+      "clipId": "immersion-iYjjpFZTAZA-0-32",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "日本語の勉強。なんで？",
+      "translation": "Studying Japanese. Why?"
+    },
+    {
+      "clipId": "immersion-iYjjpFZTAZA-0-32",
+      "lineIndex": 5,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "あ〜、わかる。頭使うと甘いもの食べたいってなるよね。",
+      "translation": "Ahh, I know what you mean. When you use your head, you end up craving something sweet, right?"
+    },
+    {
+      "clipId": "immersion-iYjjpFZTAZA-0-32",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "そうそう。わぁ、このケーキめっちゃ美味しい！全部食べていい？",
+      "translation": "Exactly. Wow, this cake is super delicious! Can I eat all of it?"
+    },
+    {
+      "clipId": "immersion-kh_PnQ5mY2Y-0-11",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ヤバくねぇ？何これ？",
+      "translation": "Isn't this ping insane? What is this?"
+    },
+    {
+      "clipId": "immersion-Ki8uOm2QNOk-2-26",
+      "lineIndex": 7,
+      "issue": "translation ends mid-thought",
+      "japanese": "あなたの服は堀家のものだから",
+      "translation": "Because your clothes belong to the Hori family,"
+    },
+    {
+      "clipId": "immersion-lnd2SjFMJXI-51-76",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "先程からずっとその指輪を触っていますが、ごく普通のよくある指輪に見えます。特別なものですか？",
+      "translation": "You've been touching that ring for a while now, but it looks like a very ordinary, common ring. Is it something special?"
+    },
+    {
+      "clipId": "immersion-lnd2SjFMJXI-51-76",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "失礼しました。今のご資産なら結婚指輪はてっきり大粒のダイヤかと思いました。",
+      "translation": "Excuse me. With your current wealth, I assumed your wedding ring would surely be a large diamond."
+    },
+    {
+      "clipId": "immersion-LuADPqD93nM-0-14",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "大統領！会議中に寝てましたよね？",
+      "translation": "Mr. President! You were sleeping during the meeting, weren't you?"
+    },
+    {
+      "clipId": "immersion-LuADPqD93nM-0-14",
+      "lineIndex": 9,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "大統領！！！！",
+      "translation": "MR. PRESIDENT!!!!"
+    },
+    {
+      "clipId": "immersion-MDtiDGr_-GY-3-17",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "俺はゼロ!セブンの息子だ!",
+      "translation": "I am Zero! The son of Seven!"
+    },
+    {
+      "clipId": "immersion-MDtiDGr_-GY-3-17",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "どうしたの?そんなに力んで。",
+      "translation": "What's wrong? Straining yourself like that."
+    },
+    {
+      "clipId": "immersion-mSycuOff7YQ-70-84",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "ちょっと夕方ぐらいにお出かけをする予定なんですけど",
+      "translation": "I have plans to head out around early evening, though,"
+    },
+    {
+      "clipId": "immersion-n9jnD_8JeLc-28-49",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "お日様出てきたら",
+      "translation": "When the sun comes out,"
+    },
+    {
+      "clipId": "immersion-n9jnD_8JeLc-28-49",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "笑顔で元気に",
+      "translation": "With a smile and full of energy,"
+    },
+    {
+      "clipId": "immersion-n9jnD_8JeLc-28-49",
+      "lineIndex": 4,
+      "issue": "translation ends mid-thought",
+      "japanese": "鳥はピッピッ挨拶",
+      "translation": "The birds greet with a 'tweet tweet',"
+    },
+    {
+      "clipId": "immersion-n9jnD_8JeLc-28-49",
+      "lineIndex": 5,
+      "issue": "translation ends mid-thought",
+      "japanese": "蜂はブンブン挨拶",
+      "translation": "The bees greet with a 'buzz buzz',"
+    },
+    {
+      "clipId": "immersion-nfmMuGsqK8Q-14-34",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "おー、いっぱいある！いっぱいある！",
+      "translation": "Woah, there's so many! There's so many!"
+    },
+    {
+      "clipId": "immersion-Njk2kfY4irI-40-54",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "え？ないの？その自己紹介みたいな。",
+      "translation": "Huh? Don't you have one of those self-introductions?"
+    },
+    {
+      "clipId": "immersion-Njk2kfY4irI-40-54",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "君の葛藤に俺が抜刀。どうも小柳ロウでーす。",
+      "translation": "For your conflicts, I draw my sword. Hello, I'm Koyanagi Rou."
+    },
+    {
+      "clipId": "immersion-Njk2kfY4irI-40-54",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "かっこいい！いいじゃん！",
+      "translation": "So cool! That's great!"
+    },
+    {
+      "clipId": "immersion-Ovl6nYvihh8-18-36",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "挨拶？それって何？",
+      "translation": "Greeting? What is that?"
+    },
+    {
+      "clipId": "immersion-pI6TGEHnKo4-3-23",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "皆さんこんにちは。フォンチーです。",
+      "translation": "Hello everyone. I'm Fonchi."
+    },
+    {
+      "clipId": "immersion-pI6TGEHnKo4-3-23",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "今までやったことあるようで実は、細かくはやったことがないので、",
+      "translation": "It feels like I might have done this before, but in reality I've never done it in detail,"
+    },
+    {
+      "clipId": "immersion-q89xqLs-eNY-30-50",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "いろいろなテーマ。オッケー。",
+      "translation": "Various themes. Okay."
+    },
+    {
+      "clipId": "immersion-QDGzU8DZjkc-21-34",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ひな、いい子だ。ママのマントウあげる。",
+      "translation": "Hina, good girl. I'll give you Mama's mantou."
+    },
+    {
+      "clipId": "immersion-QgQ8_7zSv7s-26-41",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "えっと、巻き戻しは今切りました。すいません。",
+      "translation": "Um, I just turned off rewinding now. Sorry about that."
+    },
+    {
+      "clipId": "immersion-QThN_GUATTY-19-34",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "はい。じゃあ遊び行こっか。",
+      "translation": "Here. Now then, shall we go play?"
+    },
+    {
+      "clipId": "immersion-QThN_GUATTY-19-34",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "残念！パンは英語でブレッドでした。",
+      "translation": "Too bad! Bread is 'bread' in English."
+    },
+    {
+      "clipId": "immersion-QyXHpGahA1I-12-24",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "初めに日本語を",
+      "translation": "First in Japanese,"
+    },
+    {
+      "clipId": "immersion-QyXHpGahA1I-12-24",
+      "lineIndex": 1,
+      "issue": "translation ends mid-thought",
+      "japanese": "続いてロシア語をゆっくりと",
+      "translation": "followed by Russian slowly,"
+    },
+    {
+      "clipId": "immersion-r7ytNplrDCA-0-17",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "何？いるのお前が！なんでこんなところにいるのよ",
+      "translation": "What? You're here?! Why are you in a place like this?"
+    },
+    {
+      "clipId": "immersion-R9NwPxYOxSw-7-35",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "なんでだよお前。分かんねえだろ。",
+      "translation": "Why would they?! You don't know either, do you?"
+    },
+    {
+      "clipId": "immersion-R9NwPxYOxSw-7-35",
+      "lineIndex": 13,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "買うなよ絶対。そんなことに使うなよ。",
+      "translation": "Don't buy it, seriously! Don't spend that much on something like that!"
+    },
+    {
+      "clipId": "immersion-roZJa9Z6S1I-31-43",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "何？南語？",
+      "translation": "What? Nanyu?"
+    },
+    {
+      "clipId": "immersion-roZJa9Z6S1I-31-43",
+      "lineIndex": 2,
+      "issue": "translation contains untranslated source-language text",
+      "japanese": "聿衡、頭がクラクラ",
+      "translation": "聿衡, my head is dizzy..."
+    },
+    {
+      "clipId": "immersion-roZJa9Z6S1I-31-43",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "しっかりして。すぐ病院へ行く。行こう。",
+      "translation": "Hang in there. We're going to the hospital right away. Let's go."
+    },
+    {
+      "clipId": "immersion-rXF2YFvMxKY-32-58",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "はあ?どういうこと?",
+      "translation": "Huh? What do you mean?"
+    },
+    {
+      "clipId": "immersion-sapLlgWryNI-0-25",
+      "lineIndex": 7,
+      "issue": "translation ends mid-thought",
+      "japanese": "えっとー、なんか最近私の中でがきてて、",
+      "translation": "Um, lately I've been feeling really into RADWIMPS,"
+    },
+    {
+      "clipId": "immersion-sapLlgWryNI-0-25",
+      "lineIndex": 8,
+      "issue": "translation ends mid-thought",
+      "japanese": "タイトルの付け方とか曲の冒頭の入り方とか、",
+      "translation": "how the song is titled and how the intro starts off,"
+    },
+    {
+      "clipId": "immersion-SF-EoJkMhBc-0-16",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "最近老眼が始まったのか",
+      "translation": "Lately, maybe because presbyopia has started,"
+    },
+    {
+      "clipId": "immersion-SF-EoJkMhBc-0-16",
+      "lineIndex": 1,
+      "issue": "translation ends mid-thought",
+      "japanese": "椅子に座って本を読んでいても",
+      "translation": "even when I sit in a chair and read a book,"
+    },
+    {
+      "clipId": "immersion-SF-EoJkMhBc-0-16",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "文字が読みづらいから",
+      "translation": "because the letters are hard to read,"
+    },
+    {
+      "clipId": "immersion-SF-EoJkMhBc-0-16",
+      "lineIndex": 3,
+      "issue": "translation ends mid-thought",
+      "japanese": "少しでも距離を取ろうとして",
+      "translation": "trying to put even a little distance,"
+    },
+    {
+      "clipId": "immersion-SF-EoJkMhBc-0-16",
+      "lineIndex": 4,
+      "issue": "translation ends mid-thought",
+      "japanese": "背筋が伸びた状態になるんですけど",
+      "translation": "I end up in a state with my back straightened up, but"
+    },
+    {
+      "clipId": "immersion-uL2ABO6yMwM-8-26",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "皆さん、こんにちは。富士日本語学院のちか先生です。",
+      "translation": "Hello everyone. I'm Chika from Fuji Japanese Language Academy."
+    },
+    {
+      "clipId": "immersion-VFMFI1yj2wY-0-10",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ん？チョコレートパフェ配合って言った今？",
+      "translation": "Huh? Did I just say 'blend chocolate parfait'?"
+    },
+    {
+      "clipId": "immersion-VFX9q3P6cw0-0-16",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "うわ！落ちたての議員や！",
+      "translation": "Whoa! It's a newly defeated politician!"
+    },
+    {
+      "clipId": "immersion-VFX9q3P6cw0-0-16",
+      "lineIndex": 5,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "うっさいんじゃ！あっち行け！",
+      "translation": "Shut up! Go away!"
+    },
+    {
+      "clipId": "immersion-VI44EvFkQ7w-18-35",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "はい、皆さん、こんにちは。日本語教師のしゅんです。",
+      "translation": "Hi, hello everyone. I'm Shun, a Japanese teacher."
+    },
+    {
+      "clipId": "immersion-VI44EvFkQ7w-18-35",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "今、今日も、たくさんの人が集まる大阪の難波に来ています。はい。",
+      "translation": "Right now, today as well, I've come to Namba, Osaka, where lots of people gather. Yes."
+    },
+    {
+      "clipId": "immersion-VJyFtWJ_36k-61-73",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "雨が降ると",
+      "translation": "Whenever it rains,"
+    },
+    {
+      "clipId": "immersion-Wdw_HjSp7GQ-19-38",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "デブじゃない！名前があるの！",
+      "translation": "He's not a fat guy! He has a name!"
+    },
+    {
+      "clipId": "immersion-WkJcGj9R7Fk-38-54",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "何してんの？僕の姉だ。姉をいじめるな！",
+      "translation": "What are you doing? She's my sister. Don't bully my sister!"
+    },
+    {
+      "clipId": "immersion-WkJcGj9R7Fk-38-54",
+      "lineIndex": 1,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "承志くんね？何歳？",
+      "translation": "You're Cheng Zhi, right? How old are you?"
+    },
+    {
+      "clipId": "immersion-WkJcGj9R7Fk-38-54",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "５歳だよ。お姉ちゃんすっごく綺麗。",
+      "translation": "I'm five years old! You're really pretty, Big Sister."
+    },
+    {
+      "clipId": "immersion-WkJcGj9R7Fk-38-54",
+      "lineIndex": 4,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "ママが言ってた。遺産を取りに来たんでしょ？",
+      "translation": "Mom told me. You came to take the inheritance, right?"
+    },
+    {
+      "clipId": "immersion-WNQCXxF4uFM-11-33",
+      "lineIndex": 7,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "なるほど。ごめんって。",
+      "translation": "I see. Sorry, okay?"
+    },
+    {
+      "clipId": "immersion-yGOkIy78MRM-63-87",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "鬱陵島東南の波路に二百里",
+      "translation": "Two hundred ri across the sea route southeast of Ulleungdo,"
+    },
+    {
+      "clipId": "immersion-yGOkIy78MRM-63-87",
+      "lineIndex": 2,
+      "issue": "translation ends mid-thought",
+      "japanese": "誰かが所有権をご主張しても",
+      "translation": "Even if someone claims ownership,"
+    },
+    {
+      "clipId": "immersion-yGOkIy78MRM-63-87",
+      "lineIndex": 4,
+      "issue": "translation ends mid-thought",
+      "japanese": "慶尚北道鬱陵郡独島里一番地",
+      "translation": "Gyeongsangbuk-do, Ulleung-gun, Dokdo-ri, No. 1,"
+    },
+    {
+      "clipId": "immersion-yGOkIy78MRM-63-87",
+      "lineIndex": 5,
+      "issue": "translation ends mid-thought",
+      "japanese": "東経百三十二北緯三十七",
+      "translation": "East longitude 132, north latitude 37,"
+    },
+    {
+      "clipId": "immersion-ykw9D1hq1hc-5-23",
+      "lineIndex": 2,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "あら！綺麗だなんて上手ね。",
+      "translation": "Oh, my! Flattery will get you everywhere."
+    },
+    {
+      "clipId": "immersion-ykw9D1hq1hc-5-23",
+      "lineIndex": 3,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "とても気に入ったわ。素直な子は大好きよ。",
+      "translation": "I really like you. I adore honest girls."
+    },
+    {
+      "clipId": "immersion-yLB0JwdA_ek-0-10",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "俺が今からここで振るから",
+      "translation": "I'm going to swing right here now,"
+    },
+    {
+      "clipId": "immersion-yU72X91jPMI-0-16",
+      "lineIndex": 6,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "任せてくれ。絶対に期待を裏切らん。",
+      "translation": "Leave it to me. I definitely won't disappoint you."
+    },
+    {
+      "clipId": "immersion-Z_leh6MUPHI-72-86",
+      "lineIndex": 0,
+      "issue": "translation ends mid-thought",
+      "japanese": "一緒にいてくれたら",
+      "translation": "If you stay with me,"
+    },
+    {
+      "clipId": "immersion-ZXeSXMqsSBQ-24-42",
+      "lineIndex": 0,
+      "issue": "multiple translated sentences must be separate lines",
+      "japanese": "すいません、お客様。公共の場では動画の再生はご遠慮ください。",
+      "translation": "Excuse me, sir. Please refrain from playing videos in public areas."
+    }
+  ],
+  "limitation": "Sanity checks do not verify meaning. Clips without a current audio review require review; do not auto-rewrite them from glosses."
+}

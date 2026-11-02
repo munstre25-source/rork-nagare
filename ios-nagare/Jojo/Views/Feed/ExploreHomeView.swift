@@ -42,7 +42,7 @@ struct ExploreHomeView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                             .textGlow(LearningInk.glow, level: app.profile.glow)
-                        Text("Dive into different ways to learn.")
+                        Text("Find a word, hear it in context, then make it yours.")
                             .font(.subheadline)
                             .foregroundStyle(Color.studyMuted)
                             .lineLimit(2)
@@ -67,6 +67,7 @@ struct ExploreHomeView: View {
                         }
                         .accessibilityLabel("My Path")
                     }
+                    searchEntry
                     Button {
                         Haptics.selection()
                         showSpeakingScenes = true
@@ -121,8 +122,10 @@ struct ExploreHomeView: View {
             .navigationDestination(for: LearningPath.self) { path in
                 LearningPathScreen(path: path, featuredClips: featuredClips)
             }
-            .navigationDestination(for: SearchRoute.self) { _ in
-                SearchView(embedded: true)
+            .navigationDestination(for: SearchRoute.self) { route in
+                SearchView(initialQuery: route.initialQuery,
+                           initialScope: route.initialQuery.isEmpty ? .all : .sentences,
+                           embedded: true)
             }
             .navigationDestination(for: TopicHub.self) { _ in
                 TopicStylesView()
@@ -130,7 +133,7 @@ struct ExploreHomeView: View {
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
             }
-            .sheet(isPresented: $showSpeakingScenes) {
+            .sheet(isPresented: $showSpeakingScenes, onDismiss: reloadPlan) {
                 SpeakingScenesView()
             }
             .sheet(isPresented: $showCapture) {
@@ -154,9 +157,52 @@ struct ExploreHomeView: View {
             }
         }
         .onAppear { reloadPlan() }
+        .onChange(of: app.reviewAvailabilityRevision) { _, _ in reloadPlan() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { reloadPlan() }
+        }
         .onChange(of: scriptedPath) { _, newPath in
             guard let newPath else { return }
             path.append(newPath)
+        }
+    }
+
+    private var searchEntry: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NavigationLink(value: SearchRoute.search) {
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Color.studyAccent)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Search a word or phrase")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text("Hear it used in real clips")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.card, in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.cardStroke))
+            }
+            .buttonStyle(.plain)
+            HStack(spacing: 8) {
+                Text("Try").font(.caption).foregroundStyle(.secondary)
+                ForEach(["好き", "大丈夫", "ありがとう"], id: \.self) { word in
+                    NavigationLink(value: SearchRoute.query(word)) {
+                        Text(word).font(JojoFont.jp(14, relativeTo: .subheadline))
+                            .foregroundStyle(Color.studyAccent)
+                            .padding(.horizontal, 12).frame(minHeight: 44)
+                            .background(Color.studyAccent.opacity(0.08), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
@@ -199,20 +245,14 @@ struct ExploreHomeView: View {
                     subtitle: "Words you keep meeting",
                     done: reviewDone
                 ) {
-                    DailyPlanProgress.mark(.review)
-                    reviewDone = true
                     reviewSession = ReviewSessionConfig(title: "Today", keys: dueKeys)
                 }
             }
             if let clip = suggestedClip {
                 planRow(symbol: "play.fill", title: "Watch a clip", subtitle: clip.title, done: watchDone) {
-                    DailyPlanProgress.mark(.watch)
-                    watchDone = true
                     playing = clip
                 }
                 planRow(symbol: "mic.fill", title: "Say a line", subtitle: "Listen, then speak it back", done: speakDone) {
-                    DailyPlanProgress.mark(.speak)
-                    speakDone = true
                     practiceClip = clip
                 }
             }
@@ -345,6 +385,14 @@ struct ExploreHomeView: View {
 
 nonisolated enum SearchRoute: Hashable, Sendable {
     case search
+    case query(String)
+
+    var initialQuery: String {
+        switch self {
+        case .search: ""
+        case .query(let text): text
+        }
+    }
 }
 
 nonisolated enum TopicHub: Hashable, Sendable {
@@ -388,7 +436,7 @@ nonisolated enum LearningPath: String, CaseIterable, Identifiable, Hashable, Sen
         case .listening: "Listening"
         case .culture: "Culture"
         case .jlpt: "JLPT Prep"
-        case .practice: "AI Practice"
+        case .practice: "Speaking Practice"
         }
     }
 
@@ -398,8 +446,8 @@ nonisolated enum LearningPath: String, CaseIterable, Identifiable, Hashable, Sen
         case .grammar: "Build your foundation"
         case .listening: "Hear native Japanese in context"
         case .culture: "Discover Japan’s traditions, life, and people"
-        case .jlpt: "Get exam ready"
-        case .practice: "Chat, speak and get personalized feedback"
+        case .jlpt: "Find real clips by vocabulary level"
+        case .practice: "Repeat clip dialogue and compare what was heard"
         }
     }
 
@@ -555,7 +603,7 @@ struct LearningPathScreen: View {
     private var practiceList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                Text("Listen to a line, say it back, and Jojo scores how close you were.")
+                Text("Listen to a real line, then say it back. Compare the recognized words with the original.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -695,7 +743,7 @@ private struct JLPTPathView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Clips whose words sit at this level.")
+                Text("Clips containing vocabulary tagged at this JLPT level. Other words in the clip may be harder.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

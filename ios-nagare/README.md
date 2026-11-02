@@ -36,6 +36,132 @@ The study feed only plays clips whose transcript was taken from the video (`id` 
 `Tools/generate_seed.py` refreshes the dictionary and debug vocab. It does not rewrite `SeedClips.json`.
 New clips come from `fill-catalog`. Source videos up to two minutes can become complete lessons of up to 120 seconds when the spoken scene is coherent. Longer source videos yield self-contained 8–40 second excerpts. Gemini returns exact source offsets and timed transcripts; the pipeline rejects invalid or incomplete lessons. The app plays the selected lesson in the official YouTube player, with its transcript-relative timestamps, English translation, and tappable vocabulary. It does not download or re-host the video.
 
+## Explore, Vocab, Library, and Profile
+
+Explore leads with word/phrase search and opens matching clips at the relevant sentence.
+Dictionary results open clip examples; the separate audio button speaks the word.
+Grammar requests are cancelled when the selected pattern changes. Search counts and
+empty/offline states follow the active scope.
+
+Vocab searches saved words and can open clip examples for the same query. Its flashcards
+icon differs from Library's books icon. Reviews and early practice use the same queue
+rules as Profile and the dock: due learning cards first; optional early practice is
+labeled Practice; Known words are excluded from automatic queues. Vocab's current filters
+apply to its main practice session. Known words remain available for deliberate deck
+practice. Badges refresh when learning cards become due, including Again cards.
+
+Vocab lists actual familiarity/encounter counts, honors reading settings, supports all
+five JLPT decks, and keeps its illustrative timeline collapsed and clearly labeled.
+Deck creation avoids duplicate channel/topic filters. Audio controls are separate from
+word navigation and Library playback; saved/later shelves can remove their own clips.
+
+Profile shows all five mastery states, describes Known marks accurately, and displays
+the chosen feed content level. It links to Clip Library. Speaking Practice describes
+recognition comparison rather than promising an AI chat. Explore's daily plan marks
+Review after a completed card session, Watch after a finished clip, and Speak after a
+recognized attempt; opening and cancelling those screens does not complete the task.
+
+Native regression tests in JojoTests cover queue eligibility, early practice, scoped
+search, and calendar-day plan separation. Run them on a Mac with Xcode. Verify the
+word-search → clip → saved word → review → Profile flow on a device or simulator,
+including audio-only taps, filters, return navigation, and saved-clip removal.
+
+## Shared subtitles and learning modes
+
+Each clip has one canonical enriched transcript in its existing `lines` JSON: Japanese
+token surfaces, kana readings (furigana is derived on device), romaji, concise English
+word meanings, sentence translations, and validated sentence/word timestamps. The Japanese
+hearing prompt (default version 6) produces these together in one model call.
+Japanese English translations then receive one separate audio-grounded quality review
+during preprocessing, before the shared dataset is stored or published. New Japanese
+clips missing meanings, romaji, or kanji readings are rejected before storage; punctuation
+does not require these fields. Timing repair retains enrichment and falls back to sentence
+highlighting when word timing cannot be trusted.
+
+The player and Profile offer presentation presets, independent of the content level:
+
+| Mode | Furigana | Romaji | English | Word lookup |
+| --- | --- | --- | --- | --- |
+| Beginner | On | On | Always shown | On |
+| Guided Immersion | On | Off | Tap to reveal each sentence | On |
+| Full Immersion | Off | Off | Hidden | On |
+
+Each assistance control can be changed independently; combinations outside a preset show
+as Custom. English cycles through On, Tap, and Hidden. Guided reveals are temporary and
+reset when the sentence, active line, or English setting changes. Full Immersion removes
+mastery/POS decoration while retaining the spoken cursor and optional word taps.
+
+Settings are persisted locally in SwiftData and change rendering immediately without
+fetching subtitles, restarting playback, or invoking AI. The additive preference fields
+preserve existing Japanese-only/English-only settings and reading choices. Previously
+processed clips remain usable via the bundled lexicon and existing shared explanation
+cache; they are not automatically reprocessed. Catalog deduplication and import reuse
+continue sharing previously processed clips across learners.
+
+No database migration or separate subtitle files are needed. To ship, deploy the updated
+`analyze-clip`, `fill-catalog`, `immersion-worker`, and `publish-clip` functions (each bundles the shared
+enrichment code), then build the iOS app in Xcode. A configured `SUBTITLE_PROMPT_VERSION` overrides
+the default. Explanation cache versioning remains separate, so existing word explanations
+are retained.
+
+Validation:
+
+```bash
+npx --yes deno test --allow-env --allow-read --allow-net supabase/functions/_shared
+```
+
+In Xcode, run `JojoTests`, then check the same playing clip across all presets, individual
+toggles, sentence advances/replays, relaunch, small/large text sizes, portrait Shorts, and
+expanded landscape playback.
+
+## Translation quality
+
+Japanese preprocessing makes one hearing/enrichment call and one separate translation
+review call. The reviewer receives the original selected YouTube audio and every indexed
+Japanese line with its proposed English. It checks meaning, standard English grammar,
+negation, tense/aspect, possibility/obligation, passive/causative forms, questions,
+politeness, omitted subjects, and uncertainty. Unsupported dialogue or unclear audio is
+rejected rather than filled in. Short natural replies and idioms remain valid.
+
+Review output may replace English only. It cannot replace Japanese, token meanings,
+timestamps, or line indexes. Every line must be reviewed with explicit positive checks;
+partial, duplicate-index, malformed, or negative reviews block publication. Obvious
+placeholder/agreement defects have additional deterministic checks; these checks alone
+are not a semantic translation test.
+
+A `translationReview` receipt inside the existing lines JSON records review version,
+actual model, and a SHA-256 digest of the source video, excerpt bounds, Japanese tokens,
+timings, and final English. Unchanged reviewed data is reused when published again;
+editing translation-relevant data requires a new review. Learning-mode changes and
+playback make no review calls. No schema migration is needed.
+
+Both passes consume the existing global Gemini usage cap. The review call has a
+45-second timeout and can use `GEMINI_MODEL_TRANSLATION_REVIEW` (defaults to the analysis
+model). Provider failures use the existing bounded retry handling. An unsupported meaning
+is a terminal review failure for that import rather than repeated speculative generation.
+The Korean pipeline keeps its existing behavior. Word-explanation cache versioning is
+independent and unchanged.
+
+Existing clips are not silently rewritten or retrospectively declared accurate. Run this
+read-only audit from `ios-nagare/` against bundled clips or an exported array of catalog
+rows; it makes no model or database requests:
+
+```bash
+npx --yes deno run --allow-read supabase/functions/_shared/translation-audit.ts Jojo/Resources/SeedClips.json
+```
+
+The bundled audit covers 10 clips / 86 lines. All 10 lack the new audio review, and
+`immersion-r34OGOpTOs0-5-45` contains an English fragment ending mid-thought. Its
+Japanese utterance spans three stored lines; correcting the segmentation needs source
+review and care for saved word line indexes. A second flag on
+`immersion-pd-5GK2JdQk-5-45` is a sentence-segmentation warning, not proof of a
+mistranslation. The audit report is in
+`reports/bundled-translation-audit.json`. A successful automated review reduces errors
+but is not human certification; assess real outputs against the audio and bilingual
+reference translations before claiming catalog-wide accuracy. Unit tests use mocked model
+responses to verify the gates, reuse, and failure behavior; they do not measure model
+translation accuracy.
+
 ## Optional local clip overrides
 You can place `Jojo/Resources/Clips/{clip.id}.mp4` to force AVPlayer for a specific clip (useful if
 YouTube embeds fail in a given environment). Leave this empty for normal YouTube playback.
@@ -52,6 +178,23 @@ YouTube video is never re-hosted.
   Live calls are logged locally (`WordExplainService.stats()`: today/total count, average latency).
 
 ## Backend Edge Functions
+
+Production analytics require migration `20261101170000_production_analytics.sql` before
+deploying `analytics-ingest`, `submit-acquisition`, `submit-feedback`, `direct-messages`,
+`report-playback`, `admin-insights`, and `admin-dashboard`. A verified StoreKit app transaction
+labels an App Store install as `production`; simulator, debug, TestFlight, and unavailable
+verification are `test`. The command
+centre counts only production rows. Historical mixed rows remain `legacy` and are excluded
+because their origin cannot be recovered reliably. The new iOS build must reach App Store users
+before their activity appears in the production dashboard. Older builds lack the environment
+header and are classified as test by the server. After deploying, verify the classification and
+production dashboard against a real App Store installation:
+
+```sql
+select environment, count(*) from public.analytics_sessions group by environment;
+select environment, count(*) from public.analytics_events group by environment;
+select public.admin_dashboard_metrics_range(now() - interval '7 days', now());
+```
 
 Run all Supabase CLI commands from the **`ios-nagare/`** directory (not the repo root):
 
@@ -70,7 +213,7 @@ supabase secrets set \
 
 | Name | Required | Purpose |
 |------|----------|---------|
-| `GEMINI_API_KEY` | yes | Only model key. Catalog creation uses one Gemini pass per processed candidate for speech, timing, and learner fields (rejected candidates may still consume that pass); word explanations use Gemini only on a cache miss when requested. Normal feed playback does not call AI. An `sk-or-` value calls Gemini through OpenRouter (Google AI Studio only). Any other value calls Gemini directly. |
+| `GEMINI_API_KEY` | yes | Model key. Catalog creation uses one hearing pass for speech, timing, and learner fields, plus one audio-grounded English review for valid Japanese candidates (rejected candidates can still consume calls); word explanations use Gemini only on a cache miss when requested. Normal feed playback does not call AI. An `sk-or-` value calls Gemini through OpenRouter (Google AI Studio only). Any other value calls Gemini directly. |
 | `YOUTUBE_API_KEY` | yes | YouTube Data API for `youtube-search` |
 | `ADMIN_TOKEN` | yes | Admin functions (`x-admin-token`, compared constant-time) |
 | `REVENUECAT_SECRET_API_KEY` | yes | Entitlement checks for `explain-word` |
@@ -89,7 +232,8 @@ Optional limit / version envs:
 | `GEMINI_GLOBAL_DAILY_CAP` | `2000` | Global Gemini calls / UTC day |
 | `YOUTUBE_QUOTA_DAILY_CAP` | `8000` | YouTube quota units / UTC day |
 | `REVENUECAT_CACHE_TTL_SEC` | `300` | Entitlement cache TTL (positive and negative) |
-| `PROMPT_VERSION` | `3` | Bumped into explanation cache keys |
+| `PROMPT_VERSION` | `4` | Bumped into explanation cache keys |
+| `SUBTITLE_PROMPT_VERSION` | `6` | Subtitle enrichment provenance; independent of explanation caches |
 | `GEMINI_MODEL_EXPLAIN` | `google/gemini-2.5-flash` | Model for word explanations and dictionary enrichment |
 | `GEMINI_MODEL_ANALYZE` | `google/gemini-2.5-flash` | Model for `analyze-clip` and `fill-catalog` |
 | `EXPLAIN_INGRESS_IP_PER_MINUTE` | `60` | Pre-RC per-IP requests / minute |
@@ -176,8 +320,7 @@ The job prefers the level with the fewest published clips and remembers the YouT
   `REVENUECAT_API_KEY` in `Secrets.plist` overrides both when set.
 - For the App Store app, add RevenueCat's In-App Purchase Key (App Store Connect → Users and Access → Integrations)
   and confirm the dashboard shows Valid credentials.
-- Paywall: if a RevenueCat Paywall is published for the `default` offering, the app shows it (RevenueCatUI).
-  Otherwise it shows the built-in Nagare paywall. Both have no close button (hard paywall).
+- Paywall: the annual-first native comparison is canonical. RevenueCat supplies live packages/prices and verified product-specific trial eligibility. A remote template does not automatically replace it; Customer Center remains supported. The paywall remains hard, without a close button.
 - Customer Center: Profile → Manage Subscription opens RevenueCat's Customer Center (cancel, refund, restore).
 - The constants are in `StoreConstants` (`Services/PurchaseManager.swift`).
 - Identity: anonymous `Purchases.shared.appUserID` only. `logIn` is never called. Purchases and restores attach to
@@ -232,3 +375,7 @@ Enable the App Group on both the app and widget App IDs in the Apple Developer p
 - Noto Sans JP is bundled as static Regular/Bold subsets (Latin + kana + CJK unified). Hiragino Sans is the fallback.
 - The SwiftData models are CloudKit-compatible, but CloudKit sync is disabled (`cloudKitDatabase: .none`).
 - Terms / Privacy / Support: `https://socialreporthq.com/jojo/{terms,privacy,support}` (`StoreConstants`). Contact: `support@socialreporthq.com`.
+
+## Current release / simulator handoff
+
+See [HANDOFF-SIMULATOR.md](HANDOFF-SIMULATOR.md) for applied migrations, publication policy, annual-first pricing QA and simulator steps. Display presets alone need no SQL migration; the pipeline/dashboard requires the three migrations listed there, already applied. Existing live clips were retained by explicit user instruction. See the [full source report](reports/catalog-release-2026-11-02.md).

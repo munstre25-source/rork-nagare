@@ -201,6 +201,7 @@ actor InsightsService {
         let token = await SupabaseAuth.shared.existingSession()?.accessToken ?? Secrets.supabaseAnonKey
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(await AnalyticsContext.environment(), forHTTPHeaderField: "x-jojo-environment")
         request.setValue(appUserId, forHTTPHeaderField: "x-app-user-id")
         do {
             if let body {

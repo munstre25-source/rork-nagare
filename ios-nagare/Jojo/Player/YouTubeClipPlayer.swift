@@ -343,6 +343,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         <script>
         var player;
         function post(m){window.webkit.messageHandlers.yt.postMessage(m);}
+        function hideSourceCaptions(){try{if(player&&player.getOptions&&player.unloadModule&&player.getOptions().indexOf('captions')>=0){player.unloadModule('captions');}}catch(e){}}
         function onYouTubeIframeAPIReady(){
           post({e:'api'});
           player=new YT.Player('p',{
@@ -354,8 +355,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
               origin:'\(origin)',widget_referrer:'\(origin)'
             },
             events:{
-              onReady:function(){post({e:'ready'});},
-              onStateChange:function(ev){post({e:'state',v:ev.data});},
+              onReady:function(){hideSourceCaptions();post({e:'ready'});},
+              onStateChange:function(ev){hideSourceCaptions();post({e:'state',v:ev.data});},
+              onApiChange:function(){hideSourceCaptions();},
               onError:function(ev){post({e:'error',v:ev.data});}
             }
           });

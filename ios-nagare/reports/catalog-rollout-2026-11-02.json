@@ -1,0 +1,2554 @@
+{
+  "asOfUTC": "2026-11-02T00:01:25.450035+00:00",
+  "catalogRows": 193,
+  "publishedLessons": 190,
+  "reviewedWholeClips": 100,
+  "reviewedPublishedWholeClips": 98,
+  "qualityBlockedClips": 93,
+  "qualityBlockedPublishedClips": 92,
+  "changedClips": 47,
+  "changedEnglishLines": 126,
+  "changed": [
+    {
+      "id": "immersion-_s7_XETTrU0-78-89",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion--TGoiR4GWCQ-33-48",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-0FJvvV6uGJ0-33-59",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-3__2dFAV_bU-18-42",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-3rGXMj2vGjI-47-60",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-4auggVQ7H8s-0-13",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-4CPiPemG9h0-25-42",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-89",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-alMu3OeXJHk-10-24",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-aSzjC9npiW0-44-56",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-35-51",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-bIusvG8CJ_A-13-22",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-bPqxKdMdXMA-0-19",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-ca0H6E2Ritw-0-30",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-DR-aIuLRg80-36-57",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-eRli8xZeH_A-0-13",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-eWich9B5BnQ-11-28",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-fWjmJVoDEUc-24-44",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-Fysq68xUbFI-0-23",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-hhg7zQYSijk-60-87",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-iHS1jowmzXY-19-41",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-Is7v3JNydkk-2-44",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-jUZY_gpOaQA-50-62",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-kids-aisatsu",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-KsAiA8Ow9zg-32-53",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-kZE9GVEQiKQ-38-47",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-l4VGSWLZCqI-0-13",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-LKV14c88JKI-26-56",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-4-25",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-mn7T-ksVZvk-32-57",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-nSNgOkDFacs-48-66",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-oN4DNLhbzUE-32-42",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-PspjY7iElx4-0-20",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-qyf1ko1juRo-0-14",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-r34OGOpTOs0-5-45",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-rina_LPQ17A-0-11",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-rpm3okWS2j4-9-24",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-Se0hX91JpI8-0-14",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-t5Y5Q0HZbuA-16-30",
+      "changedEnglishLines": 3
+    },
+    {
+      "id": "immersion-u1xEGyinMzY-51-63",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-vHl7ZLRskIY-9-21",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-19-35",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-vtuber-faucet",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-x-Mav4_8LGM-8-22",
+      "changedEnglishLines": 4
+    },
+    {
+      "id": "immersion-ZFcKi6dxHmA-0-39",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-ZoRxlkhH1iA-0-24",
+      "changedEnglishLines": 6
+    }
+  ],
+  "partialRepairs": [
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "request_id": 5972,
+      "http": 200,
+      "status": "applied_partial",
+      "detail": ""
+    }
+  ],
+  "timing": {
+    "checkedOriginalClips": 189,
+    "checkedAdditionalPreFollowupClips": 4,
+    "checkedLines": 1209,
+    "allPreserved": true,
+    "checks": [
+      {
+        "id": "boss-rush-live-09",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "counting-kuma-03",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "harajuku-street-02",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "hoshizora-academy-07",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-_8b_ERSJ6_Q-5-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-_ONDIagmaPE-1-51",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-_s7_XETTrU0-78-89",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion--TGoiR4GWCQ-33-48",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion--trocZ1u204-14-35",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-02Wc9acjA6A-24-40",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-0FJvvV6uGJ0-33-59",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-0jAzZogkBYU-17-48",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-0qITlsOy4LU-0-12",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-1OjuYw8k2Sc-38-55",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-3__2dFAV_bU-18-42",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-3rGXMj2vGjI-47-60",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-4auggVQ7H8s-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-4CPiPemG9h0-25-42",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-5kXOkOpkYJ8-78-90",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-5U8vAa94rFo-28-49",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-5Vz_nVN1PrM-75-89",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-5Vz_nVN1PrM-75-90",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-67G_CfyZHp0-102-116",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-6bAtb5gwX1Y-5-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 15
+      },
+      {
+        "id": "immersion-7dbIWMbxDfg-12-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-7kk3VajdeaM-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-8miK-6nV7Gw-0-32",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-8VFGRv8bfZA-0-34",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-9BZDEidV5LU-12-32",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-9OYewGtGVQw-0-23",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-A3HGH6ZBMNs-25-46",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-AFLDx5Bf63g-0-12",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-aglOdAXsKEQ-6-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-alMu3OeXJHk-10-24",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-AoZugwG4meE-0-17",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-APCLPl0N3p0-52-74",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-aqjddUenT8A-0-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 13
+      },
+      {
+        "id": "immersion-aSzjC9npiW0-44-56",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-au2w4AeWyd8-80-99",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-AUrfD-1sqM8-33-50",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-AUrfD-1sqM8-35-51",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-bIusvG8CJ_A-13-22",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-bjnXO_u8JO8-43-59",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 2
+      },
+      {
+        "id": "immersion-bPqxKdMdXMA-0-19",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-bUG_c_Q2eQs-53-71",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-butabara-steam",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 14
+      },
+      {
+        "id": "immersion-ca0H6E2Ritw-0-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-COb5aAy5CJ0-28-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-COb5aAy5CJ0-28-42",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-cT-o8IXg6CI-0-15",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-CW0juiwikkQ-43-63",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-dcxmIs4colE-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-Dmi0T9qyPJA-30-55",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-dO0rqWQo2Ok-7-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-DR-aIuLRg80-36-57",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-E2xV_3JtBik-15-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-EBvfRfK4U40-0-28",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 12
+      },
+      {
+        "id": "immersion-eihkCy4rlg4-26-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-eRli8xZeH_A-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-eWich9B5BnQ-11-28",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-f1sMviR6foU-7-28",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-flkYw9WQdJU-5-36",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-fN-AnuwRds4-1-12",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-fOfIHF2JjI8-18-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-FsDBrkP_DjA-0-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-FSWrbmRV1JA-0-18",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-fWjmJVoDEUc-24-44",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-Fysq68xUbFI-0-23",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-gFLvb0SIIn0-39-121",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-gHezMlReAH8-0-27",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-gyPaUw_5BLc-50-63",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-h1XUU_Wq9ks-1-21",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-h6ObOK-Xwmc-0-18",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-hDfAn3KfBjk-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-hDfAn3KfBjk-13-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-heb1S4dWKk4-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-hhg7zQYSijk-60-87",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-hIc-kxqq5dA-26-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-HJdyF2rcZb0-0-21",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-hYLf9yxkDBE-4-28",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-iHS1jowmzXY-19-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-Ir35SAOZ5nY-0-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 13
+      },
+      {
+        "id": "immersion-Is7v3JNydkk-2-44",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-iUyX27UkWDs-23-55",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 11
+      },
+      {
+        "id": "immersion-iYjjpFZTAZA-0-32",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-J3XHFIJafkM-81-89",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-J7WIN1G11eI-0-31",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 12
+      },
+      {
+        "id": "immersion-jJrWJqUJ-NM-21-29",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-jUZY_gpOaQA-50-62",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-KDfG1K1IgZc-18-37",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-kE23CnwTzKI-0-35",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-kh_PnQ5mY2Y-0-11",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-Ki8uOm2QNOk-2-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 12
+      },
+      {
+        "id": "immersion-kids-aisatsu",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-kK0WIY5KY8k-43-57",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-komeda-order",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-konbini-sayaka",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-kR8YoH2mOZ8-28-44",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-KsAiA8Ow9zg-32-53",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-kZE9GVEQiKQ-38-47",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-l4VGSWLZCqI-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-LKV14c88JKI-26-56",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-lnd2SjFMJXI-4-25",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-lnd2SjFMJXI-51-76",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-LuADPqD93nM-0-14",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-MblKNliC6uc-15-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-MDtiDGr_-GY-3-17",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-Me5ZmclOAKo-0-25",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 11
+      },
+      {
+        "id": "immersion-mn7T-ksVZvk-32-57",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-mSycuOff7YQ-70-84",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-MvpI0G6ETqA-0-12",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-n9jnD_8JeLc-28-49",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-N9KUoHnewXA-0-13",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-nfmMuGsqK8Q-14-34",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-Njk2kfY4irI-40-54",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-NmnmYrvZdyc-16-53",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-nSNgOkDFacs-48-66",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-o8uPdpOu9BQ-0-20",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-oN4DNLhbzUE-32-42",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-Ovl6nYvihh8-18-36",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-OX1f13PB53E-0-12",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-p_TCfcWsDwE-10-53",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 11
+      },
+      {
+        "id": "immersion-p8FcqzboayU-0-11",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-pd-5GK2JdQk-5-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 17
+      },
+      {
+        "id": "immersion-pI6TGEHnKo4-3-23",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-plZKAqFYcLE-9-23",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-PspjY7iElx4-0-20",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-q89xqLs-eNY-30-50",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-QDGzU8DZjkc-21-34",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-QgQ8_7zSv7s-26-41",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-qmIqft4YtKs-0-16",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-QThN_GUATTY-19-34",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-qyf1ko1juRo-0-14",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 9
+      },
+      {
+        "id": "immersion-QyXHpGahA1I-12-24",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-r34OGOpTOs0-5-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-r7ytNplrDCA-0-17",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-R9NwPxYOxSw-7-35",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 14
+      },
+      {
+        "id": "immersion-r9OpcwiLSLA-0-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-RaLvdToF4fw-23-45",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-rCm8SVKlw7Y-79-89",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-rgC7fyTx1nI-16-43",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-rina_LPQ17A-0-11",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-rKBRaSdM2y0-0-10",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-roZJa9Z6S1I-31-43",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-rpm3okWS2j4-9-24",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-rXF2YFvMxKY-32-58",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-sapLlgWryNI-0-25",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 11
+      },
+      {
+        "id": "immersion-SBOS-_a9QAA-45-58",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-Se0hX91JpI8-0-14",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-SF-EoJkMhBc-0-16",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-swE3eLyJXOM-132-164",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 10
+      },
+      {
+        "id": "immersion-t5Y5Q0HZbuA-16-30",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-u1xEGyinMzY-51-63",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-UFECXYIQfic-59-73",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-uFRyW_SchMY-61-70",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-uL2ABO6yMwM-8-26",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-VBd50awmtxg-59-89",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-VFMFI1yj2wY-0-10",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-VFX9q3P6cw0-0-16",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-vHl7ZLRskIY-9-21",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-VI44EvFkQ7w-18-35",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-VI44EvFkQ7w-19-35",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-VJyFtWJ_36k-61-73",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-vtuber-faucet",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "immersion-Wdw_HjSp7GQ-19-38",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-WkJcGj9R7Fk-38-54",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-WNQCXxF4uFM-11-33",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 18
+      },
+      {
+        "id": "immersion-wZiyL0z-r-g-62-71",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-x-Mav4_8LGM-8-22",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-xoI1Gzd8Yog-1-22",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-y3issC4ELx4-5-32",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-Y7kYPuCduwk-0-21",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 13
+      },
+      {
+        "id": "immersion-yGOkIy78MRM-63-87",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-ykw9D1hq1hc-5-23",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-yLB0JwdA_ek-0-10",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 6
+      },
+      {
+        "id": "immersion-yU72X91jPMI-0-16",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 7
+      },
+      {
+        "id": "immersion-yWy6wBKTicc-8-22",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-Z_leh6MUPHI-72-86",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "immersion-ZFcKi6dxHmA-0-39",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 11
+      },
+      {
+        "id": "immersion-ZoRxlkhH1iA-0-24",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-ZU96He9CmtM-98-117",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 8
+      },
+      {
+        "id": "immersion-zw9pEP67DDA-0-15",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "immersion-ZXeSXMqsSBQ-24-42",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 5
+      },
+      {
+        "id": "kissa-stories-01",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "kitsune-yuki-stream-01",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "konbini-diaries-01",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "neko-cafe-02",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "piyo-picnic-01",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 4
+      },
+      {
+        "id": "quiz-showdown-11",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "ramen-road-trip-03",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "speedrun-commentary-02",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "tsukimi-rin-zatsudan-05",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      },
+      {
+        "id": "words-that-matter-04",
+        "unchangedSourceBoundsJapaneseTokensAndTiming": true,
+        "lineCount": 3
+      }
+    ]
+  },
+  "aiBudget": {
+    "cap_usd": "5",
+    "spent_usd": "3.027092525",
+    "updated_at": "2026-11-02 00:00:42.091454+00"
+  },
+  "functions": [
+    {
+      "slug": "analyze-clip",
+      "version": 56,
+      "status": "ACTIVE",
+      "updated_at": 1793577067341
+    },
+    {
+      "slug": "publish-clip",
+      "version": 46,
+      "status": "ACTIVE",
+      "updated_at": 1793577078513
+    },
+    {
+      "slug": "fill-catalog",
+      "version": 68,
+      "status": "ACTIVE",
+      "updated_at": 1793577070753
+    },
+    {
+      "slug": "immersion-worker",
+      "version": 24,
+      "status": "ACTIVE",
+      "updated_at": 1793577074871
+    },
+    {
+      "slug": "review-catalog",
+      "version": 4,
+      "status": "ACTIVE",
+      "updated_at": 1793577058316
+    },
+    {
+      "slug": "seed-catalog-sources",
+      "version": 2,
+      "status": "ACTIVE",
+      "updated_at": 1793577063880
+    }
+  ],
+  "cron": [
+    {
+      "jobid": 1,
+      "jobname": "fill-jojo-catalog",
+      "schedule": "*/10 * * * *",
+      "active": true
+    },
+    {
+      "jobid": 2,
+      "jobname": "fill-sori-catalog",
+      "schedule": "5-59/10 * * * *",
+      "active": true
+    },
+    {
+      "jobid": 3,
+      "jobname": "immersion-worker",
+      "schedule": "* * * * *",
+      "active": true
+    },
+    {
+      "jobid": 4,
+      "jobname": "analytics-retention",
+      "schedule": "17 3 * * *",
+      "active": true
+    },
+    {
+      "jobid": 5,
+      "jobname": "audit-youtube-embeds",
+      "schedule": "*/30 * * * *",
+      "active": true
+    }
+  ],
+  "channels": {
+    "bachiramylove629": {
+      "handle": "bachiramylove629",
+      "channelId": "UCKmqmuYSDgElkH4QS-7LQ-Q",
+      "title": "bachiRa",
+      "status": "seeded",
+      "eligibleVideos": [
+        "YpB2iCkZ43I",
+        "f2xhkkZCn00",
+        "K2xXD9gFbfc",
+        "G0iVwg22Bqw",
+        "7I2mQd_NXc4"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "7I2mQd_NXc4",
+        "G0iVwg22Bqw",
+        "K2xXD9gFbfc",
+        "YpB2iCkZ43I",
+        "f2xhkkZCn00"
+      ]
+    },
+    "SpeakJapaneseNaturally": {
+      "handle": "SpeakJapaneseNaturally",
+      "channelId": "UCSbH_BPR_AoARW6RDYLlLog",
+      "title": "Speak Japanese Naturally",
+      "status": "seeded",
+      "eligibleVideos": [
+        "dWtDVevOoIk",
+        "gICY0ThO-vo",
+        "gSfVJCCwWYk",
+        "Y3IpqOIN_4E",
+        "jGXiYfMwiIQ"
+      ],
+      "queuedWindows": 1,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "Y3IpqOIN_4E",
+        "dWtDVevOoIk",
+        "gICY0ThO-vo",
+        "gSfVJCCwWYk",
+        "jGXiYfMwiIQ"
+      ]
+    },
+    "JSI55": {
+      "handle": "JSI55",
+      "channelId": "UCLp9rnRAcrFSzsoXsjXYJYA",
+      "title": "Japanese super immersion",
+      "status": "seeded",
+      "eligibleVideos": [
+        "jAAfBZl4ic0",
+        "6xW3XfAaxiw",
+        "7RhWdAiJFOM",
+        "P-91hz5fiH0",
+        "-wMTXj7k7mI"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 2,
+      "liveLessons": 2,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "-wMTXj7k7mI",
+        "6xW3XfAaxiw",
+        "7RhWdAiJFOM",
+        "P-91hz5fiH0",
+        "jAAfBZl4ic0"
+      ]
+    },
+    "TheNihongoNook": {
+      "handle": "TheNihongoNook",
+      "channelId": "UCYGUwnflqHJ3MlCAbaggqSQ",
+      "title": "The Nihongo Nook",
+      "status": "seeded",
+      "eligibleVideos": [
+        "J7yIrrw_TW0",
+        "uP1KdhqIVg4",
+        "UyBMpWNO7uo"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 3,
+      "queuedWindowsCurrent": 3,
+      "queuedVideoIds": [
+        "J7yIrrw_TW0",
+        "UyBMpWNO7uo",
+        "uP1KdhqIVg4"
+      ]
+    },
+    "KanamatopeJapanese": {
+      "handle": "KanamatopeJapanese",
+      "channelId": "UCa_BBcTJHGtE09C9xMQaA-g",
+      "title": "かなまとぺ Kanamatope",
+      "status": "seeded",
+      "eligibleVideos": [
+        "u8cHrSBMTsU",
+        "3OS4MeUIIfI",
+        "m7lyyWOELik",
+        "LCWl09QbxbM",
+        "0CDeCJ0p2Fs"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "0CDeCJ0p2Fs",
+        "3OS4MeUIIfI",
+        "LCWl09QbxbM",
+        "m7lyyWOELik",
+        "u8cHrSBMTsU"
+      ]
+    },
+    "kensanokaeri": {
+      "handle": "kensanokaeri",
+      "channelId": "UCaXIrZ5Ere4lC4cdPE_ujXA",
+      "title": "けんさんおかえり Japanese",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    },
+    "withyuki1030": {
+      "handle": "withyuki1030",
+      "channelId": "UCL1YI9ozHAFRvgjru7vhbqQ",
+      "title": "日本語で話そう with Yuki",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    },
+    "DailyJapanese": {
+      "handle": "DailyJapanese",
+      "channelId": "UCMNVKIaw8hV8ln3dDE5z-hA",
+      "title": "Daily Japanese with Naoko",
+      "status": "seeded",
+      "eligibleVideos": [
+        "RkloecX_1no"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 1,
+      "queuedWindowsCurrent": 2,
+      "queuedVideoIds": [
+        "RkloecX_1no"
+      ]
+    },
+    "SayuriSaying": {
+      "handle": "SayuriSaying",
+      "channelId": "UCqMY-cp1He6IAi1cIz-gX1g",
+      "title": "Sayuri Saying",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    },
+    "the_bitesize_japanese_podcast": {
+      "handle": "the_bitesize_japanese_podcast",
+      "channelId": "UCc8QJqwkWe9RcKYZTY2Ezuw",
+      "title": "Bite Size Japanese",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    },
+    "tokiwa-japanese": {
+      "handle": "tokiwa-japanese",
+      "channelId": "UC_zK6VCNpr4IRCa2qm8r8AA",
+      "title": "tokiwa-japanese",
+      "status": "seeded",
+      "eligibleVideos": [
+        "I5kyivEnB30",
+        "kiAmbHkx8Xk",
+        "UwWnjwJ3o04",
+        "SFhsf8lvRb8",
+        "ZQGTXuLhnMk"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "I5kyivEnB30",
+        "SFhsf8lvRb8",
+        "UwWnjwJ3o04",
+        "ZQGTXuLhnMk",
+        "kiAmbHkx8Xk"
+      ]
+    },
+    "OkkeiJapanese": {
+      "handle": "OkkeiJapanese",
+      "channelId": "UCx1pODtr3fv_WtVKst7mwYQ",
+      "title": "OkkeiJapanese",
+      "status": "seeded",
+      "eligibleVideos": [
+        "ThAiVjlKZNg",
+        "fowKCgLrR8w",
+        "AnUtZdYskUc",
+        "iREzYxu5joE",
+        "xfEeITWighk"
+      ],
+      "queuedWindows": 2,
+      "existingPublishedLessons": 2,
+      "liveLessons": 2,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "AnUtZdYskUc",
+        "ThAiVjlKZNg",
+        "fowKCgLrR8w",
+        "iREzYxu5joE",
+        "xfEeITWighk"
+      ]
+    },
+    "TOHOanimation": {
+      "handle": "TOHOanimation",
+      "channelId": "UC14Yc2Qv92DMuyNRlHvpo2Q",
+      "title": "TOHO animation チャンネル",
+      "status": "seeded",
+      "eligibleVideos": [
+        "CrPuFffCYhc",
+        "sMa5NghESCE",
+        "nG5c4mVxWvI",
+        "ti5HVf4RCh8",
+        "zjnLm8YeDYY"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "CrPuFffCYhc",
+        "nG5c4mVxWvI",
+        "sMa5NghESCE",
+        "ti5HVf4RCh8",
+        "zjnLm8YeDYY"
+      ]
+    },
+    "yuyunihongopodcast": {
+      "handle": "yuyunihongopodcast",
+      "channelId": "UC8dWfySP_cKDMFj6aFfQbFA",
+      "title": "YUYUの日本語Podcast",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 1,
+      "liveLessons": 1,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    },
+    "QuizKnock": {
+      "handle": "QuizKnock",
+      "channelId": "UCQ_MqAw18jFTlBB-f8BP7dw",
+      "title": "QuizKnock",
+      "status": "seeded",
+      "eligibleVideos": [
+        "UEsEycaRXVw",
+        "_CG1XRDBfIE",
+        "vLphol5F_SY",
+        "kE3VlSz_zqI",
+        "mW7gD2r2tJA"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "UEsEycaRXVw",
+        "_CG1XRDBfIE",
+        "kE3VlSz_zqI",
+        "mW7gD2r2tJA",
+        "vLphol5F_SY"
+      ]
+    },
+    "nihongonomori2013": {
+      "handle": "nihongonomori2013",
+      "channelId": "UCVx6RFaEAg46xfAsD2zz16w",
+      "title": "日本語の森",
+      "status": "seeded",
+      "eligibleVideos": [
+        "Jnl42OjIqIE",
+        "NGxJTx3HTMw",
+        "xZAR6rTjrE4",
+        "BN52l0t9ZRI",
+        "t606GhjUZOI"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "BN52l0t9ZRI",
+        "Jnl42OjIqIE",
+        "NGxJTx3HTMw",
+        "t606GhjUZOI",
+        "xZAR6rTjrE4"
+      ]
+    },
+    "japanese_tanakasan": {
+      "handle": "japanese_tanakasan",
+      "channelId": "UCvryaJCRHcTVjOC_DcuYxGg",
+      "title": "Learn Japanese with Tanaka san",
+      "status": "seeded",
+      "eligibleVideos": [
+        "WO0fmdhdxAs",
+        "X_UEE0rh_Bk",
+        "yHAx_QnCVSE",
+        "iZGx_P__g7o",
+        "UC6EC4GxmYA"
+      ],
+      "queuedWindows": 2,
+      "existingPublishedLessons": 2,
+      "liveLessons": 2,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "UC6EC4GxmYA",
+        "WO0fmdhdxAs",
+        "X_UEE0rh_Bk",
+        "iZGx_P__g7o",
+        "yHAx_QnCVSE"
+      ]
+    },
+    "moshimoshi.yusuke": {
+      "handle": "moshimoshi.yusuke",
+      "channelId": "UCcCeJ3pQYFgvfVuMxVRWhoA",
+      "title": "もしもしゆうすけ",
+      "status": "seeded",
+      "eligibleVideos": [
+        "sM0CEIBC4ps",
+        "C3dxnqmYOTQ",
+        "qPlqG8ItBww",
+        "eYobmHuR5y8",
+        "vQnGwQRPgTU"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 4,
+      "queuedWindowsCurrent": 4,
+      "queuedVideoIds": [
+        "C3dxnqmYOTQ",
+        "eYobmHuR5y8",
+        "qPlqG8ItBww",
+        "vQnGwQRPgTU"
+      ]
+    },
+    "PeppaPigJapaneseOfficial": {
+      "handle": "PeppaPigJapaneseOfficial",
+      "channelId": "UCldXjuJ7Qg8wTNktOnVXkGw",
+      "title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "status": "seeded",
+      "eligibleVideos": [
+        "VB_770iNl10",
+        "rf0yeyxGVhI",
+        "7TaUNZ-Qtdw",
+        "rxaioH1kb0o",
+        "wJls4xSXf04"
+      ],
+      "queuedWindows": 1,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "7TaUNZ-Qtdw",
+        "VB_770iNl10",
+        "rf0yeyxGVhI",
+        "rxaioH1kb0o",
+        "wJls4xSXf04"
+      ]
+    },
+    "Bebefinn日本語": {
+      "handle": "Bebefinn日本語",
+      "channelId": "UChU1SYl5xjQT72r3kcfPz0w",
+      "title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "status": "seeded",
+      "eligibleVideos": [
+        "ZQ6e-3lQQu4",
+        "ig28eRQ4zMA",
+        "EY6nN3qZ89A",
+        "UiSw7N_Ho-A",
+        "SjIQqJBcDEE"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "EY6nN3qZ89A",
+        "SjIQqJBcDEE",
+        "UiSw7N_Ho-A",
+        "ZQ6e-3lQQu4",
+        "ig28eRQ4zMA"
+      ]
+    },
+    "BlippiJapanese": {
+      "handle": "BlippiJapanese",
+      "channelId": "UC4o2BenUFOlycRMJ5j0pwoQ",
+      "title": "ブリッピー☆BLIPPI",
+      "status": "seeded",
+      "eligibleVideos": [
+        "7llJyPmqglg",
+        "WrvJl1guK7c",
+        "3uvYpDM3b1M",
+        "ATjZGX5AGQE",
+        "ufsQBZGxqV8"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "3uvYpDM3b1M",
+        "7llJyPmqglg",
+        "ATjZGX5AGQE",
+        "WrvJl1guK7c",
+        "ufsQBZGxqV8"
+      ]
+    },
+    "Akane-JapaneseClass": {
+      "handle": "Akane-JapaneseClass",
+      "channelId": "UCh-GhnQ7qDQmS6Bz3pGc1Mw",
+      "title": "あかね的日本語教室",
+      "status": "seeded",
+      "eligibleVideos": [
+        "vWoGWKtatQ8",
+        "8l13ewnUYlE",
+        "GEPrWa4QCYw",
+        "dcTo5OXezmM",
+        "urgzd_GA6D4"
+      ],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 5,
+      "queuedWindowsCurrent": 5,
+      "queuedVideoIds": [
+        "8l13ewnUYlE",
+        "GEPrWa4QCYw",
+        "dcTo5OXezmM",
+        "urgzd_GA6D4",
+        "vWoGWKtatQ8"
+      ]
+    },
+    "nihongo-no-jikan": {
+      "handle": "nihongo-no-jikan",
+      "channelId": "UCdZHET-9_Comx6UaVTSETiQ",
+      "title": "にほんごのじかん | Japanese Comprehensible Input (CI)",
+      "status": "no_new_eligible_uploads",
+      "eligibleVideos": [],
+      "queuedWindows": 0,
+      "existingPublishedLessons": 0,
+      "liveLessons": 0,
+      "queuedVideos": 0,
+      "queuedWindowsCurrent": 0,
+      "queuedVideoIds": []
+    }
+  },
+  "requestedVideos": [
+    {
+      "videoId": "scLWToOqXzA",
+      "durationSec": 3604,
+      "title": "Let’s Learn Japanese with Minecraft! #1 – Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "Hd6gAtt5BOU",
+      "durationSec": 3646,
+      "title": "Let’s Learn Japanese with Minecraft! #2 – Immersion & Comprehensible Input | The Hunt for Iron",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "TA-tUGtjils",
+      "durationSec": 3768,
+      "title": "Let’s Learn Japanese with Minecraft! #3 – Discovering a New Land | Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "ijzd6W09uB8",
+      "durationSec": 3751,
+      "title": "Let’s Learn Japanese with Minecraft! #4 – Immersion & Comprehensible Input | Building a New Home",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "RIKmx-R987A",
+      "durationSec": 3745,
+      "title": "I Made a Fatal Mistake | Learn Japanese with Minecraft! Ep5",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "e0acNvVwkWI",
+      "durationSec": 3863,
+      "title": "I Found a Massive Cave! | Learn Japanese with Minecraft! Ep6 – Master 670 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "W3Rw3GsVjpo",
+      "durationSec": 3848,
+      "title": "A New Friend Appears! | Learn Japanese with Minecraft! Ep7 – Master 579 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "nX8gk8OLb0U",
+      "durationSec": 3780,
+      "title": "Defending the Village's Love from a Zombie Attack! | Learn Japanese with Minecraft! Ep8",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "NhJJcAiZvFY",
+      "durationSec": 7712,
+      "title": "Learn Japanese with Minecraft! Ep9 | LIVE Cave Exploration",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "FZUIZYEwHp4",
+      "durationSec": 3652,
+      "title": "Learn Japanese with Minecraft! Ep10 | Master 674 Words in a New Adventure",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "a9SBvpregYU",
+      "durationSec": 5214,
+      "title": "Learn Japanese with Minecraft! Ep11 | I Seriously Leveled the Land!!",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    }
+  ],
+  "blockedReviews": [
+    {
+      "id": "boss-rush-live-09",
+      "request_id": 5749,
+      "status": "needs_review",
+      "http": 422,
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "counting-kuma-03",
+      "request_id": 5750,
+      "status": "needs_review",
+      "http": 422,
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "harajuku-street-02",
+      "request_id": 5752,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "hoshizora-academy-07",
+      "request_id": 5753,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion--trocZ1u204-14-35",
+      "request_id": 5973,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-5kXOkOpkYJ8-78-90",
+      "request_id": 5975,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-5U8vAa94rFo-28-49",
+      "request_id": 5974,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-90",
+      "request_id": 5772,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-67G_CfyZHp0-102-116",
+      "request_id": 5978,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-6bAtb5gwX1Y-5-45",
+      "request_id": 5787,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-7dbIWMbxDfg-12-41",
+      "request_id": 5777,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-7kk3VajdeaM-0-13",
+      "request_id": 5977,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-8miK-6nV7Gw-0-32",
+      "request_id": 5981,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[5] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-9OYewGtGVQw-0-23",
+      "request_id": 5979,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-aglOdAXsKEQ-6-30",
+      "request_id": 5980,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-AoZugwG4meE-0-17",
+      "request_id": 5791,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-aqjddUenT8A-0-26",
+      "request_id": 5793,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-au2w4AeWyd8-80-99",
+      "request_id": 5982,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[6] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-33-50",
+      "request_id": 5984,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-butabara-steam",
+      "request_id": 5991,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-41",
+      "request_id": 5989,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-42",
+      "request_id": 5992,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio"
+    },
+    {
+      "id": "immersion-cT-o8IXg6CI-0-15",
+      "request_id": 5808,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-CW0juiwikkQ-43-63",
+      "request_id": 5988,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-dcxmIs4colE-0-13",
+      "request_id": 5990,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-Dmi0T9qyPJA-30-55",
+      "request_id": 5811,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[5] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-eihkCy4rlg4-26-41",
+      "request_id": 5993,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio"
+    },
+    {
+      "id": "immersion-fOfIHF2JjI8-18-30",
+      "request_id": 5995,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-gFLvb0SIIn0-39-121",
+      "request_id": 6045,
+      "status": "needs_review",
+      "http": 422,
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-gyPaUw_5BLc-50-63",
+      "request_id": 5997,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-h1XUU_Wq9ks-1-21",
+      "request_id": 5998,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] translation is a single letter"
+    },
+    {
+      "id": "immersion-h6ObOK-Xwmc-0-18",
+      "request_id": 5832,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-13-30",
+      "request_id": 5999,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-HJdyF2rcZb0-0-21",
+      "request_id": 6002,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "request_id": 6001,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-Ir35SAOZ5nY-0-30",
+      "request_id": 5842,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-iUyX27UkWDs-23-55",
+      "request_id": 6003,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-iYjjpFZTAZA-0-32",
+      "request_id": 6042,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-J3XHFIJafkM-81-89",
+      "request_id": 5845,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-jJrWJqUJ-NM-21-29",
+      "request_id": 5847,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-KDfG1K1IgZc-18-37",
+      "request_id": 5849,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-kh_PnQ5mY2Y-0-11",
+      "request_id": 5859,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-Ki8uOm2QNOk-2-26",
+      "request_id": 6004,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-komeda-order",
+      "request_id": 5856,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-51-76",
+      "request_id": 6007,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-LuADPqD93nM-0-14",
+      "request_id": 6008,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-MDtiDGr_-GY-3-17",
+      "request_id": 6006,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-mSycuOff7YQ-70-84",
+      "request_id": 6009,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-n9jnD_8JeLc-28-49",
+      "request_id": 6010,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-nfmMuGsqK8Q-14-34",
+      "request_id": 5876,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-Njk2kfY4irI-40-54",
+      "request_id": 6013,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-Ovl6nYvihh8-18-36",
+      "request_id": 6011,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "request_id": 5748,
+      "status": "needs_review",
+      "http": 422,
+      "detail": "line[0] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-pI6TGEHnKo4-3-23",
+      "request_id": 6012,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-q89xqLs-eNY-30-50",
+      "request_id": 6014,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-QDGzU8DZjkc-21-34",
+      "request_id": 6015,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-QgQ8_7zSv7s-26-41",
+      "request_id": 6016,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-QThN_GUATTY-19-34",
+      "request_id": 6017,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-QyXHpGahA1I-12-24",
+      "request_id": 6018,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-r7ytNplrDCA-0-17",
+      "request_id": 6022,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-R9NwPxYOxSw-7-35",
+      "request_id": 6019,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[6] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-roZJa9Z6S1I-31-43",
+      "request_id": 6020,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-rXF2YFvMxKY-32-58",
+      "request_id": 6026,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-sapLlgWryNI-0-25",
+      "request_id": 5909,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-SF-EoJkMhBc-0-16",
+      "request_id": 6021,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-swE3eLyJXOM-132-164",
+      "request_id": 5913,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[8] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-uL2ABO6yMwM-8-26",
+      "request_id": 6024,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-VBd50awmtxg-59-89",
+      "request_id": 5931,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-VFMFI1yj2wY-0-10",
+      "request_id": 6023,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-VFX9q3P6cw0-0-16",
+      "request_id": 6025,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-18-35",
+      "request_id": 6027,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-VJyFtWJ_36k-61-73",
+      "request_id": 6028,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-Wdw_HjSp7GQ-19-38",
+      "request_id": 6030,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-WkJcGj9R7Fk-38-54",
+      "request_id": 6029,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-WNQCXxF4uFM-11-33",
+      "request_id": 5932,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-Y7kYPuCduwk-0-21",
+      "request_id": 5937,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-yGOkIy78MRM-63-87",
+      "request_id": 6031,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-ykw9D1hq1hc-5-23",
+      "request_id": 6037,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-yLB0JwdA_ek-0-10",
+      "request_id": 6033,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-yU72X91jPMI-0-16",
+      "request_id": 6034,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] failed sourceMatchesAudio"
+    },
+    {
+      "id": "immersion-yWy6wBKTicc-8-22",
+      "request_id": 5944,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio",
+      "changedTranslations": 0
+    },
+    {
+      "id": "immersion-Z_leh6MUPHI-72-86",
+      "request_id": 6035,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-ZXeSXMqsSBQ-24-42",
+      "request_id": 6038,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "kissa-stories-01",
+      "request_id": 5952,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "kitsune-yuki-stream-01",
+      "request_id": 5953,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "konbini-diaries-01",
+      "request_id": 5954,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "neko-cafe-02",
+      "request_id": 5955,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "piyo-picnic-01",
+      "request_id": 5957,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "quiz-showdown-11",
+      "request_id": 5958,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "ramen-road-trip-03",
+      "request_id": 5964,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "speedrun-commentary-02",
+      "request_id": 5961,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    },
+    {
+      "id": "tsukimi-rin-zatsudan-05",
+      "request_id": 6040,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "words-that-matter-04",
+      "request_id": 5963,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate",
+      "changedTranslations": 0
+    }
+  ],
+  "bundleChanges": [
+    {
+      "id": "immersion-kids-aisatsu",
+      "changedEnglishLines": 5
+    },
+    {
+      "id": "immersion-vtuber-faucet",
+      "changedEnglishLines": 2
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "changedEnglishLines": 1
+    },
+    {
+      "id": "immersion-r34OGOpTOs0-5-45",
+      "changedEnglishLines": 3
+    }
+  ],
+  "tests": "34 passed, 0 failed; all six deployed function entrypoints pass deno check",
+  "publisherPreserved": {
+    "entrypointCommit": "e3f83c0",
+    "entrypointSha256": "952cf34db40dd17c0f0fb94a6dcaa36bd3238f3ba86b9128b5eeab99fa274147",
+    "fourMinuteSourceLimit": true,
+    "sharedTranslationGateDeployed": true
+  },
+  "limitation": "Automated original-audio review is not human certification. Legacy blocked reviews remain published where they were published before; this maintenance did not unpublish catalog rows. Segmentation/transcript changes requiring new indexes or timing were not forced into translation-only repairs."
+}

@@ -255,6 +255,12 @@ async function recordOpenRouterSpend(cost: number): Promise<void> {
   }
 }
 
+/** Protobuf Duration allows at most nine fractional digits; JS sums can exceed that. */
+export function videoOffset(seconds: number): string {
+  if (!Number.isFinite(seconds)) throw new Error("Invalid video offset");
+  return Math.max(0, seconds).toFixed(3).replace(/\.?0+$/, "") + "s";
+}
+
 async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
   const model = modelForTransport(opts.model, false);
   const userParts: Array<Record<string, unknown>> = [];
@@ -265,8 +271,8 @@ async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<Gemin
         mimeType: "video/*",
       },
       videoMetadata: {
-        startOffset: `${Math.max(0, opts.youtube.startSec)}s`,
-        endOffset: `${Math.max(opts.youtube.startSec, opts.youtube.endSec)}s`,
+        startOffset: videoOffset(opts.youtube.startSec),
+        endOffset: videoOffset(Math.max(opts.youtube.startSec, opts.youtube.endSec)),
       },
     });
   }

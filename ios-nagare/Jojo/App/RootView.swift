@@ -62,8 +62,10 @@ struct MainTabView: View {
     /// The badge is a real Vocab notification: cards the learner can review now.
     /// It deliberately survives visiting Vocab and clears only as the cards are rescheduled.
     private var dueVocabNotificationCount: Int {
-        savedWords.reduce(into: 0) { count, word in
-            if word.state != .known, word.dueAt <= Date() {
+        _ = app.reviewAvailabilityRevision
+        let now = Date()
+        return savedWords.reduce(into: 0) { count, word in
+            if word.isDueForReview(at: now) {
                 count += 1
             }
         }
@@ -83,7 +85,7 @@ struct MainTabView: View {
             VocabView()
                 .toolbar(.hidden, for: .tabBar)
                 .background(SystemTabBarHider())
-                .tabItem { Label("Vocab", systemImage: "book") }
+                .tabItem { Label("Vocab", systemImage: "rectangle.stack") }
                 .tag(AppTab.vocab)
 
             ProfileView(onGiveFeedback: { showManualFeedback = true },
@@ -283,7 +285,7 @@ struct JojoDock: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            dockItem(.vocab, title: "Vocab", symbol: "books.vertical", hint: vocabHint) {
+            dockItem(.vocab, title: "Vocab", symbol: "rectangle.stack", hint: vocabHint) {
                 badge
             }
             dockItem(.feed, title: "Feed", symbol: nil, hint: "Watch clips") {

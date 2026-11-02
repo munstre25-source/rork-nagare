@@ -7,9 +7,9 @@ import { tryIncrementGeminiUsage } from "./limits.ts";
 /**
  * Gemini's job: hear the clip and add learner fields in the same pass.
  *
- * Definitions are deliberately NOT asked for. They are fetched per word, on tap,
- * through the shared `word_explanations` cache (explain-word). Dictionary text for
- * every token of every clip multiplied the AI cost per clip and capped library growth.
+ * Japanese learner fields, including short meanings, ride along in the single hearing
+ * pass. All learning modes render the persisted lines without another AI call.
+ * Rich explanations and legacy clips still use explain-word's shared cache on demand.
  */
 export function hearSystem(language: CatalogLanguage): string {
   const name = languageName(language);
@@ -19,18 +19,26 @@ export function hearSystem(language: CatalogLanguage): string {
   const fields = language === "ko"
     ? "reading (Revised Romanization; omit when the surface is plain hangul), romaji, pos, jlpt (\"TOPIK1\"|\"TOPIK2\"|\"TOPIK3\"|\"TOPIK4\"|\"TOPIK5\"|\"TOPIK6\", omit if unknown; never N1–N5)"
     : "reading (hiragana when the surface has kanji; omit when the surface is already kana), romaji, pos, jlpt (\"N5\"|\"N4\"|\"N3\"|\"N2\"|\"N1\", omit if unknown)";
+  const meanings = language === "ja"
+    ? "definitions (one or two short English meanings in this sentence; for particles describe their grammatical role)"
+    : "";
+  const meaningRule = language === "ja"
+    ? "Every tappable token must include definitions with at least one concise English meaning, romaji, and a hiragana reading when its surface contains kanji. Add these in this same hearing pass, never as a separate mode-specific transcript. Do not add ja_definitions."
+    : "Do NOT add definitions, glosses, or meanings for tokens. Do not add ja_definitions.";
   return `You transcribe a short ${name} YouTube video segment for language learners.
-Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number, ${fields}, "tappable": boolean, "baseForm": string (dictionary form, for conjugated stems), "baseReading": string, "baseRomaji": string } ] } ] }.
+Return a single JSON object: { "lines": [ { "translation": string (English), "start": number, "end": number, "tokens": [ { "surface": string, "start": number, "end": number, ${fields}${meanings ? `, ${meanings}` : ""}, "tappable": boolean, "baseForm": string (dictionary form, for conjugated stems), "baseReading": string, "baseRomaji": string } ] } ] }.
 Rules:
 - Transcribe speech you can actually hear. Do not invent dialogue.
-- Make each line a complete spoken thought where the audio permits. Keep a dependent clause with the words that finish it instead of splitting at a pause, particle, or conjunction. Short standalone replies and interjections are fine.
-- Translate each whole line into natural, grammatical English using the surrounding conversation for context. Preserve the speaker's meaning, tense, politeness, and uncertainty; supply ordinary English pronouns or articles when needed. Do not produce word-by-word glosses or untranslated Japanese text in the English field. Romanize spoken names when needed.
+- Each line is one short spoken phrase with its own English translation directly underneath in the player. Split a long turn at natural clause or sentence boundaries so the learner does not have to read several wrapped Japanese rows before seeing any English. Aim for roughly 2–6 seconds and at most one concise thought per line. Never split at a particle or in the middle of a word; keep a dependent phrase with the words needed to make its meaning clear. Short standalone replies and interjections are fine.
+- Translate only the Japanese speech in that line into natural, grammatical English using the surrounding conversation for context. Do not combine the translations of multiple lines into the final line or repeat the whole turn in every line. Preserve meaning, tense, politeness, and uncertainty; supply ordinary English pronouns or articles when needed. Do not produce word-by-word glosses or untranslated Japanese text in the English field. Romanize spoken names when needed.
+- Preserve Japanese negation, tense/aspect, possibility versus obligation, passive/causative forms, conditions, questions, and register. Resolve omitted subjects from audible conversation only. Do not invent identities, gender, relationships, or events from a plausible story; prefer neutral phrasing when faithful.
+- Use standard English subject-verb agreement, articles, prepositions, word order, contractions, and punctuation. Translate idioms and brief replies naturally; do not translate by concatenating token meanings.
 - Do not fill gaps in unclear audio by guessing. If a line cannot be transcribed and translated faithfully, omit it. Before returning, reread every English line for meaning, grammar, and completeness.
 - Timestamps are absolute seconds within the given segment window; strictly increasing; each token within its line; each line within [startSec, endSec].
 - Tokenize into learner-friendly units, with particles as their own tokens. Punctuation may be its own token and is tappable=false.
 - ${script}
 - Set tappable true for real words and false for punctuation and filler sounds.
-- Do NOT add definitions, glosses, or meanings for tokens. Do not add ja_definitions.
+- ${meaningRule}
 - No markdown.`;
 }
 
@@ -48,9 +56,9 @@ export function hearSystemCatalog(language: CatalogLanguage, maxClipSec = 40, pr
 }
 
 /**
- * Legacy per-token dictionary enrichment. Ingest no longer calls it: definitions are
- * fetched on tap through explain-word's shared cache instead. Kept for manual repair
- * jobs that need to backfill dictionary fields onto already-heard lines.
+ * Legacy second-pass enrichment, retained for explicit repair jobs only.
+ * New Japanese clips include concise meanings in the hearing pass; older clips
+ * can still resolve missing meanings through the local lexicon and shared lookup cache.
  */
 export async function enrichHeardLines(
   lines: unknown,

@@ -26,16 +26,17 @@ struct TranscriptLineView: View {
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
 
-    private var subtitleMode: SubtitleMode {
-        forceDenseAids && !respectsProfileDisplay ? .both : app.profile.subtitles
+    @State private var translationRevealed = false
+
+    private var display: SubtitleDisplaySettings {
+        if forceDenseAids && !respectsProfileDisplay { return LearningMode.beginner.display }
+        return app.profile.subtitleDisplay
     }
-    private var showFurigana: Bool { (forceDenseAids && !respectsProfileDisplay) || app.profile.showFurigana }
-    private var showRomaji: Bool { (forceDenseAids && !respectsProfileDisplay) || app.profile.showRomaji }
 
     var body: some View {
         if let line = clip.lines[safe: lineIndex] {
             VStack(alignment: .leading, spacing: forceDenseAids ? Spacing.s : Spacing.m) {
-                if subtitleMode.showsJapanese {
+                if display.japanese {
                     FlowLayout(spacing: 2, lineSpacing: forceDenseAids ? 10 : 12) {
                         ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
                             TokenView(
@@ -46,8 +47,10 @@ struct TranscriptLineView: View {
                                 highlight: highlightSurface.map { matches(token, $0) } ?? false,
                                 pulse: isPulsing && pulseTokenIndex == index,
                                 tooltip: pulseTokenIndex == index ? tooltip : nil,
-                                showFurigana: showFurigana,
-                                showRomaji: showRomaji,
+                                showFurigana: display.furigana,
+                                showRomaji: display.romaji,
+                                tapEnabled: display.tapWords,
+                                minimalStyling: display.minimalJapanese,
                                 onTap: {
                                     withAnimation(Motion.popupSpring) {
                                         lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
@@ -57,14 +60,31 @@ struct TranscriptLineView: View {
                         }
                     }
                 }
-                if showsTranslation && subtitleMode.showsEnglish {
-                    Text(line.translation)
-                        .font(forceDenseAids || raisedCard ? Font.subheadline : Font.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(LearningInk.english)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                if showsTranslation && !line.translation.isEmpty && display.english != .hidden {
+                    if display.english == .shown || translationRevealed {
+                        Text(line.translation)
+                            .font(forceDenseAids || raisedCard ? Font.subheadline : Font.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(LearningInk.english)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if display.english == .onTap {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) { translationRevealed.toggle() }
+                        } label: {
+                            Label(translationRevealed ? "Hide English" : "Show English",
+                                  systemImage: translationRevealed ? "eye.slash" : "eye")
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .frame(minHeight: 44)
+                                .background(Color.primary.opacity(0.07), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Reveals the stored translation for this sentence")
+                    }
                 }
                 if showsLineTools {
                     HStack(spacing: 8) {
@@ -135,6 +155,10 @@ struct TranscriptLineView: View {
             }
             .opacity(isActive ? 1 : 0.82)
             .animation(.easeOut(duration: 0.2), value: isActive)
+            .onChange(of: isActive) { _, _ in translationRevealed = false }
+            .onChange(of: display.english) { _, _ in translationRevealed = false }
+            .onChange(of: line) { _, _ in translationRevealed = false }
+            .onChange(of: "\(clip.id):\(lineIndex)") { _, _ in translationRevealed = false }
         }
     }
 

@@ -1,0 +1,3421 @@
+{
+  "asOfNairobi": "2026-11-02T08:00:27.791413+03:00",
+  "live": 191,
+  "policyPassedLive": 64,
+  "legacyNeedsReviewLive": 127,
+  "queuedSourceVideos": 50,
+  "queuedWindows": 51,
+  "aiBudget": {
+    "cap_usd": 5,
+    "spent_usd": 4.715961575
+  },
+  "policyVersion": 3,
+  "existingPublicationFlagsChanged": false,
+  "userDecision": "Keep existing live clips unchanged. No legacy hold/unpublish authorized.",
+  "timing": {
+    "checkedClips": 193,
+    "checkedLines": 1209,
+    "allPreserved": true,
+    "checks": [
+      {
+        "id": "boss-rush-live-09",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "counting-kuma-03",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "harajuku-street-02",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "hoshizora-academy-07",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-_8b_ERSJ6_Q-5-45",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-_ONDIagmaPE-1-51",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-_s7_XETTrU0-78-89",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion--TGoiR4GWCQ-33-48",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion--trocZ1u204-14-35",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-02Wc9acjA6A-24-40",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-0FJvvV6uGJ0-33-59",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-0jAzZogkBYU-17-48",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-0qITlsOy4LU-0-12",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-1OjuYw8k2Sc-38-55",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-3__2dFAV_bU-18-42",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-3rGXMj2vGjI-47-60",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-4auggVQ7H8s-0-13",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-4CPiPemG9h0-25-42",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-5kXOkOpkYJ8-78-90",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-5U8vAa94rFo-28-49",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-5Vz_nVN1PrM-75-89",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-5Vz_nVN1PrM-75-90",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-67G_CfyZHp0-102-116",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-6bAtb5gwX1Y-5-45",
+        "lines": 15,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-7dbIWMbxDfg-12-41",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-7kk3VajdeaM-0-13",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-8miK-6nV7Gw-0-32",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-8VFGRv8bfZA-0-34",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-9BZDEidV5LU-12-32",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-9OYewGtGVQw-0-23",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-A3HGH6ZBMNs-25-46",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-AFLDx5Bf63g-0-12",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-aglOdAXsKEQ-6-30",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-alMu3OeXJHk-10-24",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-AoZugwG4meE-0-17",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-APCLPl0N3p0-52-74",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-aqjddUenT8A-0-26",
+        "lines": 13,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-aSzjC9npiW0-44-56",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-au2w4AeWyd8-80-99",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-AUrfD-1sqM8-33-50",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-AUrfD-1sqM8-35-51",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-bIusvG8CJ_A-13-22",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-bjnXO_u8JO8-43-59",
+        "lines": 2,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-bPqxKdMdXMA-0-19",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-bUG_c_Q2eQs-53-71",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-butabara-steam",
+        "lines": 14,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ca0H6E2Ritw-0-30",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-COb5aAy5CJ0-28-41",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-COb5aAy5CJ0-28-42",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-cT-o8IXg6CI-0-15",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-CW0juiwikkQ-43-63",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-dcxmIs4colE-0-13",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Dmi0T9qyPJA-30-55",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-dO0rqWQo2Ok-7-26",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-DR-aIuLRg80-36-57",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-E2xV_3JtBik-15-41",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-EBvfRfK4U40-0-28",
+        "lines": 12,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-eihkCy4rlg4-26-41",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-eRli8xZeH_A-0-13",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-eWich9B5BnQ-11-28",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-f1sMviR6foU-7-28",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-flkYw9WQdJU-5-36",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-fN-AnuwRds4-1-12",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-fOfIHF2JjI8-18-30",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-FsDBrkP_DjA-0-26",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-FSWrbmRV1JA-0-18",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-fWjmJVoDEUc-24-44",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Fysq68xUbFI-0-23",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-gFLvb0SIIn0-39-121",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-gHezMlReAH8-0-27",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-gyPaUw_5BLc-50-63",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-h1XUU_Wq9ks-1-21",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-h6ObOK-Xwmc-0-18",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-hDfAn3KfBjk-0-13",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-hDfAn3KfBjk-13-30",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-heb1S4dWKk4-0-13",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-hhg7zQYSijk-60-87",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-hIc-kxqq5dA-26-45",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-HJdyF2rcZb0-0-21",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-hYLf9yxkDBE-4-28",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-iHS1jowmzXY-19-41",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Ir35SAOZ5nY-0-30",
+        "lines": 13,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Is7v3JNydkk-2-44",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-iUyX27UkWDs-23-55",
+        "lines": 11,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-iYjjpFZTAZA-0-32",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-J3XHFIJafkM-81-89",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-J7WIN1G11eI-0-31",
+        "lines": 12,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-jJrWJqUJ-NM-21-29",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-jUZY_gpOaQA-50-62",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-KDfG1K1IgZc-18-37",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kE23CnwTzKI-0-35",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kh_PnQ5mY2Y-0-11",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Ki8uOm2QNOk-2-26",
+        "lines": 12,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kids-aisatsu",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kK0WIY5KY8k-43-57",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-komeda-order",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-konbini-sayaka",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kR8YoH2mOZ8-28-44",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-KsAiA8Ow9zg-32-53",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-kZE9GVEQiKQ-38-47",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-l4VGSWLZCqI-0-13",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-LKV14c88JKI-26-56",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-lnd2SjFMJXI-4-25",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-lnd2SjFMJXI-51-76",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-LuADPqD93nM-0-14",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-MblKNliC6uc-15-45",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-MDtiDGr_-GY-3-17",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Me5ZmclOAKo-0-25",
+        "lines": 11,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-mn7T-ksVZvk-32-57",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-mSycuOff7YQ-70-84",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-MvpI0G6ETqA-0-12",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-n9jnD_8JeLc-28-49",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-N9KUoHnewXA-0-13",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-nfmMuGsqK8Q-14-34",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Njk2kfY4irI-40-54",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-NmnmYrvZdyc-16-53",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-nSNgOkDFacs-48-66",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-o8uPdpOu9BQ-0-20",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-oN4DNLhbzUE-32-42",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Ovl6nYvihh8-18-36",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-OX1f13PB53E-0-12",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-p_TCfcWsDwE-10-53",
+        "lines": 11,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-p8FcqzboayU-0-11",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-pd-5GK2JdQk-5-45",
+        "lines": 17,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-pI6TGEHnKo4-3-23",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-plZKAqFYcLE-9-23",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-PspjY7iElx4-0-20",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-q89xqLs-eNY-30-50",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-QDGzU8DZjkc-21-34",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-QgQ8_7zSv7s-26-41",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-qmIqft4YtKs-0-16",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-QThN_GUATTY-19-34",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-qyf1ko1juRo-0-14",
+        "lines": 9,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-QyXHpGahA1I-12-24",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-r34OGOpTOs0-5-45",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-r7ytNplrDCA-0-17",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-R9NwPxYOxSw-7-35",
+        "lines": 14,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-r9OpcwiLSLA-0-26",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-RaLvdToF4fw-23-45",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rCm8SVKlw7Y-79-89",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rgC7fyTx1nI-16-43",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rina_LPQ17A-0-11",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rKBRaSdM2y0-0-10",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-roZJa9Z6S1I-31-43",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rpm3okWS2j4-9-24",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-rXF2YFvMxKY-32-58",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-sapLlgWryNI-0-25",
+        "lines": 11,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-SBOS-_a9QAA-45-58",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Se0hX91JpI8-0-14",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-SF-EoJkMhBc-0-16",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-swE3eLyJXOM-132-164",
+        "lines": 10,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-t5Y5Q0HZbuA-16-30",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-u1xEGyinMzY-51-63",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-UFECXYIQfic-59-73",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-uFRyW_SchMY-61-70",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-uL2ABO6yMwM-8-26",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VBd50awmtxg-59-89",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VFMFI1yj2wY-0-10",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VFX9q3P6cw0-0-16",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-vHl7ZLRskIY-9-21",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VI44EvFkQ7w-18-35",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VI44EvFkQ7w-19-35",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-VJyFtWJ_36k-61-73",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-vtuber-faucet",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Wdw_HjSp7GQ-19-38",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-WkJcGj9R7Fk-38-54",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-WNQCXxF4uFM-11-33",
+        "lines": 18,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-wZiyL0z-r-g-62-71",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-x-Mav4_8LGM-8-22",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-xoI1Gzd8Yog-1-22",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-y3issC4ELx4-5-32",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Y7kYPuCduwk-0-21",
+        "lines": 13,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-yGOkIy78MRM-63-87",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ykw9D1hq1hc-5-23",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-yLB0JwdA_ek-0-10",
+        "lines": 6,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-yU72X91jPMI-0-16",
+        "lines": 7,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-yWy6wBKTicc-8-22",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-Z_leh6MUPHI-72-86",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ZFcKi6dxHmA-0-39",
+        "lines": 11,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ZoRxlkhH1iA-0-24",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ZU96He9CmtM-98-117",
+        "lines": 8,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-zw9pEP67DDA-0-15",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "immersion-ZXeSXMqsSBQ-24-42",
+        "lines": 5,
+        "unchanged": true
+      },
+      {
+        "id": "kissa-stories-01",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "kitsune-yuki-stream-01",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "konbini-diaries-01",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "neko-cafe-02",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "piyo-picnic-01",
+        "lines": 4,
+        "unchanged": true
+      },
+      {
+        "id": "quiz-showdown-11",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "ramen-road-trip-03",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "speedrun-commentary-02",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "tsukimi-rin-zatsudan-05",
+        "lines": 3,
+        "unchanged": true
+      },
+      {
+        "id": "words-that-matter-04",
+        "lines": 3,
+        "unchanged": true
+      }
+    ]
+  },
+  "changedEnglishClips": 58,
+  "changedEnglishLines": 149,
+  "channels": {
+    "japanese_tanakasan": {
+      "live": 2,
+      "title": "Learn Japanese with Tanaka san",
+      "handle": "japanese_tanakasan",
+      "verified": 0,
+      "channel_id": "UCvryaJCRHcTVjOC_DcuYxGg",
+      "checked_at": "2026-11-02T00:14:32.242797+00:00",
+      "queued_videos": 3,
+      "queued_windows": 3,
+      "discovery_status": "seeded"
+    },
+    "OkkeiJapanese": {
+      "live": 2,
+      "title": "OkkeiJapanese",
+      "handle": "OkkeiJapanese",
+      "verified": 0,
+      "channel_id": "UCx1pODtr3fv_WtVKst7mwYQ",
+      "checked_at": "2026-11-02T00:14:28.259947+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "seeded"
+    },
+    "JSI55": {
+      "live": 2,
+      "title": "Japanese super immersion",
+      "handle": "JSI55",
+      "verified": 1,
+      "channel_id": "UCLp9rnRAcrFSzsoXsjXYJYA",
+      "checked_at": "2026-11-02T00:14:20.394161+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    "Akane-JapaneseClass": {
+      "live": 1,
+      "title": "あかね的日本語教室",
+      "handle": "Akane-JapaneseClass",
+      "verified": 1,
+      "channel_id": "UCh-GhnQ7qDQmS6Bz3pGc1Mw",
+      "checked_at": "2026-11-02T00:14:36.55136+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "seeded"
+    },
+    "yuyunihongopodcast": {
+      "live": 1,
+      "title": "YUYUの日本語Podcast",
+      "handle": "yuyunihongopodcast",
+      "verified": 0,
+      "channel_id": "UC8dWfySP_cKDMFj6aFfQbFA",
+      "checked_at": "2026-11-02T00:14:29.762594+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "bachiramylove629": {
+      "live": 0,
+      "title": "bachiRa",
+      "handle": "bachiramylove629",
+      "verified": 0,
+      "channel_id": "UCKmqmuYSDgElkH4QS-7LQ-Q",
+      "checked_at": "2026-11-02T00:14:18.708707+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "QuizKnock": {
+      "live": 0,
+      "title": "QuizKnock",
+      "handle": "QuizKnock",
+      "verified": 0,
+      "channel_id": "UCQ_MqAw18jFTlBB-f8BP7dw",
+      "checked_at": "2026-11-02T00:14:30.530881+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "TOHOanimation": {
+      "live": 0,
+      "title": "TOHO animation チャンネル",
+      "handle": "TOHOanimation",
+      "verified": 0,
+      "channel_id": "UC14Yc2Qv92DMuyNRlHvpo2Q",
+      "checked_at": "2026-11-02T00:14:29.010972+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "tokiwa-japanese": {
+      "live": 0,
+      "title": "tokiwa-japanese",
+      "handle": "tokiwa-japanese",
+      "verified": 0,
+      "channel_id": "UC_zK6VCNpr4IRCa2qm8r8AA",
+      "checked_at": "2026-11-02T00:14:27.366851+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "KanamatopeJapanese": {
+      "live": 0,
+      "title": "かなまとぺ Kanamatope",
+      "handle": "KanamatopeJapanese",
+      "verified": 0,
+      "channel_id": "UCa_BBcTJHGtE09C9xMQaA-g",
+      "checked_at": "2026-11-02T00:14:22.352985+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "BlippiJapanese": {
+      "live": 0,
+      "title": "ブリッピー☆BLIPPI",
+      "handle": "BlippiJapanese",
+      "verified": 0,
+      "channel_id": "UC4o2BenUFOlycRMJ5j0pwoQ",
+      "checked_at": "2026-11-02T00:14:35.796327+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "PeppaPigJapaneseOfficial": {
+      "live": 0,
+      "title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "handle": "PeppaPigJapaneseOfficial",
+      "verified": 0,
+      "channel_id": "UCldXjuJ7Qg8wTNktOnVXkGw",
+      "checked_at": "2026-11-02T00:14:33.915074+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "Bebefinn日本語": {
+      "live": 0,
+      "title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "handle": "Bebefinn日本語",
+      "verified": 0,
+      "channel_id": "UChU1SYl5xjQT72r3kcfPz0w",
+      "checked_at": "2026-11-02T00:14:34.892748+00:00",
+      "queued_videos": 5,
+      "queued_windows": 5,
+      "discovery_status": "seeded"
+    },
+    "SpeakJapaneseNaturally": {
+      "live": 0,
+      "title": "Speak Japanese Naturally",
+      "handle": "SpeakJapaneseNaturally",
+      "verified": 0,
+      "channel_id": "UCSbH_BPR_AoARW6RDYLlLog",
+      "checked_at": "2026-11-02T00:14:19.613557+00:00",
+      "queued_videos": 3,
+      "queued_windows": 3,
+      "discovery_status": "seeded"
+    },
+    "DailyJapanese": {
+      "live": 0,
+      "title": "Daily Japanese with Naoko",
+      "handle": "DailyJapanese",
+      "verified": 0,
+      "channel_id": "UCMNVKIaw8hV8ln3dDE5z-hA",
+      "checked_at": "2026-11-02T00:14:24.621935+00:00",
+      "queued_videos": 1,
+      "queued_windows": 2,
+      "discovery_status": "seeded"
+    },
+    "TheNihongoNook": {
+      "live": 0,
+      "title": "The Nihongo Nook",
+      "handle": "TheNihongoNook",
+      "verified": 0,
+      "channel_id": "UCYGUwnflqHJ3MlCAbaggqSQ",
+      "checked_at": "2026-11-02T00:14:21.406688+00:00",
+      "queued_videos": 1,
+      "queued_windows": 1,
+      "discovery_status": "seeded"
+    },
+    "the_bitesize_japanese_podcast": {
+      "live": 0,
+      "title": "Bite Size Japanese",
+      "handle": "the_bitesize_japanese_podcast",
+      "verified": 0,
+      "channel_id": "UCc8QJqwkWe9RcKYZTY2Ezuw",
+      "checked_at": "2026-11-02T00:14:26.432182+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "SayuriSaying": {
+      "live": 0,
+      "title": "Sayuri Saying",
+      "handle": "SayuriSaying",
+      "verified": 0,
+      "channel_id": "UCqMY-cp1He6IAi1cIz-gX1g",
+      "checked_at": "2026-11-02T00:14:25.519343+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "kensanokaeri": {
+      "live": 0,
+      "title": "けんさんおかえり Japanese",
+      "handle": "kensanokaeri",
+      "verified": 0,
+      "channel_id": "UCaXIrZ5Ere4lC4cdPE_ujXA",
+      "checked_at": "2026-11-02T00:14:23.10168+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "nihongo-no-jikan": {
+      "live": 0,
+      "title": "にほんごのじかん | Japanese Comprehensible Input (CI)",
+      "handle": "nihongo-no-jikan",
+      "verified": 0,
+      "channel_id": "UCdZHET-9_Comx6UaVTSETiQ",
+      "checked_at": "2026-11-02T00:14:37.370477+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "moshimoshi.yusuke": {
+      "live": 0,
+      "title": "もしもしゆうすけ",
+      "handle": "moshimoshi.yusuke",
+      "verified": 0,
+      "channel_id": "UCcCeJ3pQYFgvfVuMxVRWhoA",
+      "checked_at": "2026-11-02T00:14:33.147809+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    },
+    "withyuki1030": {
+      "live": 0,
+      "title": "日本語で話そう with Yuki",
+      "handle": "withyuki1030",
+      "verified": 0,
+      "channel_id": "UCL1YI9ozHAFRvgjru7vhbqQ",
+      "checked_at": "2026-11-02T00:14:23.86409+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "no_new_eligible_uploads"
+    },
+    "nihongonomori2013": {
+      "live": 0,
+      "title": "日本語の森",
+      "handle": "nihongonomori2013",
+      "verified": 0,
+      "channel_id": "UCVx6RFaEAg46xfAsD2zz16w",
+      "checked_at": "2026-11-02T00:14:31.475817+00:00",
+      "queued_videos": 0,
+      "queued_windows": 0,
+      "discovery_status": "seeded"
+    }
+  },
+  "requestedVideos": [
+    {
+      "videoId": "scLWToOqXzA",
+      "durationSec": 3604,
+      "title": "Let’s Learn Japanese with Minecraft! #1 – Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "Hd6gAtt5BOU",
+      "durationSec": 3646,
+      "title": "Let’s Learn Japanese with Minecraft! #2 – Immersion & Comprehensible Input | The Hunt for Iron",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "TA-tUGtjils",
+      "durationSec": 3768,
+      "title": "Let’s Learn Japanese with Minecraft! #3 – Discovering a New Land | Immersion & Comprehensible Input",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "ijzd6W09uB8",
+      "durationSec": 3751,
+      "title": "Let’s Learn Japanese with Minecraft! #4 – Immersion & Comprehensible Input | Building a New Home",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "RIKmx-R987A",
+      "durationSec": 3745,
+      "title": "I Made a Fatal Mistake | Learn Japanese with Minecraft! Ep5",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "e0acNvVwkWI",
+      "durationSec": 3863,
+      "title": "I Found a Massive Cave! | Learn Japanese with Minecraft! Ep6 – Master 670 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "W3Rw3GsVjpo",
+      "durationSec": 3848,
+      "title": "A New Friend Appears! | Learn Japanese with Minecraft! Ep7 – Master 579 Words Along the Way",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "nX8gk8OLb0U",
+      "durationSec": 3780,
+      "title": "Defending the Village's Love from a Zombie Attack! | Learn Japanese with Minecraft! Ep8",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "NhJJcAiZvFY",
+      "durationSec": 7712,
+      "title": "Learn Japanese with Minecraft! Ep9 | LIVE Cave Exploration",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "FZUIZYEwHp4",
+      "durationSec": 3652,
+      "title": "Learn Japanese with Minecraft! Ep10 | Master 674 Words in a New Adventure",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    },
+    {
+      "videoId": "a9SBvpregYU",
+      "durationSec": 5214,
+      "title": "Learn Japanese with Minecraft! Ep11 | I Seriously Leveled the Land!!",
+      "public": true,
+      "embeddable": true,
+      "status": "deferred_source_over_4_minutes"
+    }
+  ],
+  "queuedSources": [
+    {
+      "video_id": "7I2mQd_NXc4",
+      "title": "SUKUNA MANGA ANiMATION IN COLOR",
+      "channel_title": "bachiRa",
+      "duration_sec": "56",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:34.478+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "f2xhkkZCn00",
+      "title": "Gojo vs Toji Fushiguro edit #shorts #animeedit #jujutsukaisen #gojosatoruedit",
+      "channel_title": "bachiRa",
+      "duration_sec": "12",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:34.478+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "G0iVwg22Bqw",
+      "title": "Sukuna jujutsu kaisen[AMV//edit] [4k full HD]",
+      "channel_title": "bachiRa",
+      "duration_sec": "26",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:34.478+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "K2xXD9gFbfc",
+      "title": "Stand proud sukuna you are strong 💪 #shorts #jujutsukaisen #gojo #fypシ",
+      "channel_title": "bachiRa",
+      "duration_sec": "18",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:34.478+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "YpB2iCkZ43I",
+      "title": "Your name edit #shorts #beautiful #animeedit #fypシ #yourname",
+      "channel_title": "bachiRa",
+      "duration_sec": "12",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:34.478+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "RkloecX_1no",
+      "title": "Let's memorize Japanese counters with the song:)/ learning Japanese song /日本語の助数詞を歌で覚えよう♪",
+      "channel_title": "Daily Japanese with Naoko",
+      "duration_sec": "170",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.711+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "RkloecX_1no",
+      "title": "Let's memorize Japanese counters with the song:)/ learning Japanese song /日本語の助数詞を歌で覚えよう♪",
+      "channel_title": "Daily Japanese with Naoko",
+      "duration_sec": "170",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.711+00",
+      "window_start_sec": 90
+    },
+    {
+      "video_id": "iZGx_P__g7o",
+      "title": "Fun Japanese Word: 花金 (hanakin) “Flower Friday”?! #japanese #japaneseword #tanakasan",
+      "channel_title": "Learn Japanese with Tanaka san",
+      "duration_sec": "43",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:54:22.895+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "UC6EC4GxmYA",
+      "title": "Japanese Idiom: へそを曲げる (hesowo mageru) “Bend the belly button”?! #shorts #japanese",
+      "channel_title": "Learn Japanese with Tanaka san",
+      "duration_sec": "45",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:54:22.895+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "WO0fmdhdxAs",
+      "title": "Take a Screenshot! Who is Your Friend for Today? #japanese #onomatopoeia",
+      "channel_title": "Learn Japanese with Tanaka san",
+      "duration_sec": "12",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.368+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "iREzYxu5joE",
+      "title": "The Way Okinawa People Speak",
+      "channel_title": "OkkeiJapanese",
+      "duration_sec": "30",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:54:22.806+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "_CG1XRDBfIE",
+      "title": "相方が答えろ！二人羽織クイズ！ #Shorts",
+      "channel_title": "QuizKnock",
+      "duration_sec": "40",
+      "category": "variety",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:35.147+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "kE3VlSz_zqI",
+      "title": "【8ゲーム】条件を増やしながら8まで数えろ！⑧ #Shorts",
+      "channel_title": "QuizKnock",
+      "duration_sec": "44",
+      "category": "variety",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:35.147+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "mW7gD2r2tJA",
+      "title": "🌀ざっくりした歌詞から察するクイズ #Shorts",
+      "channel_title": "QuizKnock",
+      "duration_sec": "44",
+      "category": "variety",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:35.147+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "UEsEycaRXVw",
+      "title": "【ベン図】当てはまる都道府県を答えろ #Shorts",
+      "channel_title": "QuizKnock",
+      "duration_sec": "34",
+      "category": "variety",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:35.147+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "vLphol5F_SY",
+      "title": "【10本指スマ】絶対に負けられない戦い【いっせーの】 #Shorts",
+      "channel_title": "QuizKnock",
+      "duration_sec": "42",
+      "category": "variety",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:35.147+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "dWtDVevOoIk",
+      "title": "Do You Mean Grapes or Martial Arts?",
+      "channel_title": "Speak Japanese Naturally",
+      "duration_sec": "27",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:54:17.525+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "gICY0ThO-vo",
+      "title": "The Pitch Accent of なし",
+      "channel_title": "Speak Japanese Naturally",
+      "duration_sec": "30",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.168+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "jGXiYfMwiIQ",
+      "title": "The Small Tsu Is the Most Important Part #japanesepronunciation",
+      "channel_title": "Speak Japanese Naturally",
+      "duration_sec": "39",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.168+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "J7yIrrw_TW0",
+      "title": "Peaceful Morning 🌄 #日本 #languagelearning #japan",
+      "channel_title": "The Nihongo Nook",
+      "duration_sec": "15",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.495+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "CrPuFffCYhc",
+      "title": "Kaiju No. 8 | Defense Force Acrylic Stands",
+      "channel_title": "TOHO animation チャンネル",
+      "duration_sec": "10",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:37.075+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "nG5c4mVxWvI",
+      "title": "『薬屋のひとりごと』第3期 第54話「紙の村」予告【11/6(金) 23：30～ 放送】",
+      "channel_title": "TOHO animation チャンネル",
+      "duration_sec": "15",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:37.075+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "sMa5NghESCE",
+      "title": "『ポップパップポルターズ』第3話本編切り抜き動画③",
+      "channel_title": "TOHO animation チャンネル",
+      "duration_sec": "12",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:37.075+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ti5HVf4RCh8",
+      "title": "『薬屋のひとりごと』第3期 第53話「白蛇仙女」予告【10/30(金) 23：40～ 放送】",
+      "channel_title": "TOHO animation チャンネル",
+      "duration_sec": "15",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:37.075+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "zjnLm8YeDYY",
+      "title": "『薬屋のひとりごと』第3期 第52話「最後の一冊」予告【10/23(金) 23：00～ 放送】",
+      "channel_title": "TOHO animation チャンネル",
+      "duration_sec": "15",
+      "category": "anime",
+      "difficulty": "Intermediate",
+      "added_at": "2026-11-01 23:22:37.075+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "I5kyivEnB30",
+      "title": "“Too ...” in Japanese 🌊😱 #learnjapanese #animation",
+      "channel_title": "tokiwa-japanese",
+      "duration_sec": "11",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.917+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "kiAmbHkx8Xk",
+      "title": "When You Say ありがとう in Japan 👏 #japanese",
+      "channel_title": "tokiwa-japanese",
+      "duration_sec": "11",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.917+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "SFhsf8lvRb8",
+      "title": "“I Want to ...” in Japanese 🦒😱 #learnjapanese #animation",
+      "channel_title": "tokiwa-japanese",
+      "duration_sec": "13",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.917+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "UwWnjwJ3o04",
+      "title": "“Shall I ...?” in Japanese ☂️😱 #learnjapanese #animation",
+      "channel_title": "tokiwa-japanese",
+      "duration_sec": "12",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.917+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ZQGTXuLhnMk",
+      "title": "He Jumped in the Bath. Then He Asked Permission 🦝♨️ (入ってもいいですか) #learnjapanese #animation #funny",
+      "channel_title": "tokiwa-japanese",
+      "duration_sec": "13",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.917+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "urgzd_GA6D4",
+      "title": "日本語オノマトペ",
+      "channel_title": "あかね的日本語教室",
+      "duration_sec": "62",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.517+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "0CDeCJ0p2Fs",
+      "title": "\"Excuse me, can I order?\" in Japanese🇯🇵",
+      "channel_title": "かなまとぺ Kanamatope",
+      "duration_sec": "31",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:37.103+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "3OS4MeUIIfI",
+      "title": "\"How many people?\" in Japanese🇯🇵",
+      "channel_title": "かなまとぺ Kanamatope",
+      "duration_sec": "27",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:37.103+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "LCWl09QbxbM",
+      "title": "\"One order of Gyoza, please.\" in Japanese🇯🇵",
+      "channel_title": "かなまとぺ Kanamatope",
+      "duration_sec": "31",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:37.103+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "m7lyyWOELik",
+      "title": "\"Will that be all?\" in Japanese🇯🇵",
+      "channel_title": "かなまとぺ Kanamatope",
+      "duration_sec": "30",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:37.103+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "u8cHrSBMTsU",
+      "title": "\"That'll be all.\" in Japanese🇯🇵",
+      "channel_title": "かなまとぺ Kanamatope",
+      "duration_sec": "25",
+      "category": "learning",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:37.103+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "3uvYpDM3b1M",
+      "title": "クレーン 🏗️🦩#ブリッピー #こども #shorts",
+      "channel_title": "ブリッピー☆BLIPPI",
+      "duration_sec": "26",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.036+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "7llJyPmqglg",
+      "title": "くしゃみ 🤧💨 #ブリッピー #こども #アニメ",
+      "channel_title": "ブリッピー☆BLIPPI",
+      "duration_sec": "19",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.036+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ATjZGX5AGQE",
+      "title": "ブリッピーとどうぶつ #ブリッピー #こども #shorts",
+      "channel_title": "ブリッピー☆BLIPPI",
+      "duration_sec": "29",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.036+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ufsQBZGxqV8",
+      "title": "ブリッピーとおおきなどうぶつやちいさないきもの 🐘🐭 #ブリッピー #こども #shorts",
+      "channel_title": "ブリッピー☆BLIPPI",
+      "duration_sec": "29",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.036+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "WrvJl1guK7c",
+      "title": "ブリッピーとあたらしいどうぶつのともだち 🐱🐶 #ブリッピー #こども #shorts",
+      "channel_title": "ブリッピー☆BLIPPI",
+      "duration_sec": "21",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:36.036+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "7TaUNZ-Qtdw",
+      "title": "えーん、おくちの なかが あつい！#shorts",
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "duration_sec": "20",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:34.598+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "rf0yeyxGVhI",
+      "title": "🚲じてんしゃで どろんこの みずたまりを わたろう！ #shorts",
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "duration_sec": "16",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:34.598+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "rxaioH1kb0o",
+      "title": "たいへん！いえの なかが めちゃくちゃに なっちゃった！🤖 #shorts",
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "duration_sec": "24",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:34.598+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "VB_770iNl10",
+      "title": "ペッパと いっしょに じてんしゃに のってみよう🚲 #shorts",
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "duration_sec": "9",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:54:21.286+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "wJls4xSXf04",
+      "title": "たいへん！きゅうに ☔️あめが ふってきたよ! #shorts",
+      "channel_title": "ペッパピッグ Peppa Pig - 公式チャンネル",
+      "duration_sec": "25",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:34.598+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "EY6nN3qZ89A",
+      "title": "わー！ミイラがやってくる！😱 #shorts",
+      "channel_title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "duration_sec": "18",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.348+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ig28eRQ4zMA",
+      "title": "ぶたさんの なきごえは どんなこえ？🐷 #shorts",
+      "channel_title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "duration_sec": "17",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.348+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "SjIQqJBcDEE",
+      "title": "ベベフィンといっしょに👣 あるいて あるいて！#shorts",
+      "channel_title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "duration_sec": "20",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.348+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "UiSw7N_Ho-A",
+      "title": "ベベフィンかぞくを しょうかいします！🧑‍🧑‍🧒‍🧒 #shorts",
+      "channel_title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "duration_sec": "20",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.348+00",
+      "window_start_sec": 0
+    },
+    {
+      "video_id": "ZQ6e-3lQQu4",
+      "title": "ベベフィンのハロウィン仮装パーティ👻 #shorts",
+      "channel_title": "べべフィン Bebefinn - 童謡とキッズ動画",
+      "duration_sec": "16",
+      "category": "kids",
+      "difficulty": "Beginner",
+      "added_at": "2026-11-01 23:22:35.348+00",
+      "window_start_sec": 0
+    }
+  ],
+  "confirmedEnglishLive": [
+    {
+      "id": "harajuku-street-02",
+      "videoId": "7XgJ81N8svY",
+      "detail": "English subtitles are burned into the source video at 0–2s: What kind of food do you like?"
+    },
+    {
+      "id": "immersion-_ONDIagmaPE-1-51",
+      "videoId": "_ONDIagmaPE",
+      "detail": "English subtitles are burned into the source video at 3–6s: What's wrong?"
+    },
+    {
+      "id": "immersion-0jAzZogkBYU-17-48",
+      "videoId": "0jAzZogkBYU",
+      "detail": "English subtitles are burned into the source video at 3.8–8s: This time, I tried using chuunibyou-style phrases in daily conversation."
+    },
+    {
+      "id": "immersion-1OjuYw8k2Sc-38-55",
+      "videoId": "1OjuYw8k2Sc",
+      "detail": "English subtitles are burned into the source video at 8–8.5s: I understand Japanese!"
+    },
+    {
+      "id": "immersion-au2w4AeWyd8-80-99",
+      "videoId": "au2w4AeWyd8",
+      "detail": "English subtitles are burned into the source video at 0.2–2s: zombie"
+    },
+    {
+      "id": "immersion-E2xV_3JtBik-15-41",
+      "videoId": "E2xV_3JtBik",
+      "detail": "English subtitles are burned into the source video at 0.2–5s: Good morning."
+    },
+    {
+      "id": "immersion-EBvfRfK4U40-0-28",
+      "videoId": "EBvfRfK4U40",
+      "detail": "English subtitles are burned into the source video at 0–2.76s: Have you ever been abroad?"
+    },
+    {
+      "id": "immersion-h1XUU_Wq9ks-1-21",
+      "videoId": "h1XUU_Wq9ks",
+      "detail": "English subtitles are burned into the source video at 0.5–3s: Let's play with hiragana"
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "videoId": "hYLf9yxkDBE",
+      "detail": "English subtitles are burned into the source video at 10.5–13.6s: The man run away in that direction!"
+    },
+    {
+      "id": "immersion-Is7v3JNydkk-2-44",
+      "videoId": "Is7v3JNydkk",
+      "detail": "English subtitles are burned into the source video at 0.2–2.1s: Why are you moaning like that"
+    },
+    {
+      "id": "immersion-iYjjpFZTAZA-0-32",
+      "videoId": "iYjjpFZTAZA",
+      "detail": "English subtitles are burned into the source video at 0–2.5s: (what are you doing right now?)"
+    },
+    {
+      "id": "immersion-J7WIN1G11eI-0-31",
+      "videoId": "J7WIN1G11eI",
+      "detail": "English subtitles are burned into the source video at 0–1s: Egg-san."
+    },
+    {
+      "id": "immersion-konbini-sayaka",
+      "videoId": "goM53XUkblA",
+      "detail": "English subtitles are burned into the source video at 8–11s: do you want to warm it up?"
+    },
+    {
+      "id": "immersion-r9OpcwiLSLA-0-26",
+      "videoId": "r9OpcwiLSLA",
+      "detail": "English subtitles are burned into the source video at 3–6s: Morning, Tom, Jason."
+    },
+    {
+      "id": "immersion-sapLlgWryNI-0-25",
+      "videoId": "sapLlgWryNI",
+      "detail": "English subtitles are burned into the source video at 0–1.2s: Excuse me!"
+    },
+    {
+      "id": "immersion-swE3eLyJXOM-132-164",
+      "videoId": "swE3eLyJXOM",
+      "detail": "English subtitles are burned into the source video at 20–22.8s: To compare"
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-18-35",
+      "videoId": "VI44EvFkQ7w",
+      "detail": "English subtitles are burned into the source video at 0.2–2.8s: Hi guys! I'm a Japanese teacher, Shun."
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-19-35",
+      "videoId": "VI44EvFkQ7w",
+      "detail": "English subtitles are burned into the source video at 0–2.6s: Hi guys! I'm a Japanese teacher, Shun."
+    },
+    {
+      "id": "immersion-xoI1Gzd8Yog-1-22",
+      "videoId": "xoI1Gzd8Yog",
+      "detail": "English subtitles are burned into the source video at 1.6–5s: I'll have myself a Vanilla Frappuccino, please!"
+    },
+    {
+      "id": "immersion-ZoRxlkhH1iA-0-24",
+      "videoId": "ZoRxlkhH1iA",
+      "detail": "English subtitles are burned into the source video at 0–2.8s: I heard there is a new house for Allays, the kings of the world."
+    }
+  ],
+  "latestReviews": [
+    {
+      "id": "immersion-r34OGOpTOs0-5-45",
+      "request_id": 6366,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "request_id": 6175,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[12] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "boss-rush-live-09",
+      "request_id": 6051,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "counting-kuma-03",
+      "request_id": 6349,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-_8b_ERSJ6_Q-5-45",
+      "request_id": 6350,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "harajuku-street-02",
+      "request_id": 6325,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–2s: What kind of food do you like?"
+    },
+    {
+      "id": "hoshizora-academy-07",
+      "request_id": 6054,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-_ONDIagmaPE-1-51",
+      "request_id": 6326,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 3–6s: What's wrong?"
+    },
+    {
+      "id": "immersion-_s7_XETTrU0-78-89",
+      "request_id": 6370,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion--TGoiR4GWCQ-33-48",
+      "request_id": 6371,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion--trocZ1u204-14-35",
+      "request_id": 6247,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-02Wc9acjA6A-24-40",
+      "request_id": 6372,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-3__2dFAV_bU-18-42",
+      "request_id": 6375,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-4auggVQ7H8s-0-13",
+      "request_id": 6248,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-0qITlsOy4LU-0-12",
+      "request_id": 6351,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "Content category or child audience could not be verified"
+    },
+    {
+      "id": "immersion-4CPiPemG9h0-25-42",
+      "request_id": 6352,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-3rGXMj2vGjI-47-60",
+      "request_id": 6374,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-0jAzZogkBYU-17-48",
+      "request_id": 6327,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 3.8–8s: This time, I tried using chuunibyou-style phrases in daily conversation."
+    },
+    {
+      "id": "immersion-5U8vAa94rFo-28-49",
+      "request_id": 6070,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-89",
+      "request_id": 6377,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-5kXOkOpkYJ8-78-90",
+      "request_id": 6069,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-5Vz_nVN1PrM-75-90",
+      "request_id": 6376,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-1OjuYw8k2Sc-38-55",
+      "request_id": 6328,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 8–8.5s: I understand Japanese!"
+    },
+    {
+      "id": "immersion-7kk3VajdeaM-0-13",
+      "request_id": 6076,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-67G_CfyZHp0-102-116",
+      "request_id": 6073,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-0FJvvV6uGJ0-33-59",
+      "request_id": 6373,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:58\n}"
+    },
+    {
+      "id": "immersion-8VFGRv8bfZA-0-34",
+      "request_id": 6078,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-7dbIWMbxDfg-12-41",
+      "request_id": 6075,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed meaningAccurate"
+    },
+    {
+      "id": "immersion-A3HGH6ZBMNs-25-46",
+      "request_id": 6354,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-9BZDEidV5LU-12-32",
+      "request_id": 6353,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-AFLDx5Bf63g-0-12",
+      "request_id": 6378,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-9OYewGtGVQw-0-23",
+      "request_id": 6080,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-aglOdAXsKEQ-6-30",
+      "request_id": 6083,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-APCLPl0N3p0-52-74",
+      "request_id": 6380,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-8miK-6nV7Gw-0-32",
+      "request_id": 6077,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[5] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-aqjddUenT8A-0-26",
+      "request_id": 6087,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-AoZugwG4meE-0-17",
+      "request_id": 6085,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed meaningAccurate"
+    },
+    {
+      "id": "immersion-6bAtb5gwX1Y-5-45",
+      "request_id": 6074,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] failed sourceMatchesAudio"
+    },
+    {
+      "id": "immersion-bIusvG8CJ_A-13-22",
+      "request_id": 6381,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-au2w4AeWyd8-80-99",
+      "request_id": 6329,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0.2–2s: zombie"
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-33-50",
+      "request_id": 6250,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-AUrfD-1sqM8-35-51",
+      "request_id": 6382,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-aSzjC9npiW0-44-56",
+      "request_id": 6249,
+      "http": 503,
+      "status": "failed",
+      "detail": "AI timeout after 45000ms"
+    },
+    {
+      "id": "immersion-alMu3OeXJHk-10-24",
+      "request_id": 6379,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-bjnXO_u8JO8-43-59",
+      "request_id": 6355,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-bPqxKdMdXMA-0-19",
+      "request_id": 6251,
+      "http": 503,
+      "status": "failed",
+      "detail": ""
+    },
+    {
+      "id": "immersion-bUG_c_Q2eQs-53-71",
+      "request_id": 6383,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-CW0juiwikkQ-43-63",
+      "request_id": 6101,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-41",
+      "request_id": 6098,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-cT-o8IXg6CI-0-15",
+      "request_id": 6100,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[5] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-dcxmIs4colE-0-13",
+      "request_id": 6102,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-butabara-steam",
+      "request_id": 6096,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-COb5aAy5CJ0-28-42",
+      "request_id": 6099,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-DR-aIuLRg80-36-57",
+      "request_id": 6385,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-eihkCy4rlg4-26-41",
+      "request_id": 6108,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-dO0rqWQo2Ok-7-26",
+      "request_id": 6356,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-E2xV_3JtBik-15-41",
+      "request_id": 6330,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0.2–5s: Good morning."
+    },
+    {
+      "id": "immersion-Dmi0T9qyPJA-30-55",
+      "request_id": 6386,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[5] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-eWich9B5BnQ-11-28",
+      "request_id": 6387,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-flkYw9WQdJU-5-36",
+      "request_id": 6357,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-fN-AnuwRds4-1-12",
+      "request_id": 6390,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-eRli8xZeH_A-0-13",
+      "request_id": 6388,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-f1sMviR6foU-7-28",
+      "request_id": 6389,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:29}"
+    },
+    {
+      "id": "immersion-ca0H6E2Ritw-0-30",
+      "request_id": 6384,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:303\"信じないのか\"\nWait, at line 9: 26.7 - 30.5\n\"本当だって言ってるだろ、俺たちは離婚したんだ、信じないのか。\"\nWait, around 0:30 in audio:\n00:29: 俺たちは離婚したんだ\n00:30: 信じないの...\nWait! Does he say \"信じないのか\"?\nListen to 00:30: \"信じないの...\" Wait, at 00:30, what is said?\nLet's check the"
+    },
+    {
+      "id": "immersion-FSWrbmRV1JA-0-18",
+      "request_id": 6391,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-fWjmJVoDEUc-24-44",
+      "request_id": 6393,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-Fysq68xUbFI-0-23",
+      "request_id": 6392,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-fOfIHF2JjI8-18-30",
+      "request_id": 6114,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-FsDBrkP_DjA-0-26",
+      "request_id": 6394,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-gyPaUw_5BLc-50-63",
+      "request_id": 6121,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-h1XUU_Wq9ks-1-21",
+      "request_id": 6332,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0.5–3s: Let's play with hiragana"
+    },
+    {
+      "id": "immersion-gHezMlReAH8-0-27",
+      "request_id": 6395,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-0-13",
+      "request_id": 6398,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-h6ObOK-Xwmc-0-18",
+      "request_id": 6255,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] failed sourceMatchesAudio, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-13-30",
+      "request_id": 6125,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-heb1S4dWKk4-0-13",
+      "request_id": 6126,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio"
+    },
+    {
+      "id": "immersion-hhg7zQYSijk-60-87",
+      "request_id": 6396,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-hIc-kxqq5dA-26-45",
+      "request_id": 6397,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-gFLvb0SIIn0-39-121",
+      "request_id": 6254,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "request_id": 6333,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 10.5–13.6s: The man run away in that direction!"
+    },
+    {
+      "id": "immersion-HJdyF2rcZb0-0-21",
+      "request_id": 6129,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-iHS1jowmzXY-19-41",
+      "request_id": 6399,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-iUyX27UkWDs-23-55",
+      "request_id": 6135,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-J3XHFIJafkM-81-89",
+      "request_id": 6137,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-Ir35SAOZ5nY-0-30",
+      "request_id": 6132,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-jUZY_gpOaQA-50-62",
+      "request_id": 6337,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: {start:50000}"
+    },
+    {
+      "id": "immersion-kids-aisatsu",
+      "request_id": 6338,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-jJrWJqUJ-NM-21-29",
+      "request_id": 6400,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-Ki8uOm2QNOk-2-26",
+      "request_id": 6144,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-kE23CnwTzKI-0-35",
+      "request_id": 6401,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-KDfG1K1IgZc-18-37",
+      "request_id": 6141,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed meaningAccurate"
+    },
+    {
+      "id": "immersion-kR8YoH2mOZ8-28-44",
+      "request_id": 6402,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-komeda-order",
+      "request_id": 6147,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-Is7v3JNydkk-2-44",
+      "request_id": 6334,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0.2–2.1s: Why are you moaning like that"
+    },
+    {
+      "id": "immersion-kK0WIY5KY8k-43-57",
+      "request_id": 6403,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-konbini-sayaka",
+      "request_id": 6339,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 8–11s: do you want to warm it up?"
+    },
+    {
+      "id": "immersion-kZE9GVEQiKQ-38-47",
+      "request_id": 6404,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-KsAiA8Ow9zg-32-53",
+      "request_id": 6406,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-kh_PnQ5mY2Y-0-11",
+      "request_id": 6143,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-MDtiDGr_-GY-3-17",
+      "request_id": 6158,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-4-25",
+      "request_id": 6407,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-lnd2SjFMJXI-51-76",
+      "request_id": 6260,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-LuADPqD93nM-0-14",
+      "request_id": 6156,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-LKV14c88JKI-26-56",
+      "request_id": 6405,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:57.5}"
+    },
+    {
+      "id": "immersion-mn7T-ksVZvk-32-57",
+      "request_id": 6409,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-l4VGSWLZCqI-0-13",
+      "request_id": 6257,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-mSycuOff7YQ-70-84",
+      "request_id": 6161,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-n9jnD_8JeLc-28-49",
+      "request_id": 6359,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-N9KUoHnewXA-0-13",
+      "request_id": 6412,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:13.466}"
+    },
+    {
+      "id": "immersion-MvpI0G6ETqA-0-12",
+      "request_id": 6408,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-NmnmYrvZdyc-16-53",
+      "request_id": 6360,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-MblKNliC6uc-15-45",
+      "request_id": 6358,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-nSNgOkDFacs-48-66",
+      "request_id": 6411,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-nfmMuGsqK8Q-14-34",
+      "request_id": 6165,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-Ovl6nYvihh8-18-36",
+      "request_id": 6361,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-oN4DNLhbzUE-32-42",
+      "request_id": 6413,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-pI6TGEHnKo4-3-23",
+      "request_id": 6363,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-p_TCfcWsDwE-10-53",
+      "request_id": 6341,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "Content category or child audience could not be verified"
+    },
+    {
+      "id": "immersion-OX1f13PB53E-0-12",
+      "request_id": 6414,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-p8FcqzboayU-0-11",
+      "request_id": 6415,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-o8uPdpOu9BQ-0-20",
+      "request_id": 6261,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: ]}"
+    },
+    {
+      "id": "immersion-plZKAqFYcLE-9-23",
+      "request_id": 6416,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "Content category or child audience could not be verified"
+    },
+    {
+      "id": "immersion-Njk2kfY4irI-40-54",
+      "request_id": 6166,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-q89xqLs-eNY-30-50",
+      "request_id": 6364,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-QDGzU8DZjkc-21-34",
+      "request_id": 6180,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-PspjY7iElx4-0-20",
+      "request_id": 6340,
+      "http": 503,
+      "status": "failed",
+      "detail": "Gemini empty response"
+    },
+    {
+      "id": "immersion-QgQ8_7zSv7s-26-41",
+      "request_id": 6181,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-qmIqft4YtKs-0-16",
+      "request_id": 6417,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-QThN_GUATTY-19-34",
+      "request_id": 6183,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-qyf1ko1juRo-0-14",
+      "request_id": 6418,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-QyXHpGahA1I-12-24",
+      "request_id": 6365,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-r9OpcwiLSLA-0-26",
+      "request_id": 6342,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 3–6s: Morning, Tom, Jason."
+    },
+    {
+      "id": "immersion-RaLvdToF4fw-23-45",
+      "request_id": 6422,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-R9NwPxYOxSw-7-35",
+      "request_id": 6188,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[6] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-rCm8SVKlw7Y-79-89",
+      "request_id": 6421,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-roZJa9Z6S1I-31-43",
+      "request_id": 6196,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-rpm3okWS2j4-9-24",
+      "request_id": 6424,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-rina_LPQ17A-0-11",
+      "request_id": 6423,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "Content category or child audience could not be verified"
+    },
+    {
+      "id": "immersion-rKBRaSdM2y0-0-10",
+      "request_id": 6425,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-rgC7fyTx1nI-16-43",
+      "request_id": 6367,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-SF-EoJkMhBc-0-16",
+      "request_id": 6202,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-SBOS-_a9QAA-45-58",
+      "request_id": 6426,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-Se0hX91JpI8-0-14",
+      "request_id": 6427,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-r7ytNplrDCA-0-17",
+      "request_id": 6187,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-sapLlgWryNI-0-25",
+      "request_id": 6343,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–1.2s: Excuse me!"
+    },
+    {
+      "id": "immersion-UFECXYIQfic-59-73",
+      "request_id": 6431,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-u1xEGyinMzY-51-63",
+      "request_id": 6432,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-uFRyW_SchMY-61-70",
+      "request_id": 6430,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-t5Y5Q0HZbuA-16-30",
+      "request_id": 6429,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-swE3eLyJXOM-132-164",
+      "request_id": 6428,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 20–22.8s: To compare"
+    },
+    {
+      "id": "immersion-VFMFI1yj2wY-0-10",
+      "request_id": 6210,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-uL2ABO6yMwM-8-26",
+      "request_id": 6368,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-VFX9q3P6cw0-0-16",
+      "request_id": 6211,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[3] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-rXF2YFvMxKY-32-58",
+      "request_id": 6198,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-18-35",
+      "request_id": 6344,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0.2–2.8s: Hi guys! I'm a Japanese teacher, Shun."
+    },
+    {
+      "id": "immersion-vHl7ZLRskIY-9-21",
+      "request_id": 6433,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-VJyFtWJ_36k-61-73",
+      "request_id": 6215,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-vtuber-faucet",
+      "request_id": 6435,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-WkJcGj9R7Fk-38-54",
+      "request_id": 6218,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-Wdw_HjSp7GQ-19-38",
+      "request_id": 6217,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[4] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-x-Mav4_8LGM-8-22",
+      "request_id": 6436,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-xoI1Gzd8Yog-1-22",
+      "request_id": 6346,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 1.6–5s: I'll have myself a Vanilla Frappuccino, please!"
+    },
+    {
+      "id": "immersion-y3issC4ELx4-5-32",
+      "request_id": 6437,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "Content category or child audience could not be verified"
+    },
+    {
+      "id": "immersion-Y7kYPuCduwk-0-21",
+      "request_id": 6224,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] failed sourceMatchesAudio, meaningAccurate"
+    },
+    {
+      "id": "immersion-WNQCXxF4uFM-11-33",
+      "request_id": 6219,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[7] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-wZiyL0z-r-g-62-71",
+      "request_id": 6438,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-VBd50awmtxg-59-89",
+      "request_id": 6434,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-yGOkIy78MRM-63-87",
+      "request_id": 6225,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-VI44EvFkQ7w-19-35",
+      "request_id": 6345,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–2.6s: Hi guys! I'm a Japanese teacher, Shun."
+    },
+    {
+      "id": "immersion-yLB0JwdA_ek-0-10",
+      "request_id": 6227,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] translation ends mid-thought"
+    },
+    {
+      "id": "immersion-yU72X91jPMI-0-16",
+      "request_id": 6228,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[6] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-yWy6wBKTicc-8-22",
+      "request_id": 6230,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[1] failed sourceMatchesAudio, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-Z_leh6MUPHI-72-86",
+      "request_id": 6269,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: }"
+    },
+    {
+      "id": "immersion-zw9pEP67DDA-0-15",
+      "request_id": 6440,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-ZFcKi6dxHmA-0-39",
+      "request_id": 6439,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "immersion-ZoRxlkhH1iA-0-24",
+      "request_id": 6348,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–2.8s: I heard there is a new house for Allays, the kings of the world."
+    },
+    {
+      "id": "konbini-diaries-01",
+      "request_id": 6239,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "neko-cafe-02",
+      "request_id": 6270,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: 00:18}"
+    },
+    {
+      "id": "immersion-ykw9D1hq1hc-5-23",
+      "request_id": 6226,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[2] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "kissa-stories-01",
+      "request_id": 6237,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "kitsune-yuki-stream-01",
+      "request_id": 6238,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-ZXeSXMqsSBQ-24-42",
+      "request_id": 6236,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] multiple translated sentences must be separate lines"
+    },
+    {
+      "id": "immersion-ZU96He9CmtM-98-117",
+      "request_id": 6347,
+      "http": 200,
+      "status": "applied",
+      "detail": ""
+    },
+    {
+      "id": "quiz-showdown-11",
+      "request_id": 6242,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "speedrun-commentary-02",
+      "request_id": 6244,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "piyo-picnic-01",
+      "request_id": 6369,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "tsukimi-rin-zatsudan-05",
+      "request_id": 6245,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed audioClear, sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "words-that-matter-04",
+      "request_id": 6246,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "ramen-road-trip-03",
+      "request_id": 6243,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "line[0] failed sourceMatchesAudio, meaningAccurate, timingMatchesAudio"
+    },
+    {
+      "id": "immersion-EBvfRfK4U40-0-28",
+      "request_id": 6331,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–2.76s: Have you ever been abroad?"
+    },
+    {
+      "id": "immersion-iYjjpFZTAZA-0-32",
+      "request_id": 6336,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–2.5s: (what are you doing right now?)"
+    },
+    {
+      "id": "immersion-Me5ZmclOAKo-0-25",
+      "request_id": 6410,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "review is not valid JSON: ]}"
+    },
+    {
+      "id": "immersion-J7WIN1G11eI-0-31",
+      "request_id": 6335,
+      "http": 422,
+      "status": "needs_review",
+      "detail": "English subtitles are burned into the source video at 0–1s: Egg-san."
+    }
+  ],
+  "functions": [
+    {
+      "slug": "submit-acquisition",
+      "version": 34,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "submit-feedback",
+      "version": 37,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "admin-insights",
+      "version": 35,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "explain-word",
+      "version": 46,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "youtube-search",
+      "version": 34,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "analyze-clip",
+      "version": 59,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "publish-clip",
+      "version": 49,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "direct-messages",
+      "version": 25,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "feedback-board",
+      "version": 26,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "fill-catalog",
+      "version": 71,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "immersion-worker",
+      "version": 27,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "immersion-submit",
+      "version": 15,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "delete-my-data",
+      "version": 11,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "immersion-health",
+      "version": 18,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "analytics-ingest",
+      "version": 10,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "admin-dashboard",
+      "version": 11,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "youtube-embed",
+      "version": 7,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "report-playback",
+      "version": 6,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "audit-embeds",
+      "version": 9,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "review-catalog",
+      "version": 7,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "seed-catalog-sources",
+      "version": 5,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "admin-pipeline",
+      "version": 3,
+      "status": "ACTIVE"
+    }
+  ],
+  "validation": {
+    "backendTests": 44,
+    "allEdgeFunctionsTypecheck": true,
+    "webBuild": true,
+    "dashboardBrowserChecks": true,
+    "databaseGuardAndTestAnalyticsChecks": true,
+    "nativeXcodeBuild": "Requires simulator agent on macOS."
+  }
+}

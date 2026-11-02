@@ -7,7 +7,7 @@
  * keeps word-level sync, otherwise the line falls back to sentence-level highlighting and its
  * word timings are dropped rather than guessed.
  */
-import { mostlyJapanese, mostlyKorean, translationQualityIssue } from "./validate.ts";
+import { lineAlignmentIssue, mostlyJapanese, mostlyKorean, translationQualityIssue } from "./validate.ts";
 
 export type TimingMode = "word" | "line";
 export type ClipTimingMode = "word" | "line" | "mixed";
@@ -86,6 +86,8 @@ export function validateLineTimeline(
         end: finite(tok.end) ? tok.end : Number.NaN,
       });
     }
+    const alignmentIssue = lineAlignmentIssue(tokens.map((token) => token.surface).join(""), translation);
+    if (alignmentIssue) return { ok: false, error: `line[${i}] ${alignmentIssue}` };
     out.push({ ...row, translation, start, end, tokens, timing: "word" });
     prevEnd = end;
   }

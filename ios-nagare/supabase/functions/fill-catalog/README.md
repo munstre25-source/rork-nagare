@@ -31,9 +31,9 @@ One call keeps going until its time budget, the YouTube daily quota, or the Gemi
 
 `fill-jojo-catalog` runs every 10 minutes. `fill-sori-catalog` runs at minutes 5, 15, 25, 35, 45, and 55. See the main README for secrets.
 
-The Japanese job rotates through the configured anime, kids, variety, and learner channels by YouTube channel ID (resolving handles with `channels.list` where needed). Eleven hour-long playlist IDs are documented in `DEFERRED_SOURCES.md` and are not scheduled; short uploads from the supplied channels are the active priority. Before deployment, verify the candidate queue has `window_start_sec` in its primary key and `clips.category` accepts `learning`. The linked production schema already has both, although its migration history differs from the repository; do not run all pending migrations just to reconcile that history. A source being configured or queued does not mean any lesson is live; verify `published = true` clips and playback after the run.
+The Japanese job rotates through the configured anime, kids, variety, and learner channels by YouTube channel ID (resolving handles with `channels.list` where needed). Eleven hour-long playlist IDs are documented in `DEFERRED_SOURCES.md` and are not scheduled; short uploads from the supplied channels are the active priority. Before deployment, verify the candidate queue has `window_start_sec` in its primary key and `clips.category` accepts `learning` and `podcast`. The linked production schema already has both, although its migration history differs from the repository; do not run all pending migrations just to reconcile that history. A source being configured or queued does not mean any lesson is live; verify `published = true` clips and playback after the run.
 
-For a live rollout, apply pending migrations, deploy `fill-catalog` and `admin-dashboard`, then invoke `fill-catalog` with `{}` using the admin headers above. The scheduled job continues through the queued windows. In the SQL editor, check progress with:
+For a live rollout, apply only explicitly reviewed migrations listed in ../../../HANDOFF-SIMULATOR.md (the current three are already applied; do not blindly push all historical pending migrations), deploy `fill-catalog` and `admin-dashboard`, then invoke `fill-catalog` with `{}` using the admin headers above. The scheduled job continues through the queued windows. In the SQL editor, check progress with:
 
 ```sql
 select video_id, count(*) as live_lessons
@@ -55,3 +55,5 @@ order by rejected_at desc limit 30;
 ```
 
 Also check `public.clips` for `channel_name ilike '%definitive%'` and play a published clip in the iOS simulator. A source over 30 minutes, a blocked embed, or a window without clear Japanese speech will not publish. The 2,000-lesson target is a growth goal, not a guaranteed yield from these sources.
+
+Current Japanese publication uses policy 3: original-audio English/timing verification, burned-in English rejection, observed content/audience classification and a database seal. Discovery categories are hints; the reviewed category is stored. Kids requires child-directed content; podcasts have their own category. Pipeline history is visible in HQ. Legacy publication flags remain unchanged by explicit user instruction. Simulator/test playback evidence is excluded from production source-blocking decisions.

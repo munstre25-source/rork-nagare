@@ -258,6 +258,7 @@ struct SpeakingScenePractice: View {
         listening = false
         switch result {
         case .heard(let text, _):
+            DailyPlanProgress.mark(.speak)
             heard = text
             score = SpeechScoring.score(heard: text, target: scene.yourLine)
             phase = .result

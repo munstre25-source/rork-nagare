@@ -13,10 +13,13 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { CatalogLanguage, languageName } from "./catalog.ts";
 import { hearSystemCatalog } from "./enrich.ts";
-import { geminiModelAnalyze, promptVersion, requireEnv } from "./env.ts";
+import { normalizeHeardLines, subtitleEnrichmentIssue } from "./subtitle-data.ts";
+import { sealCatalogLines } from "./pipeline.ts";
+import { reviewJapaneseTranslations } from "./translation-review.ts";
+import { geminiModelAnalyze, geminiModelTranslationReview, subtitlePromptVersion, requireEnv } from "./env.ts";
 import { GeminiError, geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "./limits.ts";
-import { assessTiming, ClipTimingMode, isPunctuationSurface, TimedLine, TimedToken, toClipRelative, validateLineTimeline } from "./timing.ts";
+import { assessTiming, ClipTimingMode, TimedLine, toClipRelative, validateLineTimeline } from "./timing.ts";
 import { CATEGORIES, validateEnums } from "./validate.ts";
 
 export const GRADIENTS = [
@@ -35,6 +38,7 @@ export type VideoFacts = {
   videoId: string;
   title: string;
   channelTitle: string;
+  channelId?: string;
   durationSec: number;
 };
 
@@ -64,7 +68,7 @@ type VideoItem = {
   id?: string;
   status?: { embeddable?: boolean; privacyStatus?: string; uploadStatus?: string };
   contentDetails?: { duration?: string };
-  snippet?: { title?: string; channelTitle?: string; liveBroadcastContent?: string };
+  snippet?: { title?: string; channelTitle?: string; channelId?: string; liveBroadcastContent?: string };
 };
 
 /** One videos.list call (1 quota unit). Decides whether this video may be used at all. */
@@ -76,6 +80,7 @@ export async function isDeviceBlocked(supabase: SupabaseClient, videoId: string)
   const { data } = await supabase
     .from("clip_playback_failures")
     .select("error_code")
+    .eq("environment", "production")
     .eq("video_id", videoId)
     .limit(10);
   const rows = (data ?? []) as Array<{ error_code: number }>;
@@ -167,10 +172,14 @@ export async function checkYouTubeVideo(supabase: SupabaseClient, videoId: strin
   const durationSec = parseIsoDurationSec(item.contentDetails?.duration ?? "");
   if (durationSec === null || durationSec === 0) return { ok: false, code: "live_stream", detail: "no duration" };
   if (durationSec < 8) return { ok: false, code: "too_short", detail: `${durationSec}s` };
+  if (item.snippet?.channelId) {
+    const { error } = await supabase.from("catalog_video_sources").upsert({ video_id: item.id, channel_id: item.snippet.channelId, channel_title: item.snippet.channelTitle ?? "", checked_at: new Date().toISOString() });
+    if (error) return { ok: false, code: "youtube_unavailable", detail: "Source metadata could not be recorded" };
+  }
   return {
     ok: true,
     video: {
-      videoId: item.id,
+      videoId: item.id, channelId: item.snippet?.channelId,
       title: item.snippet?.title?.trim() || `Video ${item.id}`,
       channelTitle: item.snippet?.channelTitle?.trim() || "YouTube",
       durationSec,
@@ -197,6 +206,7 @@ export type ClipDraft = {
 export type AnalyzeFailure =
   | "no_dialogue"
   | "transcript_invalid"
+  | "translation_unverified"
   | "gemini_cap"
   | "model_payment"
   | "model_rejected"
@@ -328,14 +338,41 @@ export async function analyzeWindow(
     log("word_timing_fallback", { videoId, mode: timing.mode, problems: timing.problems.slice(0, 8) });
   }
 
-  // Definitions are no longer fetched at ingest (the second AI call is gone). Tokens carry
-  // readings, romaji, part of speech and JLPT straight from the hearing pass; the meaning is
-  // fetched per word, on tap, through the shared word_explanations cache. Normalization
-  // guarantees the client's invariants for lines heard with the older prompts too.
+  // Learner fields and concise Japanese meanings come from this single hearing pass.
+  // Persist them once; clients only change presentation. Legacy lookup remains available.
   const normalized = normalizeHeardLines(timing.lines);
+  if (language === "ja") {
+    const issue = subtitleEnrichmentIssue(normalized);
+    if (issue) return { ok: false, reason: "enrichment_failed", detail: issue };
+  }
   const tappable = countTappable(normalized);
   if (tappable < 4) {
     return { ok: false, reason: "enrichment_failed", detail: `${tappable} tappable tokens` };
+  }
+
+  let storedLines = toClipRelative(normalized, clipStart);
+  if (language === "ja") {
+    try {
+      const review = await reviewJapaneseTranslations({
+        videoId,
+        sourceStartSec: round3(clipStart),
+        durationSec: round3(round3(clipEnd) - round3(clipStart)),
+        lines: storedLines,
+      }, {
+        model: geminiModelTranslationReview(),
+        consumeUsage: () => tryIncrementGeminiUsage(supabase),
+      });
+      if (!review.ok) {
+        return {
+          ok: false,
+          reason: review.reason === "quota" ? "gemini_cap" : "translation_unverified",
+          detail: review.detail,
+        };
+      }
+      storedLines = await sealCatalogLines(supabase, { videoId, sourceStartSec: round3(clipStart), durationSec: round3(round3(clipEnd) - round3(clipStart)), lines: review.lines });
+    } catch (err) {
+      return { ok: false, ...classifyModelError(err) };
+    }
   }
 
   return {
@@ -343,15 +380,17 @@ export async function analyzeWindow(
     draft: {
       clipStart: round3(clipStart),
       clipEnd: round3(clipEnd),
-      lines: toClipRelative(normalized, clipStart),
+      lines: storedLines,
       difficulty: gradeDifficulty(raw.difficulty, normalized, language),
-      category: typeof raw.category === "string" && CATEGORIES.has(raw.category) ? raw.category : null,
+      category: language === "ja"
+        ? String((storedLines[0].translationReview as { contentClassification: { category: string } }).contentClassification.category)
+        : typeof raw.category === "string" && CATEGORIES.has(raw.category) ? raw.category : null,
       videoOrientation: (await detectVideoOrientation(videoId)) ??
         (raw.video_orientation === "portrait" ? "portrait" : "landscape"),
       timingMode: timing.mode,
       timingConfidence: timing.confidence,
       model,
-      promptVersion: promptVersion(),
+      promptVersion: subtitlePromptVersion(),
     },
   };
 }
@@ -397,17 +436,6 @@ export function maybeShiftRelative(raw: Record<string, unknown>, windowStart: nu
   return true;
 }
 
-function countDefined(lines: TimedLine[]): number {
-  let defined = 0;
-  for (const line of lines) {
-    for (const token of line.tokens) {
-      const definitions = (token as { definitions?: unknown }).definitions;
-      if (Array.isArray(definitions) && definitions.length > 0) defined += 1;
-    }
-  }
-  return defined;
-}
-
 /** Tappable = a real word the learner can tap. Punctuation and fillers never are. */
 function countTappable(lines: TimedLine[]): number {
   let count = 0;
@@ -417,27 +445,6 @@ function countTappable(lines: TimedLine[]): number {
     }
   }
   return count;
-}
-
-/**
- * Ensures every token satisfies what the client decodes: a tappable flag (defaults true,
- * false for punctuation), lowercase romaji, and prunes empty tokens.
- */
-function normalizeHeardLines(lines: TimedLine[]): TimedLine[] {
-  const out: TimedLine[] = [];
-  for (const line of lines) {
-    const tokens: TimedToken[] = [];
-    for (const token of line.tokens) {
-      const surface = typeof token.surface === "string" ? token.surface.trim() : "";
-      if (!surface) continue;
-      const romaji = typeof token.romaji === "string" ? token.romaji.trim().toLowerCase() : "";
-      const tappable = token.tappable === false || isPunctuationSurface(surface) ? false : true;
-      tokens.push({ ...token, surface, romaji, tappable });
-    }
-    if (tokens.length === 0) continue;
-    out.push({ ...line, tokens });
-  }
-  return out;
 }
 
 function finiteOr(value: unknown, fallback: number): number {

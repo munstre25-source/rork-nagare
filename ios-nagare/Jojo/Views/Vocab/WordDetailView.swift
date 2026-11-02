@@ -60,7 +60,7 @@ struct WordDetailView: View {
                     LabeledContent("Status", value: word.state.rawValue.capitalized)
                         .padding(Spacing.m)
                     Divider()
-                    LabeledContent("Next review", value: word.dueAt <= Date() ? "Due now" : word.dueAt.formatted(.relative(presentation: .named)))
+                    LabeledContent("Next review", value: word.state == .known ? "Optional practice" : (word.isDueForReview() ? "Due now" : word.dueAt.formatted(.relative(presentation: .named))))
                         .padding(Spacing.m)
                     Divider()
                     LabeledContent("Added", value: word.addedAt.formatted(date: .abbreviated, time: .omitted))
@@ -112,7 +112,7 @@ struct WordDetailView: View {
             Text("Its review history goes too, on this iPhone and in your synced backup.")
         }
         .sheet(isPresented: $showSearch) {
-            SearchView(initialQuery: word.contextSurface.isEmpty ? word.surface : word.contextSurface)
+            SearchView(initialQuery: word.surface, initialScope: .sentences)
         }
     }
 }

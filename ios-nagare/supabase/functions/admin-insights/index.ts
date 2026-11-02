@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       if (!message) return errorResponse(400, "Write a reply");
       const { data, error } = await sb
         .from("direct_messages")
-        .insert({ app_user_id: appUserId, sender: "jojo", body: message })
+        .insert({ app_user_id: appUserId, sender: "jojo", body: message, environment: "production" })
         .select("id, app_user_id, sender, body, created_at")
         .single();
       if (error || !data) return errorResponse(500, "Failed to send reply");
@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
     let feedbackQuery = sb
       .from("feedback_items")
       .select("id, app_user_id, enjoyed, category, message, status, created_at")
+      .eq("environment", "production")
       .order("created_at", { ascending: false })
       .limit(limit);
     if (["new", "reviewed", "done"].includes(statusFilter)) {
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     const [acq, fb, board, notes] = await Promise.all([
-      sb.from("acquisition_events").select("source, created_at"),
+      sb.from("acquisition_events").select("source, created_at").eq("environment", "production"),
       feedbackQuery,
       sb.from("feedback_posts")
         .select("id, category, title, body, vote_count, comment_count, status, created_at")
@@ -76,6 +77,7 @@ Deno.serve(async (req) => {
         .limit(100),
       sb.from("direct_messages")
         .select("id, app_user_id, sender, body, created_at")
+        .eq("environment", "production")
         .order("created_at", { ascending: false })
         .limit(400),
     ]);

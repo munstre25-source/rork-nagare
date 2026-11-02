@@ -389,6 +389,7 @@ struct WelcomeStepView: View {
         }
         .padding(.horizontal, Spacing.l)
         .task {
+            app.assignFirstClip()
             Haptics.success()
             withAnimation(.spring(response: 0.7, dampingFraction: 0.72)) { appeared = true }
             track("onboarding_welcome_view", props: ["first_clip": app.profile.firstClipId ?? "none"])
@@ -402,7 +403,9 @@ struct WelcomeStepView: View {
     }
 
     private var firstClipLine: String {
-        guard let clip = app.recommendedClip() else { return "Your first clip is ready." }
+        guard let clip = app.profile.firstClipId.flatMap({ app.clip(id: $0) }) ?? app.recommendedClip() else {
+            return "Your preferences are saved. We'll find a clip that fits your level."
+        }
         return "First up: \(clip.title)"
     }
 }

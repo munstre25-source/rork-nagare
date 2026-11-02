@@ -75,7 +75,7 @@ struct RipenTimelineView: View {
 
             Slider(value: $day, in: 1...90, step: 1)
                 .tint(Color.sakuraPink)
-                .accessibilityLabel("Days of watching")
+                .accessibilityLabel("Example learning timeline in days")
 
             HStack {
                 ForEach(milestones, id: \.day) { item in
@@ -109,7 +109,7 @@ struct RipenTimelineView: View {
     private var tappableCount: Int { demoTokens.filter { !$0.romaji.isEmpty }.count }
 
     private var greenCount: Int {
-        demoTokens.indices.filter { mark(for: $0, day: day) == .known }.count
+        demoTokens.indices.filter { !demoTokens[$0].romaji.isEmpty && mark(for: $0, day: day) == .known }.count
     }
 
     private func lineAt(day: Double) -> String {

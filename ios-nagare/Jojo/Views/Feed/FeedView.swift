@@ -114,44 +114,9 @@ struct FeedView: View {
                 }
             }
 
-            if videoExpanded {
-                HStack(spacing: 10) {
-                    Button {
-                        Haptics.selection()
-                        lookup.dismiss()
-                        videoExpanded = false
-                    } label: {
-                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 12)
-                            .frame(minHeight: 44)
-                            .background(.regularMaterial, in: Capsule())
-                    }
-                    .accessibilityHint("Returns to the feed with For You, Explore, and navigation visible")
-                    Spacer(minLength: 0)
-                    if !maximizeNavShown {
-                        Button {
-                            Haptics.selection()
-                            withAnimation(.snappy) { maximizeNavShown = true }
-                        } label: {
-                            Label("Show tabs", systemImage: "square.grid.2x2")
-                                .font(.caption.weight(.bold))
-                                .padding(.horizontal, 12)
-                                .frame(minHeight: 44)
-                                .background(.regularMaterial, in: Capsule())
-                        }
-                    }
-                }
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 16)
-                .padding(.top, 6)
-                .frame(maxHeight: .infinity, alignment: .top)
-                .zIndex(5)
-            }
-
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.canvas.ignoresSafeArea())
+        .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
         .simultaneousGesture(TapGesture().onEnded { revealWatchChrome() })
@@ -428,7 +393,7 @@ struct FeedView: View {
             .scrollPosition(id: $currentId, anchor: .top)
             .scrollDisabled(lookup.isPresented || quizClip != nil)
             .scrollIndicators(.hidden)
-            .background(Color.canvas)
+            .background(Color.watchBackground)
             .clipped()
             // Wait until resized page frames have been laid out before re-anchoring.
             // Scrolling in this callback's layout pass can use the old page geometry and
@@ -528,13 +493,16 @@ struct FeedView: View {
     }
 
     private func absorbNewClips() {
-        let known = Set(clips.map(\.id))
-        let newcomers = app.forYouClips.filter { !known.contains($0.id) }
-        guard !newcomers.isEmpty else { return }
-        if let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) {
-            clips.insert(contentsOf: newcomers, at: index + 1)
-        } else {
-            clips.append(contentsOf: newcomers)
+        // Refresh objects and remove retired clips as well as adding new ones. Keeping
+        // stale objects here used to retain old categories and unpublished lessons.
+        let ranked = app.forYouClips
+        let refreshed = Dictionary(uniqueKeysWithValues: ranked.map { ($0.id, $0) })
+        clips = clips.compactMap { refreshed[$0.id] }
+        if let currentId, refreshed[currentId] == nil {
+            coordinator.pause()
+            lookup.dismiss()
+            programmaticClipChange = true
+            self.currentId = nil
         }
         mirrorUpcoming()
     }
@@ -555,20 +523,9 @@ struct FeedView: View {
 
     private func reloadClips() {
         let ranked = app.forYouClips
-        #if DEBUG
-        // Debug stays entirely offline: only the bundled Japanese-learning clips are shown.
-        // This guarantees every visible item is playable in a fresh simulator session.
-        if app.purchases.debugBypassActive {
-            // Offline clips lead, then the real catalog (Shorts and landscape) follows.
-            let showcase = app.debugShowcaseClips(limit: 3)
-            let ids = Set(showcase.map(\.id))
-            clips = showcase + ranked.filter { !ids.contains($0.id) }
-        } else {
-            clips = ranked
-        }
-        #else
+        // Debug entitlement bypass uses the real personal feed too. Marketing demos
+        // have their own explicit showcase rather than overriding onboarding choices.
         clips = ranked
-        #endif
         let target = clips.first(where: { $0.id == currentId })?.id ?? clips.first?.id
         if target != currentId {
             programmaticClipChange = true

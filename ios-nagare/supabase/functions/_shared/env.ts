@@ -53,8 +53,17 @@ export function geminiModelAnalyze(): string {
   return envOr("GEMINI_MODEL_ANALYZE", DEFAULT_GEMINI_MODEL);
 }
 
+export function geminiModelTranslationReview(): string {
+  return envOr("GEMINI_MODEL_TRANSLATION_REVIEW", geminiModelAnalyze());
+}
+
 export function promptVersion(): string {
   return envOr("PROMPT_VERSION", "4");
+}
+
+/** Subtitle changes must not invalidate the independently cached word explanations. */
+export function subtitlePromptVersion(): string {
+  return envOr("SUBTITLE_PROMPT_VERSION", "6");
 }
 
 export function utcDayString(d = new Date()): string {

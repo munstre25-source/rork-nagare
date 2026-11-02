@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
       return errorResponse(400, "Invalid source");
     }
     const detail = (body.source_detail ?? "").trim().slice(0, 200) || null;
+    const environment = req.headers.get("x-jojo-environment") === "production" ? "production" : "test";
 
     const sb = serviceClient();
     const { data: allowed, error: rateErr } = await sb.rpc("increment_insight_rate", {
@@ -49,6 +50,7 @@ Deno.serve(async (req) => {
         app_user_id: appUserId,
         source,
         source_detail: detail,
+        environment,
       },
       { onConflict: "app_user_id" },
     );

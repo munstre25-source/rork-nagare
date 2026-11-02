@@ -284,11 +284,13 @@ final class AppModel {
         // clips whose video the server catalog retired (it is the authority once synced).
         let blocked = PlaybackHealth.blockedVideoIds
         let published = PlaybackHealth.publishedVideoIds
+        let publishedClips = PlaybackHealth.publishedClipIds
         let remoteIds = Set(remote.map(\.id))
         merged.removeAll { clip in
             guard clip.hasRealVideo else { return false }
             if blocked.contains(clip.videoId) { return true }
-            if let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
+            if let publishedClips, !remoteIds.contains(clip.id), !publishedClips.contains(clip.id) { return true }
+            if publishedClips == nil, let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
             return false
         }
         // Complete lessons from short source videos can run up to two minutes.
@@ -398,7 +400,7 @@ final class AppModel {
                 if byId[row.clipId] != nil { context.delete(row) } else { byId[row.clipId] = row }
             }
             let publishedIds = Set(rows.map(\.clip.id))
-            PlaybackHealth.notePublished(videoIds: Set(rows.map(\.clip.videoId)))
+            PlaybackHealth.notePublished(videoIds: Set(rows.map(\.clip.videoId)), clipIds: publishedIds)
             var changed = false
             for id in byId.keys where !publishedIds.contains(id) {
                 if let row = byId[id] { context.delete(row); changed = true }
@@ -520,12 +522,14 @@ final class AppModel {
            index > 0 {
             ordered.insert(ordered.remove(at: index), at: 0)
         }
-        return ordered.isEmpty ? studyLibrary : ordered
+        return ordered
     }
 
     /// Writes the current best clip onto the profile so a relaunch opens the same personal feed.
-    func assignFirstClip() {
-        let id = rankedStudyClips().first?.id
+    func assignFirstClip(preservingExisting: Bool = false) {
+        let ranked = rankedStudyClips()
+        if preservingExisting, let first = profile.firstClipId, ranked.contains(where: { $0.id == first }) { return }
+        let id = ranked.first?.id
         guard profile.firstClipId != id else { return }
         profile.firstClipId = id
         save()
@@ -558,6 +562,7 @@ final class AppModel {
         [
             String(catalogGeneration),
             profile.readingLevel.rawValue,
+            String(profile.dailyGoalMinutes),
             profile.gateContentByLevel ? "1" : "0",
             profile.tastesLiked.joined(separator: ","),
             profile.tastesDisliked.joined(separator: ","),
@@ -583,21 +588,10 @@ final class AppModel {
 
         let withoutPasses = studyLibrary.filter { !disliked.contains($0.categoryKind) }
         let base = withoutPasses.isEmpty ? studyLibrary : withoutPasses
-        let inBand: [Clip]
-        if profile.gateContentByLevel {
-            let gated = base.filter { $0.difficultyKind.rank <= level + 1 }
-            inBand = gated.isEmpty ? base : gated
-        } else {
-            inBand = base
-        }
-        let matchedInBand = inBand.filter { wanted.contains($0.categoryKind) }
-        let matchedAnywhere = base.filter { wanted.contains($0.categoryKind) }
-        let preferred = matchedInBand.isEmpty ? matchedAnywhere : matchedInBand
-        var pool = preferred
-        for clip in inBand where !pool.contains(where: { $0.id == clip.id }) {
-            pool.append(clip)
-        }
-        if pool.isEmpty { pool = studyLibrary }
+        // Interest boosts rank eligible clips; they must never bypass the learner's level gate.
+        let pool = profile.gateContentByLevel
+            ? base.filter { $0.difficultyKind.rank <= level + 1 }
+            : base
 
         let mirror = tasteMirror()
         let likedIds = Set(profile.likedClipIds)
@@ -664,10 +658,12 @@ final class AppModel {
         case .intermediate: preferred = 30...90
         case .advanced: preferred = 45...120
         }
-        if preferred.contains(duration) { return 5 }
-        let distance = duration < preferred.lowerBound
-            ? preferred.lowerBound - duration
-            : duration - preferred.upperBound
+        let sessionUpper = min(preferred.upperBound, max(30, Double(profile.dailyGoalMinutes) * 12))
+        let sessionRange = min(preferred.lowerBound, sessionUpper)...sessionUpper
+        if sessionRange.contains(duration) { return 5 }
+        let distance = duration < sessionRange.lowerBound
+            ? sessionRange.lowerBound - duration
+            : duration - sessionRange.upperBound
         return max(-8, 5 - distance / 6)
     }
 
@@ -1054,25 +1050,16 @@ final class AppModel {
     /// Due cards the learner actually meets, most-seen first.
     func relevantDueKeys(limit: Int = 10) -> [String] {
         let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
-        return words
-            .filter { $0.dueAt <= Date() && $0.state != .known }
-            .sorted { lhs, rhs in
-                if lhs.occurrenceCount != rhs.occurrenceCount {
-                    return lhs.occurrenceCount > rhs.occurrenceCount
-                }
-                return lhs.dueAt < rhs.dueAt
-            }
-            .prefix(limit)
-            .map(\.key)
+        return ReviewQueue.due(in: words).prefix(max(0, limit)).map(\.key)
     }
 
-    /// Re-evaluates when the next new card reaches its ten-minute first review.
+    /// Re-evaluates when any learning card becomes due, including one-minute Again cards.
     private func scheduleReviewAvailabilityRefresh() {
         reviewAvailabilityTask?.cancel()
         let now = Date()
         let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
         guard let nextDue = words
-            .filter({ $0.state == .new && $0.dueAt > now })
+            .filter({ $0.state != .known && $0.dueAt > now })
             .map(\.dueAt)
             .min() else { return }
         let wait = max(1, nextDue.timeIntervalSince(now))
@@ -1107,7 +1094,7 @@ final class AppModel {
             }
             .sorted { $0.keys.count > $1.keys.count }
 
-        let n5 = struggling.filter { $0.jlpt == "N5" }
+        let n5 = struggling.filter { $0.jlpt == "N5" && (StudyPosFilter.verb.matches($0.pos) || StudyPosFilter.particle.matches($0.pos)) }
         if n5.count >= 3 {
             pockets.insert(
                 WeakWordPocket(
@@ -1426,7 +1413,9 @@ final class AppModel {
         ensureWeeklyStatsBucket()
         profile.weeklyReviewCount += 1
         save()
+        reviewAvailabilityRevision += 1
         refreshAllReminders()
+        scheduleReviewAvailabilityRefresh()
     }
 
     // MARK: Watch time & goal
@@ -1446,6 +1435,7 @@ final class AppModel {
     /// Puts a finished clip behind ones the learner has not seen. Finishing it again keeps it at the back.
     func markClipFinished(_ id: String) {
         guard !id.isEmpty else { return }
+        DailyPlanProgress.mark(.watch)
         var ids = profile.finishedClipIds
         ids.removeAll { $0 == id }
         ids.append(id)
@@ -1520,7 +1510,8 @@ final class AppModel {
     }
 
     func setDailyGoal(_ minutes: Int) {
-        profile.dailyGoalMinutes = minutes
+        profile.dailyGoalMinutes = min(120, max(1, minutes))
+        tasteRevision += 1
         save()
         refreshAllReminders()
     }
@@ -1586,8 +1577,31 @@ final class AppModel {
         paletteEpoch += 1
     }
 
+    func setLearningMode(_ mode: LearningMode) {
+        let display = mode.display
+        profile.subtitles = display.english == .hidden ? .japanese : .both
+        profile.showFurigana = display.furigana
+        profile.showRomaji = display.romaji
+        profile.englishVisibility = display.english.rawValue
+        profile.tapWordsEnabled = display.tapWords
+        save()
+    }
+
+    func setEnglishVisibility(_ visibility: EnglishVisibility) {
+        profile.englishVisibility = visibility.rawValue
+        profile.subtitles = visibility == .hidden ? .japanese : .both
+        save()
+    }
+
+    func setTapWordsEnabled(_ enabled: Bool) {
+        profile.tapWordsEnabled = enabled
+        save()
+    }
+
     func setSubtitleMode(_ mode: SubtitleMode) {
         profile.subtitles = mode
+        // The existing language picker continues to mean always-visible English.
+        profile.englishVisibility = EnglishVisibility.shown.rawValue
         save()
     }
 
@@ -1629,11 +1643,13 @@ final class AppModel {
 
     func setGateContentByLevel(_ enabled: Bool) {
         profile.gateContentByLevel = enabled
+        tasteRevision += 1
         save()
     }
 
     func setReadingLevel(_ level: ReadingLevel) {
         profile.readingLevel = level
+        tasteRevision += 1
         save()
     }
 
@@ -1710,13 +1726,41 @@ final class AppModel {
     var dueWordCount: Int {
         let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
         let now = Date()
-        return words.filter { $0.state != .known && $0.dueAt <= now }.count
+        return words.filter { $0.isDueForReview(at: now) }.count
     }
 
     // MARK: Onboarding
 
     func setOnboardingStep(_ step: OnboardingStep) {
         profile.onboardingStep = step.rawValue
+        save()
+    }
+
+    /// One persisted preference handoff, used by every onboarding question.
+    func updateOnboardingPreferences(motivations: [String]? = nil, liked: [String]? = nil, disliked: [String]? = nil, level: ReadingLevel? = nil) {
+        if let motivations {
+            let selected = Set(motivations)
+            profile.motivations = Motivation.allCases.filter { selected.contains($0.rawValue) }.map(\.rawValue)
+        }
+        if let liked {
+            let selected = Set(liked)
+            profile.tastesLiked = Taste.allCases.filter { selected.contains($0.rawValue) }.map(\.rawValue)
+        }
+        if let disliked {
+            let selected = Set(disliked).subtracting(profile.tastesLiked)
+            profile.tastesDisliked = Taste.allCases.filter { selected.contains($0.rawValue) }.map(\.rawValue)
+        }
+        if let level {
+            profile.readingLevel = level
+            if !profile.onboardingCompleted {
+                let mode: LearningMode = level == .beginner ? .beginner : level == .intermediate ? .guided : .advanced
+                setLearningMode(mode)
+            }
+        }
+        rankedCache = nil
+        rankedCacheKey = ""
+        tasteRevision += 1
+        assignFirstClip()
         save()
     }
 
@@ -1749,20 +1793,14 @@ final class AppModel {
 
     /// Release onboarding never invents watch history or saved words. Debug builds may.
     /// Nonisolated so it can be a default argument; it only reads the build configuration.
-    nonisolated static var seedsDemoOnOnboarding: Bool {
-        #if DEBUG
-        true
-        #else
-        false
-        #endif
-    }
+    nonisolated static var seedsDemoOnOnboarding: Bool { false }
 
     func completeOnboarding(seedDemo: Bool = AppModel.seedsDemoOnOnboarding) {
         restorePalette()
-        assignFirstClip()
-        if seedDemo, Self.seedsDemoOnOnboarding {
-            seedDemoDataIfNeeded()
-        }
+        assignFirstClip(preservingExisting: true)
+        #if DEBUG
+        if seedDemo { seedDemoDataIfNeeded() }
+        #endif
         profile.onboardingCompleted = true
         profile.onboardingCompletedAt = Date()
         profile.lastWelcomedDay = Self.dayKey(Date())

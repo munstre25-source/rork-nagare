@@ -115,22 +115,35 @@ struct TapPopupCard: View {
             }
 
             if !gloss.isEmpty {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     Text("1")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(onDark ? Color.black : Color.white)
                         .frame(width: 20, height: 20)
                         .background(Circle().fill(LearningInk.selected))
-                    if !explanation.pos.isEmpty {
-                        Text(explanation.pos)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(inkSoft)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            if !explanation.pos.isEmpty {
+                                Text(explanation.pos)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(inkSoft)
+                            }
+                            if let level = explanation.jlpt, !level.isEmpty {
+                                Text(level.uppercased())
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(onDark ? Color(hex: "#4ADE80") : Color(hex: "#047857"))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color.green.opacity(onDark ? 0.14 : 0.1), in: Capsule())
+                                    .accessibilityLabel("JLPT level \(level.uppercased())")
+                            }
+                        }
+                        Text(gloss)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(3)
                     }
-                    Text(gloss)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(3)
                 }
             }
 
@@ -162,9 +175,13 @@ struct TapPopupCard: View {
                 middle
             }
 
-            paintRow(selection: selection)
-            if let line = selection.clip.lines[safe: selection.lineIndex] {
-                UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
+            // Keep the first tap focused on meaning. Study grading and sharing live in
+            // the Flashcard tab, where the learner is already working with the saved word.
+            if lookup.tab == .flashcard {
+                paintRow(selection: selection)
+                if let line = selection.clip.lines[safe: selection.lineIndex] {
+                    UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
+                }
             }
             pageDots
         }

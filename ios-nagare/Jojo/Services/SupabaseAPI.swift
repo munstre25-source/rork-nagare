@@ -127,11 +127,15 @@ nonisolated struct SupabaseAPI: Sendable {
                 total = range.split(separator: "/").last.flatMap { Int($0) }
             }
             let rows = try JSONDecoder().decode([LossyRow].self, from: data)
-            result += rows.compactMap { row -> (clip: Clip, json: Data)? in
+            let decoded = rows.compactMap { row -> (clip: Clip, json: Data)? in
                 guard let clip = row.value?.clip, !clip.lines.isEmpty,
                       let json = try? encoder.encode(clip) else { return nil }
                 return (clip, json)
             }
+            // A wholly undecodable page is not an authoritative empty catalog.
+            // Fail this sync so existing playable content is not retired by a schema error.
+            if !rows.isEmpty && decoded.isEmpty { throw SupabaseError.invalidResponse }
+            result += decoded
             if rows.count < pageSize || offset + rows.count >= (total ?? Int.max) { return result }
             offset += pageSize
         }

@@ -87,13 +87,22 @@ struct ReviewSessionView: View {
         .onAppear {
             app.isReviewSessionActive = true
             guard queue.isEmpty, !isFinished else { return }
-            queue = config.keys
-            total = config.keys.count
+            let available = Set(allWords.map(\.key))
+            var seen = Set<String>()
+            queue = config.keys.filter { available.contains($0) && seen.insert($0).inserted }
+            total = queue.count
+            isFinished = queue.isEmpty
             track("review_started", props: ["count": String(total)])
         }
         .onDisappear {
             app.isReviewSessionActive = false
             app.lastReviewEndedAt = Date()
+        }
+        .onChange(of: allWords.map(\.key)) { _, keys in
+            let available = Set(keys)
+            queue.removeAll { !available.contains($0) }
+            total = completed + queue.count
+            if queue.isEmpty { isFinished = true }
         }
         .onChange(of: queue.first) { _, _ in
             revealed = false
@@ -240,6 +249,7 @@ struct ReviewSessionView: View {
             queue.removeFirst()
             if queue.isEmpty {
                 isFinished = true
+                DailyPlanProgress.mark(.review)
                 Haptics.success()
                 track("review_completed", props: ["count": String(total), "good": String(goodCount)])
             }

@@ -1,0 +1,12 @@
+{
+  "checkedClips": 10,
+  "checkedLines": 86,
+  "unreviewedClipIds": [
+    "immersion-butabara-steam",
+    "immersion-komeda-order",
+    "immersion-6bAtb5gwX1Y-5-45",
+    "immersion-pd-5GK2JdQk-5-45"
+  ],
+  "issues": [],
+  "limitation": "Sanity checks do not verify meaning. Clips without a current audio review require review; do not auto-rewrite them from glosses."
+}

@@ -54,7 +54,8 @@ final class PurchaseManager {
     private(set) var status: SubscriptionStatus?
     private(set) var offering: Offering?
     private(set) var isLoadingOffering = false
-    private(set) var isTrialEligible = true
+    private(set) var eligibleTrialProductIds: Set<String> = []
+    var isTrialEligible: Bool { !eligibleTrialProductIds.isEmpty }
     private(set) var isPurchasing = false
     private(set) var isRestoring = false
     private(set) var offeringFailed = false
@@ -71,8 +72,16 @@ final class PurchaseManager {
 
     var isConfigured: Bool { Purchases.isConfigured }
     var isSubscribed: Bool { isEntitlementActive || debugBypassActive }
-    var monthly: Package? { offering?.monthly ?? offering?.package(identifier: StoreConstants.monthlyProductId) }
-    var yearly: Package? { offering?.annual ?? offering?.package(identifier: StoreConstants.yearlyProductId) }
+    var monthly: Package? {
+        guard let package = offering?.monthly ?? offering?.package(identifier: StoreConstants.monthlyProductId),
+              let period = package.storeProduct.subscriptionPeriod, period.unit == .month, period.value == 1 else { return nil }
+        return package
+    }
+    var yearly: Package? {
+        guard let package = offering?.annual ?? offering?.package(identifier: StoreConstants.yearlyProductId),
+              let period = package.storeProduct.subscriptionPeriod, period.unit == .year, period.value == 1 else { return nil }
+        return package
+    }
     /// True when a RevenueCat Paywall is configured for the offering in the dashboard.
     var hasRemotePaywall: Bool { offering?.hasPaywall == true }
 
@@ -138,7 +147,8 @@ final class PurchaseManager {
         defer { isLoadingOffering = false }
         do {
             let offerings = try await Purchases.shared.offerings()
-            offering = offerings.offering(identifier: StoreConstants.offeringId) ?? offerings.current
+            // Respect RevenueCat targeting/experiments; keep the configured default as fallback.
+            offering = offerings.current ?? offerings.offering(identifier: StoreConstants.offeringId)
             offeringFailed = offering == nil
             if offering == nil {
                 print("[Purchases] no '\(StoreConstants.offeringId)' offering; check the RevenueCat dashboard")
@@ -153,8 +163,11 @@ final class PurchaseManager {
     private func refreshTrialEligibility() async {
         let packages = [monthly, yearly].compactMap { $0 }
         guard !packages.isEmpty else { return }
+        eligibleTrialProductIds = []
         let eligibility = await Purchases.shared.checkTrialOrIntroDiscountEligibility(packages: packages)
-        isTrialEligible = eligibility.values.contains { $0.status == .eligible || $0.status == .unknown }
+        eligibleTrialProductIds = Set(eligibility.compactMap { package, result in
+            result.status == .eligible ? package.storeProduct.productIdentifier : nil
+        })
     }
 
     // MARK: Purchase
@@ -333,7 +346,7 @@ final class PurchaseManager {
 
     /// Free-trial copy from the product's introductory offer. Empty when StoreKit has no free trial.
     func trialText(_ package: Package?) -> String {
-        guard let package, isTrialEligible else { return "" }
+        guard let package, hasEligibleTrial(package) else { return "" }
         guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else { return "" }
         let period = discount.subscriptionPeriod
         let value = period.value
@@ -348,7 +361,7 @@ final class PurchaseManager {
 
     /// Trial length in days, from the introductory offer. Nil when that offer is not a free trial.
     func trialLengthDays(_ package: Package?) -> Int? {
-        guard let package, isTrialEligible else { return nil }
+        guard let package, hasEligibleTrial(package) else { return nil }
         guard let discount = package.storeProduct.introductoryDiscount, discount.paymentMode == .freeTrial else { return nil }
         let period = discount.subscriptionPeriod
         switch period.unit {
@@ -366,26 +379,48 @@ final class PurchaseManager {
               let months = Self.monthCount(product.subscriptionPeriod),
               months > 0 else { return nil }
         let perMonth = product.price / months
-        let formatter = product.priceFormatter ?? {
-            let f = NumberFormatter()
-            f.numberStyle = .currency
-            return f
-        }()
-        return formatter.string(from: perMonth as NSDecimalNumber)
+        return currencyText(perMonth, product: product)
     }
 
-    /// How much cheaper the yearly plan is per month than the monthly plan, from the loaded products.
+    /// Only a verified trial for this selected product may be advertised.
+    func hasEligibleTrial(_ package: Package?) -> Bool {
+        guard let package else { return false }
+        return eligibleTrialProductIds.contains(package.storeProduct.productIdentifier)
+    }
+
+    var annualComparison: SubscriptionPriceComparison? {
+        guard let annual = yearly?.storeProduct, let month = monthly?.storeProduct,
+              let annualPeriod = annual.subscriptionPeriod, annualPeriod.unit == .year,
+              let monthlyPeriod = month.subscriptionPeriod, monthlyPeriod.unit == .month else { return nil }
+        return SubscriptionPriceComparison(
+            annualPrice: annual.price, monthlyPrice: month.price,
+            annualCurrency: annual.currencyCode, monthlyCurrency: month.currencyCode,
+            annualMonths: annualPeriod.value * 12, monthlyMonths: monthlyPeriod.value
+        )
+    }
+
     func yearlySavingsPercent() -> Int? {
-        guard let yearly = yearly?.storeProduct, let monthly = monthly?.storeProduct,
-              let yearlyMonths = Self.monthCount(yearly.subscriptionPeriod),
-              let monthlyMonths = Self.monthCount(monthly.subscriptionPeriod),
-              yearlyMonths > 0, monthlyMonths > 0 else { return nil }
-        let yearlyRate = yearly.price / yearlyMonths
-        let monthlyRate = monthly.price / monthlyMonths
-        guard monthlyRate > 0, yearlyRate < monthlyRate else { return nil }
-        let saved = (monthlyRate - yearlyRate) / monthlyRate * 100
-        let percent = Int((saved as NSDecimalNumber).doubleValue.rounded())
-        return percent > 0 ? percent : nil
+        guard let comparison = annualComparison, comparison.savingsPercent > 0 else { return nil }
+        return comparison.savingsPercent
+    }
+
+    func yearlySavingsText() -> String? {
+        guard let comparison = annualComparison, comparison.hasSavings else { return nil }
+        return currencyText(comparison.annualSavings, product: yearly?.storeProduct)
+    }
+
+    func monthlyYearTotalText() -> String? {
+        guard let comparison = annualComparison else { return nil }
+        return currencyText(comparison.twelveMonthsAtMonthlyPrice, product: monthly?.storeProduct)
+    }
+
+    private func currencyText(_ amount: Decimal, product: StoreProduct?) -> String? {
+        guard let product, let currency = product.currencyCode, !currency.isEmpty else { return nil }
+        if let formatter = product.priceFormatter?.copy() as? NumberFormatter {
+            formatter.currencyCode = currency
+            return formatter.string(from: amount as NSDecimalNumber)
+        }
+        return amount.formatted(.currency(code: currency))
     }
 
     private static func monthCount(_ period: SubscriptionPeriod?) -> Decimal? {

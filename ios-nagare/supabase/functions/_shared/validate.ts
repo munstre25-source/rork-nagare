@@ -9,6 +9,7 @@ export const CATEGORIES = new Set([
   "kids",
   "gaming",
   "learning",
+  "podcast",
 ]);
 
 export const DIFFICULTIES = new Set(["Beginner", "Intermediate", "Advanced"]);
@@ -35,7 +36,7 @@ export type LineLike = {
 
 export type ValidationResult = { ok: true } | { ok: false; error: string };
 
-/** Catch clear translation defects before a clip reaches the catalog. */
+/** Deterministic sanity checks only; these cannot establish semantic translation accuracy. */
 export function translationQualityIssue(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return "translation required";
   const text = value.trim();
@@ -45,9 +46,29 @@ export function translationQualityIssue(value: unknown): string | null {
   if (/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7a3]/u.test(text)) {
     return "translation contains untranslated source-language text";
   }
+  if (/^(?:test|todo|tbd|n\/a|undefined|null)$/i.test(text)) {
+    return "translation is a placeholder";
+  }
+  if (/^(?:translation|english translation)\s*:/i.test(text) || /\uFFFD/u.test(text)) {
+    return "translation contains generation artifacts";
+  }
+  const standard = text.replace(/[’‘]/gu, "'");
+  if (/^(?:(?:he|she|it)\s+(?:are|were|have|don't)\b|(?:you|we|they)\s+(?:is|was|has|doesn't)\b|i\s+(?:is|are|has|doesn't)\b)/i.test(standard)) {
+    return "translation has subject-verb disagreement";
+  }
   if (/^[a-z]$/i.test(text)) return "translation is a single letter";
   if (/,\s*["'”’]?$/u.test(text) || /\b(?:and|but|because)\s*$/i.test(text)) {
     return "translation ends mid-thought";
+  }
+  return null;
+}
+
+/** A pair of complete sentences should be two timed cards, each with its own English. */
+export function lineAlignmentIssue(surfaces: string, translation: string): string | null {
+  const japaneseEnds = [...surfaces.matchAll(/[。！？!?]/gu)].length;
+  const englishEnds = [...translation.matchAll(/[.!?](?=\s|$)/gu)].length;
+  if (japaneseEnds >= 2 && englishEnds >= 2) {
+    return "multiple translated sentences must be separate lines";
   }
   return null;
 }
@@ -160,6 +181,11 @@ export function validateLines(
     if (!Array.isArray(line.tokens) || line.tokens.length === 0) {
       return { ok: false, error: `line[${i}] tokens must be non-empty` };
     }
+
+    const lineText = line.tokens.map((token: TokenLike) =>
+      typeof token.surface === "string" ? token.surface : "").join("");
+    const alignmentIssue = lineAlignmentIssue(lineText, String(line.translation));
+    if (alignmentIssue) return { ok: false, error: `line[${i}] ${alignmentIssue}` };
 
     let tokenPrev = line.start - 0.0001;
     for (let t = 0; t < line.tokens.length; t++) {

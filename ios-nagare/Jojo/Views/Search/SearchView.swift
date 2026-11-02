@@ -5,6 +5,15 @@ nonisolated enum SearchScope: String, CaseIterable, Hashable, Sendable {
     case words = "Words"
     case sentences = "Clips"
     case grammar = "Grammar"
+
+    func hasLocalResults(wordCount: Int, clipCount: Int, grammarCount: Int) -> Bool {
+        switch self {
+        case .all: wordCount + clipCount + grammarCount > 0
+        case .words: wordCount > 0
+        case .sentences: clipCount > 0
+        case .grammar: grammarCount > 0
+        }
+    }
 }
 
 /// State of the whole-catalog (server) search under the local results.
@@ -34,6 +43,7 @@ struct SearchView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var query: String = ""
+    @State private var didInitialize = false
     @State private var scope: SearchScope = .all
     @State private var showAllWords = false
     @State private var showAllSentences = false
@@ -66,6 +76,8 @@ struct SearchView: View {
             }
         }
         .onAppear {
+            guard !didInitialize else { return }
+            didInitialize = true
             if query.isEmpty { query = initialQuery }
             if scope == .all { scope = initialScope }
             isFocused = initialQuery.isEmpty && !embedded
@@ -73,9 +85,18 @@ struct SearchView: View {
         .onChange(of: query) { _, _ in
             showAllWords = false
             showAllSentences = false
+            remoteHits = nil
+            remoteState = .idle
+            pattern = nil
+            patternHits = nil
+            patternState = .idle
         }
         .task(id: "\(query)|\(scope)") {
             await runRemoteSearch()
+        }
+        .task(id: "\(scope)|\(pattern?.id ?? "")") {
+            guard scope == .grammar, let pattern else { return }
+            await loadPatternHits(pattern)
         }
         .fullScreenCover(item: $playing) { hit in
             ClipPlayerScreen(clip: hit.clip, startLine: hit.lineIndex, loopLine: true)
@@ -124,14 +145,15 @@ struct SearchView: View {
             } else {
                 suggestionsView
             }
-        } else if visibleWords.isEmpty && visibleSentences.isEmpty && grammarHits.isEmpty && showsNoRemoteResults {
-            Text("No matches for \u{201C}\(trimmed)\u{201D} yet.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
         } else {
+            if !scope.hasLocalResults(wordCount: wordHits.count, clipCount: sentenceHits.count,
+                                      grammarCount: grammarHits.count) && showsNoRemoteResults {
+                Text("No matches for \u{201C}\(trimmed)\u{201D} in this search.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+            }
             resultSummary
             if scope == .all || scope == .words, !wordHits.isEmpty {
                 resultSection(
@@ -143,13 +165,13 @@ struct SearchView: View {
                     showAllWords.toggle()
                 } content: {
                     ForEach(visibleWords) { hit in
-                        DictionaryResultRow(hit: hit)
+                        DictionaryResultRow(hit: hit) { findClips(for: hit.surface) }
                     }
                 }
             }
             if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
                 resultSection(
-                    title: "Clips (\(sentenceHits.count))",
+                    title: "Available clips (\(sentenceHits.count))",
                     expanded: showAllSentences,
                     canExpand: sentenceHits.count > 8,
                     expandTitle: "See all clips"
@@ -178,7 +200,7 @@ struct SearchView: View {
                     expandTitle: ""
                 ) {} content: {
                     ForEach(grammarHits.prefix(scope == .grammar ? 40 : 6)) { hit in
-                        DictionaryResultRow(hit: hit)
+                        DictionaryResultRow(hit: hit) { findClips(for: hit.surface) }
                     }
                 }
             }
@@ -191,11 +213,12 @@ struct SearchView: View {
     // MARK: Kiku search: the whole catalog, on the server
 
     private var showsNoRemoteResults: Bool {
-        guard scope == .all || scope == .sentences else { return remoteState == .idle || remoteState == .failed }
+        guard scope == .all || scope == .sentences else { return true }
         switch remoteState {
         case .loaded: return (remoteHits ?? []).isEmpty
         case .loading: return false
-        case .failed, .idle: return true
+        case .failed: return false
+        case .idle: return true
         }
     }
 
@@ -219,7 +242,7 @@ struct SearchView: View {
         case .loaded:
             if !hits.isEmpty {
                 resultSection(
-                    title: "All clips (\(hits.count))",
+                    title: "More clips (\(hits.count))",
                     expanded: true,
                     canExpand: false,
                     expandTitle: ""
@@ -257,7 +280,6 @@ struct SearchView: View {
                     Button {
                         Haptics.selection()
                         pattern = item
-                        Task { await loadPatternHits(item) }
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
@@ -340,7 +362,7 @@ struct SearchView: View {
 
     private func runRemoteSearch() async {
         // The Grammar scope searches by pattern chips, not by word.
-        guard scope != .grammar else {
+        guard scope == .all || scope == .sentences else {
             remoteHits = nil
             remoteState = .idle
             return
@@ -351,6 +373,7 @@ struct SearchView: View {
             remoteState = .idle
             return
         }
+        remoteHits = nil
         remoteState = .loading
         try? await Task.sleep(for: .milliseconds(450))
         guard !Task.isCancelled else { return }
@@ -367,6 +390,7 @@ struct SearchView: View {
     }
 
     private func loadPatternHits(_ pattern: GrammarPattern) async {
+        patternHits = nil
         guard SupabaseAPI.shared.isConfigured else {
             patternState = .failed
             return
@@ -375,11 +399,20 @@ struct SearchView: View {
         patternHits = nil
         do {
             let hits = try await SupabaseAPI.shared.searchGrammar(patternId: pattern.id)
+            guard !Task.isCancelled, self.pattern?.id == pattern.id, scope == .grammar else { return }
             patternHits = hits
             patternState = .loaded
         } catch {
+            guard !Task.isCancelled, self.pattern?.id == pattern.id, scope == .grammar else { return }
             patternState = .failed
         }
+    }
+
+    private func findClips(for surface: String) {
+        Haptics.selection()
+        query = surface
+        scope = .sentences
+        isFocused = false
     }
 
     private var resultSummary: some View {
@@ -387,8 +420,9 @@ struct SearchView: View {
         if scope == .all || scope == .words, !wordHits.isEmpty {
             parts.append(wordHits.count == 1 ? "1 word" : "\(wordHits.count) words")
         }
-        if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
-            parts.append(sentenceHits.count == 1 ? "1 clip" : "\(sentenceHits.count) clips")
+        if scope == .all || scope == .sentences {
+            let count = Set((sentenceHits + (remoteHits ?? [])).map(\.id)).count
+            if count > 0 { parts.append(count == 1 ? "1 clip" : "\(count) clips") }
         }
         if scope == .all || scope == .grammar, !grammarHits.isEmpty {
             parts.append(grammarHits.count == 1 ? "1 grammar point" : "\(grammarHits.count) grammar")
@@ -533,55 +567,55 @@ struct SearchView: View {
 
 private struct DictionaryResultRow: View {
     let hit: WordSearchHit
+    let onFindClips: () -> Void
+    @Environment(AppModel.self) private var app
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(hit.surface)
-                    .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if !hit.romaji.isEmpty {
-                    Text(hit.romaji)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+        HStack(spacing: 8) {
+            Button(action: onFindClips) {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if app.profile.showFurigana, !hit.reading.isEmpty, hit.reading != hit.surface {
+                            Text(hit.reading).font(JojoFont.jp(12, relativeTo: .caption))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(hit.surface).font(JojoFont.jp(22, bold: true, relativeTo: .title3))
+                            .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.7)
+                        if app.profile.showRomaji, !hit.romaji.isEmpty {
+                            Text(hit.romaji).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        if !hit.gloss.isEmpty {
+                            Text(hit.gloss).font(.subheadline).foregroundStyle(.secondary)
+                                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    if let jlpt = hit.jlpt { JLPTBadge(level: jlpt) }
+                    Image(systemName: "chevron.right").font(.caption2.weight(.bold))
+                        .foregroundStyle(.tertiary)
                 }
-                if !hit.gloss.isEmpty {
-                    Text(hit.gloss)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 8)
+            .buttonStyle(.plain)
+            .accessibilityHint("Find clips using \(hit.surface)")
             Button {
                 SpeechService.shared.speak(hit.surface)
             } label: {
-                Image(systemName: "speaker.wave.2")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 36, height: 36)
+                Image(systemName: "speaker.wave.2").foregroundStyle(.secondary)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Play \(hit.surface)")
-            if let jlpt = hit.jlpt {
-                JLPTBadge(level: jlpt)
-            }
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.tertiary)
+            .accessibilityLabel("Hear \(hit.surface)")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14).padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 16))
         .padding(.bottom, 8)
     }
 }
 
 private struct SentenceResultRow: View {
+    @Environment(AppModel.self) private var app
     let hit: SearchHit
     var query: String = ""
 
@@ -596,12 +630,7 @@ private struct SentenceResultRow: View {
     }
 
     private var level: String? {
-        if let tokenLevel = line?.tokens.compactMap(\.jlpt).first { return tokenLevel }
-        switch hit.clip.difficultyKind {
-        case .beginner: return "N5"
-        case .intermediate: return "N4"
-        case .advanced: return "N3"
-        }
+        line?.tokens.first(where: { SearchMatcher.tokenMatches($0, query: query) })?.jlpt
     }
 
     var body: some View {
@@ -623,7 +652,7 @@ private struct SentenceResultRow: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.studyMuted)
                     .lineLimit(1)
-                if let translation = line?.translation, !translation.isEmpty {
+                if app.profile.subtitleDisplay.english == .shown, let translation = line?.translation, !translation.isEmpty {
                     Text(translation)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -633,6 +662,9 @@ private struct SentenceResultRow: View {
             }
             if let level {
                 JLPTBadge(level: level)
+            } else {
+                Text(hit.clip.difficulty).font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.studyMuted)
             }
         }
         .padding(.horizontal, 14)

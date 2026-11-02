@@ -5,7 +5,7 @@ import { translationQualityIssue } from "./validate.ts";
 
 function line(start: number, end: number, tokens: Array<[string, number, number]>): Record<string, unknown> {
   return {
-    translation: "test",
+    translation: "Hello.",
     start,
     end,
     tokens: tokens.map(([surface, s, e]) => ({ surface, start: s, end: e })),
@@ -81,6 +81,15 @@ Deno.test("obvious English translation defects are rejected", () => {
   for (const translation of ["Hello.", "Wake up right now.", "Mom seems to have a headache.", "I know."]) {
     assertEquals(translationQualityIssue(translation), null);
   }
+});
+
+Deno.test("multiple translated sentences require separate timed lines", () => {
+  const combined = line(1, 5, [
+    ["隼人", 1, 1.6], ["！", 1.6, 1.6],
+    ["約束", 1.7, 2.3], ["だ", 2.3, 2.6], ["。", 2.6, 2.6],
+  ]);
+  combined.translation = "Hayato! It's a promise.";
+  assert(!validateLineTimeline([combined], 0, 6).ok);
 });
 
 Deno.test("short sources may remain whole lessons", () => {

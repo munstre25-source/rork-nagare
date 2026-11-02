@@ -44,9 +44,7 @@ struct MotivationStepView: View {
 
     private func save(_ values: [String]) {
         Haptics.light()
-        app.profile.motivations = values
-        app.save()
-        app.assignFirstClip()
+        app.updateOnboardingPreferences(motivations: values)
         onContinue()
     }
 }
@@ -60,6 +58,7 @@ struct TasteSwipeStepView: View {
     @State private var disliked: [String] = []
     @State private var drag: CGSize = .zero
     @State private var didRestore = false
+    @State private var isDeciding = false
 
     private let tastes = Taste.allCases
 
@@ -188,7 +187,7 @@ struct TasteSwipeStepView: View {
     private var summary: String {
         if !liked.isEmpty {
             let names = liked.compactMap { Taste(rawValue: $0)?.title }.prefix(2).joined(separator: " & ")
-            return "Your feed opens on \(names)."
+            return "We’ll prioritize \(names) at your level."
         }
         let fromWhy = app.profile.motivations.compactMap { Motivation(rawValue: $0)?.title }.prefix(2)
         if !fromWhy.isEmpty {
@@ -214,14 +213,12 @@ struct TasteSwipeStepView: View {
     }
 
     private func persistTastes() {
-        app.profile.tastesLiked = liked
-        app.profile.tastesDisliked = disliked
-        app.save()
-        app.assignFirstClip()
+        app.updateOnboardingPreferences(liked: liked, disliked: disliked)
     }
 
     private func decide(like: Bool) {
-        guard let taste = tastes[safe: index] else { return }
+        guard !isDeciding, let taste = tastes[safe: index] else { return }
+        isDeciding = true
         like ? Haptics.medium() : Haptics.light()
         if like { liked.append(taste.rawValue) } else { disliked.append(taste.rawValue) }
         persistTastes()
@@ -233,6 +230,7 @@ struct TasteSwipeStepView: View {
             try? await Task.sleep(for: .milliseconds(180))
             drag = .zero
             withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { index += 1 }
+            isDeciding = false
         }
     }
 }
@@ -282,6 +280,7 @@ struct LevelStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
     @State private var selected: ReadingLevel?
+    @State private var continuationTask: Task<Void, Never>?
 
     var body: some View {
         ScrollView {
@@ -310,6 +309,7 @@ struct LevelStepView: View {
             .padding(.horizontal, Spacing.l)
             .padding(.vertical, Spacing.l)
         }
+        .onDisappear { continuationTask?.cancel() }
     }
 
     private func levelCard(_ level: ReadingLevel, label: String, words: [StaticSentence.Word], translation: String, underline: Bool = true) -> some View {
@@ -317,12 +317,12 @@ struct LevelStepView: View {
         return Button {
             Haptics.medium()
             selected = level
-            app.profile.level = level.rawValue
-            app.save()
-            app.assignFirstClip()
+            app.updateOnboardingPreferences(level: level)
             track("onboarding_level_selected", props: ["level": level.rawValue])
-            Task {
-                try? await Task.sleep(for: .milliseconds(350))
+            continuationTask?.cancel()
+            continuationTask = Task {
+                do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
+                guard !Task.isCancelled else { return }
                 onContinue()
             }
         } label: {
@@ -359,6 +359,7 @@ struct LevelStepView: View {
             .animation(.snappy, value: isSelected)
         }
         .buttonStyle(PressableStyle())
+        .disabled(selected != nil)
         .accessibilityLabel("\(label): \(translation)")
     }
 }
