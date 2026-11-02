@@ -63,8 +63,6 @@ struct VocabView: View {
         Array(Set(words.compactMap { app.clip(id: $0.contextClipId)?.channelName })).sorted()
     }
 
-    private var knownCount: Int { words.filter { $0.state == .known }.count }
-
 
     private var reviewPool: [SavedWord] {
         _ = app.reviewAvailabilityRevision
@@ -85,6 +83,9 @@ struct VocabView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     vocabHeader
+                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+                        learningProgress(at: timeline.date)
+                    }
 
                     HStack(spacing: 10) {
                         DesignSearchField(text: $query, placeholder: "Search saved words...")
@@ -194,10 +195,6 @@ struct VocabView: View {
                     .foregroundStyle(Color.studyMuted)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(knownCount == 1 ? "1 word you know" : "\(knownCount) words you know")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.studyAccent)
-                    .lineLimit(1)
                 if !words.isEmpty {
                     Text(dueWords.isEmpty ? "Nothing due right now" : "\(dueWords.count) due")
                         .font(.caption.weight(.semibold))
@@ -210,6 +207,81 @@ struct VocabView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private func learningProgress(at now: Date) -> some View {
+        let progress = VocabularyProgress(words: words, dailyGoal: app.profile.dailyVocabularyGoal, now: now)
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(progress.learnedCount)")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .foregroundStyle(LearningInk.japanese)
+                Text(progress.learnedCount == 1 ? "word learned" : "words learned")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 0)
+            }
+            Text("Marked Known by you or through reviews · \(progress.savedCount) saved")
+                .font(.caption)
+                .foregroundStyle(Color.studyMuted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider()
+
+            HStack(alignment: .firstTextBaseline) {
+                Text("Today's practice")
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                Menu {
+                    ForEach(VocabularyProgress.goalOptions, id: \.self) { goal in
+                        Button {
+                            Haptics.selection()
+                            app.setDailyVocabularyGoal(goal)
+                        } label: {
+                            if progress.dailyGoal == goal {
+                                Label("\(goal) words a day", systemImage: "checkmark")
+                            } else {
+                                Text("\(goal) words a day")
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Goal: \(progress.dailyGoal)", systemImage: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.studyAccent)
+                        .frame(minHeight: 44)
+                }
+                .accessibilityLabel("Daily vocabulary target, \(progress.dailyGoal) words")
+            }
+
+            HStack {
+                Text("\(progress.practicedToday) / \(progress.dailyGoal) words")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                Spacer(minLength: 8)
+                Text(progress.goalReached ? "Goal reached" : "\(progress.remaining) to go")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(progress.goalReached ? LearningInk.spoken : Color.studyMuted)
+            }
+
+            ProgressView(value: progress.fraction)
+                .tint(progress.goalReached ? LearningInk.spoken : Color.studyAccent)
+                .accessibilityLabel("Daily vocabulary practice")
+                .accessibilityValue("\(progress.practicedToday) of \(progress.dailyGoal) words practiced today")
+
+            Text("Review or rate a word to count it. Each word counts once a day.")
+                .font(.caption)
+                .foregroundStyle(Color.studyMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.cardStroke, lineWidth: 1)
+        }
     }
 
     private var learnSection: some View {

@@ -1583,6 +1583,11 @@ final class AppModel {
         save()
     }
 
+    func setDailyVocabularyGoal(_ words: Int) {
+        profile.dailyVocabularyGoal = min(50, max(1, words))
+        save()
+    }
+
     func setLearningMode(_ mode: LearningMode) {
         let display = mode.display
         profile.subtitles = display.english == .hidden ? .japanese : .both

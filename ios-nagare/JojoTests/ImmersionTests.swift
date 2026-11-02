@@ -55,9 +55,9 @@ struct ImmersionTests {
         #expect(line.hasWordTiming == false)
     }
 
-    @Test func missingTimingMeansWordTimed() throws {
+    @Test func missingTimingUsesValidLegacyTokenTimes() throws {
         let json = """
-        {"tokens":[],"translation":"","start":0,"end":1}
+        {"tokens":[{"surface":"はい","romaji":"hai","pos":"expression","start":0,"end":1}],"translation":"Yes","start":0,"end":1}
         """
         let line = try JSONDecoder().decode(Line.self, from: Data(json.utf8))
         #expect(line.timing == nil)
@@ -79,13 +79,43 @@ struct ImmersionTests {
         #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 1.2) == nil)
     }
 
-    @Test func tokenIndexSkipsZeroLengthTokens() {
+    @Test func invalidTokenTimingFallsBackToSentenceSync() {
         let tokens = [
             Token(surface: "あ", romaji: "a", start: 0.0, end: 0.5, pos: "interjection"),
             Token(surface: "ね", romaji: "ne", start: 0.5, end: 0.5, pos: "particle"),
         ]
         let clip = makeClip(lines: [Line(tokens: tokens, translation: "Ah", start: 0, end: 1)])
-        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.7) == 0)
+        #expect(!clip.lines[0].hasWordTiming)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.7) == nil)
+    }
+
+    @Test func punctuationAliasesDoNotDisableWordKaraoke() {
+        let tokens = [
+            Token(surface: "どうした", romaji: "doushita", start: 0.4, end: 1.15, pos: "verb"),
+            Token(surface: "の", romaji: "no", start: 1.15, end: 1.45, pos: "particle"),
+            Token(surface: "？", romaji: "", start: 1.45, end: 1.45, pos: "punct"),
+        ]
+        let line = Line(tokens: tokens, translation: "What's wrong?", start: 0.4, end: 1.6, timing: "word")
+        #expect(tokens[2].isPunctuation)
+        #expect(line.hasWordTiming)
+        #expect(PlaybackUI.tokenIndex(clip: makeClip(lines: [line]), line: 0, time: 1.2) == 1)
+    }
+
+    @Test func repeatedSentenceWindowsAreNotWordAlignment() {
+        let tokens = [
+            Token(surface: "今日", romaji: "kyou", start: 0, end: 2, pos: "noun"),
+            Token(surface: "です", romaji: "desu", start: 0, end: 2, pos: "auxiliary"),
+        ]
+        let line = Line(tokens: tokens, translation: "Today.", start: 0, end: 2, timing: "word")
+        #expect(!line.hasWordTiming)
+        let clip = makeClip(lines: [line])
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1) == nil)
+    }
+
+    @Test func emptyAndOutOfBoundsTokenTimesDoNotClaimWordSync() {
+        #expect(!Line(tokens: [], translation: "", start: 0, end: 1).hasWordTiming)
+        let token = Token(surface: "はい", romaji: "hai", start: 3, end: 4, pos: "expression")
+        #expect(!Line(tokens: [token], translation: "Yes", start: 0, end: 1, timing: "word").hasWordTiming)
     }
 
     // MARK: Job decoding

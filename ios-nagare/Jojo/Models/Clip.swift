@@ -117,7 +117,14 @@ nonisolated struct Token: Codable, Hashable, Sendable {
     var dictionaryForm: String { baseForm ?? surface }
     var dictionaryReading: String { baseForm != nil ? (baseReading ?? "") : (reading ?? "") }
     var dictionaryRomaji: String { baseRomaji ?? romaji }
-    var isPunctuation: Bool { pos == "punctuation" }
+    var isPunctuation: Bool {
+        if ["punctuation", "punct", "symbol", "記号", "補助記号"].contains(pos.lowercased()) { return true }
+        return !surface.isEmpty && surface.unicodeScalars.allSatisfy {
+            CharacterSet.punctuationCharacters.contains($0)
+                || CharacterSet.symbols.contains($0)
+                || CharacterSet.whitespacesAndNewlines.contains($0)
+        }
+    }
 }
 
 /// A transcript line with its translation and timing.
@@ -127,14 +134,32 @@ nonisolated struct Line: Codable, Hashable, Sendable {
     var start: Double
     var end: Double
     /// "word" when each token carries validated timings, "line" when only the sentence
-    /// window is trustworthy. Missing on hand-authored clips, which are word-timed.
+    /// window is trustworthy. Missing legacy metadata is validated against the token timings.
     var timing: String? = nil
 
     var text: String { tokens.map(\.surface).joined() }
 
-    /// False when the server could not verify per-word timings; the UI then highlights the
+    /// False for sentence timing or unusable legacy token times; the UI then highlights the
     /// whole sentence instead of guessing which word is being spoken.
-    var hasWordTiming: Bool { timing != "line" }
+    var hasWordTiming: Bool {
+        guard timing != "line", start.isFinite, end.isFinite, end > start else { return false }
+        let spoken = tokens.filter { !$0.isPunctuation && !$0.surface.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !spoken.isEmpty else { return false }
+        var previousStart = start - 0.05
+        for token in spoken {
+            guard token.start.isFinite, token.end.isFinite,
+                  token.end > token.start,
+                  token.start >= start - 0.05, token.end <= end + 0.05,
+                  token.start >= previousStart else { return false }
+            previousStart = token.start
+        }
+        // Some legacy rows repeat the whole sentence window for every token.
+        if spoken.count > 1, let first = spoken.first,
+           spoken.allSatisfy({ abs($0.start - first.start) < 0.001 && abs($0.end - first.end) < 0.001 }) {
+            return false
+        }
+        return true
+    }
 }
 
 /// A short video clip with its full transcript.

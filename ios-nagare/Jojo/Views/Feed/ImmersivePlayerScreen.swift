@@ -15,6 +15,8 @@ struct ImmersivePlayerScreen: View {
     @State private var lookup = WordLookupController()
     @State private var infoClip: Clip?
     @State private var videoExpanded: Bool = false
+    @State private var showsTheaterControls = false
+    @State private var theaterOptionsPresented = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,6 +28,8 @@ struct ImmersivePlayerScreen: View {
                 showsRail: false,
                 immersiveFeed: true,
                 videoExpanded: videoExpanded,
+                showsTheaterControls: showsTheaterControls,
+                onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                 onToggleVideoSize: {
                     Haptics.selection()
                     withAnimation(.easeInOut(duration: 0.25)) { videoExpanded.toggle() }
@@ -38,6 +42,12 @@ struct ImmersivePlayerScreen: View {
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
+        .modifier(TheaterChromeModifier(
+            expanded: videoExpanded,
+            visible: $showsTheaterControls,
+            playing: coordinator.player?.isPlaying == true,
+            blocked: lookup.isPresented || theaterOptionsPresented || infoClip != nil
+        ))
         .environment(\.colorScheme, .dark)
         .preferredColorScheme(.dark)
         .onAppear {
@@ -54,7 +64,7 @@ struct ImmersivePlayerScreen: View {
             ClipInfoSheet(clip: clip)
         }
         .overlay(alignment: .top) {
-            if videoExpanded {
+            if videoExpanded && showsTheaterControls {
                 HStack {
                     Button {
                         coordinator.stop()

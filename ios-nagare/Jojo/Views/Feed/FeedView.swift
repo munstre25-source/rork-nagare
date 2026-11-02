@@ -23,6 +23,8 @@ struct FeedView: View {
     /// Maximize shortcut: a swipe down brings the navigation dock back over the theater;
     /// a swipe up tucks it away again — no need to minimize first.
     @State private var maximizeNavShown: Bool = false
+    @State private var theaterOptionsPresented = false
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
     @State private var chromeHideTask: Task<Void, Never>?
@@ -51,7 +53,8 @@ struct FeedView: View {
                         // details must not push the For You / Explore links down.
                         header
                         VStack(spacing: 0) {
-                            DailyGoalBar()
+                            DailyGoalBar(hidesAfterCompletion: true, dueWords: dueReviewKeys.count,
+                                         onReview: openDueReview)
                             if showResumeChip, let resumeSnapshot {
                                 ResumeChip(
                                     title: resumeSnapshot.title,
@@ -150,7 +153,20 @@ struct FeedView: View {
             if !expanded { maximizeNavShown = false }
             syncDock()
         }
-        .onChange(of: maximizeNavShown) { _, _ in syncDock() }
+        .onChange(of: maximizeNavShown) { _, shown in
+            syncDock()
+            if shown { revealWatchChrome() }
+        }
+        .onChange(of: theaterOptionsPresented) { _, presented in
+            if presented { chromeHideTask?.cancel() } else { scheduleWatchChromeHide() }
+        }
+        .accessibilityActions {
+            if videoExpanded {
+                Button(maximizeNavShown ? "Hide playback controls" : "Show playback controls") {
+                    maximizeNavShown.toggle()
+                }
+            }
+        }
         .onDisappear {
             autoAdvanceTask?.cancel()
             if videoExpanded { app.hidesMainTabBar = false }
@@ -298,11 +314,17 @@ struct FeedView: View {
         .padding(.bottom, 2)
     }
 
+    private func openDueReview() {
+        let keys = dueReviewKeys
+        guard !keys.isEmpty else { return }
+        reviewSession = ReviewSessionConfig(title: "Review", keys: keys)
+    }
+
     /// A due-review invitation belongs beside the Feed, never in front of the next clip.
     private var dueReviewPrompt: some View {
         let count = dueReviewCount
         return Button {
-            reviewSession = ReviewSessionConfig(title: "Review", keys: dueReviewKeys)
+            openDueReview()
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "rectangle.stack.fill")
@@ -355,6 +377,8 @@ struct FeedView: View {
                             showsChannelRow: true,
                             immersiveFeed: true,
                             videoExpanded: videoExpanded,
+                            showsTheaterControls: maximizeNavShown,
+                            onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                             onToggleVideoSize: {
                                 Haptics.selection()
                                 videoExpanded.toggle()
@@ -650,14 +674,17 @@ struct FeedView: View {
 
     private func scheduleWatchChromeHide() {
         chromeHideTask?.cancel()
-        guard app.profile.fadeWatchChrome, isActiveTab else {
+        guard (videoExpanded || app.profile.fadeWatchChrome), isActiveTab else {
             showWatchChrome()
             return
         }
         chromeHideTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2.6))
+            try? await Task.sleep(for: .seconds(videoExpanded ? 4 : 2.6))
             guard !Task.isCancelled else { return }
             guard coordinator.player?.isPlaying == true,
+                  !voiceOverEnabled,
+                  !theaterOptionsPresented,
+                  !showSearch, !showLibrary,
                   // Keep the Vocab dock visible while the guided tour may point at it.
                   GuidanceCenter.shared.tourStep == nil,
                   !lookup.isPresented,
@@ -667,6 +694,7 @@ struct FeedView: View {
                   shadowingClip == nil,
                   fullscreenClip == nil else { return }
             withAnimation(.easeInOut(duration: 0.45)) {
+                if videoExpanded { maximizeNavShown = false }
                 watchChromeVisible = false
                 app.feedChromeHidden = true
             }

@@ -5,6 +5,8 @@ struct LiveTranscriptPanel: View {
     let clip: Clip
     let currentLine: Int
     let spokenToken: Int?
+    var isPlaying: Bool = false
+    var currentTime: Double = 0
     var pulseTokenIndex: Int?
     var isPulsing: Bool = false
     var tooltip: String?
@@ -95,7 +97,7 @@ struct LiveTranscriptPanel: View {
                     // The active line keeps its plate so it stays distinct inside the panel.
                     raisedCard: index == currentLine,
                     showsLineTools: true,
-                    isSpokenLine: index == currentLine,
+                    isSpokenLine: isPlayingLine(index),
                     onReport: { onReportLine?(index) }
                 )
                 .id(index)
@@ -122,12 +124,17 @@ struct LiveTranscriptPanel: View {
                     isActive: index == currentLine || lookup.selection?.lineIndex == index,
                     forceDenseAids: forceDenseAids,
                     respectsProfileDisplay: respectsProfileDisplay,
-                    isSpokenLine: index == currentLine,
+                    isSpokenLine: isPlayingLine(index),
                     onReport: { onReportLine?(index) }
                 )
                 .id(index)
             }
         }
+    }
+
+    private func isPlayingLine(_ index: Int) -> Bool {
+        guard isPlaying, index == currentLine, let line = clip.lines[safe: index] else { return false }
+        return currentTime >= line.start && currentTime < line.end
     }
 
     private var visibleLines: [Int] {

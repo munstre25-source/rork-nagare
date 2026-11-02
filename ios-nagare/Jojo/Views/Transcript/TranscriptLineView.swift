@@ -24,6 +24,7 @@ struct TranscriptLineView: View {
     var onReport: (() -> Void)?
 
     @Environment(AppModel.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(WordLookupController.self) private var lookup
 
     @State private var translationRevealed = false
@@ -139,6 +140,12 @@ struct TranscriptLineView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay {
+                if sentenceSynced(line) {
+                    sentenceCursor
+                        .allowsHitTesting(false)
+                }
+            }
             .background {
                 if raisedCard {
                     // Quiet plate — words and the green cursor carry the hierarchy, not the chrome.
@@ -162,8 +169,23 @@ struct TranscriptLineView: View {
         }
     }
 
+    @ViewBuilder
+    private var sentenceCursor: some View {
+        let outline = RoundedRectangle(cornerRadius: raisedCard ? Radius.card : 10, style: .continuous)
+            .strokeBorder(LearningInk.spoken, lineWidth: 1.8)
+        if reduceMotion {
+            outline
+        } else {
+            outline.phaseAnimator([false, true]) { content, bright in
+                content.opacity(bright ? 1 : 0.55)
+            } animation: { _ in
+                .easeInOut(duration: 0.8)
+            }
+        }
+    }
+
     private func sentenceSynced(_ line: Line) -> Bool {
-        !line.hasWordTiming && isSpokenLine
+        isSpokenLine && (!line.hasWordTiming || spokenTokenIndex == nil)
     }
 
     private func state(for index: Int) -> TokenVisualState {

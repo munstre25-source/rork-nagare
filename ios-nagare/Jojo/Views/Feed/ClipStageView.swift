@@ -16,6 +16,8 @@ struct ClipStageView: View {
     var immersiveFeed: Bool = false
     /// Maximized grows the video while keeping the karaoke in its own section below.
     var videoExpanded: Bool = false
+    var showsTheaterControls: Bool = false
+    var onTheaterPresentationChange: (Bool) -> Void = { _ in }
     var onToggleVideoSize: (() -> Void)? = nil
     var nextClip: Clip? = nil
     var onActivate: () -> Void = {}
@@ -87,10 +89,11 @@ struct ClipStageView: View {
     /// Maximize uses the largest 16:9 frame that fits the whole feed viewport without cropping.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
         if isCompactLandscape(size) {
-            // Landscape theater: the picture must fit between the title row and the
-            // footer and leave room for the words and minimize rail.
-            let maxHeight = max(140, size.height - 140)
-            let width = min(size.width - wordsColumnWidth(in: size.width) - 44, maxHeight * 16 / 9, 1100)
+            // Reserve room only for visible controls and the separate words column.
+            let controlsHeight: CGFloat = showsTheaterControls ? 100 : 0
+            let maxHeight = max(0, size.height - controlsHeight - 18)
+            let wordsWidth = showsShortsCaptions ? wordsColumnWidth(in: size.width) + 14 : 0
+            let width = min(max(0, size.width - wordsWidth - 24), maxHeight * 16 / 9, 1100)
             return CGSize(width: width, height: width * 9 / 16)
         }
         let maxHeight = max(0, size.height)
@@ -296,7 +299,7 @@ struct ClipStageView: View {
         .padding(.bottom, 6)
     }
 
-    /// Landscape theater: big picture left with the footer under it, words + rail right.
+    /// Wide-screen theater: picture left, active sentence right, playback controls below.
     private func maximizedLandscapeStage(
         player: (any ClipPlayer)?,
         videoWidth: CGFloat?,
@@ -306,75 +309,46 @@ struct ClipStageView: View {
     ) -> some View {
         let wordsWidth = wordsColumnWidth(in: stageSize.width)
         return VStack(spacing: 8) {
-            if showsChannelRow {
-                ChannelRow(clip: clip, trailing: nil, showsFollow: false, emphasizesTitle: true)
-                    .padding(.vertical, 6)
-                    .frame(width: columnWidth)
-                    .frame(maxWidth: .infinity)
-                    .opacity(watchChromeHidden ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
-            }
-            HStack(alignment: .center, spacing: 14) {
-                VStack(spacing: 8) {
-                    ZStack(alignment: .bottomTrailing) {
-                        ClipVideoView(
-                            clip: clip,
-                            player: player,
-                            showsControls: !immersiveFeed,
-                            showsRail: immersiveFeed ? false : showsRail,
-                            compactChrome: immersiveFeed,
-                            onActivate: onActivate,
-                            onFullscreen: onFullscreen,
-                            onInfo: immersiveFeed ? nil : onInfo,
-                            onShadowing: immersiveFeed ? nil : onShadowing,
-                            fitsFrame: false,
-                            watchChromeHidden: watchChromeHidden,
-                            onRevealWatchChrome: onRevealWatchChrome,
-                            onSkip: onSkip
-                        )
-                        .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
-                    }
-                    .coachTarget(.video, active: isCoachPage)
-                    .modifier(FrameBottomReader(bottom: $videoBottom))
+            HStack(alignment: .top, spacing: 14) {
+                ClipVideoView(
+                    clip: clip,
+                    player: player,
+                    showsControls: false,
+                    showsRail: false,
+                    compactChrome: true,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
+                    fitsFrame: true,
+                    watchChromeHidden: watchChromeHidden,
+                    onRevealWatchChrome: onRevealWatchChrome,
+                    onSkip: onSkip
+                )
+                .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+                .coachTarget(.video, active: isCoachPage)
+                .modifier(FrameBottomReader(bottom: $videoBottom))
 
-                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                        .frame(width: videoWidth)
+                if showsShortsCaptions {
+                    theaterKaraoke(player: player)
+                        .frame(width: wordsWidth)
+                        .frame(maxHeight: .infinity, alignment: .top)
                 }
-
-                HStack(alignment: .top, spacing: 4) {
-                    if showsShortsCaptions {
-                        shortsKaraoke(player: player, maxHeight: theaterWordsHeight(for: stageSize.height))
-                            .coachTarget(.transcript, active: isCoachPage)
-                            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                    } else {
-                        Spacer(minLength: 0)
-                    }
-                    ShortsRail(
-                        clip: clip,
-                        player: player,
-                        showsCaptions: showsShortsCaptions,
-                        onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
-                        onInfo: onInfo,
-                        onMinimize: onToggleVideoSize,
-                        onPicture: false
-                    )
-                    .opacity(isPopupHere ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: isPopupHere)
-                }
-                .frame(width: wordsWidth, alignment: .top)
-                .frame(maxHeight: (videoHeight ?? 240) + 40, alignment: .top)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 12)
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            if showsTheaterControls {
+                theaterControls(player: player)
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.bottom, 8)
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 
     private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
         return VStack(spacing: 0) {
-            if showsChannelRow {
+            if showsChannelRow && (!maximized || showsTheaterControls) {
                 ChannelRow(
                     clip: clip,
                     trailing: maximized ? nil : channelTrailing,
@@ -407,7 +381,7 @@ struct ClipStageView: View {
                     onFullscreen: onFullscreen,
                     onInfo: immersiveFeed ? nil : onInfo,
                     onShadowing: immersiveFeed ? nil : onShadowing,
-                    fitsFrame: false,
+                    fitsFrame: maximized,
                     watchChromeHidden: watchChromeHidden,
                     onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
@@ -423,43 +397,30 @@ struct ClipStageView: View {
             .coachTarget(.video, active: isCoachPage)
             .modifier(FrameBottomReader(bottom: $videoBottom))
             .frame(maxWidth: .infinity)
-            // Theater centers the picture in the space between the title row and the words
-            // (it never hugs the top); resting keeps it snug under the title like a feed card.
-            .frame(maxHeight: maximized ? .infinity : nil, alignment: maximized ? .center : .top)
 
             if maximized {
-                // Theater words: a plated zone of comfortable height with the rail beside it,
-                // then progress and the YouTube mark close the page at the very bottom.
-                HStack(alignment: .top, spacing: 4) {
-                    if showsShortsCaptions {
-                        shortsKaraoke(player: player, maxHeight: theaterWordsHeight(for: stageSize?.height ?? 620))
-                            .coachTarget(.transcript, active: isCoachPage)
-                            .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                    } else {
-                        Spacer(minLength: 0)
-                    }
-                    ShortsRail(
-                        clip: clip,
-                        player: player,
-                        showsCaptions: showsShortsCaptions,
-                        onToggleCaptions: { withAnimation(.snappy) { showsShortsCaptions.toggle() } },
-                        onInfo: onInfo,
-                        onMinimize: onToggleVideoSize,
-                        onPicture: false
-                    )
-                    // The centered dictionary card floats over this zone while it is up.
-                    .opacity(isPopupHere ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: isPopupHere)
+                if showsTheaterControls {
+                    theaterControls(player: player)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
                 }
-                .padding(.horizontal, 12)
-                .frame(height: theaterWordsHeight(for: stageSize?.height ?? 620), alignment: .top)
 
-                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
-                    .frame(width: columnWidth)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 6)
-                    .padding(.bottom, 12)
+                if showsShortsCaptions {
+                    theaterKaraoke(player: player)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: 620, maxHeight: .infinity, alignment: .top)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                } else {
+                    Spacer(minLength: 0)
+                }
+
+                if showsTheaterControls {
+                    ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "YouTube")
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } else {
                 if immersiveFeed {
                     ClipActionRow(
@@ -519,7 +480,7 @@ struct ClipStageView: View {
                 ShortsHeader(clip: clip)
                     .padding(.horizontal, 10)
                     .padding(.top, 10)
-                    .opacity(watchChromeHidden ? 0 : 1)
+                    .opacity(watchChromeHidden || (maximized && !showsTheaterControls) ? 0 : 1)
 
                 HStack {
                     Spacer(minLength: 0)
@@ -527,7 +488,9 @@ struct ClipStageView: View {
                 }
                 .padding(.trailing, 4)
                 // The dictionary card owns the page while it is up.
-                .opacity(isPopupHere ? 0 : 1)
+                .opacity(isPopupHere || (maximized && !showsTheaterControls) ? 0 : 1)
+                .allowsHitTesting(!isPopupHere && (!maximized || showsTheaterControls))
+                .accessibilityHidden(isPopupHere || (maximized && !showsTheaterControls))
                 .animation(.easeInOut(duration: 0.2), value: isPopupHere)
             }
             .frame(maxWidth: .infinity, minHeight: 0,
@@ -544,11 +507,13 @@ struct ClipStageView: View {
                     .layoutPriority(1)
             }
 
-            ShortsFooter(clip: clip, player: player, onPicture: false)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 8)
-                .fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(1)
+            if !maximized || showsTheaterControls {
+                ShortsFooter(clip: clip, player: player, onPicture: false)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(1)
+            }
         }
         .frame(width: card.width, height: card.height, alignment: .top)
         .background(Color.watchBackground)
@@ -570,7 +535,8 @@ struct ClipStageView: View {
                     onInfo: onInfo,
                     onMaximize: videoExpanded ? nil : onToggleVideoSize,
                     onMinimize: videoExpanded ? onToggleVideoSize : nil,
-                    onPicture: true
+                    onPicture: true,
+                    onPresentationChange: onTheaterPresentationChange
                 )
                 .padding(.vertical, 4)
                 .frame(minHeight: geometry.size.height, alignment: .center)
@@ -581,10 +547,28 @@ struct ClipStageView: View {
         // Keep video controls legible while the surrounding navigation chrome fades.
     }
 
-    /// Height of the words zone on the maximized landscape page: comfortable for the
-    /// current line plus its lookahead, never taller than about a third of the stage.
-    private func theaterWordsHeight(for stageHeight: CGFloat) -> CGFloat {
-        min(max(180, stageHeight * 0.34), 320)
+    private func theaterControls(player: (any ClipPlayer)?) -> some View {
+        TheaterPlaybackControls(
+            clip: clip,
+            player: player,
+            showsCaptions: $showsShortsCaptions,
+            onInfo: onInfo,
+            onMinimize: onToggleVideoSize,
+            onPresentationChange: onTheaterPresentationChange
+        )
+        .opacity(isPopupHere ? 0 : 1)
+        .allowsHitTesting(!isPopupHere)
+    }
+
+    private func theaterKaraoke(player: (any ClipPlayer)?) -> some View {
+        VStack(spacing: 4) {
+            SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
+            // Let the panel fit one complete active sentence or scroll it at large text sizes.
+            transcript(player: player, following: 0, showsLearningControls: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .coachTarget(.transcript, active: isCoachPage)
+        }
+        .modifier(TranscriptTopReader(top: $transcriptTop))
     }
 
     private func shortsKaraoke(
@@ -699,6 +683,124 @@ struct ClipStageView: View {
         withAnimation(Motion.popupSpring) {
             lookup.dismiss()
         }
+    }
+}
+
+/// Theater controls stay separate from karaoke and shrink to a compact row on narrow screens.
+private struct TheaterPlaybackControls: View {
+    let clip: Clip
+    let player: (any ClipPlayer)?
+    @Binding var showsCaptions: Bool
+    var onInfo: (() -> Void)?
+    var onMinimize: (() -> Void)?
+    var onPresentationChange: (Bool) -> Void
+
+    @State private var showsOptions = false
+    @State private var compactOptions = false
+    @Environment(AppModel.self) private var app
+    @Environment(PlaybackCoordinator.self) private var coordinator
+
+    private var rateLabel: String {
+        switch coordinator.preferredRate {
+        case 0.75: "0.75x"
+        case 0.5: "0.5x"
+        default: "1x"
+        }
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            controls(compact: false)
+            controls(compact: true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 2)
+        .confirmationDialog("Playback options", isPresented: $showsOptions, titleVisibility: .hidden) {
+            if compactOptions {
+                Button(app.isLiked(clip.id) ? "Unlike video" : "Like video") { _ = app.toggleLike(clip.id) }
+                Button(app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip") { _ = app.toggleFavorite(clip.id) }
+            }
+            Button(showsCaptions ? "Hide karaoke" : "Show karaoke") { showsCaptions.toggle() }
+            Button(player?.loopRange == nil ? "Loop current sentence" : "Stop looping sentence") {
+                if player == nil { coordinator.activate(clip) }
+                coordinator.player?.toggleLoopCurrentLine()
+            }
+            if let onInfo { Button("Clip info", action: onInfo) }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: showsOptions) { _, presented in onPresentationChange(presented) }
+    }
+
+    private func controls(compact: Bool) -> some View {
+        HStack(spacing: 4) {
+            control(player?.isPlaying == true ? "pause.fill" : "play.fill",
+                    label: player?.isPlaying == true ? "Pause" : "Play") {
+                if player == nil { coordinator.activate(clip) }
+                else { player?.togglePlay() }
+            }
+
+            Button {
+                Haptics.selection()
+                coordinator.cycleRate()
+            } label: {
+                Text(rateLabel)
+                    .font(.caption.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Playback speed \(rateLabel)")
+
+            if !compact {
+                control(app.isLiked(clip.id) ? "heart.fill" : "heart", label: "Like video",
+                        active: app.isLiked(clip.id)) {
+                    _ = app.toggleLike(clip.id)
+                }
+                control(app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark", label: "Bookmark clip",
+                        active: app.isFavorite(clip.id)) {
+                    _ = app.toggleFavorite(clip.id)
+                }
+            }
+
+            TranscriptDisplayMenu(compact: true, onPresentationChange: onPresentationChange)
+
+            Button {
+                compactOptions = compact
+                showsOptions = true
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("More playback options")
+
+            if let onMinimize {
+                control("arrow.down.right.and.arrow.up.left", label: "Normal video size",
+                        action: onMinimize)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func control(_ symbol: String, label: String, active: Bool = false,
+                         action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(active ? Color.designOrange : Color.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 }
 
@@ -916,6 +1018,8 @@ struct TranscriptSection: View {
             clip: clip,
             currentLine: player?.currentLineIndex ?? 0,
             spokenToken: player?.isPlaying == true ? player?.currentTokenIndex : nil,
+            isPlaying: player?.isPlaying == true,
+            currentTime: player?.currentTime ?? 0,
             pulseTokenIndex: pulseTokenIndex,
             isPulsing: isPulsing,
             tooltip: tooltip,

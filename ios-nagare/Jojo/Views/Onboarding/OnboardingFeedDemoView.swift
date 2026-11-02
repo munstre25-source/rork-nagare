@@ -12,6 +12,8 @@ struct OnboardingFeedDemoView: View {
     @State private var clips: [Clip] = []
     @State private var currentId: String?
     @State private var videoExpanded: Bool = false
+    @State private var showsTheaterControls = false
+    @State private var theaterOptionsPresented = false
     @State private var didOpenDictionary: Bool = false
 
     var body: some View {
@@ -26,6 +28,8 @@ struct OnboardingFeedDemoView: View {
                                 showsChannelRow: true,
                                 immersiveFeed: true,
                                 videoExpanded: videoExpanded,
+                                showsTheaterControls: showsTheaterControls,
+                                onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                                 onToggleVideoSize: {
                                     Haptics.selection()
                                     videoExpanded.toggle()
@@ -58,6 +62,12 @@ struct OnboardingFeedDemoView: View {
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
+        .modifier(TheaterChromeModifier(
+            expanded: videoExpanded,
+            visible: $showsTheaterControls,
+            playing: coordinator.player?.isPlaying == true,
+            blocked: lookup.isPresented || theaterOptionsPresented
+        ))
         .environment(\.colorScheme, .dark)
         .onAppear(perform: start)
         .onDisappear { coordinator.stop() }

@@ -365,6 +365,15 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
 
             settingsHeader("Study focus")
+            Menu {
+                ForEach(VocabularyProgress.goalOptions, id: \.self) { goal in
+                    Button("\(goal) words a day") { app.setDailyVocabularyGoal(goal) }
+                }
+            } label: {
+                SettingsRowLabel(symbol: "chart.bar.fill", title: "Daily vocabulary target",
+                                 value: "\(app.profile.dailyVocabularyGoal) words")
+            }
+            Divider().padding(.leading, 52)
             SettingsRow(symbol: "books.vertical", title: "Clip Library", value: "Watched & saved") {
                 showLibrary = true
             }

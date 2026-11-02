@@ -35,12 +35,78 @@ struct StudySessionClock: View {
 
 /// Thin sakura daily-goal progress bar with remaining minutes and a trophy that fills on completion.
 struct DailyGoalBar: View {
+    var hidesAfterCompletion = false
+    var dueWords = 0
+    var onReview: (() -> Void)?
+
     @Environment(AppModel.self) private var app
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
+    @State private var showsCompletion = false
     @State private var trophyBounce: Bool = false
     @State private var showConfetti: Bool = false
     @State private var bloom: Bool = false
 
     var body: some View {
+        VStack(spacing: 0) {
+            if hidesAfterCompletion && app.isGoalReached {
+                if showsCompletion { completionMessage }
+            } else {
+                progressBar
+            }
+        }
+        .onChange(of: app.goalCelebrationCount) { _, _ in
+            celebrate()
+            if hidesAfterCompletion {
+                withAnimation(.easeInOut(duration: 0.2)) { showsCompletion = true }
+            }
+        }
+        .task(id: showsCompletion && !voiceOverEnabled) {
+            guard showsCompletion, hidesAfterCompletion, !voiceOverEnabled else { return }
+            do { try await Task.sleep(for: .seconds(6)) } catch { return }
+            withAnimation(.easeInOut(duration: 0.25)) { showsCompletion = false }
+        }
+    }
+
+    private var completionMessage: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                Image(systemName: "trophy.fill")
+                    .foregroundStyle(Color.studyAccent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Daily goal reached")
+                        .font(.subheadline.weight(.semibold))
+                    Text(dueWords > 0 ? "A quick word review can help it stick." : "You're done for today. More clips are optional.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Button {
+                    withAnimation { showsCompletion = false }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss daily goal celebration")
+            }
+            if dueWords > 0, let onReview {
+                Button(dueWords == 1 ? "Review 1 word" : "Review \(dueWords) words") {
+                    showsCompletion = false
+                    onReview()
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.studyAccent)
+                .frame(minHeight: 44)
+            }
+        }
+        .padding(.horizontal, Spacing.l)
+        .padding(.vertical, 6)
+    }
+
+    private var progressBar: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
                 Text("\(watchedMinutes)/\(app.profile.dailyGoalMinutes) MIN")
@@ -87,7 +153,6 @@ struct DailyGoalBar: View {
                 ? "Completed"
                 : "\(watchedMinutes) of \(app.profile.dailyGoalMinutes) minutes, \(app.minutesLeft) minutes left, about \(app.clipsLeftToday) clips remaining"
         )
-        .onChange(of: app.goalCelebrationCount) { _, _ in celebrate() }
     }
 
     private var watchedMinutes: Int {

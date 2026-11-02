@@ -39,6 +39,7 @@ struct ShortsRail: View {
     var onMinimize: (() -> Void)? = nil
     /// White glyphs on footage; theme ink when the rail sits on the page.
     var onPicture: Bool = true
+    var onPresentationChange: (Bool) -> Void = { _ in }
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
@@ -98,7 +99,7 @@ struct ShortsRail: View {
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             }
 
-            TranscriptDisplayMenu(tint: ink, compact: true, onPicture: onPicture)
+            TranscriptDisplayMenu(tint: ink, compact: true, onPicture: onPicture, onPresentationChange: onPresentationChange)
 
             if let onInfo {
                 railButton("info.circle", tint: ink, label: "Clip info", action: onInfo)
@@ -145,6 +146,7 @@ struct TranscriptDisplayMenu: View {
     var tint: Color = .secondary
     var compact: Bool = false
     var onPicture: Bool = false
+    var onPresentationChange: (Bool) -> Void = { _ in }
 
     @Environment(AppModel.self) private var app
     @State private var showsSettings = false
@@ -165,6 +167,7 @@ struct TranscriptDisplayMenu: View {
         .accessibilityLabel("Subtitle help")
         .accessibilityValue(app.profile.subtitleDisplay.learningMode?.title ?? "Custom")
         .accessibilityHint("Opens learning modes, English, furigana, romaji and word lookup")
+        .onChange(of: showsSettings) { _, presented in onPresentationChange(presented) }
         .sheet(isPresented: $showsSettings, onDismiss: {
             app.completeSubtitleSetup()
         }) {

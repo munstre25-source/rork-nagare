@@ -43,6 +43,8 @@ struct ClipQueueScreen: View {
     @State private var lookup = WordLookupController()
     @State private var currentId: String?
     @State private var videoExpanded: Bool
+    @State private var showsTheaterControls = false
+    @State private var theaterOptionsPresented = false
     @State private var infoClip: Clip?
     @State private var appliedStart: Bool = false
 
@@ -76,6 +78,8 @@ struct ClipQueueScreen: View {
                             showsChannelRow: false,
                             immersiveFeed: true,
                             videoExpanded: videoExpanded,
+                            showsTheaterControls: showsTheaterControls,
+                            onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                             onToggleVideoSize: {
                                 Haptics.selection()
                                 videoExpanded.toggle()
@@ -146,10 +150,19 @@ struct ClipQueueScreen: View {
             .padding(.leading, Spacing.m)
             .padding(.trailing, Spacing.m)
             .padding(.top, Spacing.s)
+            .opacity(!videoExpanded || showsTheaterControls ? 1 : 0)
+            .allowsHitTesting(!videoExpanded || showsTheaterControls)
+            .accessibilityHidden(videoExpanded && !showsTheaterControls)
         }
         .background(Color.watchBackground.ignoresSafeArea())
         .environment(coordinator)
         .environment(lookup)
+        .modifier(TheaterChromeModifier(
+            expanded: videoExpanded,
+            visible: $showsTheaterControls,
+            playing: coordinator.player?.isPlaying == true,
+            blocked: lookup.isPresented || theaterOptionsPresented || infoClip != nil
+        ))
         .onAppear {
             coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
             coordinator.onFinished = { [weak app, weak coordinator] in

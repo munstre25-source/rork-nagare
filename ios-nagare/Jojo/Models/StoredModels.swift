@@ -55,6 +55,8 @@ final class UserProfile {
     var onboardingStep: Int = 0
     var onboardingCompleted: Bool = false
     var dailyGoalMinutes: Int = 10
+    /// Separate from watch minutes: distinct words reviewed or rated each day.
+    var dailyVocabularyGoal: Int = 10
     var streak: Int = 0
     var watchLogData: Data?
     var remindersEnabled: Bool = false

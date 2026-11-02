@@ -245,6 +245,53 @@ struct JojoTests {
         #expect(yen.annualSavings == 6000)
     }
 
+    @Test func vocabularyProgressCountsKnownAndDistinctPracticeOnTheLocalDay() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(secondsFromGMT: 3 * 3600))
+        let now = try #require(calendar.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 12)))
+        let start = calendar.startOfDay(for: now)
+        let known = makeWord("known", state: .known, due: now, seen: 1)
+        known.lastReviewedAt = now.addingTimeInterval(-60)
+        let duplicate = makeWord("known", state: .known, due: now, seen: 1)
+        duplicate.lastReviewedAt = now.addingTimeInterval(-10)
+        let practiced = makeWord("practice", state: .learning, due: now, seen: 1)
+        practiced.lastReviewedAt = start
+        let yesterday = makeWord("yesterday", state: .known, due: now, seen: 1)
+        yesterday.lastReviewedAt = start.addingTimeInterval(-1)
+        let untouched = makeWord("untouched", state: .new, due: now, seen: 1)
+        let future = makeWord("future", state: .learning, due: now, seen: 1)
+        future.lastReviewedAt = now.addingTimeInterval(60)
+        let progress = VocabularyProgress(words: [known, duplicate, practiced, yesterday, untouched, future],
+                                          dailyGoal: 5, now: now, calendar: calendar)
+        #expect(progress.savedCount == 5)
+        #expect(progress.learnedCount == 2)
+        #expect(progress.practicedToday == 2)
+        #expect(progress.remaining == 3)
+        #expect(progress.fraction == 0.4)
+        #expect(!progress.goalReached)
+
+        let tomorrow = try #require(calendar.date(byAdding: .day, value: 1, to: start))
+        #expect(VocabularyProgress(words: [known, practiced], dailyGoal: 5, now: tomorrow,
+                                   calendar: calendar).practicedToday == 0)
+    }
+
+    @Test func vocabularyTargetPersistsAndRepeatedAnswersCountOnce() throws {
+        let app = try makeApp()
+        let word = makeWord("practice-once", state: .new, due: .now, seen: 1)
+        app.context.insert(word)
+        app.setDailyVocabularyGoal(5)
+        app.answer(word, good: true)
+        app.answer(word, good: true)
+        let profiles = try app.context.fetch(FetchDescriptor<UserProfile>())
+        #expect(profiles.first?.dailyVocabularyGoal == 5)
+        let progress = VocabularyProgress(words: [word], dailyGoal: app.profile.dailyVocabularyGoal)
+        #expect(progress.practicedToday == 1)
+        #expect(progress.learnedCount == 0)
+        app.paint(word, mark: .known)
+        #expect(VocabularyProgress(words: [word], dailyGoal: 1).learnedCount == 1)
+        #expect(VocabularyProgress(words: [word], dailyGoal: 1).fraction == 1)
+    }
+
     private func makeWord(_ key: String, state: SRSState, due: Date, seen: Int) -> SavedWord {
         let word = SavedWord(key: key, surface: key, readings: [], romaji: key, pos: "noun",
                              conjugationClass: nil, jlpt: nil, definitions: [key])
