@@ -29,6 +29,9 @@ Deno.test("pipeline distinguishes technical errors, unknown evidence and actual 
   assertEquals(failureStatus("unsupported", "English subtitles are burned into the source video"), "rejected");
   assertEquals(failureStatus("gemini_cap"), "held");
   assertEquals(failureStatus("model_retryable"), "failed");
+  assertEquals(failureStatus("pipeline_error"), "failed");
+  assertEquals(failureStatus("transcript_invalid", "response is not a JSON object"), "failed");
+  assertEquals(failureStatus("transcript_invalid", "line[0] translation ends mid-thought"), "rejected");
 });
 
 Deno.test("pipeline API rejects unauthorized requests", async () => {

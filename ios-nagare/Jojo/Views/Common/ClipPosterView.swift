@@ -2,11 +2,29 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
+@MainActor
+private enum PosterImageCache {
+    static let images: NSCache<NSURL, UIImage> = {
+        let cache = NSCache<NSURL, UIImage>()
+        cache.countLimit = 24
+        cache.totalCostLimit = 32 * 1024 * 1024
+        return cache
+    }()
+
+    static func store(_ image: UIImage, for url: URL) {
+        let pixels = image.size.width * image.size.height * image.scale * image.scale
+        images.setObject(image, forKey: url as NSURL, cost: Int(pixels * 4))
+    }
+}
+
 extension Clip {
-    /// Synchronous poster from a bundled JPG, if present.
-    var bundledPosterImage: UIImage? {
+    /// Bundled stills survive view recreation without repeated file reads and decoding.
+    @MainActor var bundledPosterImage: UIImage? {
         guard let url = Self.bundledPosterURL(for: id) else { return nil }
-        return UIImage(contentsOfFile: url.path)
+        if let image = PosterImageCache.images.object(forKey: url as NSURL) { return image }
+        guard let image = UIImage(contentsOfFile: url.path) else { return nil }
+        PosterImageCache.store(image, for: url)
+        return image
     }
 }
 
@@ -56,8 +74,14 @@ struct ClipPosterView: View {
             generatedClipId = nil
             guard clip.bundledPosterImage == nil,
                   let url = Clip.bundledVideoURL(for: clip.id) else { return }
+            if let frame = PosterImageCache.images.object(forKey: url as NSURL) {
+                generated = frame
+                generatedClipId = clip.id
+                return
+            }
             let frame = await Self.frameImage(from: url, at: 1.5)
             if !Task.isCancelled {
+                if let frame { PosterImageCache.store(frame, for: url) }
                 generated = frame
                 generatedClipId = clip.id
             }

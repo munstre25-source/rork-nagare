@@ -47,6 +47,7 @@ final class WordLookupController {
     private(set) var occurrenceCount: Int = 0
     private(set) var context: ContextExplanation?
     private(set) var isLoadingContext = false
+    private(set) var isLoadingMeaning = false
     var tab: PopupTab = .dictionary
     /// Bumps on every tap so the badge can animate.
     private(set) var tapPulse: Int = 0
@@ -68,6 +69,8 @@ final class WordLookupController {
     func select(token: Token, tokenIndex: Int, lineIndex: Int, clip: Clip, app: AppModel) {
         guard token.tappable else { return }
         Haptics.light()
+        lookupTask?.cancel()
+        isLoadingMeaning = false
         let newSelection = Selection(clip: clip, lineIndex: lineIndex, tokenIndex: tokenIndex, token: token)
         let sameMoment = selection?.token.surface == token.surface && selection?.sentence == newSelection.sentence
         selection = newSelection
@@ -77,7 +80,7 @@ final class WordLookupController {
             contextTask?.cancel()
             isLoadingContext = false
         }
-        let instant = app.lexicon.instantExplanation(for: token) ?? .fallback(for: token)
+        let instant = app.localWordExplanation(for: token, sentence: newSelection.sentence) ?? .fallback(for: token)
         explanation = instant
         if previewOnly {
             occurrenceCount = 1
@@ -91,16 +94,20 @@ final class WordLookupController {
 
         loadContextIfNeeded(app: app)
         guard instant.source == .fallback, !offlineOnly, !previewOnly else { return }
-        lookupTask?.cancel()
+        isLoadingMeaning = true
         let service = app.explainService
         let userId = app.purchases.appUserId
         let sentence = newSelection.sentence
         lookupTask = Task { [weak self, weak app] in
             let outcome = await service.lookup(token: token, sentence: sentence, appUserId: userId)
             guard !Task.isCancelled, let self, self.selection == newSelection else { return }
+            self.isLoadingMeaning = false
             self.explanation = outcome.explanation
             app?.persistCache(outcome.newCache)
             app?.updateDefinitions(for: token, with: outcome.explanation)
+            if self.context?.isFallback == true, let app {
+                self.context = Self.offlineContext(for: newSelection, app: app)
+            }
         }
     }
 
@@ -138,6 +145,7 @@ final class WordLookupController {
         lookupTask?.cancel()
         contextTask?.cancel()
         isLoadingContext = false
+        isLoadingMeaning = false
         selection = nil
         explanation = nil
         context = nil
@@ -156,7 +164,8 @@ final class WordLookupController {
             }
             if examples.count == 3 { break }
         }
-        let gloss = token.definitions.first ?? app.lexicon.entry(for: base)?.definitions.first ?? "this word"
+        let meaning = app.localWordExplanation(for: token, sentence: selection.sentence)
+        let gloss = meaning?.definitions.first ?? meaning?.jaDefinitions.first
         let reading = token.reading ?? token.baseReading
         let named: String
         if let reading, !reading.isEmpty {
@@ -164,9 +173,10 @@ final class WordLookupController {
         } else {
             named = token.surface
         }
-        var explanation = "In this sentence, \(named) means “\(gloss)”."
+        var explanation = gloss.map { "Saved meaning of \(named): \($0)." }
+            ?? "A definition for \(named) isn't saved on this device yet."
         if !selection.translation.isEmpty {
-            explanation += " Here the speaker is saying: \(selection.translation)"
+            explanation += " Saved sentence translation: \(selection.translation)"
         }
         if token.baseForm != nil {
             explanation += " \(token.surface) is a form of \(base)."

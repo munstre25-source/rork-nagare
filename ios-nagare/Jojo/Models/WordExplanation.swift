@@ -19,7 +19,7 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
 
     /// Builds an instant explanation from the token's own seed data, if it has definitions.
     static func fromToken(_ token: Token) -> WordExplanation? {
-        guard !token.definitions.isEmpty || !token.jaDefinitions.isEmpty else { return nil }
+        guard !meaningfulDefinitions(token.definitions).isEmpty || !meaningfulDefinitions(token.jaDefinitions).isEmpty else { return nil }
         return WordExplanation(
             word: token.surface,
             readings: token.allReadings,
@@ -49,7 +49,7 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
         )
     }
 
-    /// Static fallback built from whatever the token carries. Never empty.
+    /// Missing meanings stay empty; UI status is never stored as a definition.
     static func fallback(for token: Token) -> WordExplanation {
         WordExplanation(
             word: token.surface,
@@ -58,7 +58,7 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
             pos: token.pos,
             conjugationClass: token.conjugationClass,
             jlpt: token.jlpt,
-            definitions: token.definitions.isEmpty ? ["Meaning available when you're back online"] : token.definitions,
+            definitions: token.definitions,
             jaDefinitions: token.jaDefinitions,
             formalityNote: token.formality,
             source: .fallback
@@ -66,6 +66,8 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
     }
 
     func displayDefinitions(mode: DictionaryMode) -> [String] {
+        let definitions = Self.meaningfulDefinitions(self.definitions)
+        let jaDefinitions = Self.meaningfulDefinitions(self.jaDefinitions)
         let values: [String]
         switch mode {
         case .english:
@@ -75,22 +77,25 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
                 values = jaDefinitions
             } else {
                 // Soft monolingual fallback when JA gloss isn't available yet.
-                values = definitions.isEmpty ? ["（定義を準備中）"] : definitions.map { "（英）\($0)" }
+                values = definitions.map { "（英）\($0)" }
             }
         case .both:
             var out = jaDefinitions
             for d in definitions where !out.contains(d) { out.append(d) }
-            values = out.isEmpty ? ["Meaning available when you're back online"] : out
+            values = out
         }
-        return Self.uniqueNonEmpty(values)
+        return Self.meaningfulDefinitions(values)
     }
 
-    private static func uniqueNonEmpty(_ values: [String]) -> [String] {
+    var hasMeaning: Bool { !Self.meaningfulDefinitions(definitions).isEmpty || !Self.meaningfulDefinitions(jaDefinitions).isEmpty }
+
+    static func meaningfulDefinitions(_ values: [String]) -> [String] {
         var seen = Set<String>()
         return values.compactMap { value in
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             let key = trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-            guard !trimmed.isEmpty, seen.insert(key).inserted else { return nil }
+            let placeholders = ["meaning available when you're back online", "meaning available when online", "（定義を準備中）"]
+            guard !trimmed.isEmpty, !placeholders.contains(key), seen.insert(key).inserted else { return nil }
             return trimmed
         }
     }
@@ -108,8 +113,8 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
         self.pos = pos
         self.conjugationClass = conjugationClass
         self.jlpt = jlpt
-        self.definitions = definitions
-        self.jaDefinitions = jaDefinitions
+        self.definitions = Self.meaningfulDefinitions(definitions)
+        self.jaDefinitions = Self.meaningfulDefinitions(jaDefinitions)
         self.formalityNote = formalityNote
         self.source = source
     }
@@ -122,9 +127,10 @@ nonisolated struct WordExplanation: Codable, Hashable, Sendable {
         pos = try c.decodeIfPresent(String.self, forKey: .pos) ?? "word"
         conjugationClass = try c.decodeIfPresent(String.self, forKey: .conjugationClass)
         jlpt = try c.decodeIfPresent(String.self, forKey: .jlpt)
-        definitions = try c.decodeIfPresent([String].self, forKey: .definitions) ?? []
+        definitions = Self.meaningfulDefinitions(try c.decodeIfPresent([String].self, forKey: .definitions) ?? [])
         jaDefinitions = try c.decodeIfPresent([String].self, forKey: .jaDefinitions)
             ?? c.decodeIfPresent([String].self, forKey: .jaDefinitionsSnake) ?? []
+        jaDefinitions = Self.meaningfulDefinitions(jaDefinitions)
         formalityNote = try c.decodeIfPresent(String.self, forKey: .formalityNote)
         source = try c.decodeIfPresent(Source.self, forKey: .source) ?? .fallback
     }

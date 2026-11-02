@@ -17,7 +17,7 @@ import { normalizeHeardLines, subtitleEnrichmentIssue } from "./subtitle-data.ts
 import { sealCatalogLines } from "./pipeline.ts";
 import { reviewJapaneseTranslations } from "./translation-review.ts";
 import { geminiModelAnalyze, geminiModelTranslationReview, subtitlePromptVersion, requireEnv } from "./env.ts";
-import { GeminiError, geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
+import { AiBudgetError, GeminiError, geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "./limits.ts";
 import { assessTiming, ClipTimingMode, TimedLine, toClipRelative, validateLineTimeline } from "./timing.ts";
 import { CATEGORIES, validateEnums } from "./validate.ts";
@@ -396,6 +396,7 @@ export async function analyzeWindow(
 }
 
 function classifyModelError(err: unknown): { reason: AnalyzeFailure; detail: string } {
+  if (err instanceof AiBudgetError) return { reason: "gemini_cap", detail: "Shared AI spending allowance reached" };
   if (err instanceof GeminiError) {
     if (err.paymentRequired) return { reason: "model_payment", detail: err.message.slice(0, 160) };
     if (err.modelRejected) return { reason: "model_rejected", detail: err.message.slice(0, 160) };

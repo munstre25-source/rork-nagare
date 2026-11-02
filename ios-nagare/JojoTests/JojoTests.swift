@@ -336,6 +336,90 @@ struct JojoTests {
         }
     }
 
+
+    @Test func missingMeaningIsStatusAndNeverADictionaryDefinition() throws {
+        let token = Token(surface: "未知の試験語", romaji: "test", start: 0, end: 1, pos: "noun",
+                          definitions: ["Meaning available when you're back online"])
+        let fallback = WordExplanation.fallback(for: token)
+        #expect(!fallback.hasMeaning)
+        for mode: DictionaryMode in [.english, .japanese, .both] {
+            #expect(fallback.displayDefinitions(mode: mode).isEmpty)
+        }
+        let decoded = try JSONDecoder().decode(WordExplanation.self, from: JSONEncoder().encode(fallback))
+        #expect(decoded.definitions.isEmpty)
+    }
+
+    @Test func savedMeaningIsAvailableBeforeAsyncCachePreload() throws {
+        let app = try makeApp()
+        let clip = try #require(app.clips.first)
+        let token = Token(surface: "未登録試験語", romaji: "test", start: 0, end: 1, pos: "noun")
+        let meaning = WordExplanation(word: token.surface, readings: [], romaji: token.romaji, pos: token.pos,
+                                      conjugationClass: nil, jlpt: nil, definitions: ["saved test meaning"],
+                                      formalityNote: nil, source: .live)
+        _ = app.recordTap(token: token, explanation: meaning, clip: clip, lineIndex: 0, persist: false)
+        #expect(app.localWordExplanation(for: token, sentence: "")?.definitions == ["saved test meaning"])
+        let empty = WordExplanation(word: token.surface, readings: [], romaji: "", pos: token.pos,
+                                    conjugationClass: nil, jlpt: nil, definitions: [],
+                                    formalityNote: nil, source: .live)
+        app.updateDefinitions(for: token, with: empty)
+        #expect(app.localWordExplanation(for: token, sentence: "")?.definitions == ["saved test meaning"])
+    }
+
+    @Test func persistedMeaningResolvesSynchronouslyWithoutNetwork() throws {
+        let app = try makeApp()
+        let token = Token(surface: "永続試験語", romaji: "test", start: 0, end: 1, pos: "noun")
+        let payload = Data(#"{"word":"永続試験語","definitions":["persisted meaning"]}"#.utf8)
+        app.persistCache(CachePayload(key: WordExplainService.lookupKey(for: token, sentence: ""),
+                                      kind: "lookup", data: payload))
+        #expect(app.localWordExplanation(for: token, sentence: "")?.definitions == ["persisted meaning"])
+    }
+
+    @Test func desuNeHasABundledOfflineMeaning() throws {
+        let app = try makeApp()
+        let token = Token(surface: "ですね", romaji: "desu ne", start: 0, end: 1, pos: "expression")
+        let meaning = try #require(app.localWordExplanation(for: token, sentence: "いい天気ですね"))
+        #expect(meaning.source == .dictionary)
+        #expect(meaning.definitions.joined().contains("agreement"))
+        #expect(!meaning.jaDefinitions.isEmpty)
+    }
+
+    @Test func unknownOfflineContextDoesNotInventAWordMeaning() throws {
+        let app = try makeApp()
+        let clip = try #require(app.clips.first)
+        let token = Token(surface: "未収録試験語", romaji: "test", start: 0, end: 1, pos: "noun")
+        let selection = WordLookupController.Selection(clip: clip, lineIndex: 0, tokenIndex: 0, token: token)
+        let context = WordLookupController.offlineContext(for: selection, app: app)
+        #expect(context.contextualExplanation.contains("isn't saved"))
+        #expect(!context.contextualExplanation.contains("this word"))
+        if !selection.translation.isEmpty {
+            #expect(context.contextualExplanation.contains(selection.translation))
+        }
+    }
+
+
+    @Test func publishedPageCacheIsStableAndPreservesSubtitleData() throws {
+        let clip = try #require(ContentLibrary.loadSeedClips().first)
+        let lines = try JSONSerialization.jsonObject(with: JSONEncoder().encode(clip.lines))
+        let row: [String: Any] = ["id": clip.id, "title": clip.title, "video_id": clip.videoId,
+                                  "duration_sec": clip.durationSec, "lines": lines]
+        let first = try SupabaseAPI.decodePublishedPage(JSONSerialization.data(withJSONObject: [row]))
+        let second = try SupabaseAPI.decodePublishedPage(JSONSerialization.data(withJSONObject: [row], options: [.sortedKeys]))
+        #expect(first.rowCount == 1)
+        #expect(first.clips.first?.json == second.clips.first?.json)
+        #expect(first.clips.first?.clip.lines == clip.lines)
+        let persisted = try #require(first.clips.first?.json)
+        #expect(try JSONDecoder().decode(Clip.self, from: persisted).lines == clip.lines)
+    }
+
+    @Test func invalidPublishedPagesCannotRetireTheCachedCatalog() throws {
+        let empty = try SupabaseAPI.decodePublishedPage(Data("[]".utf8))
+        #expect(empty.rowCount == 0)
+        #expect(empty.clips.isEmpty)
+        #expect(throws: SupabaseError.self) {
+            try SupabaseAPI.decodePublishedPage(Data(#"[{"id":"broken","title":12}]"#.utf8))
+        }
+    }
+
     private func makeWord(_ key: String, state: SRSState, due: Date, seen: Int) -> SavedWord {
         let word = SavedWord(key: key, surface: key, readings: [], romaji: key, pos: "noun",
                              conjugationClass: nil, jlpt: nil, definitions: [key])

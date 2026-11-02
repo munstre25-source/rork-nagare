@@ -58,7 +58,7 @@ actor WordExplainService {
             return LookupOutcome(explanation: instant, newCache: nil)
         }
         let key = Self.lookupKey(for: token, sentence: sentence)
-        if let cached = memoryCache[key], let decoded = decodeLookup(cached, token: token, source: .cache) {
+        if let cached = memoryCache[key], let decoded = Self.decodeLookup(cached, token: token, source: .cache) {
             return LookupOutcome(explanation: decoded, newCache: nil)
         }
         guard api.isConfigured else {
@@ -68,7 +68,7 @@ actor WordExplainService {
         do {
             let data = try await api.explainWord(kind: "lookup", word: token.dictionaryForm, sentence: sentence, appUserId: appUserId)
             logCall(started: started, status: "ok")
-            guard let decoded = decodeLookup(data, token: token, source: .live) else {
+            guard let decoded = Self.decodeLookup(data, token: token, source: .live) else {
                 return LookupOutcome(explanation: .fallback(for: token), newCache: nil)
             }
             memoryCache[key] = data
@@ -105,10 +105,10 @@ actor WordExplainService {
         }
     }
 
-    private func decodeLookup(_ data: Data, token: Token, source: WordExplanation.Source) -> WordExplanation? {
+    nonisolated static func decodeLookup(_ data: Data, token: Token, source: WordExplanation.Source) -> WordExplanation? {
         guard let response = try? JSONDecoder().decode(LookupResponse.self, from: data) else { return nil }
-        let definitions = response.definitions ?? []
-        let jaDefinitions = response.jaDefinitions ?? []
+        let definitions = WordExplanation.meaningfulDefinitions(response.definitions ?? [])
+        let jaDefinitions = WordExplanation.meaningfulDefinitions(response.jaDefinitions ?? [])
         guard !definitions.isEmpty || !jaDefinitions.isEmpty else { return nil }
         return WordExplanation(
             word: token.surface,

@@ -4,7 +4,7 @@ import { isAdminOrCron } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { geminiModelTranslationReview } from "../_shared/env.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
-import { GeminiError } from "../_shared/gemini.ts";
+import { AiBudgetError, GeminiError } from "../_shared/gemini.ts";
 import { reviewJapaneseTranslations, type TranslationSource } from "../_shared/translation-review.ts";
 
 export async function handler(req: Request): Promise<Response> {
@@ -68,12 +68,13 @@ export async function handler(req: Request): Promise<Response> {
     }
     if (body.apply && body.id) {
       merged = await sealCatalogLines(supabase, { ...completeSource, lines: merged });
-      const { data, error } = await supabase.from("clips").update({ lines: merged, category })
-        .eq("id", body.id).eq("category", originalCategory).eq("lines", JSON.stringify(originalLines)).select("id").maybeSingle();
+      const { data, error } = await supabase.rpc("apply_catalog_review", {
+        p_id: body.id, p_expected_lines: originalLines, p_expected_category: originalCategory,
+        p_lines: merged, p_category: category,
+      });
       if (error) {
-        await updatePipeline(supabase, attempt, { status: "held", stage: "apply", reason: "compare_and_swap_pending", detail: "Approved update requires body-based SQL compare-and-swap" });
-        // Large legacy JSON filters can exceed the REST URL limit. Return the
-        // approved proposal for an authenticated operator's SQL compare-and-swap.
+        await updatePipeline(supabase, attempt, { status: "held", stage: "apply", reason: "compare_and_swap_pending", detail: "Approved update could not be saved; safe to retry" });
+        // Keep the approved proposal for recovery if the database is unavailable.
         return jsonResponse({
           id: body.id, status: "reviewed_pending_apply", lines: merged,
           reviewedLineIndexes: indexes, expectedLines: originalLines, category, expectedCategory: originalCategory,
@@ -92,6 +93,10 @@ export async function handler(req: Request): Promise<Response> {
       changedTranslations: changed, category, timingPreserved: true, lineIndexesPreserved: true, lines: merged, reviewedLineIndexes: indexes,
     });
   } catch (error) {
+    if (error instanceof AiBudgetError) {
+      if (attempt) await updatePipeline(serviceClient(), attempt, { status: "held", stage: "budget", reason: "gemini_cap", detail: "Shared AI spending allowance reached; retry after allowance is available" }).catch(() => {});
+      return errorResponse(429, "AI processing allowance reached");
+    }
     if (attempt) await updatePipeline(serviceClient(), attempt, { status: "failed", stage: "error", reason: "review_error", detail: error instanceof Error ? error.message.slice(0, 300) : "Review failed" }).catch(() => {});
     if (error instanceof GeminiError) return errorResponse(error.paymentRequired ? 402 : 503, error.message);
     return errorResponse(500, "Subtitle review failed");

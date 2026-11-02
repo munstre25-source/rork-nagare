@@ -64,8 +64,8 @@ final class SavedWord {
         self.pos = pos
         self.conjugationClass = conjugationClass
         self.jlpt = jlpt
-        self.definitions = definitions
-        self.jaDefinitions = jaDefinitions
+        self.definitions = WordExplanation.meaningfulDefinitions(definitions)
+        self.jaDefinitions = WordExplanation.meaningfulDefinitions(jaDefinitions)
     }
 
     var state: SRSState {
@@ -78,10 +78,12 @@ final class SavedWord {
     }
 
     var primaryReading: String { readings.first ?? "" }
-    var gloss: String { definitions.first ?? jaDefinitions.first ?? "" }
+    var gloss: String { WordExplanation.meaningfulDefinitions(definitions).first ?? WordExplanation.meaningfulDefinitions(jaDefinitions).first ?? "" }
 
     /// Definitions for the active dictionary mode (falls back sensibly).
     func displayDefinitions(mode: DictionaryMode) -> [String] {
+        let definitions = WordExplanation.meaningfulDefinitions(self.definitions)
+        let jaDefinitions = WordExplanation.meaningfulDefinitions(self.jaDefinitions)
         let values: [String]
         switch mode {
         case .english:

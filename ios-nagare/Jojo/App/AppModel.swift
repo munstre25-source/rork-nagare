@@ -87,6 +87,7 @@ final class AppModel {
     @ObservationIgnored private var unsavedWatchSeconds: Double = 0
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var lastRemoteClipRefreshAt = Date.distantPast
+    @ObservationIgnored private var isRefreshingRemoteClips = false
     @ObservationIgnored private var reviewAvailabilityTask: Task<Void, Never>?
     @ObservationIgnored private var clipsById: [String: Clip] = [:]
     /// Dictionary form or surface form → clip ids that contain it.
@@ -267,16 +268,20 @@ final class AppModel {
         return result
     }
 
-    private func rebuildClips() {
-        let remote = ((try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []).compactMap { row -> Clip? in
+    private func rebuildClips(remoteClips: [Clip]? = nil) {
+        // A successful sync already decoded these rows off the UI actor.
+        let remote = remoteClips ?? ((try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []).compactMap { row -> Clip? in
             try? JSONDecoder().decode(Clip.self, from: row.json)
         }
         var merged = seedClips
+        var positions: [String: Int] = [:]
+        for (index, clip) in merged.enumerated() where positions[clip.id] == nil { positions[clip.id] = index }
         for clip in remote {
             let enriched = enrich(clip)
-            if let index = merged.firstIndex(where: { $0.id == clip.id }) {
+            if let index = positions[clip.id] {
                 merged[index] = enriched
             } else {
+                positions[clip.id] = merged.count
                 merged.append(enriched)
             }
         }
@@ -295,16 +300,18 @@ final class AppModel {
         }
         // Complete lessons from short source videos can run up to two minutes.
         // Bundled clips predate the range and stay as they are.
+        let bundledIds = Set(seedClips.map(\.id))
         merged.removeAll { clip in
             clip.hasRealVideo
-                && !seedClips.contains(where: { $0.id == clip.id })
+                && !bundledIds.contains(clip.id)
                 && !(8...120.5).contains(clip.durationSec)
         }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
         clips = verified.isEmpty ? merged : verified
         var indexed = merged
-        for clip in personalClips where !indexed.contains(where: { $0.id == clip.id }) {
+        var indexedIds = Set(merged.map(\.id))
+        for clip in personalClips where indexedIds.insert(clip.id).inserted {
             indexed.append(clip)
         }
         indexLibrary(indexed)
@@ -390,18 +397,24 @@ final class AppModel {
         // Avoid overlapping feed-tail and timer refreshes while remaining responsive
         // when users return to For You or reach the end of their current queue.
         let minimumInterval: TimeInterval = clips.count > 500 ? 15 * 60 : 45
-        guard Date().timeIntervalSince(lastRemoteClipRefreshAt) >= minimumInterval else { return }
+        guard !isRefreshingRemoteClips,
+              Date().timeIntervalSince(lastRemoteClipRefreshAt) >= minimumInterval else { return }
+        isRefreshingRemoteClips = true
+        defer { isRefreshingRemoteClips = false }
         lastRemoteClipRefreshAt = .now
         do {
             let rows = try await SupabaseAPI.shared.fetchPublishedClips()
             let existing = (try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []
             var byId: [String: RemoteClip] = [:]
+            var changed = false
             for row in existing {
-                if byId[row.clipId] != nil { context.delete(row) } else { byId[row.clipId] = row }
+                if byId[row.clipId] != nil {
+                    context.delete(row)
+                    changed = true
+                } else { byId[row.clipId] = row }
             }
             let publishedIds = Set(rows.map(\.clip.id))
             PlaybackHealth.notePublished(videoIds: Set(rows.map(\.clip.videoId)), clipIds: publishedIds)
-            var changed = false
             for id in byId.keys where !publishedIds.contains(id) {
                 if let row = byId[id] { context.delete(row); changed = true }
                 byId[id] = nil
@@ -420,7 +433,7 @@ final class AppModel {
             }
             if changed {
                 save()
-                rebuildClips()
+                rebuildClips(remoteClips: rows.map(\.clip))
             }
             print("[AppModel] merged \(rows.count) remote clips")
         } catch {
@@ -956,8 +969,8 @@ final class AppModel {
                 pos: token.pos,
                 conjugationClass: token.conjugationClass,
                 jlpt: token.jlpt,
-                definitions: explanation?.definitions ?? token.definitions,
-                jaDefinitions: explanation?.jaDefinitions ?? token.jaDefinitions
+                definitions: WordExplanation.meaningfulDefinitions(explanation?.definitions ?? token.definitions),
+                jaDefinitions: WordExplanation.meaningfulDefinitions(explanation?.jaDefinitions ?? token.jaDefinitions)
             )
             word.contextSentence = line?.text ?? ""
             word.contextSurface = token.surface
@@ -966,6 +979,12 @@ final class AppModel {
             word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
             context.insert(word)
         }
+        let savedDefinitions = WordExplanation.meaningfulDefinitions(word.definitions)
+        word.definitions = savedDefinitions.isEmpty
+            ? WordExplanation.meaningfulDefinitions(explanation?.definitions ?? token.definitions) : savedDefinitions
+        let savedJapanese = WordExplanation.meaningfulDefinitions(word.jaDefinitions)
+        word.jaDefinitions = savedJapanese.isEmpty
+            ? WordExplanation.meaningfulDefinitions(explanation?.jaDefinitions ?? token.jaDefinitions) : savedJapanese
         word.occurrenceCount += 1
         if word.contextSentence.isEmpty, let line {
             word.contextSentence = line.text
@@ -1347,18 +1366,42 @@ final class AppModel {
     func rememberContext(_ note: String, token: Token, preferExisting: Bool) {
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let word = fetchWord(key: Self.wordKey(for: token)) else { return }
-        if preferExisting, !word.contextNote.isEmpty { return }
+        if preferExisting, !word.contextNote.isEmpty, !word.contextNote.contains("means “this word”") { return }
         guard word.contextNote != trimmed else { return }
         word.contextNote = trimmed
         save()
+    }
+
+    /// Resolve meanings already on this device before asking a remote service.
+    func localWordExplanation(for token: Token, sentence: String) -> WordExplanation? {
+        if let local = lexicon.instantExplanation(for: token), local.hasMeaning { return local }
+        let key = WordExplainService.lookupKey(for: token, sentence: sentence)
+        let cached = (try? context.fetch(FetchDescriptor<CachedExplanation>(
+            predicate: #Predicate { $0.cacheKey == key }
+        ))) ?? []
+        if let row = cached.first,
+           let explanation = WordExplainService.decodeLookup(row.payload, token: token, source: .cache) {
+            return explanation
+        }
+        guard let word = fetchWord(key: Self.wordKey(for: token)) else { return nil }
+        let explanation = WordExplanation(
+            word: token.surface, readings: token.allReadings.isEmpty ? word.readings : token.allReadings,
+            romaji: token.romaji.isEmpty ? word.romaji : token.romaji, pos: word.pos,
+            conjugationClass: word.conjugationClass, jlpt: word.jlpt,
+            definitions: word.definitions, jaDefinitions: word.jaDefinitions,
+            formalityNote: token.formality, source: .cache
+        )
+        return explanation.hasMeaning ? explanation : nil
     }
 
     /// Upgrades a saved word's definitions once a live explanation arrives.
     func updateDefinitions(for token: Token, with explanation: WordExplanation) {
         guard explanation.source == .live || explanation.source == .cache,
               let word = fetchWord(key: Self.wordKey(for: token)) else { return }
-        word.definitions = explanation.definitions
-        if !explanation.jaDefinitions.isEmpty { word.jaDefinitions = explanation.jaDefinitions }
+        let definitions = WordExplanation.meaningfulDefinitions(explanation.definitions)
+        let japanese = WordExplanation.meaningfulDefinitions(explanation.jaDefinitions)
+        if !definitions.isEmpty { word.definitions = definitions }
+        if !japanese.isEmpty { word.jaDefinitions = japanese }
         if word.conjugationClass == nil { word.conjugationClass = explanation.conjugationClass }
         save()
     }

@@ -202,9 +202,16 @@ Deno.serve(async (req) => {
       if (Date.now() - started >= RUN_BUDGET_MS) break;
       const result = await analyzeAndPublish(supabase, candidate, language);
       if (!result.ok) {
-        const keep = result.reason === "gemini-cap" || result.reason === "model_payment" ||
-          result.reason.includes("402") || ["quota_exhausted", "youtube_unavailable", "pipeline_error", "model_retryable"].includes(result.reason);
+        const keep = failureStatus(result.reason, result.detail ?? "") !== "rejected";
         if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
+        else {
+          // Rotate transient failures behind other candidates instead of repeatedly
+          // charging for the same empty response while ready sources wait.
+          const retryAt = new Date(Date.now() + 20 * 60_000).toISOString();
+          await supabase.from(queueTable(language)).update(language === "ja"
+            ? { next_attempt_at: retryAt } : { added_at: new Date().toISOString() })
+            .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec);
+        }
         if (result.reason === "gemini-cap") {
           stopped = "gemini-cap";
           return jsonResponse(summary(published, stopped, cronReady, queuedExplicitly));
@@ -341,11 +348,11 @@ async function takeQueue(
   stats: CatalogStats,
   categoryFloor: number,
 ): Promise<QueuedCandidate[]> {
-  const { data } = await supabase
-    .from(queueTable(language))
+  let ready = supabase.from(queueTable(language))
     .select("video_id, window_start_sec, title, channel_title, duration_sec, category, difficulty, added_at")
-    .order("added_at", { ascending: true })
-    .limit(500);
+    .order("added_at", { ascending: true }).limit(500);
+  if (language === "ja") ready = ready.lte("next_attempt_at", new Date().toISOString());
+  const { data } = await ready;
   const rows = ((data ?? []) as Array<Record<string, unknown>>).slice();
   const fill = (category: string) => (stats.byCategory.get(category) ?? 0) / Math.max(1, categoryFloor);
   // Round-robin across categories ordered by fill ratio, so one pass mixes categories.
@@ -746,7 +753,7 @@ async function advanceCursor(
 
 async function analyzeAndPublish(
   supabase: ReturnType<typeof serviceClient>, candidate: QueuedCandidate, language: CatalogLanguage,
-): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string }> {
+): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string; detail?: string }> {
   if (language !== "ja") return processCandidate(supabase, candidate, language);
   const attempt = await startPipeline(supabase, { video_id: candidate.videoId, window_start_sec: candidate.windowStartSec, title: candidate.title, channel_name: candidate.channelTitle, source: "automatic" });
   try {

@@ -1,4 +1,5 @@
 import { geminiApiKey, geminiModelFallback, openRouterApiKey } from "./env.ts";
+import { reserveOpenRouterBudget, settleOpenRouterBudget } from "./openrouter-budget.ts";
 
 const DEFAULT_TIMEOUT_MS = 12_000;
 const ANALYZE_TIMEOUT_MS = 90_000;
@@ -32,6 +33,11 @@ export class GeminiError extends Error {
     if (this.status === 404) return true;
     return this.status === 400 && /model|not (a )?valid|not found|unsupported|thinking/i.test(this.message);
   }
+}
+
+/** Budget holds never fall through to another paid provider. */
+export class AiBudgetError extends GeminiError {
+  constructor() { super(429, "AI spending allowance exhausted or unavailable"); }
 }
 
 type GeminiCall = {
@@ -104,6 +110,7 @@ export function describeProviders(): string[] {
 
 /** Failures where a different provider could realistically succeed. */
 function shouldFailOverProvider(err: GeminiError): boolean {
+  if (err instanceof AiBudgetError) return false;
   return err.retryable || err.paymentRequired || err.modelRejected ||
     err.status === 401 || err.status === 403;
 }
@@ -175,6 +182,12 @@ function isGemini3OrLater(model: string): boolean {
 }
 
 async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJsonResult> {
+  // Conservative holds cover bounded requests; actual provider costs release unused allowance.
+  let reservation;
+  try { reservation = await reserveOpenRouterBudget(opts.youtube ? 0.50 : 0.10, opts.youtube ? "catalog" : "lookup"); }
+  catch { throw new AiBudgetError(); }
+  if (!reservation) throw new AiBudgetError();
+  let settled = false;
   const model = modelForTransport(opts.model, true);
   const userContent = opts.youtube
     ? [
@@ -219,6 +232,7 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
       signal: controller.signal,
     });
     if (!res.ok) {
+      settled = await settleOpenRouterBudget(reservation, 0);
       const detail = redactSecrets(await res.text(), apiKey).slice(0, 240);
       throw new GeminiError(res.status, `Gemini HTTP ${res.status}: ${detail}`);
     }
@@ -226,32 +240,16 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
       choices?: Array<{ message?: { content?: string } }>;
       usage?: { cost?: number };
     };
-    // Keep an estimated ledger entry when OpenRouter omits the actual cost.
-    const cost = typeof data.usage?.cost === "number" ? data.usage.cost : (opts.youtube ? 0.05 : 0.005);
-    await recordOpenRouterSpend(cost);
+    // Unknown billing keeps the whole hold; never assume a cheap successful request.
+    const cost = typeof data.usage?.cost === "number" && Number.isFinite(data.usage.cost) && data.usage.cost >= 0
+      ? data.usage.cost : reservation.amount;
+    settled = await settleOpenRouterBudget(reservation, cost);
     const text = stripFence(data.choices?.[0]?.message?.content ?? "");
     if (!text) throw new GeminiError(502, "Gemini empty response");
     return { text, model };
   } finally {
     clearTimeout(timer);
-  }
-}
-
-/** Cost tracking is best effort; a ledger outage must not block clip analysis. */
-async function recordOpenRouterSpend(cost: number): Promise<void> {
-  const base = Deno.env.get("SUPABASE_URL");
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!base || !key) return;
-  try {
-    const res = await fetch(`${base}/rest/v1/rpc/openrouter_add_spend`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ cost }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) console.warn(JSON.stringify({ event: "openrouter_spend_record_failed", status: res.status }));
-  } catch {
-    console.warn(JSON.stringify({ event: "openrouter_spend_record_failed", status: 0 }));
+    if (!settled) await settleOpenRouterBudget(reservation, reservation.amount);
   }
 }
 

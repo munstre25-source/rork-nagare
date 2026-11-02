@@ -145,6 +145,8 @@ struct TapPopupCard: View {
                             .lineLimit(3)
                     }
                 }
+            } else {
+                missingDefinitionStatus
             }
 
             // The middle scrolls inside its cap; the mastery chips below never leave the card.
@@ -532,7 +534,7 @@ struct TapPopupCard: View {
     }
 
     private func lineMeaning(surface: String, gloss: String) -> AttributedString {
-        var result = AttributedString("In this line, \(surface) means “\(gloss)”.")
+        var result = AttributedString("Saved meaning of \(surface): \(gloss).")
         result.foregroundColor = onDark ? Color.white.opacity(0.78) : Color.translationText
         if let range = result.range(of: surface) {
             result[range].foregroundColor = LearningInk.dictionaryWord
@@ -545,11 +547,27 @@ struct TapPopupCard: View {
         return result
     }
 
+    private var missingDefinitionStatus: some View {
+        HStack(spacing: 8) {
+            if lookup.isLoadingMeaning {
+                ProgressView().controlSize(.small).tint(inkSoft)
+            }
+            Text(lookup.isLoadingMeaning
+                 ? "Looking up this meaning…"
+                 : "A definition for this word isn't saved yet.")
+                .font(.footnote)
+                .foregroundStyle(inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     private func dictionaryTab(_ explanation: WordExplanation, limit: Int = 2) -> some View {
         let defs = explanation.displayDefinitions(mode: app.profile.dictionary)
         let capped = Array(defs.prefix(max(1, limit)))
         let visible = showAllDefinitions ? defs : capped
         return VStack(alignment: .leading, spacing: Spacing.s) {
+            if defs.isEmpty { missingDefinitionStatus }
             ForEach(Array(visible.enumerated()), id: \.offset) { index, definition in
                 DefinitionRow(number: index + 1, tag: explanation.pos, text: definition, dark: onDark)
             }

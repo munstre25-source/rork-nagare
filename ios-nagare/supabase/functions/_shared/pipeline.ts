@@ -15,7 +15,7 @@ export function failureStatus(reason: string, detail = ""): "held" | "failed" | 
   if (/not valid JSON|not a JSON|incomplete review|duplicate review|review must contain/i.test(detail)) return "failed";
   if (/visual subtitle check is incomplete|subtitle detection lacks|visual subtitle check is inconsistent|category or child audience/i.test(detail)) return "held";
   if (/cap|quota|payment|402|unavailable/.test(reason)) return "held";
-  if (/retryable|insert|tracking|timeout/.test(reason)) return "failed";
+  if (/retryable|insert|tracking|timeout|pipeline_error/.test(reason)) return "failed";
   return "rejected";
 }
 export async function sealCatalogLines(sb: Client, source: TranslationSource) {

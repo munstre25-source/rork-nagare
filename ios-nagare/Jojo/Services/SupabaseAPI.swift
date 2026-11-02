@@ -95,6 +95,21 @@ nonisolated struct SupabaseAPI: Sendable {
         }
     }
 
+    /// Canonical bytes let unchanged catalog pages skip disk writes and feed rebuilds.
+    static func decodePublishedPage(_ data: Data) throws -> (rowCount: Int, clips: [(clip: Clip, json: Data)]) {
+        let rows = try JSONDecoder().decode([LossyRow].self, from: data)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let decoded = rows.compactMap { row -> (clip: Clip, json: Data)? in
+            guard let clip = row.value?.clip, !clip.lines.isEmpty,
+                  let json = try? encoder.encode(clip) else { return nil }
+            return (clip, json)
+        }
+        // An invalid response must never be interpreted as a retired catalog.
+        if !rows.isEmpty && decoded.isEmpty { throw SupabaseError.invalidResponse }
+        return (rows.count, decoded)
+    }
+
     /// GET /rest/v1/clips?published=eq.true&select=*
     func fetchPublishedClips() async throws -> [(clip: Clip, json: Data)] {
         guard let baseURL else { throw SupabaseError.notConfigured }
@@ -110,7 +125,6 @@ nonisolated struct SupabaseAPI: Sendable {
         var request = URLRequest(url: url)
         authorized(&request)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        let encoder = JSONEncoder()
         var result: [(clip: Clip, json: Data)] = []
         let pageSize = 200
         var offset = 0
@@ -126,17 +140,14 @@ nonisolated struct SupabaseAPI: Sendable {
             if offset == 0, let range = http.value(forHTTPHeaderField: "Content-Range") {
                 total = range.split(separator: "/").last.flatMap { Int($0) }
             }
-            let rows = try JSONDecoder().decode([LossyRow].self, from: data)
-            let decoded = rows.compactMap { row -> (clip: Clip, json: Data)? in
-                guard let clip = row.value?.clip, !clip.lines.isEmpty,
-                      let json = try? encoder.encode(clip) else { return nil }
-                return (clip, json)
-            }
-            // A wholly undecodable page is not an authoritative empty catalog.
-            // Fail this sync so existing playable content is not retired by a schema error.
-            if !rows.isEmpty && decoded.isEmpty { throw SupabaseError.invalidResponse }
-            result += decoded
-            if rows.count < pageSize || offset + rows.count >= (total ?? Int.max) { return result }
+            // Large transcript pages must not compete with scrolling or karaoke on
+            // the UI actor. Return complete pages only; cancellation never retires clips.
+            let page = try await Task.detached(priority: .utility) {
+                try Self.decodePublishedPage(data)
+            }.value
+            try Task.checkCancellation()
+            result += page.clips
+            if page.rowCount < pageSize || offset + page.rowCount >= (total ?? Int.max) { return result }
             offset += pageSize
         }
     }
@@ -171,7 +182,9 @@ nonisolated struct ClipRow: Decodable, Sendable {
 
     var clip: Clip {
         let palette: [[String]] = [["#0B1030", "#2B2F7A", "#F29E4C"], ["#10261A", "#2E7D4F", "#F6E27F"], ["#2B1405", "#9C3D10", "#F2B134"]]
-        let index = abs(id.hashValue) % palette.count
+        // Swift's hashValue changes across launches; cached fallback artwork must not.
+        let stableHash = id.utf8.reduce(UInt32(2_166_136_261)) { ($0 ^ UInt32($1)) &* 16_777_619 }
+        let index = Int(stableHash % UInt32(palette.count))
         return Clip(
             id: id,
             videoId: videoId ?? "PLACEHOLDER_remote",
