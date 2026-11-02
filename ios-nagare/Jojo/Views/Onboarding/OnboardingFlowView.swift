@@ -297,7 +297,7 @@ struct SplashView: View {
             debugDemoButton("2 · Sakura dark", script: .coreSakuraDarkOff, hint: "Same core story, glow off")
             debugDemoButton("3 · Amber dark neon", script: .coreAmberDarkNeon, hint: "Same core story on Amber neon")
             debugDemoButton("4 · Amber dark", script: .coreAmberDarkOff, hint: "Same core story on Amber, glow off")
-            debugDemoButton("5 · Full app tour", script: .fullTour, hint: "Onboarding through Profile, every theme look")
+            debugDemoButton("5 · Full app tour", script: .fullTour, hint: "Onboarding through Search, Library, Profile, every theme look")
         }
         .padding(.top, Spacing.s)
     }

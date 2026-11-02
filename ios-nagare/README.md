@@ -23,9 +23,9 @@ DEBUG only. From splash debug buttons, or **Profile → Debug · Marketing**.
 2. **Sakura dark** (glow off) — same story  
 3. **Amber dark neon** — same story  
 4. **Amber dark** (glow off) — same story  
-5. **Full app tour** — onboarding → For You → Vocab → Explore → Library → Profile, then every look (Sakura/Amber × dark neon / dark / light)
+5. **Full app tour** — onboarding → For You → Vocab → Explore → Search → Library → Profile, then every look (Sakura/Amber × dark neon / dark / light)
 
-Core story beats (videos 1–4): For You scrolls **3 clips**, normal→maximum video, word tap → dictionary + paint ladder → save fly animation → flashcard Again/Good.
+Core story beats (videos 1–4): current For You chrome (Library · For You/Explore · Search), scrolls **3 clips**, theater video, word tap → dictionary + paint ladder → save fly animation → flashcard Again/Good.
 
 1. Start Simulator/device screen recording.
 2. Open the script and tap **Begin …**.

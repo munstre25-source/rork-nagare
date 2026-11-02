@@ -71,9 +71,9 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         switch kind {
         case .core:
             let neon = glow == .off ? "glow off" : "neon glow"
-            return "Same core story on \(accent.title) dark (\(neon)): For You scrolls 3 clips, word tap → dictionary → save animation → flashcards."
+            return "Same core story on \(accent.title) dark (\(neon)): For You scrolls 3 clips, theater video, word tap → dictionary → save animation → flashcards."
         case .fullTour:
-            return "Onboarding → For You → dictionary → Vocab → Explore → Profile/settings, then every look: dark neon, dark non-neon, and light (Sakura + Amber)."
+            return "Onboarding → For You → Vocab → Explore → Search → Library → Profile, then every look: dark neon, dark non-neon, and light (Sakura + Amber)."
         }
     }
 
@@ -82,7 +82,7 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
         case .core:
             return [
                 "For You opens in \(accent.title) dark\(glow == .off ? "" : " neon")",
-                "Normal → maximum video while karaoke stays in its own section",
+                "Library · For You/Explore · Search chrome, then theater mode",
                 "Scroll through three clips",
                 "Tap a word — dictionary card, conjugation, paint ladder",
                 "Flashcard is born and flies to Vocab",
@@ -90,11 +90,11 @@ nonisolated enum MarketingScript: String, CaseIterable, Identifiable, Sendable {
             ]
         case .fullTour:
             return [
-                "Onboarding look: name the product, then pick a look",
+                "Onboarding: value, flashcards, then pick a look",
                 "For You core: scroll, tap, save, flashcards",
-                "Vocab, Explore, and Profile / settings",
-                "Sakura dark neon → dark glow-off → light",
-                "Amber dark neon → dark glow-off → light"
+                "Vocab → Explore → Search a word → Library",
+                "Profile / settings",
+                "Sakura and Amber: dark neon, dark, and light"
             ]
         }
     }
@@ -154,7 +154,7 @@ struct MarketingShowcaseView: View {
     @State private var onboardingBeat: Int = 0
 
     private enum Phase { case prep, running, done }
-    private enum Stage { case onboarding, feed, explore, watching, vocab, search, analytics, flashcard }
+    private enum Stage { case onboarding, feed, explore, watching, vocab, search, library, analytics, flashcard }
 
     var body: some View {
         ZStack {
@@ -234,7 +234,7 @@ struct MarketingShowcaseView: View {
             Text("Marketing demos")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("DEBUG only. Four theme cuts of the same For You story, plus one full-app tour. Start a screen recording, then tap Begin.")
+            Text("DEBUG only. Four theme cuts of the current For You story, plus one full-app tour. Start a screen recording, then tap Begin.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -349,6 +349,8 @@ struct MarketingShowcaseView: View {
                     VocabView()
                 case .search:
                     SearchView(initialQuery: demoSearchQuery, embedded: true)
+                case .library:
+                    LibraryView(presentedModally: true)
                 case .analytics:
                     ProfileView()
                         .environment(\.marketingScrollsToTheme, themeMenu != nil)
@@ -444,34 +446,34 @@ struct MarketingShowcaseView: View {
 
     // MARK: For You chrome
 
+    /// Matches live FeedView: Library · For You/Explore · Search above the goal bar, then the pager.
     private var feedChrome: some View {
         VStack(spacing: 0) {
-            StudySessionClock(running: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.l)
-                .padding(.top, 2)
-            if !app.profile.hideDailyGoalBar {
-                DailyGoalBar()
-                    .padding(.top, 2)
-            }
-            ZStack {
-                CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: {})
-                    .opacity(watchChromeVisible ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.45), value: watchChromeVisible)
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    Image(systemName: "flag")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40, height: 40)
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40, height: 40)
+            if !demoVideoExpanded {
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        Image(systemName: "books.vertical")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Library")
+                        Spacer(minLength: 0)
+                        CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: {})
+                        Spacer(minLength: 0)
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Search clips by word")
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
+
+                    DailyGoalBar(hidesAfterCompletion: true)
+                        .opacity(watchChromeVisible ? 1 : 0)
                 }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 2)
 
             GeometryReader { geo in
                 ScrollView(.vertical, showsIndicators: false) {
@@ -498,6 +500,7 @@ struct MarketingShowcaseView: View {
             }
         }
         .background(Color.canvas.ignoresSafeArea())
+        .animation(.easeInOut(duration: 0.35), value: demoVideoExpanded)
     }
 
     /// Up to three verified clips for the For You reel.
@@ -511,7 +514,7 @@ struct MarketingShowcaseView: View {
             ("Jojo 流れ", "Scroll, listen, and flow into Japanese."),
             ("Tap any word", "The dictionary opens on the clip. Paint how well you know it."),
             ("Flashcards grow", "Every tap becomes a card. Review keeps words sticky."),
-            ("Pick your look", "Sakura or Amber. Neon glow or clean ink. Light or dark.")
+            ("Pick your look", "Sakura or Amber. Neon or clean. Light or dark — then the feed.")
         ]
         let panel = panels[min(onboardingBeat, panels.count - 1)]
         return ZStack {
@@ -867,7 +870,7 @@ struct MarketingShowcaseView: View {
         try? await Task.sleep(for: .milliseconds(2600))
         guard !Task.isCancelled else { return }
 
-        // Explore
+        // Explore from the top switch
         explorePath = nil
         withAnimation(.easeInOut(duration: 0.4)) {
             stage = .explore
@@ -877,6 +880,23 @@ struct MarketingShowcaseView: View {
         guard !Task.isCancelled else { return }
         withAnimation(.easeInOut(duration: 0.4)) { explorePath = .listening }
         try? await Task.sleep(for: .milliseconds(1800))
+        guard !Task.isCancelled else { return }
+
+        // Search a word (feed header magnifying glass)
+        demoSearchQuery = demoSearchWord(from: first)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .search
+            tabHighlight = .feed
+        }
+        try? await Task.sleep(for: .milliseconds(2200))
+        guard !Task.isCancelled else { return }
+
+        // Library (opened from the feed header, not a dock tab)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            stage = .library
+            tabHighlight = .feed
+        }
+        try? await Task.sleep(for: .milliseconds(2000))
         guard !Task.isCancelled else { return }
 
         // Profile / settings
@@ -942,6 +962,18 @@ struct MarketingShowcaseView: View {
         if let parkedGlow {
             app.setGlowLevel(parkedGlow)
         }
+    }
+
+    /// A real word from the clip so Search shows hits instead of an empty query.
+    private func demoSearchWord(from clip: Clip) -> String {
+        let tokens = clip.lines.flatMap(\.tokens).filter { $0.tappable && !$0.definitions.isEmpty }
+        if let known = tokens.first(where: { $0.containsKanji }) {
+            return known.dictionaryForm.isEmpty ? known.surface : known.dictionaryForm
+        }
+        if let any = tokens.first {
+            return any.dictionaryForm.isEmpty ? any.surface : any.dictionaryForm
+        }
+        return "好き"
     }
 
     /// Same fade the live feed uses once a clip has the learner's attention.
