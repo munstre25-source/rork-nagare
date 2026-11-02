@@ -135,44 +135,18 @@ struct ShortsRail: View {
     }
 }
 
-/// Fast transcript controls available without leaving the feed or opening Profile.
+/// One quiet entry point for subtitle help on both landscape clips and Shorts.
 struct TranscriptDisplayMenu: View {
     var tint: Color = .secondary
     var compact: Bool = false
 
     @Environment(AppModel.self) private var app
+    @State private var showsSettings = false
 
     var body: some View {
-        Menu {
-            Section("Subtitles") {
-                ForEach(SubtitleMode.allCases) { mode in
-                    Button {
-                        Haptics.selection()
-                        app.setSubtitleMode(mode)
-                    } label: {
-                        if app.profile.subtitles == mode {
-                            Label(mode.title, systemImage: "checkmark")
-                        } else {
-                            Text(mode.title)
-                        }
-                    }
-                }
-            }
-
-            Section("Readings") {
-                Toggle(isOn: Binding(
-                    get: { app.profile.showFurigana },
-                    set: { app.setShowFurigana($0) }
-                )) {
-                    Label("Furigana", systemImage: "textformat")
-                }
-                Toggle(isOn: Binding(
-                    get: { app.profile.showRomaji },
-                    set: { app.setShowRomaji($0) }
-                )) {
-                    Label("Romaji", systemImage: "character.book.closed")
-                }
-            }
+        Button {
+            Haptics.selection()
+            showsSettings = true
         } label: {
             Image(systemName: "captions.bubble")
                 .font(.system(size: compact ? 19 : 15, weight: .semibold))
@@ -180,8 +154,15 @@ struct TranscriptDisplayMenu: View {
                 .frame(width: compact ? 44 : 34, height: 44)
                 .contentShape(Rectangle())
         }
-        .accessibilityLabel("Transcript display")
-        .accessibilityHint("Choose subtitles, furigana, and romaji")
+        .buttonStyle(.plain)
+        .accessibilityLabel("Subtitle help")
+        .accessibilityValue(app.profile.subtitleDisplay.learningMode?.title ?? "Custom")
+        .accessibilityHint("Opens learning modes, English, furigana, romaji and word lookup")
+        .sheet(isPresented: $showsSettings, onDismiss: {
+            app.completeSubtitleSetup()
+        }) {
+            SubtitleLearningSettingsSheet()
+        }
     }
 }
 

@@ -35,6 +35,16 @@ The project uses filesystem-synchronized source groups; new Swift files are incl
 - Exact retired clip IDs leave the local cache on sync even if another excerpt of the same video remains live.
 - Podcasts are a separate interest/category. Adult lessons and podcasts must not become Kids for easy vocabulary or slow speech.
 
+## Quiet subtitle controls
+
+The permanent horizontal learning-mode/aid strip has been replaced with a small one-time karaoke invitation. It appears only on the active clip after the guided tour, and disappears after dismissing it or closing subtitle setup. The acknowledgement is stored on the local profile; existing display choices remain intact.
+
+The existing captions icon opens a native, swipe-dismissable Subtitle help tray. Profile → Subtitles & reading → Subtitle help opens the same tray. Modes, furigana, romaji, English visibility, word tapping and subtitle languages all use the existing persisted setters. The tray is medium height by default and can expand for the full form.
+
+No Supabase migration is required for this UI update. UserProfile adds a defaulted local subtitleSetupCompleted Boolean; verify an existing install upgrades without losing its preferences.
+
+Simulator checks: complete/skip the guided tour; see the hint only on the active clip; close it and relaunch; reopen via captions and Profile; verify all controls, Custom mode, swipe dismissal, Shorts/landscape and large Dynamic Type. Confirm changing modes does not seek or replace the clip. Swift syntax checks passed for changed views/models; AppModel has only the same parser limitation present before this patch. Xcode build and device UI verification remain required.
+
 ## Annual-first paywall
 
 The native annual-first comparison is now canonical; a RevenueCat remote template no longer silently replaces it. RevenueCat still supplies the assigned current offering (default fallback), packages, localized prices, trial eligibility, purchases/restores and entitlement state. Customer Center remains available.

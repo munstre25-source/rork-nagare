@@ -88,6 +88,8 @@ final class UserProfile {
     /// Additive defaults preserve older profiles and their existing subtitle choices.
     var englishVisibility: String = EnglishVisibility.shown.rawValue
     var tapWordsEnabled: Bool = true
+    /// Acknowledged the one-time karaoke invitation; reset with the local profile.
+    var subtitleSetupCompleted: Bool = false
     var dictionaryMode: String = DictionaryMode.english.rawValue
     var hideDailyGoalBar: Bool = false
     /// While a clip is playing, the tab capsule and For You / Explore switch fade until the next touch.

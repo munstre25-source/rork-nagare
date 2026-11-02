@@ -20,6 +20,7 @@ struct ProfileView: View {
     @State private var confirmDeleteAccount: Bool = false
     @State private var showHelp: Bool = false
     @State private var showLibrary = false
+    @State private var showSubtitleHelp = false
     #if DEBUG
     @State private var confirmReset: Bool = false
     @State private var marketingScript: MarketingScript?
@@ -136,6 +137,11 @@ struct ProfileView: View {
         #endif
         .sheet(isPresented: $showGoalPicker) { DailyGoalSheet() }
         .sheet(isPresented: $showLibrary) { LibraryView(presentedModally: true) }
+        .sheet(isPresented: $showSubtitleHelp, onDismiss: {
+            app.completeSubtitleSetup()
+        }) {
+            SubtitleLearningSettingsSheet()
+        }
         .manageSubscriptionsSheet(isPresented: $showManageSubs)
         .sheet(isPresented: $showCustomerCenter) { JojoCustomerCenter() }
         .alert("Restore Purchases", isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } })) {
@@ -344,42 +350,10 @@ struct ProfileView: View {
             Divider().padding(.leading, 52)
 
             settingsHeader("Subtitles & reading")
-            Menu {
-                ForEach(LearningMode.allCases) { mode in
-                    Button(mode.title) { app.setLearningMode(mode) }
-                }
-            } label: {
-                SettingsRowLabel(symbol: "slider.horizontal.3", title: "Learning mode",
-                                 value: app.profile.subtitleDisplay.learningMode?.title ?? "Custom")
+            SettingsRow(symbol: "captions.bubble", title: "Subtitle help",
+                        value: app.profile.subtitleDisplay.learningMode?.title ?? "Custom") {
+                showSubtitleHelp = true
             }
-            Divider().padding(.leading, 52)
-            Menu {
-                ForEach(EnglishVisibility.allCases) { visibility in
-                    Button(visibility == .onTap ? "Tap to reveal" : visibility.title) {
-                        app.setEnglishVisibility(visibility)
-                    }
-                }
-            } label: {
-                SettingsRowLabel(symbol: "eye", title: "English assistance",
-                                 value: app.profile.subtitleDisplay.english.title)
-            }
-            Divider().padding(.leading, 52)
-            settingsToggle(symbol: "hand.tap", title: "Tap words to look up",
-                           isOn: Binding(get: { app.profile.tapWordsEnabled }, set: { app.setTapWordsEnabled($0) }))
-            Divider().padding(.leading, 52)
-            Menu {
-                ForEach(SubtitleMode.allCases) { mode in
-                    Button(mode.title) { app.setSubtitleMode(mode) }
-                }
-            } label: {
-                SettingsRowLabel(symbol: "captions.bubble", title: "Subtitles", value: app.profile.subtitles.title)
-            }
-            Divider().padding(.leading, 52)
-            settingsToggle(symbol: "textformat.ja", title: "Furigana above Japanese",
-                           isOn: Binding(get: { app.profile.showFurigana }, set: { app.setShowFurigana($0) }))
-            Divider().padding(.leading, 52)
-            settingsToggle(symbol: "character", title: "Romaji under words",
-                           isOn: Binding(get: { app.profile.showRomaji }, set: { app.setShowRomaji($0) }))
             Divider().padding(.leading, 52)
             Menu {
                 ForEach(DictionaryMode.allCases) { mode in

@@ -1577,6 +1577,12 @@ final class AppModel {
         paletteEpoch += 1
     }
 
+    func completeSubtitleSetup() {
+        guard !profile.subtitleSetupCompleted else { return }
+        profile.subtitleSetupCompleted = true
+        save()
+    }
+
     func setLearningMode(_ mode: LearningMode) {
         let display = mode.display
         profile.subtitles = display.english == .hidden ? .japanese : .both

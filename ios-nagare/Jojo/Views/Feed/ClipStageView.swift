@@ -600,7 +600,7 @@ struct ClipStageView: View {
         maxHeight: CGFloat
     ) -> some View {
         VStack(spacing: 4) {
-            SubtitleLearningControls()
+            SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
                 .padding(.horizontal, 10)
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
@@ -652,7 +652,7 @@ struct ClipStageView: View {
     private func transcript(player: (any ClipPlayer)?, following: Int? = nil, showsLearningControls: Bool = true) -> some View {
         VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
-                SubtitleLearningControls()
+                SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
             }
             TranscriptSection(
                 clip: clip,
