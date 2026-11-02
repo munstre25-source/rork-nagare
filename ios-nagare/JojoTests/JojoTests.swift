@@ -292,12 +292,12 @@ struct JojoTests {
         #expect(VocabularyProgress(words: [word], dailyGoal: 1).fraction == 1)
     }
 
-    @Test func landscapeTheaterPlacesTheCompleteVideoSlightlyAboveCenterWhenItFits() {
+    @Test func landscapeTheaterPlacesTheCompleteVideoNearTheUpperThirdWhenItFits() {
         let size = CGSize(width: 402, height: 800)
         let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
         let videoCenter = layout.videoTop + layout.videoSize.height / 2
-        #expect(videoCenter < size.height / 2)
-        #expect(videoCenter >= size.height * 0.4)
+        #expect(videoCenter >= size.height * 0.30)
+        #expect(videoCenter <= size.height * 0.38)
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
         #expect(layout.videoTop > 12)
         #expect(layout.videoSize.width <= size.width - 24)
