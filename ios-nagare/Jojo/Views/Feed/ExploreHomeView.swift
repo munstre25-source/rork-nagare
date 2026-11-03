@@ -146,7 +146,7 @@ struct ExploreHomeView: View {
                 ReviewSessionView(config: config)
             }
             .fullScreenCover(item: $playing, onDismiss: reloadPlan) { clip in
-                ClipPlayerScreen(clip: clip, queue: app.studyLibrary)
+                ClipPlayerScreen(clip: clip, queue: app.personalized(app.studyLibrary))
                     .environment(app)
             }
             .sheet(item: $practiceClip, onDismiss: reloadPlan) { clip in
@@ -232,7 +232,11 @@ struct ExploreHomeView: View {
         }
     }
 
-    private var suggestedClip: Clip? { app.recommendedClip(preferShort: true) }
+    /// Prefers the best-fit clip where today's review words come back, so watching doubles as review.
+    private var suggestion: (clip: Clip, matches: Int)? {
+        if let pick = app.reviewReinforcingClip(dueKeys: dueKeys), pick.matches > 0 { return pick }
+        return app.recommendedClip(preferShort: true).map { (clip: $0, matches: 0) }
+    }
 
     private var todayPlan: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -251,8 +255,16 @@ struct ExploreHomeView: View {
                     reviewSession = ReviewSessionConfig(title: "Today", keys: dueKeys)
                 }
             }
-            if let clip = suggestedClip {
-                planRow(symbol: "play.fill", title: "Watch a clip", subtitle: clip.title, done: watchDone) {
+            if let suggestion {
+                let clip = suggestion.clip
+                planRow(
+                    symbol: "play.fill",
+                    title: "Watch a clip",
+                    subtitle: suggestion.matches > 0
+                        ? "\(suggestion.matches) of your review word\(suggestion.matches == 1 ? "" : "s") · \(clip.title)"
+                        : clip.title,
+                    done: watchDone
+                ) {
                     playing = clip
                 }
                 planRow(symbol: "mic.fill", title: "Say a line", subtitle: "Listen, then speak it back", done: speakDone) {
@@ -611,7 +623,7 @@ struct LearningPathScreen: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                ForEach(app.studyLibrary) { clip in
+                ForEach(app.personalized(app.studyLibrary)) { clip in
                     Button {
                         Haptics.light()
                         practiceClip = clip
@@ -660,7 +672,7 @@ private struct GrammarPathView: View {
     private var moments: [(clip: Clip, line: Line, surface: String, gloss: String)] {
         let grammar: Set<String> = ["particle", "auxiliary", "copula", "conjunction", "expression", "grammar"]
         var rows: [(Clip, Line, String, String)] = []
-        for clip in app.studyLibrary {
+        for clip in app.personalized(app.studyLibrary) {
             for line in clip.lines {
                 guard let token = line.tokens.first(where: { grammar.contains($0.pos) && $0.tappable }) else { continue }
                 let gloss = token.definitions.first ?? ""
@@ -733,14 +745,15 @@ private struct GrammarPathView: View {
 private struct JLPTPathView: View {
     @Environment(AppModel.self) private var app
     @State private var level = "N5"
+    @State private var didPickLevel = false
     @State private var playing: Clip?
 
     private let levels = ["N5", "N4", "N3", "N2", "N1"]
 
     private var clips: [Clip] {
-        app.studyLibrary.filter { clip in
+        app.personalized(app.studyLibrary.filter { clip in
             clip.lines.contains { line in line.tokens.contains { $0.jlpt == level } }
-        }
+        })
     }
 
     var body: some View {
@@ -795,6 +808,11 @@ private struct JLPTPathView: View {
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, queue: clips)
                 .environment(app)
+        }
+        .onAppear {
+            guard !didPickLevel else { return }
+            didPickLevel = true
+            level = app.suggestedJLPTLevel
         }
     }
 }

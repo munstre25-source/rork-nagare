@@ -96,6 +96,8 @@ final class AppModel {
     @ObservationIgnored private var formsByPosJLPT: [String: [String]] = [:]
     @ObservationIgnored private var rankedCacheKey = ""
     @ObservationIgnored private var rankedCache: [Clip]?
+    /// Clip id → For You position, rebuilt with `rankedCache`.
+    @ObservationIgnored private var personalRankIndex: [String: Int]?
 
     var context: ModelContext { container.mainContext }
 
@@ -561,6 +563,63 @@ final class AppModel {
         return candidates.first
     }
 
+    /// Any clip list in For You order: the same taste, level, and vocabulary signals as the
+    /// feed. Clips the level gate keeps out of For You stay browsable, after the ranked ones.
+    func personalized(_ clips: [Clip]) -> [Clip] {
+        guard clips.count > 1 else { return clips }
+        let ranked = rankedStudyClips()
+        let index = personalRankIndex ?? Dictionary(
+            ranked.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first }
+        )
+        personalRankIndex = index
+        return clips.enumerated().sorted { a, b in
+            let ra = index[a.element.id] ?? Int.max
+            let rb = index[b.element.id] ?? Int.max
+            return ra != rb ? ra < rb : a.offset < b.offset
+        }.map(\.element)
+    }
+
+    /// Unwatched clips where a saved word comes back, best personal fit first, with the line it is on.
+    func clipsReinforcing(wordKey: String, excluding clipId: String? = nil, limit: Int = 3) -> [(clip: Clip, line: Int)] {
+        var hits: [(clip: Clip, line: Int)] = []
+        for clip in personalized(studyLibrary) where clip.id != clipId && !hasFinished(clip.id) {
+            guard let line = clip.lines.firstIndex(where: { line in
+                line.tokens.contains { $0.tappable && Self.wordKey(for: $0) == wordKey }
+            }) else { continue }
+            hits.append((clip: clip, line: line))
+            if hits.count == limit { break }
+        }
+        return hits
+    }
+
+    /// Today's watch: among the learner's best-fit unwatched clips, the one where the most
+    /// words they are reviewing come back. Falls back to the plain recommendation.
+    func reviewReinforcingClip(dueKeys: [String]) -> (clip: Clip, matches: Int)? {
+        let due = Set(dueKeys)
+        let candidates = rankedStudyClips().filter { !hasFinished($0.id) }.prefix(40)
+        let fallback: (clip: Clip, matches: Int)? = candidates.first.map { (clip: $0, matches: 0) }
+        guard !due.isEmpty else { return fallback }
+        var best: (clip: Clip, matches: Int)?
+        for clip in candidates {
+            var matched = Set<String>()
+            for token in clip.lines.flatMap(\.tokens) where token.tappable {
+                let key = Self.wordKey(for: token)
+                if due.contains(key) { matched.insert(key) }
+            }
+            if matched.count > (best?.matches ?? 0) { best = (clip: clip, matches: matched.count) }
+        }
+        return best ?? fallback
+    }
+
+    /// Where JLPT browsing should open for this learner.
+    var suggestedJLPTLevel: String {
+        switch profile.readingLevel {
+        case .beginner: lookedUpKeys.count >= 400 ? "N4" : "N5"
+        case .intermediate: "N3"
+        case .advanced: "N2"
+        }
+    }
+
     /// Liked swipes outrank motivations. A pass beats a motivation for that genre.
     private func rankedStudyClips() -> [Clip] {
         let key = rankingKey()
@@ -568,6 +627,7 @@ final class AppModel {
         let ranked = computeRankedStudyClips()
         rankedCacheKey = key
         rankedCache = ranked
+        personalRankIndex = nil
         return ranked
     }
 

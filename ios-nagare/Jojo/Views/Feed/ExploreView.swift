@@ -17,7 +17,7 @@ struct ExploreView: View {
     @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
-        let base = app.studyLibrary.filter(matchesFilters)
+        let base = app.personalized(app.studyLibrary.filter(matchesFilters))
         let leading = leadingClips.filter(matchesFilters)
         guard !leading.isEmpty else { return base }
         var seen = Set<String>()

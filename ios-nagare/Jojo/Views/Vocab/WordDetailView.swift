@@ -9,6 +9,9 @@ struct WordDetailView: View {
     @State private var confirmRemove: Bool = false
     @Environment(\.dismiss) private var dismiss
 
+    @State private var playingLine: Int = 0
+    @State private var reinforcing: [(clip: Clip, line: Int)] = []
+
     private var clip: Clip? { app.clip(id: word.contextClipId) }
 
     var body: some View {
@@ -52,7 +55,42 @@ struct WordDetailView: View {
                     .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
                     if let clip {
-                        ClipThumbnailButton(clip: clip) { playing = clip }
+                        ClipThumbnailButton(clip: clip) { playing = clip; playingLine = word.contextLineIndex }
+                    }
+                }
+                if !reinforcing.isEmpty {
+                    SectionTitle("Meet it again")
+                    VStack(spacing: Spacing.s) {
+                        ForEach(reinforcing, id: \.clip.id) { hit in
+                            Button {
+                                Haptics.light()
+                                playingLine = hit.line
+                                playing = hit.clip
+                            } label: {
+                                HStack(spacing: Spacing.m) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(hit.clip.lines[safe: hit.line]?.text ?? hit.clip.title)
+                                            .font(JojoFont.jp(16, relativeTo: .body))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                        Text(hit.clip.channelName)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer(minLength: Spacing.s)
+                                    Image(systemName: "play.fill")
+                                        .foregroundStyle(Color.designOrange)
+                                }
+                                .padding(Spacing.m)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Play a line with \(word.surface) from \(hit.clip.channelName)")
+                        }
                     }
                 }
                 SectionTitle("Progress")
@@ -91,10 +129,13 @@ struct WordDetailView: View {
         .navigationTitle(word.surface)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
-        .onAppear { app.hidesMainTabBar = true }
+        .onAppear {
+            app.hidesMainTabBar = true
+            reinforcing = app.clipsReinforcing(wordKey: word.key, excluding: word.contextClipId)
+        }
         .onDisappear { app.hidesMainTabBar = false }
         .fullScreenCover(item: $playing) { clip in
-            ClipPlayerScreen(clip: clip, startLine: word.contextLineIndex, loopLine: true)
+            ClipPlayerScreen(clip: clip, startLine: playingLine, loopLine: true)
         }
         .confirmationDialog("Remove \(word.surface)?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Remove word", role: .destructive) {
