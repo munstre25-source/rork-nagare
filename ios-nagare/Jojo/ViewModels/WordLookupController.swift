@@ -104,7 +104,7 @@ final class WordLookupController {
         if context == nil {
             context = Self.offlineContext(for: newSelection, app: app)
         }
-        guard instant.source == .fallback, !offlineOnly, !previewOnly else { return }
+        guard !instant.hasMeaning, !offlineOnly, !previewOnly else { return }
         isLoadingMeaning = true
         let service = app.explainService
         let userId = app.purchases.appUserId
@@ -205,7 +205,7 @@ final class WordLookupController {
             named = token.surface
         }
         var explanation = gloss.map { "Saved meaning of \(named): \($0)." }
-            ?? "A definition for \(named) isn't saved on this device yet."
+            ?? "「\(named)」 appears in this clip."
         if !selection.translation.isEmpty {
             explanation += " Saved sentence translation: \(selection.translation)"
         }

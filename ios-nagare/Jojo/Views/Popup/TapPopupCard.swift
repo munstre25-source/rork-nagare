@@ -584,17 +584,19 @@ struct TapPopupCard: View {
         return result
     }
 
+    /// Keep saved clip context visible while AI enrichment runs silently.
     private var missingDefinitionStatus: some View {
-        HStack(spacing: 8) {
-            if lookup.isLoadingMeaning {
-                ProgressView().controlSize(.small).tint(inkSoft)
+        VStack(alignment: .leading, spacing: 4) {
+            if let selection = lookup.selection {
+                let translation = selection.translation.trimmingCharacters(in: .whitespacesAndNewlines)
+                Text(translation.isEmpty ? "From this clip" : "Sentence meaning")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(inkSoft)
+                Text(translation.isEmpty ? selection.sentence : translation)
+                    .font(.footnote)
+                    .foregroundStyle(ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(lookup.isLoadingMeaning
-                 ? "Looking up this meaning…"
-                 : "A definition for this word isn't saved yet.")
-                .font(.footnote)
-                .foregroundStyle(inkSoft)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
     }

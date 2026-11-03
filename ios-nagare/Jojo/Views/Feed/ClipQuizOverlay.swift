@@ -99,7 +99,7 @@ nonisolated enum ClipQuizBuilder {
 struct ClipQuizOverlay: View {
     let clip: Clip
     let onFinished: () -> Void
-    var onDisableQuickChecks: () -> Void = {}
+    let onDisableQuickChecks: () -> Void
 
     @Environment(AppModel.self) private var app
     @State private var questions: [ClipQuizQuestion] = []
@@ -116,13 +116,18 @@ struct ClipQuizOverlay: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Spacer()
-                    Button("Turn off") {
+                    Button {
                         Haptics.selection()
                         onDisableQuickChecks()
+                    } label: {
+                        Text("Turn off")
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .frame(minHeight: 44)
+                    .accessibilityLabel("Turn off quick checks after videos")
                     Button("Skip") {
                         Haptics.selection()
                         onFinished()

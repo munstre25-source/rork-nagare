@@ -31,7 +31,7 @@ struct FeedView: View {
     @State private var chromeHideTask: Task<Void, Never>?
     @State private var resumeSnapshot: (clipId: String, time: Double, line: Int, title: String, channel: String)?
     @State private var showResumeChip: Bool = false
-    @AppStorage("jojo.quickChecksEnabled") private var quickChecksEnabled = true
+    @AppStorage(PlaybackDefaults.quickChecksKey) private var quickChecksEnabled = true
     /// When the current clip came on screen, to tell a real swipe from a quick flick past.
     @State private var clipShownAt: Date = .now
     /// Set right before code (not the learner) changes `currentId`.
@@ -79,17 +79,13 @@ struct FeedView: View {
                 feedPager
             }
 
-            if let quizClip {
+            if quickChecksEnabled, let quizClip {
                 ClipQuizOverlay(
                     clip: quizClip,
-                    onFinished: {
-                        withAnimation(.snappy) { self.quizClip = nil }
-                        scheduleAutomaticAdvance()
-                    },
+                    onFinished: { finishQuickCheck() },
                     onDisableQuickChecks: {
                         quickChecksEnabled = false
-                        withAnimation(.snappy) { self.quizClip = nil }
-                        scheduleAutomaticAdvance()
+                        finishQuickCheck()
                     }
                 )
                 .transition(.opacity)
@@ -249,6 +245,9 @@ struct FeedView: View {
         .onChange(of: app.tasteRevision) { _, _ in mirrorUpcoming() }
         .onChange(of: lookup.isPresented) { _, presented in
             if presented { showWatchChrome() } else { scheduleWatchChromeHide() }
+        }
+        .onChange(of: quickChecksEnabled) { _, enabled in
+            if !enabled { finishQuickCheck() }
         }
         .onChange(of: quizClip?.id) { _, _ in
             if quizClip != nil { showWatchChrome() } else { scheduleWatchChromeHide() }
@@ -596,7 +595,9 @@ struct FeedView: View {
         guard !isCovered else { coordinator.pause(); return }
         if let id = currentId { app.markClipFinished(id) }
         mirrorUpcoming()
-        guard quickChecksEnabled,
+        // onFinished retains the view from setup; read storage rather than its
+        // cached AppStorage value so Turn off and Profile changes take effect.
+        guard PlaybackDefaults.quickChecksEnabled(),
               quizClip == nil,
               let id = currentId,
               let clip = clips.first(where: { $0.id == id }),
@@ -606,6 +607,12 @@ struct FeedView: View {
         }
         coordinator.pause()
         withAnimation(.snappy) { quizClip = clip }
+    }
+
+    private func finishQuickCheck() {
+        guard quizClip != nil else { return }
+        withAnimation(.snappy) { quizClip = nil }
+        scheduleAutomaticAdvance()
     }
 
     private func scheduleAutomaticAdvance() {

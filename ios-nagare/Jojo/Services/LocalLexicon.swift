@@ -7,21 +7,68 @@ nonisolated struct LocalLexicon: Sendable {
     static let empty = LocalLexicon(entries: [:])
 
     func entry(for surface: String) -> DictionaryEntry? {
-        entries[surface]
+        let normalized = surface.precomposedStringWithCompatibilityMapping
+        for key in [surface, normalized, JapaneseText.hiragana(normalized)] {
+            if let entry = entries[key],
+               !WordExplanation.meaningfulDefinitions(entry.definitions).isEmpty
+                || !WordExplanation.meaningfulDefinitions(entry.jaDefinitions).isEmpty {
+                return entry
+            }
+        }
+        return nil
+    }
+
+    /// Prefer the transcript's base form. If it is absent, resolve common inflections
+    /// against real dictionary entries; never assign a meaning by a suffix alone.
+    private func entry(for token: Token) -> DictionaryEntry? {
+        if let exact = entry(for: token.surface) { return exact }
+        if let base = token.baseForm, let exact = entry(for: base) { return exact }
+        let pos = token.pos.lowercased()
+        let isVerb = pos.contains("verb") && !pos.contains("adverb")
+        let rules: [(String, String)]
+        if isVerb {
+            rules = [
+                ("きました", "くる"), ("きます", "くる"), ("きた", "くる"), ("きて", "くる"),
+                ("しました", "する"), ("します", "する"), ("した", "する"), ("して", "する"),
+                ("来ました", "来る"), ("来ます", "来る"), ("来た", "来る"), ("来て", "来る"),
+                ("ませんでした", "る"), ("ました", "る"), ("ません", "る"), ("ます", "る"),
+                ("なかった", "る"), ("ない", "る"), ("た", "る"), ("て", "る"),
+                ("った", "う"), ("った", "つ"), ("った", "る"),
+                ("んだ", "む"), ("んだ", "ぶ"), ("んだ", "ぬ"),
+                ("いた", "く"), ("いだ", "ぐ"), ("した", "す"),
+                ("って", "う"), ("って", "つ"), ("って", "る"),
+                ("んで", "む"), ("んで", "ぶ"), ("んで", "ぬ"),
+                ("いて", "く"), ("いで", "ぐ")
+            ]
+        } else if pos.contains("adj") {
+            rules = [("くなかった", "い"), ("くない", "い"), ("かった", "い")]
+        } else {
+            return nil
+        }
+        var matches: [String: DictionaryEntry] = [:]
+        for (suffix, ending) in rules where token.surface.hasSuffix(suffix) {
+            let stem = String(token.surface.dropLast(suffix.count))
+            guard !stem.isEmpty, let candidate = entry(for: stem + ending) else { continue }
+            let candidatePOS = candidate.pos.lowercased()
+            guard (isVerb && candidatePOS.contains("verb") && !candidatePOS.contains("adverb"))
+                || (pos.contains("adj") && candidatePOS.contains("adj")) else { continue }
+            matches[candidate.surface] = candidate
+        }
+        // Ambiguous forms keep their saved sentence context rather than a guessed definition.
+        return matches.count == 1 ? matches.values.first : nil
     }
 
     /// Instant explanation: seed token data first, then the local dictionary (surface, then base form).
     func instantExplanation(for token: Token) -> WordExplanation? {
         if var seeded = WordExplanation.fromToken(token) {
             if seeded.jaDefinitions.isEmpty,
-               let entry = entries[token.surface] ?? token.baseForm.flatMap({ entries[$0] }),
+               let entry = entry(for: token),
                !entry.jaDefinitions.isEmpty {
                 seeded.jaDefinitions = entry.jaDefinitions
             }
             return seeded
         }
-        if let entry = entries[token.surface] { return .fromDictionary(entry, surface: token.surface) }
-        if let base = token.baseForm, let entry = entries[base] {
+        if let entry = entry(for: token) {
             var explanation = WordExplanation.fromDictionary(entry, surface: token.surface)
             explanation.readings = token.allReadings.isEmpty ? entry.readings : token.allReadings
             explanation.romaji = token.romaji.isEmpty ? entry.romaji : token.romaji
@@ -34,7 +81,7 @@ nonisolated struct LocalLexicon: Sendable {
     func enriched(_ token: Token) -> Token {
         guard token.tappable else { return token }
         guard token.definitions.isEmpty || token.jaDefinitions.isEmpty else { return token }
-        guard let entry = entries[token.surface] ?? token.baseForm.flatMap({ entries[$0] }) else { return token }
+        guard let entry = entry(for: token) else { return token }
         var copy = token
         if copy.definitions.isEmpty { copy.definitions = entry.definitions }
         if copy.jaDefinitions.isEmpty { copy.jaDefinitions = entry.jaDefinitions }

@@ -2,6 +2,13 @@ import Foundation
 
 /// Per-category starting rate and whether line-loop fits the clip type.
 enum PlaybackDefaults {
+    static let quickChecksKey = "jojo.quickChecksEnabled"
+
+    /// Read at clip completion, including from callbacks created before a setting changed.
+    static func quickChecksEnabled(defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: quickChecksKey) as? Bool ?? true
+    }
+
     struct Profile: Sendable {
         var rate: Double
         var preferLineLoop: Bool

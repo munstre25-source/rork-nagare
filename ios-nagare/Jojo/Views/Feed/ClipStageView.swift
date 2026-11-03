@@ -147,6 +147,8 @@ struct ClipStageView: View {
                 stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
             }
         }
+        // Keep the last subtitle row clear of the dock/home-indicator edge in every feed mode.
+        .padding(.bottom, usesFlexibleVideo ? 20 : 0)
         .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
             if !enabled && isPopupHere { dismiss() }
         }
@@ -342,7 +344,7 @@ struct ClipStageView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.top, 4)
         .padding(.bottom, 10)
     }
 
@@ -370,7 +372,7 @@ struct ClipStageView: View {
             if maximized {
                 Color.clear.frame(height: theater.videoTop)
             } else {
-                Color.clear.frame(height: 18)
+                Color.clear.frame(height: immersiveFeed ? 4 : 18)
             }
 
             // Video: the max/min box sits on the frame's bottom-trailing corner while resting.
@@ -444,13 +446,12 @@ struct ClipStageView: View {
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
-        let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
-        let karaokeHeight = showsShortsCaptions
-            ? min(card.height * (videoExpanded ? 0.30 : 0.30), shortsWordsHeight * (videoExpanded ? 1.0 : 1))
-            : 0
-        let gaps: CGFloat = showsShortsCaptions ? 12 : 6
-        let videoHeight = max(0, min(card.width * 16 / 9,
-                                    card.height - karaokeHeight - playbackControlsHeight - gaps))
+        let layout = ShortsStageGeometry.make(in: size,
+                                              preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
+                                              controlsHeight: playbackControlsHeight)
+        let card = layout.cardSize
+        let karaokeHeight = layout.captionHeight
+        let videoHeight = layout.videoHeight
 
         // Explicit regions prevent flexible overlays from collapsing or covering each other.
         // Shorts playback controls are always visible, including while maximized.
@@ -495,7 +496,7 @@ struct ClipStageView: View {
                     .layoutPriority(1)
             }
         }
-        .frame(width: card.width, height: card.height, alignment: .center)
+        .frame(width: card.width, height: card.height, alignment: .top)
         .background(Color.watchBackground)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .frame(maxWidth: .infinity)
@@ -552,23 +553,13 @@ struct ClipStageView: View {
         VStack(spacing: 4) {
             SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
                 .padding(.horizontal, 10)
-            ScrollViewReader { proxy in
-                ScrollView(.vertical, showsIndicators: false) {
-                    transcript(player: player, showsLearningControls: false)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .coachTarget(.transcript, active: isCoachPage)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                .onChange(of: player?.currentLineIndex) { _, index in
-                    guard let index else { return }
-                    withAnimation(Motion.lineAdvance) { proxy.scrollTo(index, anchor: .top) }
-                }
-                .onAppear {
-                    if let index = player?.currentLineIndex { proxy.scrollTo(index, anchor: .top) }
-                }
-            }
+            // Give ViewThatFits the actual remaining height: it can drop the next-line
+            // preview or scroll a long current sentence instead of slicing it at the card edge.
+            transcript(player: player, following: 1, showsLearningControls: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .coachTarget(.transcript, active: isCoachPage)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
         }
         .frame(maxHeight: maxHeight)
         .modifier(TranscriptTopReader(top: $transcriptTop))

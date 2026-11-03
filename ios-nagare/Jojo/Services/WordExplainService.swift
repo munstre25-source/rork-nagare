@@ -56,7 +56,7 @@ actor WordExplainService {
     }
 
     func lookup(token: Token, sentence: String, appUserId: String) async -> LookupOutcome {
-        if let instant = lexicon.instantExplanation(for: token) {
+        if let instant = lexicon.instantExplanation(for: token), instant.hasMeaning {
             return LookupOutcome(explanation: instant, newCache: nil)
         }
         let key = Self.lookupKey(for: token, sentence: sentence)

@@ -7,7 +7,7 @@ import StoreKit
 struct ProfileView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
-    @AppStorage("jojo.quickChecksEnabled") private var quickChecksEnabled = true
+    @AppStorage(PlaybackDefaults.quickChecksKey) private var quickChecksEnabled = true
     @AppStorage("jojo.reminderHour") private var reminderHour = 19
     @Environment(\.marketingScrollsToTheme) private var marketingScrollsToTheme
     @Environment(\.marketingProfileAnchor) private var marketingProfileAnchor

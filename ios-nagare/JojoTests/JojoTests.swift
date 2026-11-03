@@ -170,6 +170,22 @@ struct JojoTests {
         #expect(SearchScope.all.hasLocalResults(wordCount: 0, clipCount: 1, grammarCount: 0))
     }
 
+    @Test func quickCheckCallbackReadsPreferenceChangesAndRelaunch() throws {
+        let suite = "jojo.quickChecks.tests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        // Like the player's completion callback, this closure is created before Turn off.
+        let onClipFinished = { PlaybackDefaults.quickChecksEnabled(defaults: defaults) }
+        #expect(onClipFinished())
+        defaults.set(false, forKey: PlaybackDefaults.quickChecksKey)
+        #expect(!onClipFinished())
+        let reopened = try #require(UserDefaults(suiteName: suite))
+        #expect(!PlaybackDefaults.quickChecksEnabled(defaults: reopened))
+        // Re-enabling in Profile must affect the same callback too.
+        reopened.set(true, forKey: PlaybackDefaults.quickChecksKey)
+        #expect(onClipFinished())
+    }
+
     @Test func dailyPlanSeparatesActivitiesAndCalendarDays() throws {
         let suite = "jojo.plan.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
@@ -292,17 +308,36 @@ struct JojoTests {
         #expect(VocabularyProgress(words: [word], dailyGoal: 1).fraction == 1)
     }
 
-    @Test func landscapeTheaterPlacesTheCompleteVideoNearTheUpperThirdWhenItFits() {
+    @Test func wideVideoSitsNearTheTopAndLeavesMoreRoomForKaraoke() {
         let size = CGSize(width: 402, height: 800)
         let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
-        let videoCenter = layout.videoTop + layout.videoSize.height / 2
-        #expect(videoCenter >= size.height * 0.30)
-        #expect(videoCenter <= size.height * 0.38)
+        #expect(layout.videoTop == 4)
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
-        #expect(layout.videoTop > 12)
-        #expect(layout.videoSize.width <= size.width - 24)
+        #expect(layout.videoSize.width == size.width)
         #expect(layout.captionHeight > 220)
         #expect(abs(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight - (size.height - 12)) < 0.01)
+    }
+
+    @Test func shortsReserveKaraokeRoomWithinTheRaisedFeedViewport() {
+        for size in [CGSize(width: 320, height: 380), CGSize(width: 393, height: 580),
+                     CGSize(width: 430, height: 780), CGSize(width: 844, height: 300)] {
+            for captions: CGFloat in [0, 220, 440] {
+                for controls: CGFloat in [88, 140] {
+                    // ClipStageView reserves another 20 points below the whole stack.
+                    let viewport = CGSize(width: size.width, height: size.height - 20)
+                    let layout = ShortsStageGeometry.make(in: viewport, preferredCaptionHeight: captions,
+                                                         controlsHeight: controls)
+                    let gaps: CGFloat = captions > 0 ? 12 : 6
+                    #expect(layout.videoHeight >= 0)
+                    #expect(layout.captionHeight >= 0)
+                    #expect(layout.videoHeight + controls + gaps + layout.captionHeight <= layout.cardSize.height + 0.01)
+                    #expect(layout.cardSize.height + 2 <= size.height - 20)
+                    if captions > 0 {
+                        #expect(layout.captionHeight >= min(captions, layout.cardSize.height * 0.38))
+                    }
+                }
+            }
+        }
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
@@ -390,6 +425,71 @@ struct JojoTests {
         #expect(!meaning.jaDefinitions.isEmpty)
     }
 
+    @Test func detekitaResolvesOfflineAndRepairsASavedWordWithoutMeaning() throws {
+        let app = try makeApp()
+        let clip = try #require(app.clips.first)
+        let token = Token(surface: "出てきた", reading: "でてきた", romaji: "detekita",
+                          start: 0, end: 1, pos: "verb", baseForm: "出てくる", baseReading: "でてくる")
+        _ = app.recordTap(token: token, explanation: .fallback(for: token), clip: clip, lineIndex: 0, persist: false)
+        let lookup = WordLookupController()
+        lookup.offlineOnly = true
+        lookup.select(token: token, tokenIndex: 0, lineIndex: 0, clip: clip, app: app)
+        let meaning = try #require(lookup.explanation)
+        #expect(meaning.source == .dictionary)
+        #expect(meaning.definitions.first?.contains("to come out") == true)
+        #expect(!lookup.isLoadingMeaning)
+        let key = AppModel.wordKey(for: token)
+        let saved = try #require(app.context.fetch(FetchDescriptor<SavedWord>()).first { $0.key == key })
+        #expect(saved.definitions == meaning.definitions)
+        #expect(saved.occurrenceCount == 2)
+    }
+
+    @Test func offlineDictionaryResolvesInflectionsWithoutTranscriptBaseForms() throws {
+        let lexicon = LocalLexicon(entries: ContentLibrary.loadDictionary())
+        for (surface, reading) in [("出てきた", "でてきた"), ("食べました", "たべました")] {
+            let token = Token(surface: surface, reading: reading, romaji: "", start: 0, end: 1, pos: "verb")
+            let meaning = try #require(lexicon.instantExplanation(for: token))
+            #expect(meaning.hasMeaning)
+            #expect(meaning.source == .dictionary)
+            #expect(!lexicon.enriched(token).definitions.isEmpty)
+        }
+    }
+
+    @Test func offlineDictionaryNormalizesWidthAndDoesNotGuessAmbiguousForms() throws {
+        let noun = DictionaryEntry(surface: "テスト", readings: ["てすと"], romaji: "tesuto", pos: "noun", definitions: ["test"])
+        let first = DictionaryEntry(surface: "試う", readings: [], romaji: "", pos: "verb", definitions: ["first test meaning"])
+        let second = DictionaryEntry(surface: "試つ", readings: [], romaji: "", pos: "verb", definitions: ["second test meaning"])
+        let lexicon = LocalLexicon(entries: ["テスト": noun, "試う": first, "試つ": second])
+        #expect(lexicon.entry(for: "ﾃｽﾄ")?.definitions == ["test"])
+        let ambiguous = Token(surface: "試った", romaji: "", start: 0, end: 1, pos: "verb")
+        #expect(lexicon.instantExplanation(for: ambiguous) == nil)
+    }
+
+    @Test func missingOfflineMeaningUsesCachedAIAndUpdatesSavedVocab() async throws {
+        let app = try makeApp()
+        let clip = try #require(app.clips.first)
+        let token = Token(surface: "未収録ＡＩ試験語", romaji: "test", start: 0, end: 1, pos: "noun")
+        _ = app.recordTap(token: token, explanation: .fallback(for: token), clip: clip, lineIndex: 0, persist: false)
+        let service = WordExplainService(api: SupabaseAPI(baseURL: nil, anonKey: ""), lexicon: .empty)
+        let key = WordExplainService.lookupKey(for: token, sentence: "test sentence")
+        await service.preload([key: Data(#"{"word":"未収録ＡＩ試験語","definitions":["AI test meaning"]}"#.utf8)])
+        let outcome = await service.lookup(token: token, sentence: "test sentence", appUserId: "test")
+        #expect(outcome.explanation.source == .cache)
+        app.updateDefinitions(for: token, with: outcome.explanation)
+        #expect(app.localWordExplanation(for: token, sentence: "")?.definitions == ["AI test meaning"])
+    }
+
+    @Test func emptyDictionaryEntryDoesNotSuppressAIFallback() async {
+        let token = Token(surface: "未収録ＡＩ試験語", romaji: "test", start: 0, end: 1, pos: "noun")
+        let entry = DictionaryEntry(surface: token.surface, readings: [], romaji: "test", pos: "noun", definitions: [])
+        let service = WordExplainService(api: SupabaseAPI(baseURL: nil, anonKey: ""),
+                                         lexicon: LocalLexicon(entries: [token.surface: entry]))
+        let outcome = await service.lookup(token: token, sentence: "", appUserId: "test")
+        #expect(!outcome.explanation.hasMeaning)
+        #expect(outcome.explanation.source == .fallback)
+        #expect(outcome.explanation.definitions.isEmpty)
+    }
+
     @Test func rubySplitStripsOkurigana() {
         let ugoite = RubySegment.split(surface: "動いて", reading: "うごいて")
         #expect(ugoite.map(\.text) == ["動", "いて"])
@@ -422,7 +522,7 @@ struct JojoTests {
         let token = Token(surface: "未収録試験語", romaji: "test", start: 0, end: 1, pos: "noun")
         let selection = WordLookupController.Selection(clip: clip, lineIndex: 0, tokenIndex: 0, token: token)
         let context = WordLookupController.offlineContext(for: selection, app: app)
-        #expect(context.contextualExplanation.contains("isn't saved"))
+        #expect(context.contextualExplanation.contains("appears in this clip"))
         #expect(!context.contextualExplanation.contains("this word"))
         if !selection.translation.isEmpty {
             #expect(context.contextualExplanation.contains(selection.translation))
