@@ -36,8 +36,9 @@ import build_caption_clips as builder  # noqa: E402
 from ingest_caption_clips import post as ingest_post  # noqa: E402
 
 YT = "https://www.googleapis.com/youtube/v3/"
-CLIPS_PER_VIDEO = {"podcast": 3, "learning": 6}
-DEFAULT_CLIPS_PER_VIDEO = 8
+# Base caps before watch-demand boosts. Podcasts stay short; learning is already over-supplied.
+CLIPS_PER_VIDEO = {"podcast": 3, "learning": 4}
+DEFAULT_CLIPS_PER_VIDEO = 6
 
 
 def env(name: str) -> str:
@@ -101,6 +102,12 @@ def channel_category(channel: dict) -> str:
     return channel["category"]
 
 
+def clips_for(category: str, demand_priority: int) -> int:
+    """More clips from under-watched categories; fewer from over-supplied ones."""
+    base = CLIPS_PER_VIDEO.get(category, DEFAULT_CLIPS_PER_VIDEO)
+    return min(10, max(2, base + max(0, demand_priority - 2)))
+
+
 def candidate_videos(key: str, quota: Quota, channels: list[dict], done: set[str], pages: int) -> list[dict]:
     uploads: dict[str, str] = {}
     for i in range(0, len(channels), 50):
@@ -129,7 +136,8 @@ def candidate_videos(key: str, quota: Quota, channels: list[dict], done: set[str
                 break
 
     by_id = {c["channel_id"]: c for c in channels}
-    eligible: dict[str, list[dict]] = {}
+    # Queue by category so high-demand lanes get more slots in the round-robin.
+    by_category: dict[str, list[dict]] = {}
     all_ids = [v for ids in per_channel.values() for v in ids]
     for i in range(0, len(all_ids), 50):
         data = yt_get(key, quota, 1, "videos", part="snippet,contentDetails,status",
@@ -146,20 +154,29 @@ def candidate_videos(key: str, quota: Quota, channels: list[dict], done: set[str
             channel = by_id.get(sn["channelId"])
             if not channel:
                 continue
-            eligible.setdefault(sn["channelId"], []).append({
+            category = channel_category(channel)
+            priority = int(channel.get("demand_priority") or 2)
+            by_category.setdefault(category, []).append({
                 "video_id": item["id"],
                 "title": sn["title"],
                 "channel": channel["title"],
-                "category": channel_category(channel),
+                "category": category,
+                "demand_priority": priority,
             })
 
-    # Round-robin so one prolific channel cannot take the whole day.
-    queues = list(eligible.values())
+    # Weighted round-robin: a category with priority 4 is offered 4 times per cycle.
+    queues = {
+        cat: sorted(videos, key=lambda v: (-v["demand_priority"], v["channel"], v["title"]))
+        for cat, videos in by_category.items()
+    }
+    weights = {cat: max(1, videos[0]["demand_priority"] if videos else 1) for cat, videos in queues.items()}
+    order = sorted(queues, key=lambda c: (-weights[c], c))
     ordered: list[dict] = []
-    while any(queues):
-        for q in queues:
-            if q:
-                ordered.append(q.pop(0))
+    while any(queues.values()):
+        for cat in order:
+            for _ in range(weights.get(cat, 1)):
+                if queues.get(cat):
+                    ordered.append(queues[cat].pop(0))
     return ordered
 
 
@@ -190,7 +207,15 @@ def main() -> int:
     state = edge_state(base, anon, admin)
     channels = state.get("channels") or []
     done = set(state.get("captioned_video_ids") or [])
+    demand = state.get("category_demand") or []
     print(f"{len(channels)} approved channels, {len(done)} videos already captioned")
+    if demand:
+        print("Watch demand (last 90d, high → publish more):")
+        for row in demand:
+            print(f"  {row['category']}: demand {row['demand_index']} · "
+                  f"{row['views']} views / {row['live_clips']} live · priority {row['priority']}")
+    else:
+        print("No category demand yet; using even priorities")
 
     candidates = candidate_videos(key, quota, channels, done, args.pages)
     print(f"{len(candidates)} new videos with creator captions (quota used {quota.used})")
@@ -206,6 +231,11 @@ def main() -> int:
         if ok:
             jobs.append(video)
     print(f"{len(jobs)} videos with ja + en creator tracks (quota used {quota.used}/{quota.budget})")
+    if jobs:
+        by_cat: dict[str, int] = {}
+        for j in jobs:
+            by_cat[j["category"]] = by_cat.get(j["category"], 0) + 1
+        print("Selected:", ", ".join(f"{c}×{n}" for c, n in sorted(by_cat.items(), key=lambda x: -x[1])))
     if not jobs:
         return 0
 
@@ -215,7 +245,7 @@ def main() -> int:
     for n, job in enumerate(jobs):
         if n and not all(builder._cached_subs(job["video_id"], args.subs_dir)):
             time.sleep(args.delay)
-        cap = CLIPS_PER_VIDEO.get(job["category"], DEFAULT_CLIPS_PER_VIDEO)
+        cap = clips_for(job["category"], int(job.get("demand_priority") or 2))
         built = builder.build_one(job["video_id"], job["category"], job["channel"], job["title"],
                                   dictionary, cap, args.subs_dir)
         skipped += not built
