@@ -16,36 +16,18 @@ struct LiveTranscriptPanel: View {
     /// The immersive feed keeps compact typography while honoring Profile display choices.
     var respectsProfileDisplay: Bool = false
     var onReportLine: ((Int) -> Void)?
-    /// Kiku window: current line plus the lines after it, no nested scroll.
+    /// Bounded feed viewport with a persistent, smoothly following transcript.
     var windowMode: Bool = false
-    /// How many lines after the current one stay on screen.
-    var followingLines: Int = 1
     var showsLineTools: Bool = true
 
     @Environment(WordLookupController.self) private var lookup
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var spokenNamespace
 
     var body: some View {
         Group {
             if windowMode {
-                // Only whole lines are ever shown: drop following lines until everything fits,
-                // and if even the current line is too tall (large text), let it scroll.
-                // Nothing gets sliced off at the bottom edge.
-                ViewThatFits(in: .vertical) {
-                    ForEach(Array(stride(from: max(0, followingLines), through: 0, by: -1)), id: \.self) { extra in
-                        paddedWindow(following: extra)
-                    }
-                    // The reset id must live inside a wrapper: an explicit id directly on a
-                    // ViewThatFits child collides with the ForEach ids (0...n) and SwiftUI traps.
-                    VStack(spacing: 0) {
-                        ScrollView(.vertical, showsIndicators: true) {
-                            paddedWindow(following: 0)
-                        }
-                        .scrollBounceBehavior(.basedOnSize)
-                        .id(currentLine) // New sentences start at the top after a long-line scroll.
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                feedTranscript
             } else if onlyCurrentLine {
                 lineStack
                     .padding(.horizontal, Spacing.l)
@@ -72,52 +54,68 @@ struct LiveTranscriptPanel: View {
             }
         }
         .background(windowMode ? Color.clear : Color.bgSurfaceDark)
-        // ViewThatFits builds several candidates. Sharing a moving outline between
-        // them causes competing geometry updates while karaoke advances.
         .environment(\.spokenTokenNamespace, windowMode ? nil : spokenNamespace)
-        .transaction { transaction in
-            if windowMode {
-                // Stop inherited layout/spring animations. Word highlights below
-                // supply their own short color fade without moving any text.
-                transaction.animation = nil
+    }
+
+    /// Keep every sentence's identity and size stable. Only the scroll offset moves;
+    /// the video, panel and word wrapping never participate in a line transition.
+    private var feedTranscript: some View {
+        GeometryReader { viewport in
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    // Exact row positions avoid estimated-height corrections during a swipe.
+                    VStack(alignment: .leading, spacing: Spacing.m) {
+                        ForEach(clip.lines.indices, id: \.self) { index in
+                            TranscriptLineView(
+                                clip: clip,
+                                lineIndex: index,
+                                spokenTokenIndex: index == currentLine ? spokenToken : nil,
+                                pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
+                                isPulsing: isPulsing,
+                                tooltip: index == currentLine ? tooltip : nil,
+                                showsTranslation: true,
+                                translationIsVisible: index <= currentLine,
+                                isActive: true,
+                                forceDenseAids: forceDenseAids,
+                                respectsProfileDisplay: respectsProfileDisplay,
+                                raisedCard: false,
+                                showsLineTools: showsLineTools,
+                                isSpokenLine: isPlayingLine(index),
+                                onReport: { onReportLine?(index) }
+                            )
+                            .padding(.horizontal, Spacing.m)
+                            .id(index)
+                        }
+                    }
+                    .padding(.top, tooltip == nil ? Spacing.s : 40)
+                    // The last sentence can still settle at the top of the viewport.
+                    .padding(.bottom, max(0, viewport.size.height - 44))
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollDisabled(lookup.isPresented)
+                .onChange(of: currentLine) { _, index in
+                    guard !lookup.isPresented else { return }
+                    follow(index, proxy: proxy)
+                }
+                .onChange(of: lookup.isPresented) { _, presented in
+                    if !presented { follow(currentLine, proxy: proxy) }
+                }
+                .onChange(of: viewport.size) { _, _ in proxy.scrollTo(currentLine, anchor: .top) }
+                .onChange(of: clip.id) { _, _ in proxy.scrollTo(currentLine, anchor: .top) }
+                .onAppear { proxy.scrollTo(currentLine, anchor: .top) }
             }
         }
+        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 
-    private func paddedWindow(following: Int) -> some View {
-        windowStack(following: following)
-            .padding(.top, tooltip == nil ? Spacing.s : 40)
-            .padding(.bottom, Spacing.m)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var windowStack: some View { windowStack(following: followingLines) }
-
-    private func windowStack(following: Int) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
-            ForEach(windowLines(following: following), id: \.self) { index in
-                TranscriptLineView(
-                    clip: clip,
-                    lineIndex: index,
-                    spokenTokenIndex: index == currentLine ? spokenToken : nil,
-                    pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
-                    isPulsing: isPulsing,
-                    tooltip: index == currentLine ? tooltip : nil,
-                    // Preview the next Japanese phrase without revealing its English
-                    // before the playhead reaches it. The active phrase owns its translation.
-                    showsTranslation: index == currentLine,
-                    isActive: index == currentLine || lookup.selection?.lineIndex == index,
-                    forceDenseAids: forceDenseAids,
-                    respectsProfileDisplay: respectsProfileDisplay,
-                    // The active line keeps its plate so it stays distinct inside the panel.
-                    raisedCard: index == currentLine,
-                    showsLineTools: showsLineTools,
-                    isSpokenLine: isPlayingLine(index),
-                    onReport: { onReportLine?(index) }
-                )
-                .id(index)
-                .padding(.horizontal, index == currentLine ? 0 : Spacing.m)
+    private func follow(_ index: Int, proxy: ScrollViewProxy) {
+        guard clip.lines.indices.contains(index) else { return }
+        if reduceMotion {
+            proxy.scrollTo(index, anchor: .top)
+        } else {
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.45)) {
+                proxy.scrollTo(index, anchor: .top)
             }
         }
     }
@@ -152,13 +150,7 @@ struct LiveTranscriptPanel: View {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
     }
 
-    /// Current line plus the following lines. The card stays in the centered column.
-    private func windowLines(following: Int) -> [Int] {
-        guard !clip.lines.isEmpty else { return [] }
-        let start = min(max(0, currentLine), clip.lines.count - 1)
-        let end = min(clip.lines.count - 1, start + max(0, following))
-        return Array(start...end)
-    }
+
 }
 
 /// Shared namespace so the spoken green outline can slide between tokens.

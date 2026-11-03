@@ -10,6 +10,7 @@ struct TranscriptLineView: View {
     var isPulsing: Bool = false
     var tooltip: String?
     var showsTranslation: Bool = true
+    var translationIsVisible: Bool = true
     var isActive: Bool = true
     /// Compact styling; legacy callers can force JP/EN, furigana, and romaji on.
     var forceDenseAids: Bool = false
@@ -80,6 +81,9 @@ struct TranscriptLineView: View {
                             .font(forceDenseAids || raisedCard ? Font.subheadline : Font.body)
                             .fontWeight(.semibold)
                             .foregroundStyle(LearningInk.english)
+                            .opacity(translationIsVisible ? 1 : 0)
+                            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: translationIsVisible)
+                            .accessibilityHidden(!translationIsVisible)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -97,6 +101,9 @@ struct TranscriptLineView: View {
                                 .background(Color.primary.opacity(0.07), in: Capsule())
                         }
                         .buttonStyle(.plain)
+                        .opacity(translationIsVisible ? 1 : 0)
+                        .disabled(!translationIsVisible)
+                        .accessibilityHidden(!translationIsVisible)
                         .accessibilityHint("Reveals the stored translation for this sentence")
                     }
                 }

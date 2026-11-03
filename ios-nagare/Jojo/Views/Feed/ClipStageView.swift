@@ -39,8 +39,8 @@ struct ClipStageView: View {
     @State private var wordSavedHint: String?
     /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
-    @ScaledMetric(relativeTo: .body) private var shortsWordsHeight: CGFloat = 220
-    @ScaledMetric(relativeTo: .body) private var compactShortsWordsHeight: CGFloat = 128
+    /// Three wrapped Japanese rows plus readings, translation, and panel padding.
+    @ScaledMetric(relativeTo: .body) private var karaokeReadingHeight: CGFloat = 320
     @State private var playbackControlsHeight: CGFloat = 88
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
@@ -85,9 +85,9 @@ struct ClipStageView: View {
             let width = min(size.width - words - 44, maxHeight * 16 / 9, 900)
             return CGSize(width: width, height: width * 9 / 16)
         }
-        // Give the video a little more vertical priority on wide stages. On a phone in
-        // portrait this remains naturally limited by the full-width 16:9 frame.
-        let maxHeight = max(180, size.height * 0.50)
+        // Reserve reading space before sizing the picture, including in normal feed mode.
+        let chrome: CGFloat = (showsChannelRow ? 48 : 0) + 56 + 4
+        let maxHeight = max(0, min(size.height * 0.50, size.height - karaokeReadingHeight - chrome))
         let width = min(min(size.width, 640), maxHeight * 16 / 9)
         let height = width * 9 / 16
         return CGSize(width: width, height: height)
@@ -105,7 +105,7 @@ struct ClipStageView: View {
         }
         return LandscapeTheaterGeometry.make(
             in: size,
-            preferredCaptionHeight: showsShortsCaptions ? (resolvedAspect < 1 ? compactShortsWordsHeight : shortsWordsHeight) : 0,
+            preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
             controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
             videoAspect: resolvedAspect
         ).videoSize
@@ -358,7 +358,7 @@ struct ClipStageView: View {
     private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
         let theater = LandscapeTheaterGeometry.make(
             in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
-            preferredCaptionHeight: showsShortsCaptions ? (resolvedAspect < 1 ? compactShortsWordsHeight : shortsWordsHeight) : 0,
+            preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
             controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
             videoAspect: resolvedAspect
         )
@@ -462,7 +462,7 @@ struct ClipStageView: View {
         let player = coordinator.player(for: clip)
         let controlsVisible = !videoExpanded || showsTheaterControls
         let layout = ShortsStageGeometry.make(in: size,
-                                              preferredCaptionHeight: showsShortsCaptions ? compactShortsWordsHeight : 0,
+                                              preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
                                               controlsHeight: controlsVisible ? playbackControlsHeight : 0)
         let card = layout.cardSize
         let karaokeHeight = layout.captionHeight
@@ -554,9 +554,7 @@ struct ClipStageView: View {
     private func theaterKaraoke(player: (any ClipPlayer)?) -> some View {
         VStack(spacing: 4) {
             SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
-            // Prefer the active line plus one upcoming line; ViewThatFits drops the preview
-            // when Dynamic Type makes even the active sentence fill the panel.
-            transcript(player: player, following: 1, showsLearningControls: false)
+            transcript(player: player, showsLearningControls: false, showsLineTools: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .coachTarget(.transcript, active: isCoachPage)
         }
@@ -567,9 +565,8 @@ struct ClipStageView: View {
         player: (any ClipPlayer)?,
         maxHeight: CGFloat
     ) -> some View {
-        // Playback controls already expose subtitle help and timing. Keep only the
-        // current sentence here so the portrait picture gets the available height.
-        transcript(player: player, following: 0, showsLearningControls: false, showsLineTools: false)
+        // Keep a three-row reading viewport below the picture; sentences scroll within it.
+        transcript(player: player, showsLearningControls: false, showsLineTools: false)
             .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .top)
             .coachTarget(.transcript, active: isCoachPage)
             .padding(.horizontal, 10)
@@ -602,7 +599,7 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, following: Int? = nil, showsLearningControls: Bool = true, showsLineTools: Bool = true) -> some View {
+    private func transcript(player: (any ClipPlayer)?, showsLearningControls: Bool = true, showsLineTools: Bool = false) -> some View {
         VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
                 SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
@@ -622,9 +619,6 @@ struct ClipStageView: View {
                     showTranscriptReport = true
                 },
                 windowMode: immersiveFeed,
-                // Keep the active line plus one upcoming line visible. This preserves context
-                // while keeping the player as the visual focus.
-                followingLines: following ?? 1,
                 showsLineTools: showsLineTools
             )
         }
@@ -995,10 +989,8 @@ struct TranscriptSection: View {
     var forceDenseAids: Bool = false
     var respectsProfileDisplay: Bool = false
     var onReportLine: ((Int) -> Void)?
-    /// Kiku window: current line plus the lines after it, no nested scroll.
+    /// Bounded feed viewport with smooth transcript following.
     var windowMode: Bool = false
-    /// How many lines after the current one stay on screen.
-    var followingLines: Int = 1
     var showsLineTools: Bool = true
 
     var body: some View {
@@ -1016,7 +1008,6 @@ struct TranscriptSection: View {
             respectsProfileDisplay: respectsProfileDisplay,
             onReportLine: onReportLine,
             windowMode: windowMode,
-            followingLines: followingLines,
             showsLineTools: showsLineTools
         )
     }

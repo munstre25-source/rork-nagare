@@ -14,14 +14,16 @@ nonisolated struct LandscapeTheaterGeometry {
         let isPortrait = height >= widthAvailable
         let aspect = videoAspect.isFinite && videoAspect > 0 ? videoAspect : 16 / 9
         let portraitVideo = aspect < 1
-        // Wide videos retain the separate reading area. Portrait videos use a
-        // compact caption strip so maximize gives the picture most of the height.
-        let captionReserve = min(max(0, preferredCaptionHeight), height * (portraitVideo ? 0.22 : (isPortrait ? 0.38 : 0.32)))
         let controls = max(0, controlsHeight)
-        let gaps = spacing * CGFloat((captionReserve > 0 ? 1 : 0) + (controls > 0 ? 1 : 0))
         let topPad: CGFloat = isPortrait
             ? (portraitVideo ? 28 : min(96, max(48, height * 0.11)))
             : 24
+        // Honor the requested reading height before fitting the video. On very short
+        // viewports retain a usable picture and let the transcript scroll vertically.
+        let videoFloor = min(120, height * 0.25)
+        let readingRoom = max(0, height - controls - topPad - 24 - videoFloor)
+        let captionReserve = min(max(0, preferredCaptionHeight), readingRoom)
+        let gaps = spacing * CGFloat((captionReserve > 0 ? 1 : 0) + (controls > 0 ? 1 : 0))
         let available = max(0, height - captionReserve - controls - gaps - topPad)
         // Portrait phones: use the full stage width so maximize actually enlarges the picture.
         // Landscape: keep a small side inset so the frame doesn't kiss the edges.
@@ -42,7 +44,7 @@ nonisolated struct LandscapeTheaterGeometry {
     }
 }
 
-/// A video-first Shorts stack with a compact, fixed caption budget below the picture.
+/// Fit the picture above a reading viewport large enough for the requested subtitle rows.
 nonisolated struct ShortsStageGeometry {
     let cardSize: CGSize
     let videoHeight: CGFloat
@@ -53,7 +55,8 @@ nonisolated struct ShortsStageGeometry {
         let controls = max(0, controlsHeight)
         let gaps: CGFloat = preferredCaptionHeight > 0 ? 12 : 6
         let available = max(0, card.height - controls - gaps)
-        let captions = min(max(0, preferredCaptionHeight), card.height * 0.22, available)
+        let videoFloor = min(120, available * 0.4)
+        let captions = min(max(0, preferredCaptionHeight), max(0, available - videoFloor))
         let video = min(card.width * 16 / 9, max(0, available - captions))
         return Self(cardSize: card, videoHeight: video, captionHeight: captions)
     }
