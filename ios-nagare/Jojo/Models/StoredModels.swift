@@ -191,10 +191,10 @@ final class UserProfile {
 
     var subtitleDisplay: SubtitleDisplaySettings {
         SubtitleDisplaySettings(
-            japanese: subtitles.showsJapanese,
             furigana: furiganaMode.showsAny,
             romaji: showRomaji,
             english: subtitles.showsEnglish ? (EnglishVisibility(rawValue: englishVisibility) ?? .shown) : .hidden,
+            japanese: subtitles.showsJapanese,
             tapWords: tapWordsEnabled,
             furiganaMode: furiganaMode
         )
