@@ -33,14 +33,18 @@ struct OnboardingFeedDemoView: View {
                                     onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                                     onToggleVideoSize: {
                                         Haptics.selection()
-                                        videoExpanded.toggle()
+                                        var transaction = Transaction()
+                                        transaction.disablesAnimations = true
+                                        withTransaction(transaction) { videoExpanded.toggle() }
                                     },
                             onActivate: { coordinator.activate(clip, startLine: 0, loopLine: true) },
                             onFullscreen: nil,
                             onSkip: { skipClip() }
                         )
                                 .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                                .background(Color.watchBackground)
                                 .clipped()
+                                .contentShape(Rectangle())
                                 .id(clip.id)
                             }
                         }
@@ -51,6 +55,9 @@ struct OnboardingFeedDemoView: View {
                     .scrollDisabled(lookup.isPresented)
                     .clipped()
                     .onChange(of: geo.size) { _, _ in
+                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
+                    }
+                    .onChange(of: videoExpanded) { _, _ in
                         FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
                     }
                 }

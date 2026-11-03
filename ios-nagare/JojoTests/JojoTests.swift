@@ -495,6 +495,21 @@ struct JojoTests {
     @Test func feedPageReanchorWaitsPastChromeAnimation() {
         #expect(FeedPageReanchor.settleDelayNanoseconds >= 350_000_000)
         #expect(FeedPageReanchor.settleDelayNanoseconds <= 500_000_000)
+        #expect(FeedPageReanchor.passDelaysNanoseconds.count >= 3)
+        #expect(FeedPageReanchor.passDelaysNanoseconds.last == FeedPageReanchor.settleDelayNanoseconds)
+        #expect(FeedPageReanchor.passDelaysNanoseconds.first == 0)
+    }
+
+    @Test func feedPagerSettlesOntoExactPageBoundaries() {
+        // A stale offset left from the previous page height must snap back to a whole page.
+        let stale = SingleClipPerSwipeBehavior.settledOffset(
+            original: 700 * 2 + 180,
+            proposed: 700 * 2 + 180,
+            viewportHeight: 780,
+            contentHeight: 780 * 5
+        )
+        #expect(stale == 780 * 2 || stale == 780 || stale == 780 * 3)
+        #expect(stale.truncatingRemainder(dividingBy: 780) == 0)
     }
 
 

@@ -38,6 +38,8 @@ struct FeedView: View {
     @State private var programmaticClipChange: Bool = false
     @State private var autoAdvanceTask: Task<Void, Never>?
     @State private var autoScrollTargetId: String?
+    /// Bumped whenever page height may change so the pager can re-pin the current clip.
+    @State private var pageHeightEpoch: Int = 0
     @Environment(\.scenePhase) private var scenePhase
     let isActiveTab: Bool
     var onOpenExplore: () -> Void = {}
@@ -48,38 +50,40 @@ struct FeedView: View {
         ZStack(alignment: .top) {
             // The navigation chrome is a real row ABOVE the feed, never painted on top of
             // the video. In theater the chrome steps out and the picture takes the screen.
+            // Keep the header in the tree and collapse its height — removing it with a
+            // transition animates the pager mid-swipe and leaves two clips on one screen.
             VStack(spacing: 0) {
-                if !videoExpanded {
+                VStack(spacing: 0) {
+                    // Navigation stays directly below the safe area; progress and resume
+                    // details must not push the For You / Explore links down.
+                    header
                     VStack(spacing: 0) {
-                        // Navigation stays directly below the safe area; progress and resume
-                        // details must not push the For You / Explore links down.
-                        header
-                        VStack(spacing: 0) {
-                            ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
-                            if showResumeChip, let resumeSnapshot {
-                                ResumeChip(
-                                    title: resumeSnapshot.title,
-                                    channel: resumeSnapshot.channel,
-                                    time: resumeSnapshot.time,
-                                    onResume: { resumeFromSnapshot() },
-                                    onDismiss: {
-                                        showResumeChip = false
-                                        ResumePlaybackStore.clear()
-                                        self.resumeSnapshot = nil
-                                    }
-                                )
-                            }
+                        ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
+                        if showResumeChip, let resumeSnapshot {
+                            ResumeChip(
+                                title: resumeSnapshot.title,
+                                channel: resumeSnapshot.channel,
+                                time: resumeSnapshot.time,
+                                onResume: { resumeFromSnapshot() },
+                                onDismiss: {
+                                    showResumeChip = false
+                                    ResumePlaybackStore.clear()
+                                    self.resumeSnapshot = nil
+                                }
+                            )
                         }
-                        // Faded progress must release its layout space to the reading area.
-                        .frame(height: watchChromeVisible ? nil : 0)
-                        .clipped()
-                        .opacity(watchChromeVisible ? 1 : 0)
-                        .allowsHitTesting(watchChromeVisible)
-                        .animation(.easeInOut(duration: 0.25), value: watchChromeVisible)
                     }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(1)
+                    // Faded progress must release its layout space to the reading area.
+                    .frame(height: watchChromeVisible && !videoExpanded ? nil : 0)
+                    .clipped()
+                    .opacity(watchChromeVisible && !videoExpanded ? 1 : 0)
+                    .allowsHitTesting(watchChromeVisible && !videoExpanded)
                 }
+                .frame(height: videoExpanded ? 0 : nil)
+                .clipped()
+                .opacity(videoExpanded ? 0 : 1)
+                .allowsHitTesting(!videoExpanded)
+                .zIndex(1)
                 feedPager
             }
 
@@ -150,10 +154,18 @@ struct FeedView: View {
         .onChange(of: videoExpanded) { _, expanded in
             if !expanded { maximizeNavShown = false }
             syncDock()
+            bumpPageHeightEpoch()
         }
         .onChange(of: maximizeNavShown) { _, shown in
             syncDock()
+            bumpPageHeightEpoch()
             if shown { revealWatchChrome() }
+        }
+        .onChange(of: watchChromeVisible) { _, _ in
+            bumpPageHeightEpoch()
+        }
+        .onChange(of: app.hidesMainTabBar) { _, _ in
+            bumpPageHeightEpoch()
         }
         .onChange(of: goalCompletionVisible) { _, visible in
             if visible { showWatchChrome() } else { scheduleWatchChromeHide() }
@@ -397,7 +409,11 @@ struct FeedView: View {
                             onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                             onToggleVideoSize: {
                                 Haptics.selection()
-                                videoExpanded.toggle()
+                                // Jump the page height; animating header/dock height leaves the
+                                // scroll offset between two clips.
+                                var transaction = Transaction()
+                                transaction.disablesAnimations = true
+                                withTransaction(transaction) { videoExpanded.toggle() }
                             },
                             onActivate: { coordinator.activate(clip) },
                             onFullscreen: {
@@ -421,10 +437,12 @@ struct FeedView: View {
                             },
                             reportsCoachAnchors: true,
                         )
-                        // Match every page to the actual viewport. The available height changes
-                        // when feed chrome or the tab bar hides during maximize/minimize.
+                        // Exact page height must match SingleClipPerSwipeBehavior's container
+                        // height so a settle always lands on one complete clip.
                         .frame(width: viewport.size.width, height: viewport.size.height, alignment: .top)
+                        .background(Color.watchBackground)
                         .clipped()
+                        .contentShape(Rectangle())
                         .id(clip.id)
                     }
                 }
@@ -441,14 +459,15 @@ struct FeedView: View {
             .onChange(of: viewport.size) { _, _ in
                 FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
             }
+            .onChange(of: pageHeightEpoch) { _, _ in
+                FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
+            }
             .onChange(of: autoScrollTargetId) { _, target in
                 guard let target else { return }
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(450))
                     guard autoScrollTargetId == target, currentId == target else { return }
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) { proxy.scrollTo(target, anchor: .top) }
+                    FeedPageReanchor.snap(target, proxy: proxy)
                     autoScrollTargetId = nil
                 }
             }
@@ -460,7 +479,15 @@ struct FeedView: View {
     /// The dock hides while the theater owns the screen, and returns for the swipe-down
     /// shortcut so navigation is always one gesture away without minimizing.
     private func syncDock() {
-        app.hidesMainTabBar = videoExpanded && isActiveTab && !maximizeNavShown
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            app.hidesMainTabBar = videoExpanded && isActiveTab && !maximizeNavShown
+        }
+    }
+
+    private func bumpPageHeightEpoch() {
+        pageHeightEpoch &+= 1
     }
 
     private func setup() {
@@ -739,12 +766,16 @@ nonisolated struct SingleClipPerSwipeBehavior: ScrollTargetBehavior {
     }
 }
 
-/// Re-pin the current clip after chrome or dock height changes. A single layout yield is
-/// not enough — progress and maximize animations run 0.25–0.35s and leave the offset on
-/// the old page height until a second settle pass.
+/// Re-pin the current clip after chrome or dock height changes. Page frames update across
+/// several layout passes; one yield is not enough and leaves two clips sharing the screen.
 enum FeedPageReanchor {
-    /// First pass after the next layout; second after chrome animations settle.
-    static let settleDelayNanoseconds: UInt64 = 400_000_000
+    /// Final settle after dock/header height changes have finished laying out.
+    static let settleDelayNanoseconds: UInt64 = 450_000_000
+    /// Intermediate passes while LazyVStack rebuilds page frames at the new height.
+    static let passDelaysNanoseconds: [UInt64] = [0, 16_000_000, 100_000_000, settleDelayNanoseconds]
+
+    @MainActor
+    private static var pending: Task<Void, Never>?
 
     @MainActor
     static func schedule(
@@ -753,13 +784,17 @@ enum FeedPageReanchor {
         proxy: ScrollViewProxy
     ) {
         guard let id = currentId else { return }
-        Task { @MainActor in
-            await Task.yield()
-            guard stillCurrent() == id else { return }
-            snap(id, proxy: proxy)
-            try? await Task.sleep(nanoseconds: settleDelayNanoseconds)
-            guard stillCurrent() == id else { return }
-            snap(id, proxy: proxy)
+        pending?.cancel()
+        pending = Task { @MainActor in
+            for delay in passDelaysNanoseconds {
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: delay)
+                } else {
+                    await Task.yield()
+                }
+                guard !Task.isCancelled, stillCurrent() == id else { return }
+                snap(id, proxy: proxy)
+            }
         }
     }
 

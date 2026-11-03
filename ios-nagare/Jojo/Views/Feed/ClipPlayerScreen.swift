@@ -136,13 +136,17 @@ struct ClipQueueScreen: View {
                                     onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                                     onToggleVideoSize: {
                                         Haptics.selection()
-                                        videoExpanded.toggle()
+                                        var transaction = Transaction()
+                                        transaction.disablesAnimations = true
+                                        withTransaction(transaction) { videoExpanded.toggle() }
                                     },
                                     onActivate: { show(clip.id) },
                                     onInfo: { infoClip = clip }
                                 )
-                                .frame(width: viewport.size.width, height: viewport.size.height)
+                                .frame(width: viewport.size.width, height: viewport.size.height, alignment: .top)
+                                .background(Color.watchBackground)
                                 .clipped()
+                                .contentShape(Rectangle())
                                 .id(clip.id)
                             }
                         }
@@ -155,6 +159,9 @@ struct ClipQueueScreen: View {
                     .background(Color.watchBackground)
                     .clipped()
                     .onChange(of: viewport.size) { _, _ in
+                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
+                    }
+                    .onChange(of: videoExpanded) { _, _ in
                         FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
                     }
                 }

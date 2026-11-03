@@ -156,6 +156,7 @@ struct ClipStageView: View {
             }
         }
         // Keep the last subtitle row clear of the dock/home-indicator edge in every feed mode.
+        // Padding stays inside the page frame so the pager never grows taller than one viewport.
         .padding(.bottom, usesFlexibleVideo ? (showsShortsStage ? 6 : 8) : 0)
         .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
             if !enabled && isPopupHere { dismiss() }
@@ -179,7 +180,9 @@ struct ClipStageView: View {
                     }
             }
         }
+        // Hard clip so a tall karaoke well cannot paint into the next feed page.
         .clipped()
+        .contentShape(Rectangle())
         .onChange(of: isPopupHere) { _, presented in
             guard coordinator.activeClipId == clip.id else { return }
             if presented {
@@ -465,9 +468,12 @@ struct ClipStageView: View {
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .frame(width: columnWidth)
                     .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
+                    .layoutPriority(1)
                     .clipped()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipped()
     }
 
     // MARK: Shorts: full picture, controls under it, karaoke on a bottom gradient band.
