@@ -72,6 +72,16 @@ Deno.serve(async (req) => {
       return errorResponse(400, "Invalid analytics date range");
     }
 
+    if (url.searchParams.get("report") === "categories") {
+      const { data, error } = await sb.rpc("admin_category_performance", {
+        p_start: start.toISOString(),
+        p_end: end.toISOString(),
+        p_include_test: url.searchParams.get("include_test") === "1",
+      });
+      if (error) return errorResponse(500, "Failed to load category performance");
+      return jsonResponse(data);
+    }
+
     const [metrics, inbox, moderation] = await Promise.all([
       sb.rpc("admin_dashboard_metrics_range", { p_start: start.toISOString(), p_end: end.toISOString() }),
       sb.from("feedback_items")

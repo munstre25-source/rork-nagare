@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CatalogPipeline } from "./CatalogPipeline";
 import { AppStoreReviews } from "./AppStoreReviews";
+import { CategoryPerformance } from "./CategoryPerformance";
 
 type FeedbackItem = {
   id: number;
@@ -64,10 +65,11 @@ type ThreadEntry = { key: string; at: string; from: "user" | "jojo"; text: strin
 
 type Thread = { appUserId: string; entries: ThreadEntry[]; latest: string };
 
-type InsightsPage = "overview" | "learning" | "acquisition" | "playback" | "pipeline" | "messages" | "feedback" | "reviews";
+type InsightsPage = "overview" | "learning" | "categories" | "acquisition" | "playback" | "pipeline" | "messages" | "feedback" | "reviews";
 const pages: { id: InsightsPage; label: string; group: string; description: string }[] = [
   { id: "overview", label: "Overview", group: "Understand", description: "The health of Jojo at a glance" },
   { id: "learning", label: "Learning", group: "Understand", description: "Video and study engagement" },
+  { id: "categories", label: "Categories", group: "Understand", description: "Live clips and watch rates per category, with what to add more or less of" },
   { id: "acquisition", label: "Acquisition", group: "Understand", description: "Where learners found Jojo" },
   { id: "playback", label: "Playback", group: "Understand", description: "Video failures and app errors" },
   { id: "pipeline", label: "Pipeline", group: "Operate", description: "Catalog discovery, quality checks, queue and publication history" },
@@ -268,7 +270,7 @@ export function JojoInsightsDashboard() {
   const maxSource = Math.max(1, ...bySource.map(([, n]) => n));
   const maxDaily = Math.max(1, ...(data?.metrics?.dau_series ?? []).map((point) => point.users));
   const selectedPage = pages.find((item) => item.id === page)!;
-  const showsDateRange = page === "overview" || page === "learning" || page === "acquisition" || page === "playback" || page === "pipeline";
+  const showsDateRange = page === "overview" || page === "learning" || page === "categories" || page === "acquisition" || page === "playback" || page === "pipeline";
 
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -304,7 +306,7 @@ export function JojoInsightsDashboard() {
           </button>
           {page !== "reviews" ? <button
             type="button"
-            onClick={() => page === "pipeline" ? setPipelineRefresh(n => n+1) : void load()}
+            onClick={() => page === "pipeline" || page === "categories" ? setPipelineRefresh(n => n+1) : void load()}
             className="rounded-full bg-[#ff6b00] px-5 py-2.5 text-sm font-bold text-black disabled:opacity-60"
             disabled={loading}
           >
@@ -345,6 +347,7 @@ export function JojoInsightsDashboard() {
       ) : null}
 
       {page === "pipeline" ? <CatalogPipeline from={range.from} to={range.to} refreshKey={pipelineRefresh} /> : null}
+      {page === "categories" ? <CategoryPerformance from={range.from} to={range.to} refreshKey={pipelineRefresh} rangeLabel={range.label} /> : null}
 
       {page === "overview" ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Active users · selected range" value={data?.metrics?.active_users ?? "—"} />
@@ -377,6 +380,7 @@ export function JojoInsightsDashboard() {
         <section aria-label="Explore detailed reports" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {([
             ["learning", "Learning", `${data?.metrics?.learning.clip_views ?? "—"} clip views`],
+            ["categories", "Categories", "Most and least watched categories"],
             ["acquisition", "Acquisition", `${data?.metrics?.acquisition.total ?? "—"} source answers`],
             ["playback", "Playback", `${data?.metrics?.playback.failure_reports ?? "—"} failure reports`],
             ["messages", "Messages", `${threads.length} conversations`],
