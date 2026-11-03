@@ -270,6 +270,8 @@ const MAX_SEARCHES_PER_PASS = 3;
 const MAX_SOURCE_DURATION_SEC = 240;
 /** Same-video failures repeat deterministically (2026-11-02: one Short failed 35 times, 0 successes). */
 const MAX_AUTOMATIC_FAILURES = 3;
+/** Earlier failures were mostly 8k-token truncations, fixed by the larger output limit. */
+const FAILURES_COUNT_SINCE = "2026-11-03T02:20:00Z";
 const SOURCE_WINDOW_SEC = 90;
 const MAX_WINDOWS_PER_VIDEO = 20;
 /** Keep at least this many unprocessed candidates queued for the language. */
@@ -778,7 +780,8 @@ async function analyzeAndPublish(
   const { count: priorFailures } = await supabase.from("catalog_pipeline_attempts")
     .select("id", { count: "exact", head: true })
     .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec)
-    .eq("source", "automatic").eq("status", "failed");
+    .eq("source", "automatic").eq("status", "failed")
+    .gte("started_at", FAILURES_COUNT_SINCE);
   const failures = priorFailures ?? 0;
   const attempt = await startPipeline(supabase, { video_id: candidate.videoId, window_start_sec: candidate.windowStartSec, title: candidate.title, channel_name: candidate.channelTitle, source: "automatic" });
   if (failures >= MAX_AUTOMATIC_FAILURES) {

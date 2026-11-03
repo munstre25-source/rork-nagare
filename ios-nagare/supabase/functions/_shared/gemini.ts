@@ -219,7 +219,8 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
       body: JSON.stringify({
         model,
         temperature: 0.2,
-        max_tokens: opts.youtube ? (opts.youtube.endSec - opts.youtube.startSec > 60 ? 16384 : 8192) : 4096,
+        // Per-token timings, readings and meanings for dense Shorts exceed 8k tokens (2026-11-03: 25k-char replies cut mid-object).
+        max_tokens: opts.youtube ? 32768 : 4096,
         response_format: { type: "json_object" },
         reasoning: { effort: opts.youtube ? "low" : "minimal", exclude: true },
         usage: { include: true },
