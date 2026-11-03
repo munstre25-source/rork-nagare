@@ -152,14 +152,17 @@ struct TokenView: View {
     private var spokenOutline: some View {
         switch state {
         case .spoken:
-            if !stablePlaybackHighlight, let ns = spokenNamespace {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
-                    .matchedGeometryEffect(id: "spokenOutline", in: ns)
-            } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+            Group {
+                if !stablePlaybackHighlight, let ns = spokenNamespace {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+                        .matchedGeometryEffect(id: "spokenOutline", in: ns)
+                } else {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+                }
             }
+            .modifier(KaraokeCursorPulse(glowEnabled: app.profile.glow != .off))
         case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(LearningInk.selected, lineWidth: 2.4)
@@ -244,6 +247,25 @@ struct TokenView: View {
         case .familiar: return LearningInk.familiar
         case .learning: return LearningInk.learning
         case .new, .none: return token.underlineColor
+        }
+    }
+}
+
+/// A soft playback pulse, separate from layout and disabled by Reduce Motion.
+struct KaraokeCursorPulse: ViewModifier {
+    var glowEnabled: Bool = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        if reduceMotion {
+            content
+        } else {
+            content.phaseAnimator([false, true]) { cursor, bright in
+                cursor
+                    .opacity(bright ? 1 : 0.68)
+                    .shadow(color: LearningInk.spoken.opacity(glowEnabled ? (bright ? 0.4 : 0.15) : 0),
+                            radius: bright ? 6 : 3)
+            } animation: { _ in .easeInOut(duration: 0.75) }
         }
     }
 }

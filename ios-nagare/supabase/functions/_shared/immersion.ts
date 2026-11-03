@@ -4,8 +4,8 @@
  * 1. YouTube Data API decides whether a video may be played in the app (public/unlisted,
  *    embeddable, not live). We never download media; Gemini reads the public YouTube URL.
  * 2. Gemini hears one window of the video and returns lines with word timestamps.
- * 3. Lines are validated strictly; word timings are checked per line and fall back to
- *    sentence-level highlighting when implausible (see timing.ts).
+ * 3. Word timings are validated and retried against the source audio when needed.
+ *    Incomplete word alignment is held instead of published (see word-timing.ts).
  * 4. Dictionary fields are added to the heard words.
  *
  * Used by fill-catalog (published catalog clips) and immersion-worker (learner requests).
@@ -16,6 +16,7 @@ import { hearSystemCatalog } from "./enrich.ts";
 import { normalizeHeardLines, subtitleEnrichmentIssue } from "./subtitle-data.ts";
 import { sealCatalogLines } from "./pipeline.ts";
 import { reviewJapaneseTranslations } from "./translation-review.ts";
+import { repairWordTiming } from "./word-timing.ts";
 import { geminiModelAnalyze, geminiModelTranslationReview, subtitlePromptVersion, requireEnv } from "./env.ts";
 import { AiBudgetError, GeminiError, geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
 import { tryConsumeYoutubeQuota, tryIncrementGeminiUsage } from "./limits.ts";
@@ -232,7 +233,7 @@ export function maxLessonDuration(sourceDurationSec: number): number {
 
 /**
  * Hears one window of a YouTube video and returns a validated, enriched, clip-relative lesson.
- * Never invents timing: lines without trustworthy word timings are marked `timing: "line"`.
+ * Never invents timing: incomplete word alignment is retried against audio, then held if still invalid.
  */
 export async function analyzeWindow(
   supabase: SupabaseClient,
@@ -337,10 +338,12 @@ export async function analyzeWindow(
     }
   }
 
-  const timing = assessTiming(lines);
-  if (timing.problems.length > 0) {
-    log("word_timing_fallback", { videoId, mode: timing.mode, problems: timing.problems.slice(0, 8) });
-  }
+  const aligned = await repairWordTiming({ videoId, sourceStartSec: 0, durationSec: windowEnd, lines }, {
+    consumeUsage: () => tryIncrementGeminiUsage(supabase),
+  });
+  if (!aligned.ok) return { ok: false, reason: aligned.reason === "quota" ? "gemini_cap" : "transcript_invalid", detail: aligned.detail };
+  const timing = assessTiming(aligned.lines);
+  if (aligned.repaired) log("word_timing_repaired", { videoId, lines: aligned.repaired });
 
   // Learner fields and concise Japanese meanings come from this single hearing pass.
   // Persist them once; clients only change presentation. Legacy lookup remains available.

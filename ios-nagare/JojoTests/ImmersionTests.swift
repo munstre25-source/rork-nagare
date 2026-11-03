@@ -79,6 +79,28 @@ struct ImmersionTests {
         #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 1.2) == nil)
     }
 
+    @Test func wordCursorStopsDuringRealPausesInsteadOfHoldingThePreviousWord() {
+        let tokens = [
+            Token(surface: "今日", romaji: "kyou", start: 0, end: 0.5, pos: "noun"),
+            Token(surface: "です", romaji: "desu", start: 1, end: 1.5, pos: "auxiliary"),
+        ]
+        let clip = makeClip(lines: [Line(tokens: tokens, translation: "Today.", start: 0, end: 1.6, timing: "word")])
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.3) == 0)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.7) == nil)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1.2) == 1)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1.55) == nil)
+    }
+
+    @Test func silentProlongedMarksDoNotDisableOtherwiseValidWordTiming() {
+        let tokens = [
+            Token(surface: "はい", romaji: "hai", start: 0, end: 0.8, pos: "expression"),
+            Token(surface: "ー", romaji: "", start: 0.8, end: 0.8, pos: "unknown"),
+        ]
+        let line = Line(tokens: tokens, translation: "Yes.", start: 0, end: 1, timing: "word")
+        #expect(line.hasWordTiming)
+        #expect(tokens[1].isPunctuation)
+    }
+
     @Test func invalidTokenTimingFallsBackToSentenceSync() {
         let tokens = [
             Token(surface: "あ", romaji: "a", start: 0.0, end: 0.5, pos: "interjection"),

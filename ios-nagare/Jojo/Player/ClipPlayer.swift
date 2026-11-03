@@ -99,7 +99,7 @@ enum PlaybackUI {
     static func tokenIndex(clip: Clip, line: Int, time: Double) -> Int? {
         guard let row = clip.lines[safe: line], row.hasWordTiming,
               time >= row.start, time <= row.end + 0.2 else { return nil }
-        return row.tokens.lastIndex { $0.start <= time && $0.end > $0.start && !$0.isPunctuation }
+        return row.tokens.lastIndex { $0.start <= time && time < $0.end && !$0.isPunctuation }
     }
 }
 

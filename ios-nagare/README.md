@@ -379,3 +379,41 @@ Enable the App Group on both the app and widget App IDs in the Apple Developer p
 ## Current release / simulator handoff
 
 See [HANDOFF-SIMULATOR.md](HANDOFF-SIMULATOR.md) for applied migrations, publication policy, annual-first pricing QA and simulator steps. Display presets alone need no SQL migration; the pipeline/dashboard requires the three migrations listed there, already applied. Existing live clips were retained by explicit user instruction. See the [full source report](reports/catalog-release-2026-11-02.md).
+
+
+## Verified word karaoke
+
+All newly analyzed, explicitly published, and caption-imported clips require complete
+word timings. Invalid timing gets one focused pass against the original YouTube audio;
+a separate audio/translation review then verifies every onset and offset. Missing,
+uniformly interpolated, incomplete, or unsupported timing is held rather than marked
+word-synchronized. Existing cached sentence-only clips retain an honest sentence cue
+until their source audio has been aligned; the client never fabricates word timestamps.
+
+Deploy `20261103160000_verified_word_timing.sql` and the six changed functions together:
+`analyze-clip`, `fill-catalog`, `immersion-worker`, `publish-clip`, `review-catalog`, and
+`ingest-caption-clips`. Preserve JWT verification and the existing admin-token gates.
+The service-only timing RPC preserves source bounds, Japanese, readings, meanings,
+line/token order, and publication state; it checks signed audio evidence and uses a
+compare-and-swap to avoid overwriting concurrent edits.
+
+Audit without making AI calls or mutations:
+
+```bash
+python3 Tools/repair_word_timing_catalog.py
+```
+
+After deployment, use `ADMIN_TOKEN` from the operator's environment for a pilot and then
+resume the remaining catalog. No credentials are printed or saved in reports:
+
+```bash
+python3 Tools/repair_word_timing_catalog.py --apply --limit 3 --report /tmp/word-timing-pilot.json
+python3 Tools/repair_word_timing_catalog.py --apply --limit 0 --workers 2 --report /tmp/word-timing-catalog.json
+```
+
+`--use-existing-vault` is an explicit operator authorization to read this project's
+existing maintenance credential into process memory. Repairs respect AI quotas/spend
+limits, stop on provider/auth/budget failures, and leave unsupported clips unchanged.
+Re-running skips clips with current independent word-verification receipts. A final
+read-only audit reports the remaining work; a successful request alone is not proof
+that every catalog entry has been repaired.

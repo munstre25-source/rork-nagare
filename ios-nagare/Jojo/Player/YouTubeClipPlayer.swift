@@ -56,7 +56,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     /// sessions from one embedder look abusive to YouTube and can trigger error 150 storms.
     @ObservationIgnored private var autoplaysOnLoad = true
 
-    private static let pollMilliseconds = 120
+    private static let pollMilliseconds = 33
     /// How long a video may take to become ready once YouTube's API script has loaded.
     private static let readyTimeout: Duration = .seconds(15)
     /// Retries get a shorter leash so a failing device shows the failure card quickly
@@ -243,6 +243,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             try { window.postMessage(msg, '*'); } catch(e) {}
           }
           window.__nagareCmd = cmd;
+          var playing = false, lastClockRequest = 0;
           // NOTE: no announce-on-load here. A dead embed page (bot check, consent wall,
           // blocked autoplay) must never report ready — that would flip the player to
           // full opacity and show the learner a blank black frame for the whole stall
@@ -253,13 +254,18 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             if (typeof d === 'string') { try { d = JSON.parse(d); } catch(e) { return; } }
             if (!d || typeof d !== 'object') return;
             if (d.event === 'listening' || d.event === 'onReady') { send({e:'ready'}); }
-            else if (d.event === 'onStateChange') { send({e:'state', v:d.info}); }
+            else if (d.event === 'onStateChange') { playing = d.info === 1; send({e:'state', v:d.info}); }
             else if (d.event === 'onError') { send({e:'error', v:d.info}); }
             else if (d.event === 'infoDelivery' && d.info && typeof d.info.currentTime === 'number') {
               send({e:'time', v:d.info.currentTime});
             }
           });
-          setInterval(function(){ cmd('getCurrentTime'); }, 250);
+          setInterval(function(){
+            if(document.hidden) return;
+            var now = performance.now();
+            if(!playing && now - lastClockRequest < 250) return;
+            lastClockRequest = now; cmd('getCurrentTime');
+          }, 40);
         })();
         """
         let script = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
@@ -464,8 +470,10 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         poller = Task { [weak self] in
             var lastTick = Date()
             while !Task.isCancelled {
-                // ~8 Hz keeps the word cursor within a syllable of the audio.
-                try? await Task.sleep(for: .milliseconds(Self.pollMilliseconds))
+                // Short particles can be under 100 ms: sample near 30 Hz while playing.
+                // Paused embeds need only a slow clock refresh for explicit seeking.
+                let interval = self?.isPlaying == true ? Self.pollMilliseconds : 250
+                try? await Task.sleep(for: .milliseconds(interval))
                 guard let self else { return }
                 // A long gap means the app was suspended, not that the video stalled.
                 if Date().timeIntervalSince(lastTick) > 2 { self.lastProgressAt = Date() }
@@ -479,7 +487,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
                 }
                 if self.isPlaying, self.hasRenderedVideo,
                    Date().timeIntervalSince(self.lastProgressAt) < 1 {
-                    self.watchAccumulator += Double(Self.pollMilliseconds) / 1000
+                    self.watchAccumulator += Double(interval) / 1000
                     if self.watchAccumulator >= 1 {
                         self.onWatchTick?(self.watchAccumulator)
                         self.watchAccumulator = 0

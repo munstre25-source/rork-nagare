@@ -4,6 +4,7 @@ import { requireEnv, geminiModelTranslationReview } from "../_shared/env.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { reviewJapaneseTranslations } from "../_shared/translation-review.ts";
 import type { TimedLine } from "../_shared/timing.ts";
+import { repairWordTiming } from "../_shared/word-timing.ts";
 import { isAdminOrCron } from "../_shared/admin.ts";
 import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient } from "../_shared/supabase.ts";
@@ -101,13 +102,18 @@ Deno.serve(async (req) => {
       return fail(422, `Refuse to publish: ${validated.error}`);
     }
 
+    const aligned = language === "ja" ? await repairWordTiming({ videoId: String(clip.video_id ?? ""),
+      sourceStartSec: Number(clip.source_start_sec ?? 0), durationSec, lines: clip.lines as TimedLine[] }, {
+      consumeUsage: () => tryIncrementGeminiUsage(supabase),
+    }) : { ok: true as const, lines: clip.lines as TimedLine[] };
+    if (!aligned.ok) return fail(aligned.reason === "quota" ? 429 : 422, "Refuse to publish: " + aligned.detail);
     let reviewedLines: TimedLine[] | undefined;
     if (language === "ja") {
       const review = await reviewJapaneseTranslations({
         videoId: String(clip.video_id ?? ""),
         sourceStartSec: Number(clip.source_start_sec ?? 0),
         durationSec,
-        lines: clip.lines as TimedLine[],
+        lines: aligned.lines,
       }, {
         model: geminiModelTranslationReview(),
         consumeUsage: () => tryIncrementGeminiUsage(supabase),
@@ -119,8 +125,16 @@ Deno.serve(async (req) => {
       reviewedLines = await sealCatalogLines(supabase, { videoId: clip.video_id, sourceStartSec: Number(clip.source_start_sec ?? 0), durationSec, lines: review.lines });
     }
 
+    if (language === "ja") {
+      const { data: applied, error } = await supabase.rpc("apply_catalog_word_timing", {
+        p_id: id, p_expected_lines: clip.lines, p_video_id: String(clip.video_id ?? ""),
+        p_source_start: Number(clip.source_start_sec ?? 0), p_duration: durationSec, p_lines: reviewedLines,
+      });
+      if (error) return fail(500, "Word-timing update failed");
+      if (!applied) return fail(409, "Subtitles changed during timing repair; rerun publication");
+    }
     const { data, error: pubErr } = language === "ja"
-      ? await supabase.rpc("publish_reviewed_catalog_clip", { p_id: id, p_expected_lines: clip.lines, p_reviewed_lines: reviewedLines }).maybeSingle()
+      ? await supabase.rpc("publish_reviewed_catalog_clip", { p_id: id, p_expected_lines: reviewedLines, p_reviewed_lines: reviewedLines }).maybeSingle()
       : await supabase.from(table).update({ published: true }).eq("id", id).select("*").single();
     if (pubErr) return fail(500, "Publish failed");
     if (!data) return fail(409, "Subtitles changed during review; rerun publication");

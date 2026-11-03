@@ -129,6 +129,7 @@ nonisolated struct Token: Codable, Hashable, Sendable {
             CharacterSet.punctuationCharacters.contains($0)
                 || CharacterSet.symbols.contains($0)
                 || CharacterSet.whitespacesAndNewlines.contains($0)
+                || "ー〜".unicodeScalars.contains($0)
         }
     }
 }

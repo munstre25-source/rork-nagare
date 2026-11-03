@@ -5,6 +5,7 @@ import { serviceClient } from "../_shared/supabase.ts";
 import { geminiModelTranslationReview } from "../_shared/env.ts";
 import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
 import { AiBudgetError, GeminiError } from "../_shared/gemini.ts";
+import { repairWordTiming } from "../_shared/word-timing.ts";
 import { reviewJapaneseTranslations, type TranslationSource } from "../_shared/translation-review.ts";
 
 export async function handler(req: Request): Promise<Response> {
@@ -13,7 +14,7 @@ export async function handler(req: Request): Promise<Response> {
   if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
   let attempt: string | undefined;
   try {
-    const body = await readJson<{ id?: string; source?: TranslationSource; apply?: boolean; quarantine?: boolean; lineIndexes?: number[]; translations?: Record<string, string> }>(req);
+    const body = await readJson<{ id?: string; source?: TranslationSource; apply?: boolean; quarantine?: boolean; repairTiming?: boolean; lineIndexes?: number[]; translations?: Record<string, string> }>(req);
     if ((!!body.id) === (!!body.source)) return errorResponse(400, "Provide exactly one id or source");
     if (body.source && body.apply) return errorResponse(400, "External bundled sources are review-only");
     const supabase = serviceClient();
@@ -44,7 +45,19 @@ export async function handler(req: Request): Promise<Response> {
       return { ...completeSource.lines[i], translation };
     });
     source = { ...completeSource, lines: candidateLines };
+    let repairedWordLines = 0;
+    if (body.repairTiming) {
+      if (indexes.length !== completeSource.lines.length) return errorResponse(400, "Timing repair requires the full original clip");
+      const aligned = await repairWordTiming(source, { consumeUsage: () => tryIncrementGeminiUsage(supabase) });
+      if (!aligned.ok) {
+        await updatePipeline(supabase, attempt, { status: "held", stage: "word_alignment", reason: aligned.reason, detail: aligned.detail });
+        return jsonResponse({ id: body.id, status: "needs_alignment", reason: aligned.reason, detail: aligned.detail }, aligned.reason === "quota" ? 429 : 422);
+      }
+      source = { ...source, lines: aligned.lines };
+      repairedWordLines = aligned.repaired;
+    }
     const result = await reviewJapaneseTranslations(source, {
+      force: body.repairTiming === true,
       model: geminiModelTranslationReview(),
       consumeUsage: () => tryIncrementGeminiUsage(supabase),
     });
@@ -68,17 +81,22 @@ export async function handler(req: Request): Promise<Response> {
     }
     if (body.apply && body.id) {
       merged = await sealCatalogLines(supabase, { ...completeSource, lines: merged });
-      const { data, error } = await supabase.rpc("apply_catalog_review", {
-        p_id: body.id, p_expected_lines: originalLines, p_expected_category: originalCategory,
-        p_lines: merged, p_category: category,
-      });
+      const { data, error } = body.repairTiming
+        ? await supabase.rpc("apply_catalog_word_timing", {
+          p_id: body.id, p_expected_lines: originalLines, p_video_id: completeSource.videoId,
+          p_source_start: completeSource.sourceStartSec, p_duration: completeSource.durationSec, p_lines: merged,
+        })
+        : await supabase.rpc("apply_catalog_review", {
+          p_id: body.id, p_expected_lines: originalLines, p_expected_category: originalCategory,
+          p_lines: merged, p_category: category,
+        });
       if (error) {
         await updatePipeline(supabase, attempt, { status: "held", stage: "apply", reason: "compare_and_swap_pending", detail: "Approved update could not be saved; safe to retry" });
         // Keep the approved proposal for recovery if the database is unavailable.
         return jsonResponse({
           id: body.id, status: "reviewed_pending_apply", lines: merged,
           reviewedLineIndexes: indexes, expectedLines: originalLines, category, expectedCategory: originalCategory,
-          timingPreserved: true, lineIndexesPreserved: true,
+          timingPreserved: !body.repairTiming, repairedWordLines, lineIndexesPreserved: true,
         });
       }
       if (!data) {
@@ -90,7 +108,7 @@ export async function handler(req: Request): Promise<Response> {
     const changed = source.lines.filter((line, i) => line.translation !== result.lines[i].translation).length;
     return jsonResponse({
       id: body.id ?? null, status: body.apply ? (indexes.length === completeSource.lines.length ? "applied" : "applied_partial") : "reviewed", reused: result.reused,
-      changedTranslations: changed, category, timingPreserved: true, lineIndexesPreserved: true, lines: merged, reviewedLineIndexes: indexes,
+      changedTranslations: changed, category, timingPreserved: !body.repairTiming, repairedWordLines, lineIndexesPreserved: true, lines: merged, reviewedLineIndexes: indexes,
     });
   } catch (error) {
     if (error instanceof AiBudgetError) {

@@ -1,14 +1,20 @@
 /**
  * Admin-only ingest for caption-tier clips.
  *
- * Accepts clip JSON produced by Tools/build_caption_clips.py, stamps a
- * caption-1 receipt with catalog_review_hash, and upserts with published=true.
+ * Accepts clip JSON produced by Tools/build_caption_clips.py. Every import now
+ * requires source-audio word alignment and independent verification before publication.
  * Requires x-admin-token == ADMIN_TOKEN. Clients never write to clips.
  */
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
 import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import { repairWordTiming } from "../_shared/word-timing.ts";
+import { reviewJapaneseTranslations } from "../_shared/translation-review.ts";
+import { geminiModelTranslationReview } from "../_shared/env.ts";
+import { tryIncrementGeminiUsage } from "../_shared/limits.ts";
+import { sealCatalogLines } from "../_shared/pipeline.ts";
+import type { TimedLine } from "../_shared/timing.ts";
 
 type CaptionLine = {
   tokens: unknown[];
@@ -125,13 +131,6 @@ const CATEGORIES = new Set([
   "anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning", "podcast",
 ]);
 
-function sha256Hex(text: string): Promise<string> {
-  const data = new TextEncoder().encode(text);
-  return crypto.subtle.digest("SHA-256", data).then((buf) =>
-    [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("")
-  );
-}
-
 function validateClip(clip: CaptionClip): string | null {
   if (!clip?.id || !clip.video_id || !clip.title || !clip.channel_name) {
     return "id, video_id, title, channel_name required";
@@ -162,45 +161,15 @@ async function stampLines(
   supabase: ReturnType<typeof serviceClient>,
   clip: CaptionClip,
 ): Promise<CaptionLine[]> {
-  const sourceBlob = JSON.stringify(
-    clip.lines.map((ln) => ({
-      t: ln.translation,
-      s: ln.start,
-      e: ln.end,
-      x: (ln.tokens as Array<{ surface?: string }>).map((t) => t.surface ?? "").join(""),
-    })),
-  );
-  const sourceHash = await sha256Hex(sourceBlob);
-
-  // Ask Postgres for the canonical databaseHash (same function the gate uses).
-  const stripped = clip.lines.map((ln) => {
-    const { translationReview: _r, ...rest } = ln;
-    return { ...rest, timing: "line" };
+  const source = { videoId: clip.video_id, sourceStartSec: clip.source_start_sec,
+    durationSec: clip.duration_sec, lines: clip.lines as TimedLine[] };
+  const aligned = await repairWordTiming(source, { consumeUsage: () => tryIncrementGeminiUsage(supabase) });
+  if (!aligned.ok) throw new Error("Word alignment required: " + aligned.detail);
+  const reviewed = await reviewJapaneseTranslations({ ...source, lines: aligned.lines }, {
+    model: geminiModelTranslationReview(), consumeUsage: () => tryIncrementGeminiUsage(supabase),
   });
-  const { data: hash, error } = await supabase.rpc("catalog_review_hash", {
-    p_video_id: clip.video_id,
-    p_start: clip.source_start_sec,
-    p_duration: clip.duration_sec,
-    p_lines: stripped,
-  });
-  if (error || typeof hash !== "string") {
-    throw new Error(error?.message ?? "catalog_review_hash failed");
-  }
-
-  return stripped.map((ln) => ({
-    ...ln,
-    timing: "line",
-    translationReview: {
-      version: "caption-1",
-      sourceTrack: "creator-manual",
-      sourceHash,
-      databaseHash: hash,
-      category: clip.category,
-      videoId: clip.video_id,
-      sourceStartSec: clip.source_start_sec,
-      durationSec: clip.duration_sec,
-    },
-  }));
+  if (!reviewed.ok) throw new Error("Audio verification required: " + reviewed.detail);
+  return await sealCatalogLines(supabase, { ...source, lines: reviewed.lines });
 }
 
 Deno.serve(async (req) => {
@@ -242,13 +211,13 @@ Deno.serve(async (req) => {
           duration_sec: clip.duration_sec,
           lines,
           published: publish,
-          review_tier: "caption",
+          review_tier: "ai_v3",
           channel_avatar_color: clip.channel_avatar_color ?? "#F97316",
           thumbnail_gradient: clip.thumbnail_gradient ?? ["#1C1917", "#44403C", "#78716C"],
-          timing_mode: "line",
+          timing_mode: "word",
           video_orientation: clip.video_orientation === "portrait" ? "portrait" : "landscape",
-          model: "caption-1",
-          prompt_version: "caption-1",
+          model: "audio-word-aligned",
+          prompt_version: "word-alignment-1",
         };
         const { error } = await supabase.from("clips").upsert(row, { onConflict: "id" });
         if (error) {
