@@ -6,7 +6,7 @@ async function run(
   handle: (url: string, body: Record<string, unknown>) => Response | Promise<Response>,
   work: () => Promise<void>,
 ) {
-  const names = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "OPENROUTER_API_KEY", "GEMINI_API_KEY", "AI_PROVIDER_ORDER"];
+  const names = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "OPENROUTER_API_KEY", "GEMINI_API_KEY", "AI_PROVIDER_ORDER", "TEXT_AI_PROVIDER_ORDER"];
   const previous = names.map((key) => Deno.env.get(key));
   const original = globalThis.fetch;
   Deno.env.set("SUPABASE_URL", "https://budget.test");
@@ -14,6 +14,7 @@ async function run(
   Deno.env.set("OPENROUTER_API_KEY", "sk-or-test");
   Deno.env.delete("GEMINI_API_KEY");
   Deno.env.set("AI_PROVIDER_ORDER", "openrouter,google");
+  Deno.env.set("TEXT_AI_PROVIDER_ORDER", "openrouter,google");
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
     Promise.resolve(handle(String(input), JSON.parse(String(init?.body ?? "{}"))))) as typeof fetch;
   try { await work(); } finally {
@@ -85,6 +86,19 @@ Deno.test("uncertain request cost conservatively consumes the reservation", asyn
   }, async () => {
     await assertRejects(call, GeminiError);
     assertEquals(costs, [0.1]);
+  });
+});
+
+Deno.test("word explanations use the direct Gemini key before OpenRouter by default", async () => {
+  const hosts: string[] = [];
+  await run((url) => {
+    hosts.push(new URL(url).host);
+    return json({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] });
+  }, async () => {
+    Deno.env.set("GEMINI_API_KEY", "test-google");
+    Deno.env.delete("TEXT_AI_PROVIDER_ORDER");
+    assertEquals((await call()).text, '{"ok":true}');
+    assertEquals(hosts, ["generativelanguage.googleapis.com"]);
   });
 });
 

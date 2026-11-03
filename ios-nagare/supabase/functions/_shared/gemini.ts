@@ -60,16 +60,19 @@ type AiProvider = {
 /**
  * Ordered provider list built from whatever keys are configured. OpenRouter goes
  * first by default (AI_PROVIDER_ORDER), and the other provider is the failover
- * when this one is rate-limited, out of credits, or down.
+ * when this one is rate-limited, out of credits, or down. Text calls (word explanations)
+ * use TEXT_AI_PROVIDER_ORDER, which puts the direct Gemini key first.
  */
-function aiProviders(): AiProvider[] {
+function aiProviders(textOnly = false): AiProvider[] {
   const openRouter = openRouterApiKey() ?? (geminiApiKey()?.startsWith("sk-or-") ? geminiApiKey() : null);
   const google = geminiApiKey() && !geminiApiKey()!.startsWith("sk-or-") ? geminiApiKey() : null;
   const byName: Record<string, AiProvider | null> = {
     openrouter: openRouter ? { transport: "openrouter", apiKey: openRouter } : null,
     google: google ? { transport: "google", apiKey: google } : null,
   };
-  const order = (Deno.env.get("AI_PROVIDER_ORDER") ?? "openrouter,google")
+  const order = (textOnly
+    ? Deno.env.get("TEXT_AI_PROVIDER_ORDER") ?? "google,openrouter"
+    : Deno.env.get("AI_PROVIDER_ORDER") ?? "openrouter,google")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   return order.map((name) => byName[name]).filter((p): p is AiProvider => p !== null);
 }
@@ -121,7 +124,7 @@ function shouldFailOverProvider(err: GeminiError): boolean {
  * failures (rate limit, out of credits, outage, timeout) moves to the next provider.
  */
 async function callGemini(opts: GeminiCall): Promise<GeminiJsonResult> {
-  const providers = aiProviders();
+  const providers = aiProviders(!opts.youtube);
   if (providers.length === 0) throw new GeminiError(500, "No AI provider key configured");
   const fallbackModel = geminiModelFallback();
   const models = [opts.model];

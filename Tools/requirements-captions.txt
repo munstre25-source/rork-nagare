@@ -1,0 +1,5 @@
+fugashi==1.5.2
+unidic-lite==1.0.8
+pykakasi==2.3.0
+curl_cffi==0.17.0
+yt-dlp[default]>=2026.10.26

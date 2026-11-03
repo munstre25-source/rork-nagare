@@ -35,9 +35,32 @@ type CaptionClip = {
 };
 
 type Body = {
+  action?: "state";
   clips?: CaptionClip[];
   publish?: boolean;
 };
+
+/** What the daily caption job needs: approved channels and videos already turned into clips. */
+async function pipelineState(supabase: ReturnType<typeof serviceClient>) {
+  const [{ data: sources, error: sourceError }, { data: clips, error: clipError }] = await Promise.all([
+    supabase.from("catalog_sources").select("channel_id, title").eq("caption_tier_ok", true),
+    supabase.from("clips").select("video_id, channel_name, category, review_tier").limit(20000),
+  ]);
+  if (sourceError || clipError) throw new Error("state unavailable");
+  const votes = new Map<string, Map<string, number>>();
+  const captioned = new Set<string>();
+  for (const clip of clips ?? []) {
+    if (clip.review_tier === "caption") captioned.add(clip.video_id);
+    const byCategory = votes.get(clip.channel_name) ?? new Map<string, number>();
+    byCategory.set(clip.category, (byCategory.get(clip.category) ?? 0) + 1);
+    votes.set(clip.channel_name, byCategory);
+  }
+  const channels = (sources ?? []).filter((s) => s.channel_id).map((s) => {
+    const ranked = [...(votes.get(s.title)?.entries() ?? [])].sort((a, b) => b[1] - a[1]);
+    return { channel_id: s.channel_id, title: s.title, category: ranked[0]?.[0] ?? "learning" };
+  });
+  return { channels, captioned_video_ids: [...captioned] };
+}
 
 const CATEGORIES = new Set([
   "anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning", "podcast",
@@ -129,6 +152,7 @@ Deno.serve(async (req) => {
     if (!requireAdmin(req, requireEnv("ADMIN_TOKEN"))) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<Body>(req);
+    if (body.action === "state") return jsonResponse(await pipelineState(serviceClient()));
     const clips = Array.isArray(body.clips) ? body.clips : [];
     if (!clips.length) return errorResponse(400, "clips[] required");
     if (clips.length > 50) return errorResponse(400, "max 50 clips per request");

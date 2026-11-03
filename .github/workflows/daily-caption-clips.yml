@@ -1,0 +1,64 @@
+name: Daily caption clips
+
+# Free content enrichment: creator-captioned videos from approved channels,
+# tokenized locally and published as caption-tier clips. No AI credits.
+on:
+  schedule:
+    - cron: "40 3 * * *"
+  workflow_dispatch:
+    inputs:
+      max_videos:
+        description: "Videos to process"
+        default: "25"
+      dry_run:
+        description: "Build without publishing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: daily-caption-clips
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: Tools/requirements-captions.txt
+
+      # yt-dlp needs a JavaScript runtime for YouTube's player.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Restore subtitle and dictionary cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tmp_probe/subs
+            .tmp_venv/jmdict-eng-common.json
+          key: captions-${{ github.run_id }}
+          restore-keys: captions-
+
+      - name: Install
+        run: pip install -r Tools/requirements-captions.txt
+
+      - name: Fetch JMdict
+        run: python -c "import sys; sys.path.insert(0, 'Tools'); import build_jmdict_bundle as jm; jm.ensure_json()"
+
+      - name: Discover, build, publish
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: >
+          python Tools/daily_caption_pipeline.py
+          --max-videos "${{ inputs.max_videos || '25' }}"
+          ${{ inputs.dry_run && '--dry-run' || '' }}
