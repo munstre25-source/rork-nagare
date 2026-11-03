@@ -271,20 +271,33 @@ extension Color {
 /// Feed hierarchy (Kiku-style): white Japanese, muted readings, POS underlines, green spoken cursor, accent tap.
 enum LearningInk {
     /// Kanji and kana at rest. Near-black on white, white on night, for every accent.
-    static var japanese: Color { JojoPalette.color(
-        sakuraLight: "#1A1020", sakuraDark: "#FFFFFF",
-        amberLight: "#1C1208", amberDark: "#FFFFFF"
-    ) }
+    /// Portrait bands always use white ink so light-mode paper colors stay readable on footage.
+    static var japanese: Color { japanese(onPicture: false) }
+    static func japanese(onPicture: Bool) -> Color {
+        if onPicture { return Color.white }
+        return JojoPalette.color(
+            sakuraLight: "#1A1020", sakuraDark: "#FFFFFF",
+            amberLight: "#1C1208", amberDark: "#FFFFFF"
+        )
+    }
     /// Reading above a word. Quiet so underlines carry the grammar color.
-    static var furigana: Color { JojoPalette.color(
-        sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
-        amberLight: "#6B5E52", amberDark: "#C7C7CC"
-    ) }
+    static var furigana: Color { furigana(onPicture: false) }
+    static func furigana(onPicture: Bool) -> Color {
+        if onPicture { return Color.white.opacity(0.78) }
+        return JojoPalette.color(
+            sakuraLight: "#6B5E66", sakuraDark: "#C7C7CC",
+            amberLight: "#6B5E52", amberDark: "#C7C7CC"
+        )
+    }
     /// Romaji under a word. One step quieter than furigana.
-    static var romaji: Color { JojoPalette.color(
-        sakuraLight: "#8A7A82", sakuraDark: "#8E8E93",
-        amberLight: "#8A7A6E", amberDark: "#8E8E93"
-    ) }
+    static var romaji: Color { romaji(onPicture: false) }
+    static func romaji(onPicture: Bool) -> Color {
+        if onPicture { return Color.white.opacity(0.62) }
+        return JojoPalette.color(
+            sakuraLight: "#8A7A82", sakuraDark: "#8E8E93",
+            amberLight: "#8A7A6E", amberDark: "#8E8E93"
+        )
+    }
     /// Nouns, verbs, and adjectives — underline / POS only.
     static var content: Color { JojoPalette.color(
         sakuraLight: "#007EA8", sakuraDark: "#5CEBFF",
@@ -342,10 +355,14 @@ enum LearningInk {
         }
     }
     /// English under a karaoke line. Quiet white on night so Japanese stays primary.
-    static var english: Color { JojoPalette.color(
-        sakuraLight: "#3A2A32", sakuraDark: "#E5E5EA",
-        amberLight: "#4A3828", amberDark: "#E5E5EA"
-    ) }
+    static var english: Color { english(onPicture: false) }
+    static func english(onPicture: Bool) -> Color {
+        if onPicture { return Color.white.opacity(0.88) }
+        return JojoPalette.color(
+            sakuraLight: "#3A2A32", sakuraDark: "#E5E5EA",
+            amberLight: "#4A3828", amberDark: "#E5E5EA"
+        )
+    }
     /// Glow behind spoken / selected words only.
     static var glow: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF4FA3",

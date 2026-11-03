@@ -51,14 +51,7 @@ struct OnboardingFeedDemoView: View {
                     .scrollDisabled(lookup.isPresented)
                     .clipped()
                     .onChange(of: geo.size) { _, _ in
-                        guard let id = currentId else { return }
-                        Task { @MainActor in
-                            await Task.yield()
-                            guard currentId == id else { return }
-                            var transaction = Transaction()
-                            transaction.disablesAnimations = true
-                            withTransaction(transaction) { proxy.scrollTo(id, anchor: .top) }
-                        }
+                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
                     }
                 }
             }

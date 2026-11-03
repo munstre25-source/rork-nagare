@@ -25,6 +25,7 @@ struct TranscriptLineView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
+    @Environment(\.karaokeOnPicture) private var onPicture
 
     @State private var translationRevealed = false
 
@@ -37,7 +38,8 @@ struct TranscriptLineView: View {
         if let line = clip.lines[safe: lineIndex] {
             VStack(alignment: .leading, spacing: forceDenseAids ? Spacing.s : Spacing.m) {
                 if display.japanese {
-                    FlowLayout(spacing: 2, lineSpacing: forceDenseAids ? 10 : 12) {
+                    // Feed: wider word gaps so furigana/romaji stay tied to their surface.
+                    FlowLayout(spacing: forceDenseAids ? 6 : 4, lineSpacing: forceDenseAids ? 14 : 12) {
                         ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
                             VStack(spacing: 1) {
                                 TokenView(
@@ -90,12 +92,13 @@ struct TranscriptLineView: View {
                 if showsTranslation && !line.translation.isEmpty && display.english != .hidden {
                     if display.english == .shown || translationRevealed {
                         Text(line.translation)
-                            .font(forceDenseAids || raisedCard ? Font.subheadline : Font.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(LearningInk.english)
+                            .font(forceDenseAids || raisedCard ? Font.footnote : Font.subheadline)
+                            .fontWeight(.regular)
+                            .foregroundStyle(LearningInk.english(onPicture: onPicture).opacity(onPicture ? 0.92 : 1))
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
+                            .shadow(color: onPicture ? .black.opacity(0.5) : .clear, radius: 2, y: 1)
                     }
                     if display.english == .onTap {
                         Button {
@@ -186,8 +189,16 @@ struct TranscriptLineView: View {
                         .shadow(color: .black.opacity(lightPlate ? 0.06 : 0), radius: 10, y: 3)
                 }
             }
-            .opacity(isActive ? 1 : 0.82)
+            .opacity(isActive ? 1 : (onPicture ? 0.42 : 0.72))
             .animation(respectsProfileDisplay ? nil : .easeOut(duration: 0.2), value: isActive)
+            .background {
+                GeometryReader { geometry in
+                    Color.clear.preference(
+                        key: KaraokeLineHeightPreference.self,
+                        value: [lineIndex: geometry.size.height]
+                    )
+                }
+            }
             .onChange(of: isActive) { _, _ in translationRevealed = false }
             .onChange(of: display.english) { _, _ in translationRevealed = false }
             .onChange(of: line) { _, _ in translationRevealed = false }

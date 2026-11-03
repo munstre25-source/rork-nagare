@@ -327,25 +327,32 @@ struct JojoTests {
                     let viewport = CGSize(width: size.width, height: size.height - 6)
                     let layout = ShortsStageGeometry.make(in: viewport, preferredCaptionHeight: captions,
                                                          controlsHeight: controls)
-                    let gaps: CGFloat = captions > 0 ? 12 : 6
+                    let gaps: CGFloat = 6
                     #expect(layout.videoHeight >= 0)
                     #expect(layout.captionHeight >= 0)
-                    #expect(layout.videoHeight + controls + gaps + layout.captionHeight <= layout.cardSize.height + 0.01)
+                    // Karaoke is an overlay on the picture; only video + controls consume card height.
+                    #expect(layout.videoHeight + controls + gaps <= layout.cardSize.height + 0.01)
                     #expect(layout.cardSize.height + 2 <= size.height - 6)
-                    #expect(layout.captionHeight <= captions)
+                    #expect(layout.captionHeight <= max(0, captions))
                     #expect(layout.videoHeight > 0)
+                    if captions > 0 {
+                        #expect(layout.captionHeight <= layout.videoHeight + 0.01)
+                    }
                 }
             }
         }
     }
 
-    @Test func shortsReservesThreeSubtitleRowsBeforeFittingThePicture() {
+    @Test func shortsOverlayBandFitsThreeSubtitleRowsWithoutShrinkingThePicture() {
         for size in [CGSize(width: 393, height: 650), CGSize(width: 430, height: 800)] {
             for controls: CGFloat in [0, 88] {
                 let layout = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 320, controlsHeight: controls)
-                #expect(layout.captionHeight >= 320)
+                #expect(layout.captionHeight > 0)
+                #expect(layout.captionHeight <= 320)
                 #expect(layout.videoHeight > 0)
-                #expect(layout.videoHeight + controls + 12 + layout.captionHeight <= layout.cardSize.height + 0.01)
+                #expect(layout.videoHeight + controls + 6 <= layout.cardSize.height + 0.01)
+                // The band sits on the picture; it must not exceed the video height.
+                #expect(layout.captionHeight <= layout.videoHeight)
             }
         }
     }
@@ -360,21 +367,22 @@ struct JojoTests {
         #expect(portrait.videoTop + portrait.videoSize.height + 6 + portrait.captionHeight <= size.height - 12 + 0.01)
     }
 
-    @Test func largerTextGrowsKaraokeInsteadOfClippingAtTheOldHeightCap() {
+    @Test func largerTextGrowsTheOverlayBandWithoutShrinkingThePicture() {
         let size = CGSize(width: 430, height: 900)
         let standard = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 320, controlsHeight: 88)
         let larger = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 440, controlsHeight: 88)
-        #expect(larger.captionHeight >= 440)
-        #expect(larger.captionHeight > standard.captionHeight)
-        #expect(larger.videoHeight < standard.videoHeight)
+        #expect(larger.captionHeight >= standard.captionHeight)
+        // Overlay band grows toward the preferred height; the picture still owns the card.
+        #expect(larger.videoHeight == standard.videoHeight)
+        #expect(larger.videoHeight + 88 + 6 <= larger.cardSize.height + 0.01)
     }
 
     @Test func maximizedShortsReclaimsVideoSpaceWithoutReducingReadingRoom() {
         let size = CGSize(width: 393, height: 760)
         let shown = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 320, controlsHeight: 88)
         let hidden = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 320, controlsHeight: 0)
-        #expect(hidden.captionHeight == shown.captionHeight)
-        #expect(hidden.captionHeight >= 320)
+        #expect(hidden.captionHeight >= shown.captionHeight)
+        #expect(hidden.captionHeight > 0)
         #expect(hidden.videoHeight > shown.videoHeight)
     }
 
@@ -446,6 +454,47 @@ struct JojoTests {
                                                                  viewportHeight: height, contentHeight: height * 5)
             #expect(offset == height * 2)
         }
+    }
+
+    @Test func karaokeReadingWindowKeepsAtMostThreeCompleteLines() {
+        let heights: [Int: CGFloat] = [0: 80, 1: 90, 2: 85, 3: 100]
+        let three = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
+                                                 spacing: 12, viewportHeight: 320)
+        #expect(three == [0, 1, 2])
+        #expect(three.count <= 3)
+        #expect(three.contains(1))
+
+        // 90 + 12 + 85 = 187 > 180, so next is dropped; previous would also overflow.
+        let short = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
+                                                 spacing: 12, viewportHeight: 180)
+        #expect(short == [1])
+
+        let tight = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
+                                                 spacing: 12, viewportHeight: 95)
+        #expect(tight == [1])
+
+        let unknown = KaraokeReadingWindow.indices(current: 2, lineCount: 4, heights: [:],
+                                                   spacing: 12, viewportHeight: 320)
+        #expect(unknown == [2])
+
+        let tallCurrent = KaraokeReadingWindow.indices(
+            current: 0, lineCount: 2, heights: [0: 400, 1: 80],
+            spacing: 12, viewportHeight: 320
+        )
+        #expect(tallCurrent == [0])
+    }
+
+    @Test func karaokeReadingWindowDropsPreviousBeforeNext() {
+        let heights: [Int: CGFloat] = [0: 120, 1: 120, 2: 120]
+        let mid = KaraokeReadingWindow.indices(current: 1, lineCount: 3, heights: heights,
+                                               spacing: 10, viewportHeight: 250)
+        #expect(mid == [1, 2])
+        #expect(!mid.contains(0))
+    }
+
+    @Test func feedPageReanchorWaitsPastChromeAnimation() {
+        #expect(FeedPageReanchor.settleDelayNanoseconds >= 350_000_000)
+        #expect(FeedPageReanchor.settleDelayNanoseconds <= 500_000_000)
     }
 
 

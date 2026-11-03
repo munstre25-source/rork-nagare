@@ -126,7 +126,7 @@ struct ClipStageView: View {
     /// Maximized landscape page: title on top, big video, words + rail, progress at the bottom.
     private var showsMaximizedLandscape: Bool { usesFlexibleVideo && videoExpanded && !clip.isPortraitVideo }
 
-    /// Portrait Shorts use a portrait player with a separate timer and karaoke section.
+    /// Portrait Shorts fill the card; karaoke sits on a bottom gradient of the picture.
     private var showsShortsStage: Bool { usesFlexibleVideo && clip.isPortraitVideo }
 
     var body: some View {
@@ -470,7 +470,7 @@ struct ClipStageView: View {
         }
     }
 
-    // MARK: Shorts: every mode keeps video, timer, and karaoke in separate stacked areas.
+    // MARK: Shorts: full picture, controls under it, karaoke on a bottom gradient band.
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
@@ -482,10 +482,10 @@ struct ClipStageView: View {
         let karaokeHeight = layout.captionHeight
         let videoHeight = layout.videoHeight
 
-        // Explicit regions prevent flexible overlays from collapsing or covering each other.
-        // Maximize uses the freed control area for the picture while controls are hidden.
+        // Maximize hides the control row and gives that space to the picture; the band
+        // stays on the lower edge of the larger frame so the subject is not covered.
         return VStack(spacing: 6) {
-            ZStack(alignment: .top) {
+            ZStack(alignment: .bottom) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -506,7 +506,12 @@ struct ClipStageView: View {
                 ShortsHeader(clip: clip)
                     .padding(.horizontal, 10)
                     .padding(.top, 10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .opacity(watchChromeHidden || videoExpanded ? 0 : 1)
+
+                if showsShortsCaptions, karaokeHeight > 0 {
+                    shortsKaraokeBand(player: player, maxHeight: karaokeHeight)
+                }
             }
             .frame(width: card.width, height: videoHeight)
             .clipped()
@@ -515,15 +520,6 @@ struct ClipStageView: View {
             if controlsVisible {
                 playbackControls(player: player, sourceMark: "Shorts")
                     .padding(.horizontal, 8)
-                    .layoutPriority(1)
-            }
-
-            if showsShortsCaptions {
-                shortsKaraoke(player: player, maxHeight: karaokeHeight)
-                    .padding(.horizontal, 10)
-                    .frame(height: karaokeHeight)
-                    .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .layoutPriority(1)
             }
         }
@@ -576,12 +572,35 @@ struct ClipStageView: View {
         player: (any ClipPlayer)?,
         maxHeight: CGFloat
     ) -> some View {
-        // Keep a three-row reading viewport below the picture; sentences scroll within it.
-        transcript(player: player, showsLearningControls: false, showsLineTools: false)
+        // Legacy well path for maximized portrait theater stacks that still sit under the picture.
+        transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: false)
             .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .top)
             .coachTarget(.transcript, active: isCoachPage)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
+            .modifier(TranscriptTopReader(top: $transcriptTop))
+    }
+
+    /// Three-line karaoke on a soft bottom scrim so portrait footage shows through the band.
+    private func shortsKaraokeBand(player: (any ClipPlayer)?, maxHeight: CGFloat) -> some View {
+        transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .bottom)
+            .padding(.top, 36)
+            .background(
+                LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0), location: 0),
+                        .init(color: .black.opacity(0.42), location: 0.28),
+                        .init(color: .black.opacity(0.72), location: 0.7),
+                        .init(color: .black.opacity(0.82), location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .coachTarget(.transcript, active: isCoachPage)
             .modifier(TranscriptTopReader(top: $transcriptTop))
     }
 
@@ -610,7 +629,12 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, showsLearningControls: Bool = true, showsLineTools: Bool = false) -> some View {
+    private func transcript(
+        player: (any ClipPlayer)?,
+        showsLearningControls: Bool = true,
+        showsLineTools: Bool = false,
+        onPicture: Bool = false
+    ) -> some View {
         VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
                 SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
@@ -630,7 +654,8 @@ struct ClipStageView: View {
                     showTranscriptReport = true
                 },
                 windowMode: immersiveFeed,
-                showsLineTools: showsLineTools
+                showsLineTools: showsLineTools,
+                onPicture: onPicture
             )
         }
     }
@@ -1003,6 +1028,7 @@ struct TranscriptSection: View {
     /// Bounded feed viewport with smooth transcript following.
     var windowMode: Bool = false
     var showsLineTools: Bool = true
+    var onPicture: Bool = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -1019,7 +1045,8 @@ struct TranscriptSection: View {
             respectsProfileDisplay: respectsProfileDisplay,
             onReportLine: onReportLine,
             windowMode: windowMode,
-            showsLineTools: showsLineTools
+            showsLineTools: showsLineTools,
+            onPicture: onPicture
         )
     }
 }

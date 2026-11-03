@@ -19,12 +19,15 @@ struct LiveTranscriptPanel: View {
     /// Bounded feed viewport with a persistent, smoothly following transcript.
     var windowMode: Bool = false
     var showsLineTools: Bool = true
+    /// Portrait shorts: clear plate so a bottom gradient can show through the words.
+    var onPicture: Bool = false
 
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var spokenNamespace
     @State private var lastEvaluatedWord: KaraokeWordAnchor?
     @State private var sentenceScrollUntil: Date = .distantPast
+    @State private var measuredHeights: [Int: CGFloat] = [:]
 
     var body: some View {
         Group {
@@ -55,79 +58,165 @@ struct LiveTranscriptPanel: View {
                 }
             }
         }
-        .background(windowMode ? Color.clear : Color.bgSurfaceDark)
+        .background(windowMode || onPicture ? Color.clear : Color.bgSurfaceDark)
         .environment(\.spokenTokenNamespace, windowMode ? nil : spokenNamespace)
+        .environment(\.karaokeOnPicture, onPicture)
     }
 
-    /// Keep every sentence's identity and size stable. Only the scroll offset moves;
-    /// the video, panel and word wrapping never participate in a line transition.
+    /// At most three complete lines that fit the reading well. Scroll only when the current
+    /// line alone is taller than the viewport so a spoken word can stay fully visible.
     private var feedTranscript: some View {
         GeometryReader { viewport in
-            ScrollViewReader { proxy in
-                ScrollView(.vertical, showsIndicators: false) {
-                    // Exact row positions avoid estimated-height corrections during a swipe.
-                    VStack(alignment: .leading, spacing: Spacing.m) {
-                        ForEach(clip.lines.indices, id: \.self) { index in
-                            TranscriptLineView(
-                                clip: clip,
-                                lineIndex: index,
-                                spokenTokenIndex: index == currentLine ? spokenToken : nil,
-                                pulseTokenIndex: index == currentLine ? pulseTokenIndex : nil,
-                                isPulsing: isPulsing,
-                                tooltip: index == currentLine ? tooltip : nil,
-                                showsTranslation: true,
-                                isActive: true,
-                                forceDenseAids: forceDenseAids,
-                                respectsProfileDisplay: respectsProfileDisplay,
-                                raisedCard: false,
-                                showsLineTools: showsLineTools,
-                                isSpokenLine: isPlayingLine(index),
-                                onReport: { onReportLine?(index) }
-                            )
-                            .padding(.horizontal, Spacing.m)
-                            .id(index)
-                        }
-                    }
-                    .padding(.top, tooltip == nil ? Spacing.s : 40)
-                    // The last sentence can still settle at the top of the viewport.
-                    .padding(.bottom, max(0, viewport.size.height - 44))
+            let spacing = Spacing.m
+            let window = KaraokeReadingWindow.indices(
+                current: currentLine,
+                lineCount: clip.lines.count,
+                heights: measuredHeights,
+                spacing: spacing,
+                viewportHeight: max(0, viewport.size.height - topPad - 8)
+            )
+            let currentAlone = window == [clampedCurrentLine]
+            let currentHeight = measuredHeights[clampedCurrentLine] ?? 0
+            let needsWordScroll = currentAlone && currentHeight > viewport.size.height + 0.5
+
+            Group {
+                if needsWordScroll {
+                    scrollingCurrentLine(in: viewport.size)
+                } else {
+                    staticWindow(window, spacing: spacing)
                 }
-                .coordinateSpace(name: KaraokeWordAnchor.spaceName(for: clip.id))
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollDisabled(lookup.isPresented)
-                .onPreferenceChange(KaraokeWordGeometryPreference.self) { geometry in
-                    guard !lookup.isPresented, let geometry,
-                          geometry.anchor.clipID == clip.id,
-                          geometry.anchor.lineIndex == currentLine,
-                          geometry.anchor.tokenIndex == spokenToken,
-                          geometry.anchor != lastEvaluatedWord else { return }
-                    // Evaluate once per word, not once per animation frame.
-                    lastEvaluatedWord = geometry.anchor
-                    guard Date.now >= sentenceScrollUntil,
-                          let edge = geometry.followEdge(viewportHeight: viewport.size.height) else { return }
-                    let alignment: UnitPoint = edge == .top ? .top : .bottom
-                    if reduceMotion {
-                        proxy.scrollTo(geometry.anchor, anchor: alignment)
-                    } else {
-                        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.25)) {
-                            proxy.scrollTo(geometry.anchor, anchor: alignment)
-                        }
-                    }
+            }
+            // Portrait band sits on the lower edge of the picture; the wide well keeps lines at the top.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: onPicture ? .bottom : .top)
+            .onPreferenceChange(KaraokeLineHeightPreference.self) { heights in
+                guard !heights.isEmpty else { return }
+                var next = measuredHeights
+                for (index, height) in heights where abs((next[index] ?? 0) - height) > 0.5 {
+                    next[index] = height
                 }
-                .onChange(of: currentLine) { _, index in
-                    guard !lookup.isPresented else { return }
-                    follow(index, proxy: proxy)
-                }
-                .onChange(of: lookup.isPresented) { _, presented in
-                    if !presented { follow(currentLine, proxy: proxy) }
-                }
-                .onChange(of: viewport.size) { _, _ in proxy.scrollTo(currentLine, anchor: .top) }
-                .onChange(of: clip.id) { _, _ in proxy.scrollTo(currentLine, anchor: .top) }
-                .onAppear { proxy.scrollTo(currentLine, anchor: .top) }
+                if next != measuredHeights { measuredHeights = next }
+            }
+            .onChange(of: clip.id) { _, _ in
+                measuredHeights = [:]
+                lastEvaluatedWord = nil
             }
         }
-        .background(Color.bgSurfaceDark, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .background {
+            if !onPicture {
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(Color.bgSurfaceDark)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: onPicture ? 0 : Radius.card, style: .continuous))
+        .clipped()
+    }
+
+    private var topPad: CGFloat { tooltip == nil ? Spacing.s : 40 }
+
+    private var clampedCurrentLine: Int {
+        guard !clip.lines.isEmpty else { return 0 }
+        return min(max(0, currentLine), clip.lines.count - 1)
+    }
+
+    private func staticWindow(_ indices: [Int], spacing: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: spacing) {
+            ForEach(indices, id: \.self) { index in
+                windowLine(index)
+                    .padding(.horizontal, Spacing.m)
+            }
+        }
+        .padding(.top, topPad)
+        .padding(.bottom, Spacing.s)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Keep the next/previous candidates mounted offscreen so heights stay warm for
+        // the window calculator without painting into the next feed page.
+        .background(alignment: .top) {
+            measureNeighbors(of: indices)
+        }
+    }
+
+    private func scrollingCurrentLine(in size: CGSize) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                windowLine(clampedCurrentLine)
+                    .padding(.horizontal, Spacing.m)
+                    .padding(.top, topPad)
+                    .padding(.bottom, Spacing.s)
+                    .id(clampedCurrentLine)
+            }
+            .clipped()
+            .coordinateSpace(name: KaraokeWordAnchor.spaceName(for: clip.id))
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollDisabled(lookup.isPresented)
+            .onPreferenceChange(KaraokeWordGeometryPreference.self) { geometry in
+                guard !lookup.isPresented, let geometry,
+                      geometry.anchor.clipID == clip.id,
+                      geometry.anchor.lineIndex == clampedCurrentLine,
+                      geometry.anchor.tokenIndex == spokenToken,
+                      geometry.anchor != lastEvaluatedWord else { return }
+                lastEvaluatedWord = geometry.anchor
+                guard Date.now >= sentenceScrollUntil,
+                      let edge = geometry.followEdge(viewportHeight: size.height) else { return }
+                let alignment: UnitPoint = edge == .top ? .top : .bottom
+                if reduceMotion {
+                    proxy.scrollTo(geometry.anchor, anchor: alignment)
+                } else {
+                    withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.25)) {
+                        proxy.scrollTo(geometry.anchor, anchor: alignment)
+                    }
+                }
+            }
+            .onChange(of: currentLine) { _, _ in
+                guard !lookup.isPresented else { return }
+                follow(clampedCurrentLine, proxy: proxy)
+            }
+            .onChange(of: lookup.isPresented) { _, presented in
+                if !presented { follow(clampedCurrentLine, proxy: proxy) }
+            }
+            .onChange(of: size.height) { _, _ in proxy.scrollTo(clampedCurrentLine, anchor: .top) }
+            .onAppear { proxy.scrollTo(clampedCurrentLine, anchor: .top) }
+        }
+    }
+
+    /// Measure previous/next at the real panel width so the window can grow when they fit.
+    @ViewBuilder
+    private func measureNeighbors(of visible: [Int]) -> some View {
+        let neighbors = [clampedCurrentLine - 1, clampedCurrentLine + 1]
+            .filter { clip.lines.indices.contains($0) && !visible.contains($0) }
+        if !neighbors.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(neighbors, id: \.self) { index in
+                    windowLine(index)
+                        .padding(.horizontal, Spacing.m)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .opacity(0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+            .frame(maxWidth: .infinity, maxHeight: 0, alignment: .top)
+            .clipped()
+        }
+    }
+
+    private func windowLine(_ index: Int) -> some View {
+        TranscriptLineView(
+            clip: clip,
+            lineIndex: index,
+            spokenTokenIndex: index == clampedCurrentLine ? spokenToken : nil,
+            pulseTokenIndex: index == clampedCurrentLine ? pulseTokenIndex : nil,
+            isPulsing: isPulsing,
+            tooltip: index == clampedCurrentLine ? tooltip : nil,
+            showsTranslation: true,
+            isActive: index == clampedCurrentLine || lookup.selection?.lineIndex == index,
+            forceDenseAids: forceDenseAids,
+            respectsProfileDisplay: respectsProfileDisplay,
+            raisedCard: false,
+            showsLineTools: showsLineTools,
+            isSpokenLine: isPlayingLine(index),
+            onReport: { onReportLine?(index) }
+        )
+        .id(index)
     }
 
     private func follow(_ index: Int, proxy: ScrollViewProxy) {
@@ -172,8 +261,6 @@ struct LiveTranscriptPanel: View {
     private var visibleLines: [Int] {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
     }
-
-
 }
 
 /// Shared namespace so the spoken green outline can slide between tokens.
@@ -181,10 +268,20 @@ private struct SpokenTokenNamespaceKey: EnvironmentKey {
     static let defaultValue: Namespace.ID? = nil
 }
 
+private struct KaraokeOnPictureKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var spokenTokenNamespace: Namespace.ID? {
         get { self[SpokenTokenNamespaceKey.self] }
         set { self[SpokenTokenNamespaceKey.self] = newValue }
+    }
+
+    /// Portrait karaoke band: force white ink regardless of light/dark paper theme.
+    var karaokeOnPicture: Bool {
+        get { self[KaraokeOnPictureKey.self] }
+        set { self[KaraokeOnPictureKey.self] = newValue }
     }
 }
 
@@ -215,5 +312,12 @@ nonisolated struct KaraokeWordGeometryPreference: PreferenceKey {
     static let defaultValue: KaraokeWordGeometry? = nil
     static func reduce(value: inout KaraokeWordGeometry?, nextValue: () -> KaraokeWordGeometry?) {
         if let next = nextValue() { value = next }
+    }
+}
+
+nonisolated struct KaraokeLineHeightPreference: PreferenceKey {
+    static let defaultValue: [Int: CGFloat] = [:]
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }

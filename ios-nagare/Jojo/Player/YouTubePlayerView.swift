@@ -25,11 +25,13 @@ final class YouTubeContainerView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .black
+        clipsToBounds = true
         isUserInteractionEnabled = false
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        clipsToBounds = true
     }
 
     override func didMoveToWindow() {

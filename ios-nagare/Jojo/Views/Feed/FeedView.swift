@@ -423,7 +423,8 @@ struct FeedView: View {
                         )
                         // Match every page to the actual viewport. The available height changes
                         // when feed chrome or the tab bar hides during maximize/minimize.
-                        .frame(width: viewport.size.width, height: viewport.size.height)
+                        .frame(width: viewport.size.width, height: viewport.size.height, alignment: .top)
+                        .clipped()
                         .id(clip.id)
                     }
                 }
@@ -437,20 +438,8 @@ struct FeedView: View {
             .scrollIndicators(.hidden)
             .background(Color.watchBackground)
             .clipped()
-            // Wait until resized page frames have been laid out before re-anchoring.
-            // Scrolling in this callback's layout pass can use the old page geometry and
-            // leave the current clip between two pages.
             .onChange(of: viewport.size) { _, _ in
-                guard let id = currentId else { return }
-                Task { @MainActor in
-                    await Task.yield()
-                    guard currentId == id else { return }
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) {
-                        proxy.scrollTo(id, anchor: .top)
-                    }
-                }
+                FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
             }
             .onChange(of: autoScrollTargetId) { _, target in
                 guard let target else { return }
@@ -747,5 +736,39 @@ nonisolated struct SingleClipPerSwipeBehavior: ScrollTargetBehavior {
         let onePageAtATime = min(max(proposedPage, currentPage - 1), currentPage + 1)
         let destination = min(max(onePageAtATime, 0), lastPage)
         return CGFloat(destination) * viewportHeight
+    }
+}
+
+/// Re-pin the current clip after chrome or dock height changes. A single layout yield is
+/// not enough — progress and maximize animations run 0.25–0.35s and leave the offset on
+/// the old page height until a second settle pass.
+enum FeedPageReanchor {
+    /// First pass after the next layout; second after chrome animations settle.
+    static let settleDelayNanoseconds: UInt64 = 400_000_000
+
+    @MainActor
+    static func schedule(
+        currentId: String?,
+        stillCurrent: @escaping @MainActor () -> String?,
+        proxy: ScrollViewProxy
+    ) {
+        guard let id = currentId else { return }
+        Task { @MainActor in
+            await Task.yield()
+            guard stillCurrent() == id else { return }
+            snap(id, proxy: proxy)
+            try? await Task.sleep(nanoseconds: settleDelayNanoseconds)
+            guard stillCurrent() == id else { return }
+            snap(id, proxy: proxy)
+        }
+    }
+
+    @MainActor
+    static func snap(_ id: String, proxy: ScrollViewProxy) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            proxy.scrollTo(id, anchor: .top)
+        }
     }
 }

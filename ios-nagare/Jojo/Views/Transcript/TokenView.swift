@@ -26,10 +26,12 @@ struct TokenView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
+    @Environment(\.karaokeOnPicture) private var onPicture
     // JojoFont.jp applies Dynamic Type; its input must be the unscaled base size.
-    private static let furiganaSize: CGFloat = 8
-    private static let wordSize: CGFloat = 24
-    @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 11
+    // Regular weight (not Bold) keeps karaoke neat like immersion reference screens.
+    private static let furiganaSize: CGFloat = 9
+    private static let wordSize: CGFloat = 22
+    @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 10
     @State private var tapBounce: Bool = false
 
     var body: some View {
@@ -53,9 +55,9 @@ struct TokenView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 1) {
             rubyRow
-                .padding(.horizontal, token.tappable ? 6 : 0)
+                .padding(.horizontal, token.tappable ? 5 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
                 .overlay { spokenOutline }
@@ -63,15 +65,16 @@ struct TokenView: View {
                 .textGlow(activeGlowColor, level: activeGlowLevel, boosted: state == .spoken || pulse)
             if showRomaji {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
-                    .font(.system(size: romajiSize))
-                    .foregroundStyle(readingColor.opacity(0.85))
+                    .font(.system(size: romajiSize, weight: .regular))
+                    .foregroundStyle(readingColor.opacity(onPicture ? 0.78 : 0.85))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
         }
-        .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
+        .frame(minWidth: token.tappable ? 40 : 8, minHeight: 40)
         .contentShape(Rectangle())
-        .scaleEffect(pulse || tapBounce || (!stablePlaybackHighlight && state == .spoken) ? 1.06 : 1)
+        // Feed karaoke keeps size stable; only the green outline marks the spoken word.
+        .scaleEffect(pulse || tapBounce || (!stablePlaybackHighlight && state == .spoken) ? 1.04 : 1)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -110,8 +113,9 @@ struct TokenView: View {
                             .opacity(segment.reading == nil ? 0 : 1)
                     }
                     Text(segment.text)
-                        .font(JojoFont.jp(Self.wordSize, bold: true, relativeTo: .title2))
+                        .font(JojoFont.jp(Self.wordSize, bold: false, relativeTo: .title3))
                         .foregroundStyle(japaneseColor)
+                        .shadow(color: onPicture ? .black.opacity(0.45) : .clear, radius: 2, y: 1)
                         .lineLimit(1)
                         .minimumScaleFactor(0.55)
                 }
@@ -133,8 +137,8 @@ struct TokenView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(LearningInk.selected.opacity(0.18))
         case .spoken:
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(LearningInk.spoken.opacity(0.16))
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(LearningInk.spoken.opacity(stablePlaybackHighlight ? 0.1 : 0.16))
         case .normal:
             if minimalStyling || mastery == .known || mastery == .easy {
                 Color.clear
@@ -154,18 +158,18 @@ struct TokenView: View {
         case .spoken:
             Group {
                 if !stablePlaybackHighlight, let ns = spokenNamespace {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(LearningInk.spoken, lineWidth: 2)
                         .matchedGeometryEffect(id: "spokenOutline", in: ns)
                 } else {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(LearningInk.spoken, lineWidth: stablePlaybackHighlight ? 1.6 : 2)
                 }
             }
-            .modifier(KaraokeCursorPulse(glowEnabled: app.profile.glow != .off))
+            .modifier(KaraokeCursorPulse(glowEnabled: app.profile.glow != .off && !stablePlaybackHighlight))
         case .selected:
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(LearningInk.selected, lineWidth: 2.4)
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .strokeBorder(LearningInk.selected, lineWidth: 2)
         case .normal:
             if !minimalStyling && mastery == .known {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -183,15 +187,15 @@ struct TokenView: View {
         if minimalStyling, state == .spoken {
             Capsule()
                 .fill(LearningInk.spoken)
-                .frame(height: 3)
-                .padding(.horizontal, 4)
-                .offset(y: 3)
+                .frame(height: 2)
+                .padding(.horizontal, 3)
+                .offset(y: 2)
         } else if !minimalStyling, token.tappable, state == .normal, mastery != .known, mastery != .easy {
             Capsule()
                 .fill(underlineColor)
-                .frame(height: 3)
-                .padding(.horizontal, 4)
-                .offset(y: 3)
+                .frame(height: 2)
+                .padding(.horizontal, 3)
+                .offset(y: 2)
         }
     }
 
@@ -200,8 +204,9 @@ struct TokenView: View {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
         case .normal:
-            guard token.tappable && !minimalStyling else { return LearningInk.japanese }
-            return LearningInk.mastery(mastery)
+            guard token.tappable && !minimalStyling else { return LearningInk.japanese(onPicture: onPicture) }
+            // Mastery wall stays on paper; portrait bands keep white so bright footage stays readable.
+            return onPicture ? LearningInk.japanese(onPicture: true) : LearningInk.mastery(mastery)
         }
     }
 
@@ -210,10 +215,10 @@ struct TokenView: View {
         case .spoken: return LearningInk.spoken.opacity(0.9)
         case .selected: return LearningInk.selected.opacity(0.9)
         case .normal:
-            if token.tappable, let mastery, mastery != .new {
+            if !onPicture, token.tappable, let mastery, mastery != .new {
                 return LearningInk.mastery(mastery).opacity(0.75)
             }
-            return LearningInk.furigana
+            return LearningInk.furigana(onPicture: onPicture)
         }
     }
 

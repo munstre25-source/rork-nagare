@@ -44,21 +44,70 @@ nonisolated struct LandscapeTheaterGeometry {
     }
 }
 
-/// Fit the picture above a reading viewport large enough for the requested subtitle rows.
+/// Portrait short: the picture fills the card above the controls; karaoke floats on a bottom band.
 nonisolated struct ShortsStageGeometry {
     let cardSize: CGSize
     let videoHeight: CGFloat
+    /// Max height for the on-picture caption band. Overlay; does not shrink the video.
     let captionHeight: CGFloat
 
     static func make(in size: CGSize, preferredCaptionHeight: CGFloat, controlsHeight: CGFloat) -> Self {
         let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
         let controls = max(0, controlsHeight)
-        let gaps: CGFloat = preferredCaptionHeight > 0 ? 12 : 6
+        let gaps: CGFloat = 6
         let available = max(0, card.height - controls - gaps)
-        let videoFloor = min(120, available * 0.4)
-        let captions = min(max(0, preferredCaptionHeight), max(0, available - videoFloor))
-        let video = min(card.width * 16 / 9, max(0, available - captions))
+        // Cap near a third of the picture so the subject stays clear, while still fitting
+        // about two complete subtitle rows plus readings when Beginner aids are on.
+        let captions = min(max(0, preferredCaptionHeight), available * 0.34)
+        let video = max(0, available)
         return Self(cardSize: card, videoHeight: video, captionHeight: captions)
+    }
+}
+
+/// At most three complete subtitle lines that fit inside a karaoke band or reading well.
+nonisolated struct KaraokeReadingWindow {
+    /// Indices into `clip.lines`, in ascending order. Always includes the current line when
+    /// the transcript is non-empty. Drops previous first, then next, when heights overflow.
+    static func indices(
+        current: Int,
+        lineCount: Int,
+        heights: [Int: CGFloat],
+        spacing: CGFloat,
+        viewportHeight: CGFloat
+    ) -> [Int] {
+        guard lineCount > 0 else { return [] }
+        let currentIndex = min(max(0, current), lineCount - 1)
+        let previous = currentIndex > 0 ? currentIndex - 1 : nil
+        let next = currentIndex + 1 < lineCount ? currentIndex + 1 : nil
+
+        func height(of index: Int) -> CGFloat? {
+            guard let value = heights[index], value.isFinite, value > 0 else { return nil }
+            return value
+        }
+
+        // Until the current line has been measured, mount it alone so the first frame is
+        // not a clipped bundle of unknown heights.
+        guard let currentHeight = height(of: currentIndex) else { return [currentIndex] }
+
+        var chosen = [currentIndex]
+        var used = currentHeight
+
+        if let next, let nextHeight = height(of: next) {
+            let needed = used + spacing + nextHeight
+            if needed <= viewportHeight + 0.5 {
+                chosen.append(next)
+                used = needed
+            }
+        }
+
+        if let previous, let previousHeight = height(of: previous) {
+            let needed = used + spacing + previousHeight
+            if needed <= viewportHeight + 0.5 {
+                chosen.insert(previous, at: 0)
+            }
+        }
+
+        return chosen
     }
 }
 
