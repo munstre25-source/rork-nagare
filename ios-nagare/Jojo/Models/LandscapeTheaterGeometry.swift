@@ -17,7 +17,7 @@ nonisolated struct LandscapeTheaterGeometry {
         let captionReserve = min(max(0, preferredCaptionHeight), height * (isPortrait ? 0.38 : 0.32))
         let controls = max(0, controlsHeight)
         let gaps = spacing * CGFloat((captionReserve > 0 ? 1 : 0) + (controls > 0 ? 1 : 0))
-        let topPad: CGFloat = isPortrait ? 4 : 12
+        let topPad: CGFloat = isPortrait ? 28 : 24
         let available = max(0, height - captionReserve - controls - gaps - topPad)
         // Portrait phones: use the full stage width so maximize actually enlarges the picture.
         // Landscape: keep a small side inset so the frame doesn't kiss the edges.
@@ -25,10 +25,10 @@ nonisolated struct LandscapeTheaterGeometry {
         let width = min(max(0, widthAvailable - sideInset), 1100, available * 16 / 9)
         let video = CGSize(width: width, height: width * 9 / 16)
         let latestTop = max(0, height - 12 - video.height - captionReserve - controls - gaps)
-        // Portrait: pin near the top. Landscape: sit around the upper third.
+        // Leave breathing room above the maximized picture; keep captions inside the viewport.
         let preferredTop = isPortrait
             ? topPad
-            : max(12, height * 0.34 - video.height / 2)
+            : max(topPad, height * 0.34 - video.height / 2)
         let videoTop = min(preferredTop, latestTop)
         let captions = captionReserve > 0
             ? max(0, height - 12 - videoTop - video.height - controls - gaps)
@@ -38,7 +38,7 @@ nonisolated struct LandscapeTheaterGeometry {
     }
 }
 
-/// A bounded Shorts stack: prioritize captions, then fit the complete portrait picture above them.
+/// A video-first Shorts stack with a compact, fixed caption budget below the picture.
 nonisolated struct ShortsStageGeometry {
     let cardSize: CGSize
     let videoHeight: CGFloat
@@ -49,7 +49,7 @@ nonisolated struct ShortsStageGeometry {
         let controls = max(0, controlsHeight)
         let gaps: CGFloat = preferredCaptionHeight > 0 ? 12 : 6
         let available = max(0, card.height - controls - gaps)
-        let captions = min(max(0, preferredCaptionHeight), card.height * 0.38, available)
+        let captions = min(max(0, preferredCaptionHeight), card.height * 0.22, available)
         let video = min(card.width * 16 / 9, max(0, available - captions))
         return Self(cardSize: card, videoHeight: video, captionHeight: captions)
     }

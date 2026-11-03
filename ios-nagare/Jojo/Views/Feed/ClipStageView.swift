@@ -40,6 +40,7 @@ struct ClipStageView: View {
     /// Shorts: the captions button hides the separate karaoke section.
     @State private var showsShortsCaptions: Bool = true
     @ScaledMetric(relativeTo: .body) private var shortsWordsHeight: CGFloat = 220
+    @ScaledMetric(relativeTo: .body) private var compactShortsWordsHeight: CGFloat = 128
     @State private var playbackControlsHeight: CGFloat = 88
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
@@ -92,7 +93,7 @@ struct ClipStageView: View {
         if isCompactLandscape(size) {
             // Reserve room only for visible controls and the separate words column.
             let controlsHeight: CGFloat = showsTheaterControls ? playbackControlsHeight + 8 : 0
-            let maxHeight = max(0, size.height - controlsHeight - 18)
+            let maxHeight = max(0, size.height - controlsHeight - 26)
             let wordsWidth = showsShortsCaptions ? wordsColumnWidth(in: size.width) + 14 : 0
             let width = min(max(0, size.width - wordsWidth - 24), maxHeight * 16 / 9, 1100)
             return CGSize(width: width, height: width * 9 / 16)
@@ -148,7 +149,7 @@ struct ClipStageView: View {
             }
         }
         // Keep the last subtitle row clear of the dock/home-indicator edge in every feed mode.
-        .padding(.bottom, usesFlexibleVideo ? 20 : 0)
+        .padding(.bottom, usesFlexibleVideo ? (showsShortsStage ? 6 : 20) : 0)
         .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
             if !enabled && isPopupHere { dismiss() }
         }
@@ -334,7 +335,7 @@ struct ClipStageView: View {
 
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
-                        .frame(width: wordsWidth, height: max(0, stageSize.height - 18 - (showsTheaterControls ? playbackControlsHeight + 8 : 0)))
+                        .frame(width: wordsWidth, height: max(0, stageSize.height - 26 - (showsTheaterControls ? playbackControlsHeight + 8 : 0)))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -344,7 +345,7 @@ struct ClipStageView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.top, 4)
+        .padding(.top, 16)
         .padding(.bottom, 10)
     }
 
@@ -447,7 +448,7 @@ struct ClipStageView: View {
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
         let layout = ShortsStageGeometry.make(in: size,
-                                              preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
+                                              preferredCaptionHeight: showsShortsCaptions ? compactShortsWordsHeight : 0,
                                               controlsHeight: playbackControlsHeight)
         let card = layout.cardSize
         let karaokeHeight = layout.captionHeight
@@ -550,19 +551,14 @@ struct ClipStageView: View {
         player: (any ClipPlayer)?,
         maxHeight: CGFloat
     ) -> some View {
-        VStack(spacing: 4) {
-            SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
-                .padding(.horizontal, 10)
-            // Give ViewThatFits the actual remaining height: it can drop the next-line
-            // preview or scroll a long current sentence instead of slicing it at the card edge.
-            transcript(player: player, following: 1, showsLearningControls: false)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .coachTarget(.transcript, active: isCoachPage)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-        }
-        .frame(maxHeight: maxHeight)
-        .modifier(TranscriptTopReader(top: $transcriptTop))
+        // Playback controls already expose subtitle help and timing. Keep only the
+        // current sentence here so the portrait picture gets the available height.
+        transcript(player: player, following: 0, showsLearningControls: false, showsLineTools: false)
+            .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .top)
+            .coachTarget(.transcript, active: isCoachPage)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .modifier(TranscriptTopReader(top: $transcriptTop))
     }
 
     private func savedBanner(_ word: String) -> some View {
@@ -590,7 +586,7 @@ struct ClipStageView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func transcript(player: (any ClipPlayer)?, following: Int? = nil, showsLearningControls: Bool = true) -> some View {
+    private func transcript(player: (any ClipPlayer)?, following: Int? = nil, showsLearningControls: Bool = true, showsLineTools: Bool = true) -> some View {
         VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
                 SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
@@ -612,7 +608,8 @@ struct ClipStageView: View {
                 windowMode: immersiveFeed,
                 // Keep the active line plus one upcoming line visible. This preserves context
                 // while keeping the player as the visual focus.
-                followingLines: following ?? 1
+                followingLines: following ?? 1,
+                showsLineTools: showsLineTools
             )
         }
     }
@@ -986,6 +983,7 @@ struct TranscriptSection: View {
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
+    var showsLineTools: Bool = true
 
     var body: some View {
         LiveTranscriptPanel(
@@ -1002,7 +1000,8 @@ struct TranscriptSection: View {
             respectsProfileDisplay: respectsProfileDisplay,
             onReportLine: onReportLine,
             windowMode: windowMode,
-            followingLines: followingLines
+            followingLines: followingLines,
+            showsLineTools: showsLineTools
         )
     }
 }

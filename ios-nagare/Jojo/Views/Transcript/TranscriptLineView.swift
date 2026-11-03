@@ -53,6 +53,7 @@ struct TranscriptLineView: View {
                                     showRomaji: display.romaji,
                                     tapEnabled: display.tapWords,
                                     minimalStyling: display.minimalJapanese,
+                                    stablePlaybackHighlight: respectsProfileDisplay,
                                     onTap: {
                                         withAnimation(Motion.popupSpring) {
                                             lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
@@ -140,7 +141,7 @@ struct TranscriptLineView: View {
                 }
             }
             .padding(raisedCard ? Spacing.m : 0)
-            .padding(.leading, sentenceSynced(line) ? 10 : 0)
+            .padding(.leading, showsLineTools || !line.hasWordTiming ? 10 : 0)
             .overlay(alignment: .leading) {
                 // Sentence-timed lines: the whole line is the karaoke cursor.
                 if sentenceSynced(line) {
@@ -173,7 +174,7 @@ struct TranscriptLineView: View {
                 }
             }
             .opacity(isActive ? 1 : 0.82)
-            .animation(.easeOut(duration: 0.2), value: isActive)
+            .animation(respectsProfileDisplay ? nil : .easeOut(duration: 0.2), value: isActive)
             .onChange(of: isActive) { _, _ in translationRevealed = false }
             .onChange(of: display.english) { _, _ in translationRevealed = false }
             .onChange(of: line) { _, _ in translationRevealed = false }
@@ -185,7 +186,7 @@ struct TranscriptLineView: View {
     private var sentenceCursor: some View {
         let outline = RoundedRectangle(cornerRadius: raisedCard ? Radius.card : 10, style: .continuous)
             .strokeBorder(LearningInk.spoken, lineWidth: 1.8)
-        if reduceMotion {
+        if reduceMotion || respectsProfileDisplay {
             outline
         } else {
             outline.phaseAnimator([false, true]) { content, bright in
@@ -212,7 +213,10 @@ struct TranscriptLineView: View {
 
     /// Inline glosses only in Beginner (or when every reading aid is on).
     private var showsInlineGloss: Bool {
-        display.learningMode == .beginner || (display.furigana && display.romaji && display.english == .shown)
+        // The feed already shows the sentence translation. Inserting a different
+        // gloss under each spoken word changes wrapping and makes the card jump.
+        !respectsProfileDisplay && (display.learningMode == .beginner
+            || (display.furigana && display.romaji && display.english == .shown))
     }
 
     private func inlineGloss(for token: Token, index: Int) -> String? {

@@ -20,6 +20,7 @@ struct LiveTranscriptPanel: View {
     var windowMode: Bool = false
     /// How many lines after the current one stay on screen.
     var followingLines: Int = 1
+    var showsLineTools: Bool = true
 
     @Environment(WordLookupController.self) private var lookup
     @Namespace private var spokenNamespace
@@ -71,7 +72,16 @@ struct LiveTranscriptPanel: View {
             }
         }
         .background(windowMode ? Color.clear : Color.bgSurfaceDark)
-        .environment(\.spokenTokenNamespace, spokenNamespace)
+        // ViewThatFits builds several candidates. Sharing a moving outline between
+        // them causes competing geometry updates while karaoke advances.
+        .environment(\.spokenTokenNamespace, windowMode ? nil : spokenNamespace)
+        .transaction { transaction in
+            if windowMode {
+                // Stop inherited layout/spring animations. Word highlights below
+                // supply their own short color fade without moving any text.
+                transaction.animation = nil
+            }
+        }
     }
 
     private func paddedWindow(following: Int) -> some View {
@@ -102,19 +112,14 @@ struct LiveTranscriptPanel: View {
                     respectsProfileDisplay: respectsProfileDisplay,
                     // The active line keeps its plate so it stays distinct inside the panel.
                     raisedCard: index == currentLine,
-                    showsLineTools: true,
+                    showsLineTools: showsLineTools,
                     isSpokenLine: isPlayingLine(index),
                     onReport: { onReportLine?(index) }
                 )
                 .id(index)
                 .padding(.horizontal, index == currentLine ? 0 : Spacing.m)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                ))
             }
         }
-        .animation(Motion.lineAdvance, value: currentLine)
     }
 
     private var lineStack: some View {

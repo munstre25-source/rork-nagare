@@ -21,12 +21,14 @@ struct TokenView: View {
     var tapEnabled: Bool = true
     /// Full immersion keeps the Japanese quiet while retaining the spoken cursor and lookup.
     var minimalStyling: Bool = false
+    var stablePlaybackHighlight: Bool = false
     let onTap: () -> Void
 
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
-    @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 12
-    @ScaledMetric(relativeTo: .title2) private var wordSize: CGFloat = 24
+    // JojoFont.jp applies Dynamic Type; its input must be the unscaled base size.
+    private static let furiganaSize: CGFloat = 10
+    private static let wordSize: CGFloat = 24
     @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 11
     @State private var tapBounce: Bool = false
 
@@ -69,7 +71,7 @@ struct TokenView: View {
         }
         .frame(minWidth: token.tappable ? 44 : 10, minHeight: 44)
         .contentShape(Rectangle())
-        .scaleEffect(pulse || tapBounce || state == .spoken ? 1.06 : 1)
+        .scaleEffect(pulse || tapBounce || (!stablePlaybackHighlight && state == .spoken) ? 1.06 : 1)
         .overlay(alignment: .top) {
             if let tooltip {
                 Text(tooltip)
@@ -87,7 +89,7 @@ struct TokenView: View {
                     .allowsHitTesting(false)
             }
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: state)
+        .animation(stablePlaybackHighlight ? .easeInOut(duration: 0.12) : .spring(response: 0.3, dampingFraction: 0.6), value: state)
         .animation(.easeOut(duration: 0.2), value: familiarity)
     }
 
@@ -98,14 +100,14 @@ struct TokenView: View {
                 VStack(spacing: 1) {
                     if showFurigana {
                         Text(segment.reading ?? " ")
-                            .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
+                            .font(JojoFont.jp(Self.furiganaSize, relativeTo: .caption2))
                             .foregroundStyle(readingColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
                             .opacity(segment.reading == nil ? 0 : 1)
                     }
                     Text(segment.text)
-                        .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
+                        .font(JojoFont.jp(Self.wordSize, bold: true, relativeTo: .title2))
                         .foregroundStyle(japaneseColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.55)
@@ -147,7 +149,7 @@ struct TokenView: View {
     private var spokenOutline: some View {
         switch state {
         case .spoken:
-            if let ns = spokenNamespace {
+            if !stablePlaybackHighlight, let ns = spokenNamespace {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(LearningInk.spoken, lineWidth: 2.4)
                     .matchedGeometryEffect(id: "spokenOutline", in: ns)

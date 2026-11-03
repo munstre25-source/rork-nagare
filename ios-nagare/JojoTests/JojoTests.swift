@@ -308,36 +308,48 @@ struct JojoTests {
         #expect(VocabularyProgress(words: [word], dailyGoal: 1).fraction == 1)
     }
 
-    @Test func wideVideoSitsNearTheTopAndLeavesMoreRoomForKaraoke() {
+    @Test func maximizedWideVideoLeavesTopBreathingRoomAndKeepsKaraokeVisible() {
         let size = CGSize(width: 402, height: 800)
         let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
-        #expect(layout.videoTop == 4)
+        #expect(layout.videoTop == 28)
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
         #expect(layout.videoSize.width == size.width)
         #expect(layout.captionHeight > 220)
         #expect(abs(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight - (size.height - 12)) < 0.01)
     }
 
-    @Test func shortsReserveKaraokeRoomWithinTheRaisedFeedViewport() {
+    @Test func shortsKeepCompactKaraokeWithinTheFeedViewport() {
         for size in [CGSize(width: 320, height: 380), CGSize(width: 393, height: 580),
                      CGSize(width: 430, height: 780), CGSize(width: 844, height: 300)] {
-            for captions: CGFloat in [0, 220, 440] {
+            for captions: CGFloat in [0, 128, 220, 440] {
                 for controls: CGFloat in [88, 140] {
-                    // ClipStageView reserves another 20 points below the whole stack.
-                    let viewport = CGSize(width: size.width, height: size.height - 20)
+                    // Shorts keeps only a small clearance below the whole stack.
+                    let viewport = CGSize(width: size.width, height: size.height - 6)
                     let layout = ShortsStageGeometry.make(in: viewport, preferredCaptionHeight: captions,
                                                          controlsHeight: controls)
                     let gaps: CGFloat = captions > 0 ? 12 : 6
                     #expect(layout.videoHeight >= 0)
                     #expect(layout.captionHeight >= 0)
                     #expect(layout.videoHeight + controls + gaps + layout.captionHeight <= layout.cardSize.height + 0.01)
-                    #expect(layout.cardSize.height + 2 <= size.height - 20)
+                    #expect(layout.cardSize.height + 2 <= size.height - 6)
                     if captions > 0 {
-                        #expect(layout.captionHeight >= min(captions, layout.cardSize.height * 0.38))
+                        #expect(layout.captionHeight >= min(captions, layout.cardSize.height * 0.22))
                     }
                 }
             }
         }
+    }
+
+    @Test func shortsGivesVideoTheSpacePreviouslyReservedForExtraCaptionLines() {
+        let layout = ShortsStageGeometry.make(in: CGSize(width: 393, height: 650),
+                                              preferredCaptionHeight: 128, controlsHeight: 88)
+        #expect(layout.captionHeight == 128)
+        #expect(layout.videoHeight == 416)
+        #expect(layout.videoHeight > layout.cardSize.height * 0.64)
+        let withoutCaptions = ShortsStageGeometry.make(in: CGSize(width: 393, height: 650),
+                                                       preferredCaptionHeight: 0, controlsHeight: 88)
+        #expect(withoutCaptions.captionHeight == 0)
+        #expect(withoutCaptions.videoHeight > layout.videoHeight)
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
