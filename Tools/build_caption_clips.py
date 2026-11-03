@@ -562,7 +562,8 @@ def main() -> int:
     parser.add_argument("--channel", default="")
     parser.add_argument("--title", default="")
     parser.add_argument("--from-probe", type=Path)
-    parser.add_argument("--jobs", type=Path, help="JSON list of {video_id, category, channel, title}")
+    parser.add_argument("--jobs", type=Path,
+                        help="JSON list of {video_id, category, channel, title, max_clips?}")
     parser.add_argument("--max-per-video", type=int, default=8)
     parser.add_argument("--out", type=Path, default=OUT_DIR / "caption_clips.json")
     parser.add_argument("--subs-dir", type=Path, default=SUBS_DIR)
@@ -589,6 +590,7 @@ def main() -> int:
                 "category": row.get("category") or args.category,
                 "channel": row.get("channel") or args.channel,
                 "title": row.get("title") or args.title,
+                "max_clips": row.get("max_clips"),
             })
     for vid in args.video_id:
         jobs.append({"video_id": vid, "category": args.category, "channel": args.channel, "title": args.title})
@@ -602,8 +604,9 @@ def main() -> int:
         cached = all(_cached_subs(job["video_id"], args.subs_dir))
         if n and not cached:
             time.sleep(args.delay)
+        cap = job.get("max_clips") or args.max_per_video
         all_clips.extend(build_one(job["video_id"], job["category"], job["channel"], job["title"], dictionary,
-                                   args.max_per_video, args.subs_dir))
+                                   cap, args.subs_dir))
 
     out = args.out
     out.parent.mkdir(parents=True, exist_ok=True)
