@@ -27,7 +27,7 @@ struct TokenView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
     // JojoFont.jp applies Dynamic Type; its input must be the unscaled base size.
-    private static let furiganaSize: CGFloat = 10
+    private static let furiganaSize: CGFloat = 8
     private static let wordSize: CGFloat = 24
     @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 11
     @State private var tapBounce: Bool = false
@@ -102,8 +102,11 @@ struct TokenView: View {
                         Text(segment.reading ?? " ")
                             .font(JojoFont.jp(Self.furiganaSize, relativeTo: .caption2))
                             .foregroundStyle(readingColor)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.center)
+                            // Let long readings wrap within a constrained token rather
+                            // than truncating them at the karaoke panel's edge.
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
                             .opacity(segment.reading == nil ? 0 : 1)
                     }
                     Text(segment.text)
