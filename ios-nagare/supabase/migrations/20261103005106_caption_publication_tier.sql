@@ -118,5 +118,7 @@ create trigger catalog_publication_guard
   on public.clips
   for each row execute function public.guard_catalog_publication();
 
+revoke all on function public.catalog_caption_receipt_ok(text, numeric, numeric, jsonb, text)
+  from public, anon, authenticated;
 grant execute on function public.catalog_caption_receipt_ok(text, numeric, numeric, jsonb, text)
   to service_role;

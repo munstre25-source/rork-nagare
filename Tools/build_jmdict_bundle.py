@@ -23,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "ios-nagare" / "Jojo" / "Resources" / "Dictionary.json"
+CURATED = ROOT / "Tools" / "dictionary_curated.json"
 CACHE = ROOT / ".tmp_venv" / "jmdict-eng-common.json"
 CACHE_ZIP = ROOT / ".tmp_venv" / "jmdict-eng-common.json.zip"
 # GitHub release of jmdict-simplified (common words only). Bump when outdated.
@@ -174,19 +175,22 @@ def ensure_json() -> Path:
     return CACHE
 
 
-def build(limit: int) -> dict:
+def build(limit: int, curated: Path, kana_fallback_keys: bool = False) -> dict:
     path = ensure_json()
     raw = json.loads(path.read_text(encoding="utf-8"))
     words = raw["words"] if isinstance(raw, dict) else raw
 
     existing: dict = {}
-    if OUT.exists():
-        existing = json.loads(OUT.read_text(encoding="utf-8"))
+    if curated.exists():
+        existing = json.loads(curated.read_text(encoding="utf-8"))
 
     built: dict[str, dict] = {}
+    kana_fallback: dict[str, dict] = {}
     for entry in words:
-        kanji_forms = [k.get("text") for k in entry.get("kanji", []) if k.get("text")]
-        kana_forms = [k.get("text") for k in entry.get("kana", []) if k.get("text")]
+        kanji_all = [k for k in entry.get("kanji", []) if k.get("text")]
+        kana_all = [k for k in entry.get("kana", []) if k.get("text")]
+        kanji_forms = [k["text"] for k in kanji_all]
+        kana_forms = [k["text"] for k in kana_all]
         if not kana_forms and not kanji_forms:
             continue
         senses = entry.get("sense", [])
@@ -208,25 +212,38 @@ def build(limit: int) -> dict:
         surface = kanji_forms[0] if kanji_forms else kana_forms[0]
         pos = map_pos(pos_tags)
         romaji = to_romaji(readings[0]) if readings else ""
+        # jlpt / ja_definitions are optional in DictionaryEntry; omitting them keeps
+        # the launch-time decode small.
         payload = {
             "surface": surface,
             "readings": readings,
             "romaji": romaji,
             "pos": pos,
-            "jlpt": None,
             "definitions": defs,
-            "ja_definitions": [],
         }
-        # Index by every kanji and kana headword so lookups hit.
-        keys = list(dict.fromkeys(kanji_forms + kana_forms))
-        for key in keys:
+        # Index common spellings only. Kana keys are reserved for words that are
+        # kana-only or usually written in kana, so した never resolves to 下.
+        usually_kana = any("uk" in (s.get("misc") or []) for s in senses[:2])
+        kanji_keys = [k["text"] for k in kanji_all if k.get("common")] or kanji_forms[:1]
+        kana_keys = [k["text"] for k in kana_all if k.get("common") or not kanji_all][:2] \
+            if (usually_kana or not kanji_all) else []
+        for key in dict.fromkeys(kanji_keys + kana_keys):
             if key in existing:
                 continue  # hand-curated wins
             if key not in built:
                 built[key] = {**payload, "surface": key}
+        for kana in kana_forms[:1]:
+            kana_fallback.setdefault(kana, {**payload, "surface": kana})
 
         if len(built) >= limit:
             break
+
+    # Kana spellings of kanji words only fill gaps left by the primary keys. The app
+    # bundle skips them (launch-time decode size); offline tools turn them on.
+    if kana_fallback_keys:
+        for key, payload in kana_fallback.items():
+            if key not in built and key not in existing:
+                built[key] = payload
 
     # Hand-curated entries always win.
     merged = {**built, **existing}
@@ -242,9 +259,11 @@ def build(limit: int) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=20000)
+    parser.add_argument("--limit", type=int, default=40000)
+    parser.add_argument("--curated", type=Path, default=CURATED,
+                        help="hand-curated entries that win on conflict")
     args = parser.parse_args()
-    data = build(args.limit)
+    data = build(args.limit, args.curated)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {OUT} ({OUT.stat().st_size // 1024} KB)")

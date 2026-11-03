@@ -7,7 +7,7 @@
  */
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { requireEnv } from "../_shared/env.ts";
-import { isAdminOrCron } from "../_shared/admin.ts";
+import { requireAdmin } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 
 type CaptionLine = {
@@ -126,8 +126,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return errorResponse(405, "Method not allowed");
 
   try {
-    requireEnv("ADMIN_TOKEN");
-    if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
+    if (!requireAdmin(req, requireEnv("ADMIN_TOKEN"))) return errorResponse(401, "Unauthorized");
 
     const body = await readJson<Body>(req);
     const clips = Array.isArray(body.clips) ? body.clips : [];
@@ -164,6 +163,7 @@ Deno.serve(async (req) => {
           channel_avatar_color: clip.channel_avatar_color ?? "#F97316",
           thumbnail_gradient: clip.thumbnail_gradient ?? ["#1C1917", "#44403C", "#78716C"],
           timing_mode: "line",
+          video_orientation: clip.video_orientation === "portrait" ? "portrait" : "landscape",
           model: "caption-1",
           prompt_version: "caption-1",
         };

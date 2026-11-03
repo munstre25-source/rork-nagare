@@ -19,21 +19,42 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
-import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DICT_PATH = ROOT / "ios-nagare" / "Jojo" / "Resources" / "Dictionary.json"
 OUT_DIR = ROOT / "ios-nagare" / "reports" / "caption-clips"
+SUBS_DIR = ROOT / ".tmp_probe" / "subs"
 
 try:
     import fugashi  # type: ignore
     TAGGER = fugashi.Tagger()
 except Exception:
     TAGGER = None
+
+try:
+    import pykakasi  # type: ignore
+    KAKASI = pykakasi.kakasi()
+except Exception:
+    KAKASI = None
+
+YT_DLP = next((str(p) for p in [ROOT / ".tmp_venv" / "bin" / "yt-dlp"] if p.exists()), "yt-dlp")
+
+POS_MAP = {
+    "名詞": "noun", "代名詞": "pronoun", "動詞": "verb", "形容詞": "adjective", "形状詞": "adjective",
+    "副詞": "adverb", "助詞": "particle", "助動詞": "auxiliary", "感動詞": "interjection",
+    "接続詞": "conjunction", "連体詞": "adjective", "接頭辞": "prefix", "接尾辞": "suffix",
+    "補助記号": "punct", "記号": "punct", "空白": "punct",
+}
+GRAMMAR_POS = {"particle", "auxiliary"}
+# Caption annotations that are not speech: [音楽], (笑), ♪, speaker tags like （あいり）.
+NOISE_RE = re.compile(r"\[[^\]]*\]|［[^］]*］|[（(][^）)]{0,12}[）)]|[♪♫♬]|^[^\s：:]{1,10}[：:]")
+CJK_RE = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff々ー]")
 
 # Minimal romaji for when Dictionary has no entry.
 _HIRA = {
@@ -56,9 +77,16 @@ _HIRA = {
 
 
 def load_dictionary() -> dict:
-    if not DICT_PATH.exists():
-        return {}
-    return json.loads(DICT_PATH.read_text(encoding="utf-8"))
+    bundle = json.loads(DICT_PATH.read_text(encoding="utf-8")) if DICT_PATH.exists() else {}
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import build_jmdict_bundle as jm  # type: ignore
+        if jm.CACHE.exists():
+            # Offline builds can afford kana spellings of kanji words (わたし, たべる).
+            return {**jm.build(10 ** 6, jm.CURATED, kana_fallback_keys=True), **bundle}
+    except Exception as exc:
+        print(f"  full JMdict unavailable ({exc}); using app bundle", file=sys.stderr)
+    return bundle
 
 
 def kata_to_hira(text: str) -> str:
@@ -66,7 +94,17 @@ def kata_to_hira(text: str) -> str:
 
 
 def rough_romaji(kana: str) -> str:
+    if KAKASI is not None:
+        return "".join(part["hepburn"] for part in KAKASI.convert(kata_to_hira(kana)))
     return "".join(_HIRA.get(c, "") for c in kata_to_hira(kana))
+
+
+def clean_caption(text: str, japanese: bool) -> str:
+    text = NOISE_RE.sub("", text).strip()
+    if japanese:
+        # Multi-line cues are joined with spaces; Japanese has none between words.
+        text = re.sub(r"(?<=[^\x00-\x7f])\s+(?=[^\x00-\x7f])", "", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def parse_vtt(path: Path) -> list[dict]:
@@ -106,65 +144,179 @@ def parse_vtt(path: Path) -> list[dict]:
     return cues
 
 
-def download_subs(video_id: str, dest: Path) -> tuple[Path | None, Path | None]:
+def _cached_subs(video_id: str, dest: Path) -> tuple[Path | None, Path | None]:
+    ja = next(iter(sorted(dest.glob(f"{video_id}.ja*.vtt"))), None)
+    en = next(iter(sorted(dest.glob(f"{video_id}.en*.vtt"))), None)
+    return ja, en
+
+
+def download_subs(video_id: str, dest: Path, attempts: int = 4, pause: float = 20) -> tuple[Path | None, Path | None]:
+    """Fetch manual ja/en tracks into dest, reusing earlier downloads.
+
+    YouTube rate-limits subtitle fetches per IP (HTTP 429 / bot check), so
+    failures back off and retry instead of being treated as "no captions".
+    """
     dest.mkdir(parents=True, exist_ok=True)
+    ja, en = _cached_subs(video_id, dest)
+    if ja and en:
+        return ja, en
     url = f"https://www.youtube.com/watch?v={video_id}"
     cmd = [
-        "yt-dlp", "--skip-download", "--write-subs", "--sub-langs", "ja*,en*",
-        "--no-write-auto-subs", "--convert-subs", "vtt",
+        YT_DLP, "--skip-download", "--write-subs", "--sub-langs", "ja.*,ja,en.*,en",
+        "--no-write-auto-subs", "--sub-format", "vtt", "--sleep-subtitles", "2",
         "-o", str(dest / f"{video_id}.%(ext)s"), url,
     ]
-    subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=120)
-    ja = next(iter(sorted(dest.glob(f"{video_id}*.ja*.vtt"))), None)
-    if ja is None:
-        ja = next(iter(sorted(dest.glob(f"{video_id}*.jp*.vtt"))), None)
-    en = next(iter(sorted(dest.glob(f"{video_id}*.en*.vtt"))), None)
+    env = {**os.environ, "PATH": f"{Path(YT_DLP).parent}{os.pathsep}{os.environ.get('PATH', '')}"}
+    for attempt in range(attempts):
+        result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=180, env=env)
+        ja, en = _cached_subs(video_id, dest)
+        if ja and en:
+            return ja, en
+        blocked = "429" in result.stderr or "not a bot" in result.stderr
+        if not blocked:
+            break
+        time.sleep(pause * (2 ** attempt))
     return ja, en
+
+
+def _feat(word, name: str) -> str | None:
+    value = getattr(word.feature, name, None)
+    return None if value in (None, "*", "") else str(value)
+
+
+def _morphemes(text: str) -> list[dict]:
+    out = []
+    for word in TAGGER(text):
+        surface = word.surface
+        if not surface.strip():
+            continue
+        pos1 = _feat(word, "pos1") or ""
+        pos2 = _feat(word, "pos2") or ""
+        out.append({
+            "surface": surface,
+            "pos1": "代名詞" if pos1 == "代名詞" else pos1,
+            "pos2": pos2,
+            "kana": _feat(word, "kana") or "",
+            "lemma": (_feat(word, "lemma") or surface).split("-")[0],
+            "base": _feat(word, "orthBase") or surface,
+            "base_kana": _feat(word, "kanaBase") or "",
+        })
+    return out
+
+
+def _joins(group: list[dict], m: dict) -> bool:
+    """Attach conjugation endings and suffixes to the word they belong to."""
+    head, last = group[0], group[-1]
+    inflecting = head["pos1"] in ("動詞", "形容詞")
+    if inflecting and m["pos1"] == "助動詞" and m["surface"] not in ("です", "だ", "でしょう", "だろう"):
+        return True
+    if inflecting and m["pos1"] == "助詞" and m["pos2"] == "接続助詞" and m["surface"] in ("て", "で"):
+        return True
+    if inflecting and m["pos1"] == "動詞" and m["pos2"] == "非自立可能" and last["surface"] in ("て", "で"):
+        return True
+    if head["pos1"] == "名詞" and m["pos1"] == "接尾辞":
+        return True
+    if head["surface"].isdigit() and m["pos1"] == "名詞" and m["pos2"] == "普通名詞" and len(m["surface"]) == 1:
+        return True
+    if head["pos1"] == "名詞" and head["pos2"] == "普通名詞" and m["pos1"] == "動詞" and m["base"] == "為る":
+        return True
+    return False
+
+
+PARTICLE_ROMAJI = {"は": "wa", "へ": "e", "を": "o"}
+
+
+def _reading_for(surface: str, kana: str, entry: dict | None) -> str | None:
+    if not any("\u4e00" <= c <= "\u9fff" or c == "々" for c in surface):
+        return None
+    if any(c.isdigit() for c in surface):
+        return None
+    hira = kata_to_hira(kana) if kana else ""
+    readings = (entry or {}).get("readings") or []
+    if hira and (hira in readings or not readings):
+        return hira
+    return readings[0] if readings else (hira or None)
 
 
 def tokenize(text: str, dictionary: dict) -> list[dict]:
     tokens: list[dict] = []
     if TAGGER is not None:
-        for word in TAGGER(text):
-            surface = str(word)
-            if not surface.strip():
-                continue
-            features = getattr(word, "feature", None)
-            lemma = getattr(features, "lemma", None) or surface
-            reading = getattr(features, "kana", None) or getattr(features, "pron", None) or ""
-            pos_raw = getattr(features, "pos1", None) or "word"
-            pos = "particle" if "助詞" in str(pos_raw) else (
-                "verb" if "動詞" in str(pos_raw) else (
-                    "noun" if "名詞" in str(pos_raw) else (
-                        "adjective" if "形容" in str(pos_raw) else "word"
-                    )
-                )
-            )
-            punct = all(ord(c) < 128 or c in "、。！？…「」『』（）" for c in surface) and not any(
-                "\u3040" <= c <= "\u30ff" or "\u4e00" <= c <= "\u9fff" for c in surface
-            )
-            entry = dictionary.get(surface) or dictionary.get(lemma)
-            reading_h = kata_to_hira(reading) if reading else (entry or {}).get("readings", [None])[0]
-            has_kanji = any("\u4e00" <= c <= "\u9fff" or c == "々" for c in surface)
+        groups: list[list[dict]] = []
+        for m in _morphemes(text):
+            if groups and _joins(groups[-1], m):
+                groups[-1].append(m)
+            else:
+                groups.append([m])
+        # Compound particles (における, について, として) are one grammar unit.
+        merged: list[list[dict]] = []
+        for group in groups:
+            prev = merged[-1] if merged else None
+            joined = "".join(m["surface"] for m in (prev or []) + group)
+            if prev and prev[0]["pos1"] == "助詞" and len(joined) <= 5 \
+                    and (dictionary.get(joined) or {}).get("pos") in ("particle", "expression"):
+                prev.extend(group)
+                prev[0] = {**prev[0], "base": joined, "lemma": joined}
+            else:
+                merged.append(group)
+        groups = merged
+        for group in groups:
+            head = group[0]
+            surface = "".join(m["surface"] for m in group)
+            kana = "".join(m["kana"] for m in group)
+            pos = POS_MAP.get(head["pos1"], "word")
+            punct = pos == "punct" or not CJK_RE.search(surface)
+            inflecting = head["pos1"] in ("動詞", "形容詞", "助動詞")
+            conjugated = inflecting and (len(group) > 1 or head["base"] != surface)
+            base = head["base"] if head["base"] != "為る" else "する"
+            base_kana = head["base_kana"]
+            suru_noun = head["pos1"] == "名詞" and len(group) > 1 and group[1]["base"] == "為る"
+            if suru_noun:
+                base, base_kana, pos = head["surface"] + "する", head["kana"] + "スル", "verb"
+                conjugated = True
+            has_kanji = lambda s: any("\u4e00" <= c <= "\u9fff" for c in s)  # noqa: E731
+            lemma = head["lemma"] if has_kanji(head["lemma"]) else None
+            if suru_noun:
+                keys = [base, head["surface"]]
+            elif inflecting:
+                # Conjugated surfaces collide with unrelated kana headwords (した → 下), and
+                # kana verbs need UniDic's lemma; without it (於く) the kana base (おく → 奥) lies.
+                kana_ok = not lemma or lemma == base
+                keys = [base if has_kanji(base) else None, lemma, base if kana_ok else None,
+                        head["surface"] if kana_ok else None]
+            elif has_kanji(surface):
+                keys = [surface, base, head["surface"]]
+            else:
+                # Kana spellings are ambiguous (なん → 難); UniDic's lemma (何) names the word.
+                keys = [lemma if len(group) == 1 else None, surface, base]
+            entry = next((dictionary[k] for k in keys if k and k in dictionary), None)
             defs = (entry or {}).get("definitions") or []
-            tappable = not punct and (bool(defs) or (not punct and len(surface) > 0))
-            # Unknown names/slang: keep tappable false so the clip still publishes.
-            if not defs and has_kanji is False and pos == "noun":
-                tappable = False
+            reading = _reading_for(surface, kana, dictionary.get(surface))
+            if pos == "particle" and surface in PARTICLE_ROMAJI:
+                romaji = PARTICLE_ROMAJI[surface]
+            elif punct:
+                romaji = ""
+            else:
+                romaji = rough_romaji(reading or kana or surface)
+            base_form = base if conjugated and base != surface else None
+            base_entry = dictionary.get(base) if base_form else None
+            base_reading = None
+            if base_form:
+                base_reading = _reading_for(base_form, base_kana, base_entry)
             tokens.append({
                 "surface": surface,
-                "reading": reading_h if has_kanji and reading_h else None,
-                "romaji": (entry or {}).get("romaji") or rough_romaji(reading_h or surface),
+                "reading": reading,
+                "romaji": romaji,
                 "start": 0,
                 "end": 0,
-                "pos": pos if not punct else "punct",
+                "pos": pos,
                 "definitions": defs[:3],
                 "ja_definitions": (entry or {}).get("ja_definitions") or [],
                 "jlpt": (entry or {}).get("jlpt"),
-                "tappable": tappable and not punct,
-                "baseForm": lemma if lemma != surface else None,
-                "baseReading": None,
-                "baseRomaji": None,
+                # Untranslated names stay plain text; grammar words get the app's local notes.
+                "tappable": not punct and (bool(defs) or pos in GRAMMAR_POS),
+                "baseForm": base_form,
+                "baseReading": base_reading,
+                "baseRomaji": rough_romaji(base_reading or base_form) if base_form else None,
             })
         return tokens
 
@@ -205,8 +357,72 @@ def match_english(ja_cue: dict, en_cues: list[dict]) -> str:
     return best
 
 
+def clean_cues(cues: list[dict], japanese: bool) -> list[dict]:
+    out = []
+    for cue in cues:
+        text = clean_caption(cue["text"], japanese)
+        if not text or (japanese and not CJK_RE.search(text)):
+            continue
+        if out and out[-1]["text"] == text and cue["start"] - out[-1]["end"] < 0.5:
+            out[-1]["end"] = cue["end"]
+            continue
+        out.append({**cue, "text": text})
+    return out
+
+
+CONTENT_POS = {"noun", "verb", "adjective", "adverb", "pronoun"}
+_STOP = {"to", "a", "an", "the", "be", "of", "or", "e.g.", "one's", "someone", "something", "etc."}
+
+
+def _gloss_stems(tokens: list[dict]) -> set[str]:
+    stems = set()
+    for t in tokens:
+        if t.get("pos") not in CONTENT_POS:
+            continue
+        for d in t.get("definitions") or []:
+            for w in re.findall(r"[a-z']+", d.lower()):
+                if w not in _STOP and len(w) >= 3:
+                    stems.add(w[:5])
+    return stems
+
+
+def _hit_rate(lines: list[dict], translations: list[str]) -> float:
+    hits = total = 0
+    for line, en in zip(lines, translations):
+        stems = _gloss_stems(line["tokens"])
+        if not stems or not en:
+            continue
+        total += 1
+        words = {w[:5] for w in re.findall(r"[a-z']+", en.lower()) if len(w) >= 3}
+        hits += bool(stems & words)
+    return hits / total if total else 0.0
+
+
+def alignment_ok(lines: list[dict]) -> bool:
+    """Reject windows whose creator English track is shifted against the Japanese.
+
+    Compares dictionary-gloss overlap for the paired lines against the same
+    lines paired one cue earlier/later; drift makes a shifted pairing win.
+    """
+    en = [ln["translation"] for ln in lines]
+    aligned = _hit_rate(lines, en)
+    forward = _hit_rate(lines[:-1], en[1:])
+    backward = _hit_rate(lines[1:], en[:-1])
+    return aligned >= 0.3 and aligned >= max(forward, backward)
+
+
+def spread(items: list, cap: int) -> list:
+    if cap <= 0 or len(items) <= cap:
+        return items
+    if cap == 1:
+        return [items[len(items) // 2]]
+    return [items[round(k * (len(items) - 1) / (cap - 1))] for k in range(cap)]
+
+
 def windows_from_cues(ja_cues: list[dict], en_cues: list[dict], dictionary: dict,
-                      min_dur: float = 30, max_dur: float = 90) -> list[dict]:
+                      min_dur: float = 20, max_dur: float = 60) -> list[dict]:
+    ja_cues = clean_cues(ja_cues, True)
+    en_cues = clean_cues(en_cues, False)
     if not ja_cues:
         return []
     out = []
@@ -223,19 +439,27 @@ def windows_from_cues(ja_cues: list[dict], en_cues: list[dict], dictionary: dict
                 j += 1
                 continue
             tokens = tokenize(cue["text"], dictionary)
-            # Relativize later; store absolute for now.
-            for t in tokens:
-                t["start"] = cue["start"]
-                t["end"] = cue["end"]
-            lines.append({
-                "tokens": tokens,
-                "translation": translation,
-                "start": cue["start"],
-                "end": cue["end"],
-                "timing": "line",
-            })
+            if lines and lines[-1]["translation"] == translation and cue["start"] - lines[-1]["end"] < 1.0:
+                # One English cue spanning several Japanese cues is one sentence.
+                prev = lines[-1]
+                prev["tokens"].extend(tokens)
+                prev["end"] = cue["end"]
+                for t in prev["tokens"]:
+                    t["start"], t["end"] = prev["start"], prev["end"]
+            else:
+                # Relativize later; store absolute for now.
+                for t in tokens:
+                    t["start"] = cue["start"]
+                    t["end"] = cue["end"]
+                lines.append({
+                    "tokens": tokens,
+                    "translation": translation,
+                    "start": cue["start"],
+                    "end": cue["end"],
+                    "timing": "line",
+                })
             j += 1
-            if (ja_cues[min(j, len(ja_cues) - 1)]["end"] - start) >= min_dur and j - i >= 4:
+            if (ja_cues[min(j, len(ja_cues) - 1)]["end"] - start) >= min_dur and len(lines) >= 4:
                 break
         if len(lines) >= 4:
             end = lines[-1]["end"]
@@ -258,10 +482,15 @@ def windows_from_cues(ja_cues: list[dict], en_cues: list[dict], dictionary: dict
                         "timing": "line",
                     })
                 tappable = sum(1 for ln in rel for t in ln["tokens"] if t.get("tappable"))
-                if tappable >= 4:
+                if tappable >= 4 and alignment_ok(rel):
                     out.append({"source_start_sec": round(start, 3), "duration_sec": round(dur, 3), "lines": rel})
         i = max(j, i + 1)
     return out
+
+
+DIFFICULTY = {"kids": "Beginner", "learning": "Beginner", "podcast": "Intermediate", "anime": "Intermediate",
+              "drama": "Advanced", "variety": "Advanced", "interview": "Intermediate", "gaming": "Advanced",
+              "vtuber": "Advanced"}
 
 
 def make_clip(video_id: str, title: str, channel: str, category: str, window: dict) -> dict:
@@ -299,29 +528,31 @@ def make_clip(video_id: str, title: str, channel: str, category: str, window: di
         "title": title or clip_id,
         "channel_name": channel or "Unknown",
         "category": category,
-        "difficulty": "Beginner",
+        "difficulty": DIFFICULTY.get(category, "Intermediate"),
         "source_start_sec": start,
         "duration_sec": dur,
         "lines": stamped,
         "published": False,  # ingest function flips this after validation
         "review_tier": "caption",
+        "video_orientation": "landscape",
         "channel_avatar_color": "#F97316",
         "thumbnail_gradient": ["#1C1917", "#44403C", "#78716C"],
     }
 
 
-def build_one(video_id: str, category: str, channel: str, title: str, dictionary: dict) -> list[dict]:
-    with tempfile.TemporaryDirectory() as tmp:
-        ja_path, en_path = download_subs(video_id, Path(tmp))
-        if not ja_path or not en_path:
-            print(f"  skip {video_id}: missing manual ja/en subs (ja={ja_path} en={en_path})")
-            return []
-        ja_cues = parse_vtt(ja_path)
-        en_cues = parse_vtt(en_path)
-        windows = windows_from_cues(ja_cues, en_cues, dictionary)
-        clips = [make_clip(video_id, title, channel, category, w) for w in windows]
-        print(f"  {video_id}: {len(clips)} windows from {len(ja_cues)} ja cues")
-        return clips
+def build_one(video_id: str, category: str, channel: str, title: str, dictionary: dict,
+              max_per_video: int = 0, subs_dir: Path = SUBS_DIR) -> list[dict]:
+    ja_path, en_path = download_subs(video_id, subs_dir)
+    if not ja_path or not en_path:
+        print(f"  skip {video_id}: missing manual ja/en subs (ja={ja_path} en={en_path})")
+        return []
+    ja_cues = parse_vtt(ja_path)
+    en_cues = parse_vtt(en_path)
+    windows = windows_from_cues(ja_cues, en_cues, dictionary)
+    chosen = spread(windows, max_per_video)
+    clips = [make_clip(video_id, title, channel, category, w) for w in chosen]
+    print(f"  {video_id}: {len(clips)}/{len(windows)} windows from {len(ja_cues)} ja cues")
+    return clips
 
 
 def main() -> int:
@@ -331,6 +562,11 @@ def main() -> int:
     parser.add_argument("--channel", default="")
     parser.add_argument("--title", default="")
     parser.add_argument("--from-probe", type=Path)
+    parser.add_argument("--jobs", type=Path, help="JSON list of {video_id, category, channel, title}")
+    parser.add_argument("--max-per-video", type=int, default=8)
+    parser.add_argument("--out", type=Path, default=OUT_DIR / "caption_clips.json")
+    parser.add_argument("--subs-dir", type=Path, default=SUBS_DIR)
+    parser.add_argument("--delay", type=float, default=12, help="seconds between uncached downloads")
     args = parser.parse_args()
 
     dictionary = load_dictionary()
@@ -346,19 +582,31 @@ def main() -> int:
                 "channel": row.get("channel") or args.channel,
                 "title": row.get("title") or args.title,
             })
+    if args.jobs and args.jobs.exists():
+        for row in json.loads(args.jobs.read_text(encoding="utf-8")):
+            jobs.append({
+                "video_id": row["video_id"],
+                "category": row.get("category") or args.category,
+                "channel": row.get("channel") or args.channel,
+                "title": row.get("title") or args.title,
+            })
     for vid in args.video_id:
         jobs.append({"video_id": vid, "category": args.category, "channel": args.channel, "title": args.title})
 
     if not jobs:
-        print("No videos. Pass --video-id or --from-probe.", file=sys.stderr)
+        print("No videos. Pass --video-id, --jobs or --from-probe.", file=sys.stderr)
         return 1
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
     all_clips = []
-    for job in jobs:
-        all_clips.extend(build_one(job["video_id"], job["category"], job["channel"], job["title"], dictionary))
+    for n, job in enumerate(jobs):
+        cached = all(_cached_subs(job["video_id"], args.subs_dir))
+        if n and not cached:
+            time.sleep(args.delay)
+        all_clips.extend(build_one(job["video_id"], job["category"], job["channel"], job["title"], dictionary,
+                                   args.max_per_video, args.subs_dir))
 
-    out = OUT_DIR / "caption_clips.json"
+    out = args.out
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(all_clips, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote {len(all_clips)} clips → {out}")
     return 0

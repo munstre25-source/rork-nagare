@@ -5,7 +5,7 @@ type Row = { id: string; video_id: string; title: string; channel_name: string; 
 type Channel = { title: string; handle?: string; live: number; verified: number; queued_videos: number; queued_windows: number; discovery_status?: string; checked_at?: string };
 type Summary = {
  current_failed: number; current_held: number; current_excluded: number; current_queued_retries: number;
- live: number; drafts: number; policy_passed_live: number; needs_policy_review: number;
+ live: number; drafts: number; policy_passed_live: number; needs_policy_review: number; caption_live?: number;
  queued_videos: number; queued_windows: number; processing: number; stalled: number;
  published_in_range: number; unpublished_in_range: number; rejected_in_range: number; failed_in_range: number; held_in_range: number; reviewed_in_range: number; legacy_rejections_in_range: number;
  history_started_at?: string; last_attempt_at?: string;
@@ -99,7 +99,7 @@ export function CatalogPipeline({ from, to, refreshKey }: { from: string; to: st
   </section>
   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
    {metric("Live lessons",s?.live,"Current published inventory","live")}
-   {metric("Passed current policy · live",s?.policy_passed_live,"Audio, timing, English and source visual check","live","policy_passed")}
+   {metric("Passed current policy · live",s?.policy_passed_live,s?.caption_live ? `AI review, plus ${s.caption_live} from creator-uploaded captions` : "Audio, timing, English and source visual check","live","policy_passed")}
    {metric("Queued source videos",s?.queued_videos,`${s?.queued_windows ?? "—"} candidate windows`,"queued")}
    {metric("Processing now",s?.processing,`${s?.stalled ?? "—"} stalled over 10 minutes`,"attempts","processing")}
    {metric("Successful publications · range",s?.published_in_range,"Actual publish transitions; republishing is another event","publications","published")}

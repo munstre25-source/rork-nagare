@@ -24,6 +24,23 @@ Max 50 clips per request. The function re-stamps `translationReview` with
 upserts into `clips`. Publication requires the channel to be flagged
 `catalog_sources.caption_tier_ok = true`.
 
+## Run end to end
+
+```
+# 1. Which videos have creator ja+en tracks (YouTube Data API: videos.list caption flag,
+#    then captions.list trackKind=standard). Costs ~1 unit / 50 videos + 50 units / video.
+# 2. Build clips (yt-dlp subtitles, fugashi/UniDic, JMdict, alignment check):
+python3 Tools/build_caption_clips.py --jobs jobs.json --max-per-video 8
+# 3. Publish (reads SUPABASE_URL, SUPABASE_ANON_KEY, ADMIN_TOKEN from the environment):
+python3 Tools/ingest_caption_clips.py ios-nagare/reports/caption-clips/caption_clips.json
+```
+
+`jobs.json` is a list of `{video_id, category, channel, title}`; `channel` must equal
+the YouTube channel title stored in `catalog_sources.title`.
+
+YouTube rate-limits subtitle downloads per IP (HTTP 429 / "confirm you're not a bot");
+the builder caches tracks under `.tmp_probe/subs`, waits between videos and backs off.
+
 ## Mark a channel eligible
 
 ```sql
