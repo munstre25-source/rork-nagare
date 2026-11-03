@@ -1137,6 +1137,7 @@ final class AppModel {
         let toastKey = "\(day)|\(key)"
         guard !cameBackShownKeys.contains(toastKey) else { return }
         cameBackShownKeys.insert(toastKey)
+        noteWildCatch(surface: token.surface, day: day)
         let gloss = fetchWord(key: key)?.gloss ?? token.definitions.first ?? ""
         cameBackToast = CameBackPayload(surface: token.surface, gloss: gloss, wordKey: key, clipId: clipId)
         track("word_came_back", props: ["word": token.surface])
@@ -1144,6 +1145,98 @@ final class AppModel {
 
     func dismissCameBackToast() {
         cameBackToast = nil
+    }
+
+    /// Reset-or-bump the daily "caught in the wild" counter when a saved word reappears.
+    private func noteWildCatch(surface: String, day: String) {
+        if profile.wildCatchDayKey != day {
+            profile.wildCatchDayKey = day
+            profile.wildCatchCountToday = 0
+            profile.wildCatchSurfacesData = nil
+        }
+        var surfaces = (try? JSONDecoder().decode([String].self, from: profile.wildCatchSurfacesData ?? Data())) ?? []
+        guard !surfaces.contains(surface) else { return }
+        surfaces.insert(surface, at: 0)
+        if surfaces.count > 40 { surfaces = Array(surfaces.prefix(40)) }
+        profile.wildCatchCountToday = surfaces.count
+        profile.wildCatchSurfacesData = try? JSONEncoder().encode(surfaces)
+        save()
+    }
+
+    var wildCatchesToday: [String] {
+        let day = Self.dayKey(Date())
+        guard profile.wildCatchDayKey == day else { return [] }
+        return (try? JSONDecoder().decode([String].self, from: profile.wildCatchSurfacesData ?? Data())) ?? []
+    }
+
+    var wildCatchCountToday: Int {
+        let day = Self.dayKey(Date())
+        return profile.wildCatchDayKey == day ? profile.wildCatchCountToday : 0
+    }
+
+    var immersionHours: Double { totalWatchSeconds / 3600.0 }
+
+    var immersionLevel: ImmersionHoursLevel? {
+        ImmersionHoursLevel.current(hours: immersionHours)
+    }
+
+    var nextImmersionLevel: ImmersionHoursLevel? {
+        ImmersionHoursLevel.next(after: immersionHours)
+    }
+
+    /// Words looked up / saved today (distinct).
+    var wordsCaughtToday: Int {
+        let day = Self.dayKey(Date())
+        let context = container.mainContext
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        return words.filter { Self.dayKey($0.addedAt) == day }.count
+    }
+
+    func noteClipComprehension(_ clip: Clip) {
+        let result = ClipComprehension.measure(clip: clip) { wordState(for: $0) }
+        profile.lastClipComprehension = result.percent
+        ensureWeeklyStatsBucket()
+        profile.weeklyComprehensionSum += result.percent
+        profile.weeklyComprehensionSamples += 1
+        save()
+        track("clip_comprehension", props: ["clip": clip.id, "percent": String(result.percent)])
+    }
+
+    var weeklyComprehensionAverage: Int? {
+        ensureWeeklyStatsBucket()
+        guard profile.weeklyComprehensionSamples > 0 else { return nil }
+        return profile.weeklyComprehensionSum / max(1, profile.weeklyComprehensionSamples)
+    }
+
+    func seriesMastery(limit: Int = 8) -> [SeriesMastery] {
+        let context = container.mainContext
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        var seen: [String: Set<String>] = [:]
+        var known: [String: Set<String>] = [:]
+        for word in words {
+            guard let channel = clip(id: word.contextClipId)?.channelName, !channel.isEmpty else { continue }
+            seen[channel, default: []].insert(word.key)
+            if word.state == .known || word.state == .easy {
+                known[channel, default: []].insert(word.key)
+            }
+        }
+        return seen.map { channel, keys in
+            SeriesMastery(
+                channelName: channel,
+                knownUnique: known[channel]?.count ?? 0,
+                seenUnique: keys.count
+            )
+        }
+        .sorted { $0.seenUnique > $1.seenUnique }
+        .prefix(limit)
+        .map { $0 }
+    }
+
+    func kanjiWallProgress() -> KanjiWallProgress {
+        let context = container.mainContext
+        let words = (try? context.fetch(FetchDescriptor<SavedWord>())) ?? []
+        let known = words.filter { $0.state == .known || $0.state == .easy }.map(\.surface)
+        return KanjiWallProgress.from(knownSurfaces: known)
     }
 
     // MARK: First-session win
@@ -1240,6 +1333,8 @@ final class AppModel {
         profile.weeklyStatsWeekKey = week
         profile.weeklyReviewCount = 0
         profile.weeklyWordsSaved = 0
+        profile.weeklyComprehensionSum = 0
+        profile.weeklyComprehensionSamples = 0
         save()
     }
 
@@ -1485,7 +1580,12 @@ final class AppModel {
         let changed = ids != profile.finishedClipIds
         if changed { profile.finishedClipIds = ids }
         if let clip = clip(id: id) {
-            track("clip_completed", props: ["clip": id, "duration_seconds": String(Int(clip.durationSec))])
+            noteClipComprehension(clip)
+            track("clip_completed", props: [
+                "clip": id,
+                "duration_seconds": String(Int(clip.durationSec)),
+                "understood_percent": String(profile.lastClipComprehension),
+            ])
             rememberTaste("watch", clip: clip)
         } else if changed {
             save()
@@ -1634,7 +1734,7 @@ final class AppModel {
     func setLearningMode(_ mode: LearningMode) {
         let display = mode.display
         profile.subtitles = display.english == .hidden ? .japanese : .both
-        profile.showFurigana = display.furigana
+        profile.furiganaMode = display.furigana ? .on : .off
         profile.showRomaji = display.romaji
         profile.englishVisibility = display.english.rawValue
         profile.tapWordsEnabled = display.tapWords
@@ -1660,7 +1760,17 @@ final class AppModel {
     }
 
     func setShowFurigana(_ enabled: Bool) {
-        profile.showFurigana = enabled
+        profile.furiganaMode = enabled ? .on : .off
+        save()
+    }
+
+    func setFuriganaMode(_ mode: FuriganaMode) {
+        profile.furiganaMode = mode
+        save()
+    }
+
+    func cycleFuriganaMode() {
+        profile.furiganaMode = profile.furiganaMode.next
         save()
     }
 

@@ -175,31 +175,74 @@ struct ProfileView: View {
     }
 
     private var hero: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(known)")
-                    .font(.system(size: 60, weight: .bold, design: .rounded))
-                    .contentTransition(.numericText(value: Double(known)))
-                    .animation(.snappy, value: known)
-                Text("Words you know").font(.subheadline).foregroundStyle(.secondary)
-                Text("Marked Known by you or through spaced reviews.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(known)")
+                        .font(.system(size: 60, weight: .bold, design: .rounded))
+                        .contentTransition(.numericText(value: Double(known)))
+                        .animation(.snappy, value: known)
+                    Text("Words you know").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Marked Known by you or through spaced reviews.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("Feed level")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Text(app.profile.readingLevel.difficulty.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 6) {
-                Text("Feed level")
-                    .font(.caption2).foregroundStyle(.secondary)
-                Text(app.profile.readingLevel.difficulty.rawValue)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+
+            Divider()
+
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(app.immersionLevel?.title ?? "Dawn")
+                        .font(.headline.weight(.bold))
+                    Text(String(format: "%.1f hours of real Japanese", app.immersionHours))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if let next = app.nextImmersionLevel {
+                    Text(String(format: "%.1fh to %@", max(0, Double(next.hours) - app.immersionHours), next.title))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.studyAccent)
+                }
+            }
+
+            if !app.seriesMastery().isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Series mastery")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    ForEach(app.seriesMastery(limit: 4)) { series in
+                        HStack {
+                            Text(series.channelName)
+                                .font(.caption.weight(.semibold))
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text("\(series.percent)%")
+                                .font(.caption.weight(.bold))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.studyAccent)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(series.channelName), \(series.percent) percent of seen words known")
+                    }
+                }
             }
         }
         .padding(Spacing.l)
         .cardStyle()
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 
     private var streakWeek: some View {

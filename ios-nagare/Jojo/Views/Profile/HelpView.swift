@@ -107,6 +107,8 @@ struct HelpView: View {
          "No. Your progress lives on this phone. If you reinstall, Restore Purchases in Profile brings back your subscription."),
         ("How do I cancel?",
          "Profile → Manage Subscription, or iPhone Settings → your name → Subscriptions."),
+        ("Where do word meanings come from?",
+         "Jojo ships an offline Japanese–English dictionary based on JMdict (CC BY-SA). Clip tokens may also carry meanings from the lesson itself. Live lookups fill gaps when you're online."),
     ]
 
     private var faq: some View {

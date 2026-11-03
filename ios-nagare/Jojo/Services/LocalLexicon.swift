@@ -67,6 +67,22 @@ nonisolated enum JapaneseText {
             .replacingOccurrences(of: "ū", with: "uu")
     }
 
+    /// Hiragana or katakana (including prolonged sound mark).
+    static func isKana(_ scalar: Unicode.Scalar) -> Bool {
+        let v = scalar.value
+        return (0x3041...0x3096).contains(v)
+            || (0x30A1...0x30FA).contains(v)
+            || v == 0x30FC
+            || v == 0x309D || v == 0x309E
+            || v == 0x30FD || v == 0x30FE
+    }
+
+    /// CJK unified ideograph or iteration mark 々.
+    static func isKanji(_ scalar: Unicode.Scalar) -> Bool {
+        let v = scalar.value
+        return (0x4E00...0x9FFF).contains(v) || v == 0x3005
+    }
+
     /// Stable FNV-1a hash of a sentence with whitespace and punctuation stripped.
     static func sentenceHash(_ sentence: String) -> String {
         let normalized = sentence.unicodeScalars.filter {
@@ -81,5 +97,70 @@ nonisolated enum JapaneseText {
             }
         }
         return String(hash, radix: 16)
+    }
+}
+
+/// One visual piece of a Japanese word: kana alone, or kanji with optional furigana above.
+nonisolated struct RubySegment: Hashable, Sendable {
+    var text: String
+    var reading: String?
+
+    /// Strip matching leading/trailing kana from `surface`/`reading` so furigana sits
+    /// only over the kanji core (動いて → [動:うご][いて]). Ambiguous pairs fall back
+    /// to a single whole-word segment.
+    static func split(surface: String, reading: String?) -> [RubySegment] {
+        guard let raw = reading, !raw.isEmpty else {
+            return [RubySegment(text: surface, reading: nil)]
+        }
+        let hasKanji = surface.unicodeScalars.contains(where: JapaneseText.isKanji)
+        guard hasKanji else {
+            return [RubySegment(text: surface, reading: nil)]
+        }
+
+        var chars = Array(surface)
+        var kana = Array(JapaneseText.hiragana(raw))
+        var leading: [Character] = []
+        var trailing: [Character] = []
+
+        while let first = chars.first,
+              let scalar = first.unicodeScalars.first,
+              JapaneseText.isKana(scalar),
+              let kFirst = kana.first,
+              JapaneseText.hiragana(String(first)) == String(kFirst) {
+            leading.append(first)
+            chars.removeFirst()
+            kana.removeFirst()
+        }
+
+        while let last = chars.last,
+              let scalar = last.unicodeScalars.first,
+              JapaneseText.isKana(scalar),
+              let kLast = kana.last,
+              JapaneseText.hiragana(String(last)) == String(kLast) {
+            trailing.insert(last, at: 0)
+            chars.removeLast()
+            kana.removeLast()
+        }
+
+        let core = String(chars)
+        let coreReading = String(kana)
+        // Core must still contain kanji; otherwise the reading didn't match and we fall back.
+        guard !core.isEmpty, core.unicodeScalars.contains(where: JapaneseText.isKanji) else {
+            return [RubySegment(text: surface, reading: JapaneseText.hiragana(raw))]
+        }
+        // Empty core reading with leftover kanji is ambiguous (e.g. mismatched data).
+        guard !coreReading.isEmpty else {
+            return [RubySegment(text: surface, reading: JapaneseText.hiragana(raw))]
+        }
+
+        var segments: [RubySegment] = []
+        if !leading.isEmpty {
+            segments.append(RubySegment(text: String(leading), reading: nil))
+        }
+        segments.append(RubySegment(text: core, reading: coreReading))
+        if !trailing.isEmpty {
+            segments.append(RubySegment(text: String(trailing), reading: nil))
+        }
+        return segments
     }
 }

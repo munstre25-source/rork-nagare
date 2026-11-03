@@ -55,6 +55,8 @@ final class WordLookupController {
     @ObservationIgnored var offlineOnly = false
     /// When true (sneak peek), show the popup without saving words to Vocab.
     @ObservationIgnored var previewOnly = false
+    /// Particles / auxiliaries open without auto-saving; the card offers an explicit Save.
+    private(set) var deferredSave = false
 
     @ObservationIgnored private var lookupTask: Task<Void, Never>?
     @ObservationIgnored private var contextTask: Task<Void, Never>?
@@ -82,17 +84,26 @@ final class WordLookupController {
         }
         let instant = app.localWordExplanation(for: token, sentence: newSelection.sentence) ?? .fallback(for: token)
         explanation = instant
+        let grammarOnly = GrammarFormNotes.isGrammarOnly(token)
+        deferredSave = false
         if previewOnly {
             occurrenceCount = 1
+        } else if grammarOnly, app.wordState(for: token) == nil {
+            // Preview first — learner taps Save if they want it in Vocab.
+            deferredSave = true
+            occurrenceCount = 0
         } else {
             occurrenceCount = app.recordTap(token: token, explanation: instant, clip: clip, lineIndex: lineIndex)
         }
         tapPulse += 1
-        if !previewOnly {
+        if !previewOnly && !deferredSave {
             track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
         }
 
-        loadContextIfNeeded(app: app)
+        // Context / Examples stay offline until the learner opens that tab (saves AI credits).
+        if context == nil {
+            context = Self.offlineContext(for: newSelection, app: app)
+        }
         guard instant.source == .fallback, !offlineOnly, !previewOnly else { return }
         isLoadingMeaning = true
         let service = app.explainService
@@ -111,15 +122,35 @@ final class WordLookupController {
         }
     }
 
+    /// Explicit Save for particles / auxiliaries that opened in preview.
+    func saveDeferred(app: AppModel) {
+        guard deferredSave, let selection, let explanation else { return }
+        occurrenceCount = app.recordTap(
+            token: selection.token,
+            explanation: explanation,
+            clip: selection.clip,
+            lineIndex: selection.lineIndex
+        )
+        deferredSave = false
+        tapPulse += 1
+        track("word_tapped", props: ["word": selection.token.surface, "count": String(occurrenceCount), "deferred": "1"])
+    }
+
     func loadContextIfNeeded(app: AppModel) {
-        guard let selection, context == nil, !isLoadingContext else { return }
-        let fallback = Self.offlineContext(for: selection, app: app)
-        context = fallback
-        if !previewOnly {
-            app.rememberContext(fallback.contextualExplanation, token: selection.token, preferExisting: true)
+        guard let selection, !isLoadingContext else { return }
+        if context == nil {
+            let fallback = Self.offlineContext(for: selection, app: app)
+            context = fallback
+            if !previewOnly && !deferredSave {
+                app.rememberContext(fallback.contextualExplanation, token: selection.token, preferExisting: true)
+            }
         }
+        // Only spend a network call when the Examples tab is active.
+        guard tab == .examples else { return }
+        guard context?.isFallback != false else { return }
         if offlineOnly || previewOnly { return }
         isLoadingContext = true
+        let fallback = context ?? Self.offlineContext(for: selection, app: app)
         let service = app.explainService
         let userId = app.purchases.appUserId
         contextTask = Task { [weak self, weak app] in

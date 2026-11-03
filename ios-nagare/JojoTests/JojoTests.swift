@@ -390,6 +390,32 @@ struct JojoTests {
         #expect(!meaning.jaDefinitions.isEmpty)
     }
 
+    @Test func rubySplitStripsOkurigana() {
+        let ugoite = RubySegment.split(surface: "動いて", reading: "うごいて")
+        #expect(ugoite.map(\.text) == ["動", "いて"])
+        #expect(ugoite.map(\.reading) == ["うご", nil])
+
+        let jouge = RubySegment.split(surface: "上下左右", reading: "じょうげさゆう")
+        #expect(jouge.count == 1)
+        #expect(jouge[0].text == "上下左右")
+        #expect(jouge[0].reading == "じょうげさゆう")
+
+        let tabemono = RubySegment.split(surface: "食べ物", reading: "たべもの")
+        #expect(tabemono.count == 1)
+        #expect(tabemono[0].text == "食べ物")
+        #expect(tabemono[0].reading == "たべもの")
+
+        let ocha = RubySegment.split(surface: "お茶", reading: "おちゃ")
+        #expect(ocha.map(\.text) == ["お", "茶"])
+        #expect(ocha.map(\.reading) == [nil, "ちゃ"])
+
+        let particle = RubySegment.split(surface: "は", reading: "わ")
+        #expect(particle == [RubySegment(text: "は", reading: nil)])
+
+        let noReading = RubySegment.split(surface: "東京", reading: nil)
+        #expect(noReading == [RubySegment(text: "東京", reading: nil)])
+    }
+
     @Test func unknownOfflineContextDoesNotInventAWordMeaning() throws {
         let app = try makeApp()
         let clip = try #require(app.clips.first)

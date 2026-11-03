@@ -47,59 +47,71 @@ struct TapPopupCard: View {
         }
     }
 
-    /// Feed card: word → reading → one gloss first. Paint and tabs stay secondary.
+    /// Feed card: ~200pt — word, one gloss, grammar note. Tabs open on demand.
     private func compactBody(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
         let gloss = explanation.displayDefinitions(mode: app.profile.dictionary).first
             ?? explanation.definitions.first
             ?? explanation.jaDefinitions.first
             ?? ""
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    // Says exactly what the tap did: the word is a flashcard now, no save step.
-                    Label(
-                        lookup.previewOnly
-                            ? "Preview · not saved"
-                            : lookup.occurrenceCount <= 1
-                                ? "New · saved to Vocab"
-                                : "In your Vocab · seen \(lookup.occurrenceCount)×",
-                        systemImage: lookup.occurrenceCount <= 1 ? "sparkles" : "bookmark.fill"
-                    )
-                    .font(.caption2.weight(.bold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(LearningInk.selected)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .accessibilityLabel(
-                        lookup.occurrenceCount <= 1
-                            ? "New word, saved to Vocab as a flashcard"
-                            : "Already in your Vocab, seen \(lookup.occurrenceCount) times"
-                    )
-                    Text(explanation.word)
-                        .font(JojoFont.jp(30, bold: true, relativeTo: .title))
-                        .foregroundStyle(ink)
+        let grammarLine = GrammarFormNotes.line(for: selection.token)
+        let statusLabel: String = {
+            if lookup.previewOnly || lookup.deferredSave { return "Preview · not saved" }
+            if lookup.occurrenceCount <= 1 { return "New · saved to Vocab" }
+            return "In your Vocab · seen \(lookup.occurrenceCount)×"
+        }()
+        let statusA11y: String = {
+            if lookup.previewOnly || lookup.deferredSave { return "Preview, not saved to Vocab" }
+            if lookup.occurrenceCount <= 1 { return "New word, saved to Vocab as a flashcard" }
+            return "Already in your Vocab, seen \(lookup.occurrenceCount) times"
+        }()
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(statusLabel)
+                        .font(.caption2.weight(.bold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(LearningInk.selected)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.55)
-                        .textGlow(LearningInk.selected, level: app.profile.glow)
-                    if !explanation.readings.isEmpty {
-                        Text(explanation.readings.joined(separator: ", "))
-                            .font(JojoFont.jp(14, relativeTo: .subheadline))
-                            .foregroundStyle(inkSoft)
+                        .minimumScaleFactor(0.8)
+                        .accessibilityLabel(statusA11y)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(explanation.word)
+                            .font(JojoFont.jp(26, bold: true, relativeTo: .title2))
+                            .foregroundStyle(ink)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.55)
+                            .textGlow(LearningInk.selected, level: app.profile.glow)
+                        if app.profile.furiganaMode.showsAny, !explanation.readings.isEmpty {
+                            Text(explanation.readings.joined(separator: ", "))
+                                .font(JojoFont.jp(13, relativeTo: .caption))
+                                .foregroundStyle(inkSoft)
+                                .lineLimit(1)
+                        }
+                        if app.profile.showRomaji, !explanation.romaji.isEmpty {
+                            Text(explanation.romaji)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(inkSoft.opacity(0.85))
+                                .lineLimit(1)
+                        }
                     }
-                    if app.profile.showRomaji, !explanation.romaji.isEmpty {
-                        Text(explanation.romaji)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(inkSoft.opacity(0.85))
-                            .lineLimit(1)
+
+                    if let grammarLine {
+                        Text(grammarLine)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(inkSoft)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer(minLength: 0)
-                VStack(spacing: 8) {
-                    closeButton(size: 28)
-                    OccurrenceBadge(count: lookup.occurrenceCount, size: 28)
-                        .scaleEffect(badgeBump ? 1.2 : 1)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                HStack(spacing: 2) {
+                    if !lookup.deferredSave && !lookup.previewOnly {
+                        OccurrenceBadge(count: max(lookup.occurrenceCount, 1), size: 32)
+                            .scaleEffect(badgeBump ? 1.15 : 1)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                    }
                     Button {
                         SpeechService.shared.speak(selection.token.surface)
                         app.noteFirstSessionHeard()
@@ -107,85 +119,99 @@ struct TapPopupCard: View {
                         Image(systemName: "speaker.wave.2.fill")
                             .font(.body.weight(.semibold))
                             .foregroundStyle(inkSoft)
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Play pronunciation")
                     .coachTarget(.popupSpeaker, active: GuidanceCenter.shared.tourStep == .practice)
+                    closeButton(size: 44)
                 }
             }
 
             if !gloss.isEmpty {
-                HStack(alignment: .top, spacing: 8) {
-                    Text("1")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(onDark ? Color.black : Color.white)
-                        .frame(width: 20, height: 20)
-                        .background(Circle().fill(LearningInk.selected))
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            if !explanation.pos.isEmpty {
-                                Text(explanation.pos)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(inkSoft)
-                            }
-                            if let level = explanation.jlpt, !level.isEmpty {
-                                Text(level.uppercased())
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(onDark ? Color(hex: "#4ADE80") : Color(hex: "#047857"))
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 3)
-                                    .background(Color.green.opacity(onDark ? 0.14 : 0.1), in: Capsule())
-                                    .accessibilityLabel("JLPT level \(level.uppercased())")
-                            }
-                        }
-                        Text(gloss)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(3)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    if !explanation.pos.isEmpty {
+                        Text(explanation.pos)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(inkSoft)
                     }
+                    if let level = explanation.jlpt, !level.isEmpty {
+                        Text(level.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(onDark ? Color(hex: "#4ADE80") : Color(hex: "#047857"))
+                    }
+                    Text(gloss)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(ink)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
                 missingDefinitionStatus
             }
 
-            // The middle scrolls inside its cap; the mastery chips below never leave the card.
-            let middle = VStack(alignment: .leading, spacing: 10) {
-                pitchChip(for: selection.token)
-                conjugationStrip(for: selection.token)
-
-                quietTabRow
-                switch lookup.tab {
-                case .dictionary:
-                    compactDictionaryTab(explanation, primaryGloss: gloss)
-                case .flashcard:
-                    flashcardTab(selection: selection, explanation: explanation)
-                        .transition(.opacity)
-                case .examples:
-                    examplesTab
-                        .transition(.opacity)
+            if lookup.deferredSave {
+                Button {
+                    Haptics.selection()
+                    lookup.saveDeferred(app: app)
+                } label: {
+                    Label("Save to Vocab", systemImage: "bookmark")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .background(LearningInk.selected.opacity(0.14), in: Capsule())
                 }
+                .buttonStyle(.plain)
             }
 
-            if let cap = scrollableMiddleHeight {
-                ScrollView(.vertical, showsIndicators: false) {
+            // Extra detail only when the learner asks — keeps the first view tiny.
+            if lookup.tab != .dictionary || showAllDefinitions {
+                let middle = VStack(alignment: .leading, spacing: 8) {
+                    pitchChip(for: selection.token)
+                    conjugationStrip(for: selection.token)
+                    switch lookup.tab {
+                    case .dictionary:
+                        compactDictionaryTab(explanation, primaryGloss: gloss)
+                    case .flashcard:
+                        flashcardTab(selection: selection, explanation: explanation)
+                        paintRow(selection: selection)
+                    case .examples:
+                        examplesTab
+                    }
+                }
+                if let cap = scrollableMiddleHeight {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        middle
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { middleNaturalHeight = $0 }
+                    }
+                    .frame(height: middleNaturalHeight.map { min($0, cap) } ?? min(120, cap))
+                } else {
                     middle
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { middleNaturalHeight = $0 }
                 }
-                .frame(height: middleNaturalHeight.map { min($0, cap) })
-            } else {
-                middle
             }
 
-            // Keep the first tap focused on meaning. Study grading and sharing live in
-            // the Flashcard tab, where the learner is already working with the saved word.
-            if lookup.tab == .flashcard {
-                paintRow(selection: selection)
-                if let line = selection.clip.lines[safe: selection.lineIndex] {
-                    UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
+            HStack(spacing: 4) {
+                ForEach(PopupTab.allCases, id: \.self) { tab in
+                    Button {
+                        Haptics.selection()
+                        withAnimation(.snappy) { lookup.tab = tab }
+                        if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                        if tab == .dictionary { showAllDefinitions = true }
+                    } label: {
+                        Image(systemName: tab.symbol)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(lookup.tab == tab && (tab != .dictionary || showAllDefinitions) ? LearningInk.selected : inkSoft.opacity(0.7))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(tab.title)
+                    .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
                 }
+                Spacer(minLength: 0)
+                pageDots
             }
-            pageDots
         }
     }
 
@@ -302,7 +328,7 @@ struct TapPopupCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                         .textGlow(LearningInk.selected, level: app.profile.glow)
-                    if app.profile.showFurigana, !explanation.readings.isEmpty {
+                    if app.profile.furiganaMode.showsAny, !explanation.readings.isEmpty {
                         Text(explanation.readings.joined(separator: ", "))
                             .font(JojoFont.jp(15, relativeTo: .subheadline))
                             .foregroundStyle(LearningInk.dictionaryReading)
@@ -314,16 +340,27 @@ struct TapPopupCard: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(LearningInk.dictionaryReading)
                 }
-                if let base = selection.token.baseForm {
+                if let note = GrammarFormNotes.line(for: selection.token) {
+                    Text(note)
+                        .font(JojoFont.jp(13, relativeTo: .footnote))
+                        .foregroundStyle(inkSoft)
+                } else if let base = selection.token.baseForm {
                     Text("from \(base)")
                         .font(JojoFont.jp(13, relativeTo: .footnote))
                         .foregroundStyle(inkSoft)
                 }
-                Label("Saved to vocab", systemImage: "bookmark.fill")
+                Label(
+                    lookup.previewOnly || lookup.deferredSave ? "Preview · not saved" : "Saved to vocab",
+                    systemImage: lookup.previewOnly || lookup.deferredSave ? "eye" : "bookmark.fill"
+                )
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color.jojoOrange)
                     .padding(.top, 2)
-                    .accessibilityLabel("Saved to Vocab as a flashcard")
+                    .accessibilityLabel(
+                        lookup.previewOnly || lookup.deferredSave
+                            ? "Preview, not saved to Vocab"
+                            : "Saved to Vocab as a flashcard"
+                    )
                 if let line = selection.clip.lines[safe: selection.lineIndex] {
                     UnderstoodLineShareButton(line: line, clip: selection.clip, surface: selection.token.surface, compact: true)
                         .padding(.top, 4)

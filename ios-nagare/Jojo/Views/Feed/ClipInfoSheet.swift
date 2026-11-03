@@ -66,6 +66,14 @@ struct ClipInfoSheet: View {
                     LabeledContent("Difficulty", value: clip.difficulty)
                     LabeledContent("Length", value: formatClock(clip.durationSec))
                     LabeledContent("Lines", value: "\(clip.lines.count)")
+                    if let mastery = app.seriesMastery().first(where: { $0.channelName == clip.channelName }),
+                       mastery.seenUnique >= 5 {
+                        LabeledContent("Your coverage", value: "\(mastery.percent)% of words from this channel")
+                    }
+                    let understood = ClipComprehension.measure(clip: clip) { app.wordState(for: $0) }
+                    if understood.total > 0 {
+                        LabeledContent("Understood now", value: "\(understood.percent)%")
+                    }
                 }
                 Section {
                     if let url = clip.youtubeURL {
@@ -82,7 +90,9 @@ struct ClipInfoSheet: View {
                 } header: {
                     Text("Source")
                 } footer: {
-                    Text("Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
+                    Text(clip.lines.first?.timing == "line" && clip.id.hasPrefix("cap-")
+                         ? "Jojo streams this clip from its original public source. Subtitles for this clip come from the creator’s own uploaded captions, tokenized for study. All rights belong to the creators."
+                         : "Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
                 }
                 Section {
                     Button {

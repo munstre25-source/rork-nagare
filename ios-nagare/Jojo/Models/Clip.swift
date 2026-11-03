@@ -110,6 +110,12 @@ nonisolated struct Token: Codable, Hashable, Sendable {
         return reading
     }
 
+    /// Per-kanji ruby pieces for natural furigana (okurigana stripped from the reading).
+    /// Falls back to a single whole-word segment when the split is ambiguous.
+    var rubySegments: [RubySegment] {
+        RubySegment.split(surface: surface, reading: reading)
+    }
+
     var allReadings: [String] {
         ([reading].compactMap { $0 } + altReadings).filter { !$0.isEmpty }
     }

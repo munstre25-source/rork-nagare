@@ -25,7 +25,7 @@ struct TokenView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
-    @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 11
+    @ScaledMetric(relativeTo: .caption2) private var furiganaSize: CGFloat = 12
     @ScaledMetric(relativeTo: .title2) private var wordSize: CGFloat = 24
     @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 11
     @State private var tapBounce: Bool = false
@@ -52,18 +52,7 @@ struct TokenView: View {
 
     private var content: some View {
         VStack(spacing: 2) {
-            if showFurigana {
-                Text(token.furigana ?? " ")
-                    .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
-                    .foregroundStyle(readingColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
-            Text(token.surface)
-                .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
-                .foregroundStyle(japaneseColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.55)
+            rubyRow
                 .padding(.horizontal, token.tappable ? 6 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
@@ -100,6 +89,29 @@ struct TokenView: View {
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: state)
         .animation(.easeOut(duration: 0.2), value: familiarity)
+    }
+
+    /// Kanji carry their own furigana; okurigana sit beside without a reading overhead.
+    private var rubyRow: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            ForEach(Array(token.rubySegments.enumerated()), id: \.offset) { _, segment in
+                VStack(spacing: 1) {
+                    if showFurigana {
+                        Text(segment.reading ?? " ")
+                            .font(JojoFont.jp(furiganaSize, relativeTo: .caption2))
+                            .foregroundStyle(readingColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .opacity(segment.reading == nil ? 0 : 1)
+                    }
+                    Text(segment.text)
+                        .font(JojoFont.jp(wordSize, bold: true, relativeTo: .title2))
+                        .foregroundStyle(japaneseColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
+            }
+        }
     }
 
     /// Effective mastery for colouring — looked-up-but-unpainted reads as Learning.

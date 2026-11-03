@@ -42,11 +42,13 @@ actor WordExplainService {
     }
 
     static func lookupKey(for token: Token, sentence: String) -> String {
+        // Match the server key: include the sentence whenever one is available so
+        // in-context senses stay consistent and we don't pay twice for the same pair.
         let word = token.dictionaryForm
-        if token.allReadings.count > 1 {
-            return "lookup|\(word)|\(JapaneseText.sentenceHash(sentence))"
+        if sentence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "lookup|\(word)"
         }
-        return "lookup|\(word)"
+        return "lookup|\(word)|\(JapaneseText.sentenceHash(sentence))"
     }
 
     static func contextKey(for token: Token, sentence: String) -> String {

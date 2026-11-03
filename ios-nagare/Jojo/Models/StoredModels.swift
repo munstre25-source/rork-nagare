@@ -86,6 +86,8 @@ final class UserProfile {
     var glowLevel: String = GlowLevel.glow.rawValue
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
+    /// `on`, `unknownOnly`, or `off`. Empty on older profiles — derived from `showFurigana`.
+    var furiganaModeRaw: String = ""
     var showRomaji: Bool = false
     /// Additive defaults preserve older profiles and their existing subtitle choices.
     var englishVisibility: String = EnglishVisibility.shown.rawValue
@@ -126,6 +128,17 @@ final class UserProfile {
     var weeklyWordsSaved: Int = 0
     /// Week key (`yyyy-ww`) for weekly counters.
     var weeklyStatsWeekKey: String = ""
+    /// Day key for wild-catch counter (`yyyy-MM-dd`).
+    var wildCatchDayKey: String = ""
+    /// Distinct saved words that reappeared in listening today.
+    var wildCatchCountToday: Int = 0
+    /// Encoded list of today's wild-catch surfaces for the Today sheet.
+    var wildCatchSurfacesData: Data?
+    /// Last clip comprehension percent (0–100) shown after a finish.
+    var lastClipComprehension: Int = 0
+    /// Rolling sum of comprehension percents this week (for the average).
+    var weeklyComprehensionSum: Int = 0
+    var weeklyComprehensionSamples: Int = 0
 
     /// Onboarding: Instagram / TikTok / App Store / etc.
     var acquisitionSource: String = ""
@@ -165,13 +178,25 @@ final class UserProfile {
         set { subtitleMode = newValue.rawValue }
     }
 
+    var furiganaMode: FuriganaMode {
+        get {
+            if let mode = FuriganaMode(rawValue: furiganaModeRaw) { return mode }
+            return showFurigana ? .on : .off
+        }
+        set {
+            furiganaModeRaw = newValue.rawValue
+            showFurigana = newValue.showsAny
+        }
+    }
+
     var subtitleDisplay: SubtitleDisplaySettings {
         SubtitleDisplaySettings(
             japanese: subtitles.showsJapanese,
-            furigana: showFurigana,
+            furigana: furiganaMode.showsAny,
             romaji: showRomaji,
             english: subtitles.showsEnglish ? (EnglishVisibility(rawValue: englishVisibility) ?? .shown) : .hidden,
-            tapWords: tapWordsEnabled
+            tapWords: tapWordsEnabled,
+            furiganaMode: furiganaMode
         )
     }
 

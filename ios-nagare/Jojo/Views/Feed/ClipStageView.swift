@@ -446,7 +446,7 @@ struct ClipStageView: View {
         let player = coordinator.player(for: clip)
         let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
         let karaokeHeight = showsShortsCaptions
-            ? min(card.height * (videoExpanded ? 0.25 : 0.30), shortsWordsHeight * (videoExpanded ? 0.82 : 1))
+            ? min(card.height * (videoExpanded ? 0.30 : 0.30), shortsWordsHeight * (videoExpanded ? 1.0 : 1))
             : 0
         let gaps: CGFloat = showsShortsCaptions ? 12 : 6
         let videoHeight = max(0, min(card.width * 16 / 9,
@@ -536,8 +536,9 @@ struct ClipStageView: View {
     private func theaterKaraoke(player: (any ClipPlayer)?) -> some View {
         VStack(spacing: 4) {
             SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
-            // Let the panel fit one complete active sentence or scroll it at large text sizes.
-            transcript(player: player, following: 0, showsLearningControls: false)
+            // Prefer the active line plus one upcoming line; ViewThatFits drops the preview
+            // when Dynamic Type makes even the active sentence fill the panel.
+            transcript(player: player, following: 1, showsLearningControls: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .coachTarget(.transcript, active: isCoachPage)
         }
@@ -625,28 +626,29 @@ struct ClipStageView: View {
         }
     }
 
-    /// Kiku's dictionary card floats at the DEAD CENTRE of the page on every feed layout —
-    /// over the picture and the words alike, with all corners of the card clear of the
-    /// edges. It hugs its content; when it runs long, only the middle scrolls INSIDE the
-    /// card, so the mastery chips, Share and page dots stay pinned and always visible.
+    /// Compact dictionary card docks just above the karaoke words so the video stays
+    /// mostly clear. Extra detail scrolls inside a short middle strip.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
-            ZStack {
-                // A whisper of dim marks the tap-to-close area across the whole page.
+            let dockY = transcriptTop > 40
+                ? max(12, transcriptTop - 8)
+                : stageHeight * 0.42
+            ZStack(alignment: .top) {
                 Color.black.opacity(0.05)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
                 TapPopupCard(
                     compact: true,
-                    scrollableMiddleHeight: stageHeight * 0.30
+                    scrollableMiddleHeight: min(120, stageHeight * 0.18)
                 )
                 .frame(maxWidth: 390)
-                .frame(maxHeight: stageHeight * 0.85)
+                .frame(maxHeight: min(220, stageHeight * 0.36), alignment: .top)
                 .coachTarget(.popupCard, active: isCoachPage)
+                .padding(.top, min(dockY, stageHeight * 0.55))
             }
-            .frame(width: geo.size.width, height: geo.size.height)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
         .padding(.horizontal, 12)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))

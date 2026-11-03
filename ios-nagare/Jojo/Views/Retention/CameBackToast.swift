@@ -12,7 +12,7 @@ struct CameBackToast: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Came back")
+                Text("Caught in the wild")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.sakuraPink)
                     .textCase(.uppercase)

@@ -86,6 +86,7 @@ struct VocabView: View {
                     TimelineView(.periodic(from: .now, by: 60)) { timeline in
                         learningProgress(at: timeline.date)
                     }
+                    KanjiWallCard(progress: app.kanjiWallProgress())
 
                     HStack(spacing: 10) {
                         DesignSearchField(text: $query, placeholder: "Search saved words...")

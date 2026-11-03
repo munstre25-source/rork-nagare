@@ -55,9 +55,7 @@ struct FeedView: View {
                         // details must not push the For You / Explore links down.
                         header
                         VStack(spacing: 0) {
-                            DailyGoalBar(hidesAfterCompletion: true, dueWords: dueReviewKeys.count,
-                                         onReview: openDueReview,
-                                         onCompletionVisibilityChange: { goalCompletionVisible = $0 })
+                            ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
                             if showResumeChip, let resumeSnapshot {
                                 ResumeChip(
                                     title: resumeSnapshot.title,

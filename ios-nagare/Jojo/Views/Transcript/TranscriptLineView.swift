@@ -40,24 +40,36 @@ struct TranscriptLineView: View {
                 if display.japanese {
                     FlowLayout(spacing: 2, lineSpacing: forceDenseAids ? 10 : 12) {
                         ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
-                            TokenView(
-                                token: token,
-                                state: state(for: index),
-                                isLookedUp: app.isLookedUp(token),
-                                familiarity: app.wordState(for: token),
-                                highlight: highlightSurface.map { matches(token, $0) } ?? false,
-                                pulse: isPulsing && pulseTokenIndex == index,
-                                tooltip: pulseTokenIndex == index ? tooltip : nil,
-                                showFurigana: display.furigana,
-                                showRomaji: display.romaji,
-                                tapEnabled: display.tapWords,
-                                minimalStyling: display.minimalJapanese,
-                                onTap: {
-                                    withAnimation(Motion.popupSpring) {
-                                        lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
+                            VStack(spacing: 1) {
+                                TokenView(
+                                    token: token,
+                                    state: state(for: index),
+                                    isLookedUp: app.isLookedUp(token),
+                                    familiarity: app.wordState(for: token),
+                                    highlight: highlightSurface.map { matches(token, $0) } ?? false,
+                                    pulse: isPulsing && pulseTokenIndex == index,
+                                    tooltip: pulseTokenIndex == index ? tooltip : nil,
+                                    showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
+                                    showRomaji: display.romaji,
+                                    tapEnabled: display.tapWords,
+                                    minimalStyling: display.minimalJapanese,
+                                    onTap: {
+                                        withAnimation(Motion.popupSpring) {
+                                            lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
+                                        }
                                     }
+                                )
+                                // Beginner: a tiny gloss under the spoken or selected word only —
+                                // never reserves empty space for other tokens.
+                                if showsInlineGloss, let gloss = inlineGloss(for: token, index: index) {
+                                    Text(gloss)
+                                        .font(.caption2.weight(.medium))
+                                        .foregroundStyle(LearningInk.english)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                        .frame(maxWidth: 120)
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -196,5 +208,21 @@ struct TranscriptLineView: View {
 
     private func matches(_ token: Token, _ query: String) -> Bool {
         SearchMatcher.tokenMatches(token, query: query)
+    }
+
+    /// Inline glosses only in Beginner (or when every reading aid is on).
+    private var showsInlineGloss: Bool {
+        display.learningMode == .beginner || (display.furigana && display.romaji && display.english == .shown)
+    }
+
+    private func inlineGloss(for token: Token, index: Int) -> String? {
+        guard token.tappable else { return nil }
+        let active = spokenTokenIndex == index
+            || lookup.isSelected(clipId: clip.id, lineIndex: lineIndex, tokenIndex: index)
+        guard active else { return nil }
+        if let grammar = GrammarFormNotes.note(for: token) {
+            return grammar.meaning
+        }
+        return token.definitions.first
     }
 }

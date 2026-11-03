@@ -48,15 +48,79 @@ nonisolated enum EnglishVisibility: String, CaseIterable, Identifiable, Sendable
     }
 }
 
+/// How furigana sits above Japanese in the karaoke panel.
+nonisolated enum FuriganaMode: String, CaseIterable, Identifiable, Sendable {
+    case on, unknownOnly, off
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .on: "On"
+        case .unknownOnly: "Unknown only"
+        case .off: "Off"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .on: "あ"
+        case .unknownOnly: "あ·"
+        case .off: "あ—"
+        }
+    }
+
+    var showsAny: Bool { self != .off }
+
+    var next: Self {
+        switch self {
+        case .on: .unknownOnly
+        case .unknownOnly: .off
+        case .off: .on
+        }
+    }
+
+    /// Whether this token should draw furigana under the current mode.
+    func shows(for familiarity: SRSState?) -> Bool {
+        switch self {
+        case .on: return true
+        case .off: return false
+        case .unknownOnly:
+            switch familiarity {
+            case .known, .easy: return false
+            default: return true
+            }
+        }
+    }
+}
+
 nonisolated struct SubtitleDisplaySettings: Equatable, Sendable {
     var japanese: Bool = true
     var furigana: Bool
     var romaji: Bool
     var english: EnglishVisibility
     var tapWords: Bool = true
+    var furiganaMode: FuriganaMode = .on
+
+    init(furigana: Bool, romaji: Bool, english: EnglishVisibility,
+         japanese: Bool = true, tapWords: Bool = true,
+         furiganaMode: FuriganaMode? = nil) {
+        self.japanese = japanese
+        self.furigana = furigana
+        self.romaji = romaji
+        self.english = english
+        self.tapWords = tapWords
+        self.furiganaMode = furiganaMode ?? (furigana ? .on : .off)
+    }
 
     var learningMode: LearningMode? {
-        LearningMode.allCases.first { $0.display == self }
+        LearningMode.allCases.first {
+            $0.display.furigana == furigana
+                && $0.display.romaji == romaji
+                && $0.display.english == english
+                && $0.display.japanese == japanese
+                && $0.display.tapWords == tapWords
+        }
     }
     var minimalJapanese: Bool { japanese && !furigana && !romaji && english == .hidden }
 }
