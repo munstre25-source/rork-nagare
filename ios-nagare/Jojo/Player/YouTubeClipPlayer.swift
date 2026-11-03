@@ -22,6 +22,8 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     private(set) var embedFailed = false
     /// The last IFrame player error code (2, 5, 100, 101, 150…), for on-screen diagnostics.
     private(set) var embedErrorCode: Int?
+    /// Actual media aspect, independent of incomplete/legacy catalog orientation tags.
+    private(set) var videoAspectRatio: Double?
     private(set) var spokenLine: Int = 0
     private(set) var spokenToken: Int?
     @ObservationIgnored var onFinished: (() -> Void)?
@@ -99,6 +101,24 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
         sessionGeneration = YouTubeSession.shared.generation
     }
 
+    private static let mediaSizeScript = """
+    (() => {
+      function report(event) {
+        const videos = event && event.target instanceof HTMLVideoElement
+          ? [event.target] : document.querySelectorAll('video');
+        for (const video of videos) {
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            window.webkit.messageHandlers.yt.postMessage({e: 'aspect', v: video.videoWidth / video.videoHeight});
+          }
+        }
+      }
+      for (const event of ['loadedmetadata', 'resize', 'playing']) {
+        document.addEventListener(event, report, true);
+      }
+      report();
+    })();
+    """
+
     private func makeWebView() -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
@@ -111,6 +131,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             config.preferences.isElementFullscreenEnabled = false
         }
         config.userContentController.add(WeakMessageHandler(self), name: "yt")
+        // Run in each embed frame so the video can report its own intrinsic size.
+        // This observes metadata only; it does not resize or replace YouTube's player.
+        config.userContentController.addUserScript(WKUserScript(source: Self.mediaSizeScript,
+                                                               injectionTime: .atDocumentEnd,
+                                                               forMainFrameOnly: false))
         // In-memory cookie jar shared by all embeds; see YouTubeSession for why.
         YouTubeSession.shared.purgeLegacyStoreOnce()
         config.websiteDataStore = YouTubeSession.shared.store
@@ -473,6 +498,11 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     private func handle(event: String, value: Double?) {
         switch event {
+        case "aspect":
+            guard let value, value.isFinite, value >= 0.1, value <= 10 else { return }
+            if videoAspectRatio == nil || abs((videoAspectRatio ?? value) - value) > 0.01 {
+                videoAspectRatio = value
+            }
         case "api":
             apiLoaded = true
         case "ready":

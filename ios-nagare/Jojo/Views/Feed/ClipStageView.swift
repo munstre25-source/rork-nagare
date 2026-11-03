@@ -59,7 +59,12 @@ struct ClipStageView: View {
 
     /// Portrait uploads use their native frame; landscape uploads keep the wide player.
     private var resolvedAspect: CGFloat {
-        immersiveFeed && clip.isPortraitVideo ? 9 / 16 : (immersiveFeed ? 16 / 9 : videoAspect)
+        if immersiveFeed,
+           let player = coordinator.player(for: clip) as? YouTubeClipPlayer,
+           let aspect = player.videoAspectRatio {
+            return CGFloat(aspect)
+        }
+        return immersiveFeed && clip.isPortraitVideo ? 9 / 16 : (immersiveFeed ? 16 / 9 : videoAspect)
     }
 
     /// Feed pages pass a resize control. Fullscreen and previews keep the fixed aspect.
@@ -95,13 +100,14 @@ struct ClipStageView: View {
             let controlsHeight: CGFloat = showsTheaterControls ? playbackControlsHeight + 8 : 0
             let maxHeight = max(0, size.height - controlsHeight - 26)
             let wordsWidth = showsShortsCaptions ? wordsColumnWidth(in: size.width) + 14 : 0
-            let width = min(max(0, size.width - wordsWidth - 24), maxHeight * 16 / 9, 1100)
-            return CGSize(width: width, height: width * 9 / 16)
+            let width = min(max(0, size.width - wordsWidth - 24), maxHeight * resolvedAspect, 1100)
+            return CGSize(width: width, height: width / resolvedAspect)
         }
         return LandscapeTheaterGeometry.make(
             in: size,
-            preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
-            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0
+            preferredCaptionHeight: showsShortsCaptions ? (resolvedAspect < 1 ? compactShortsWordsHeight : shortsWordsHeight) : 0,
+            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
+            videoAspect: resolvedAspect
         ).videoSize
     }
 
@@ -352,8 +358,9 @@ struct ClipStageView: View {
     private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
         let theater = LandscapeTheaterGeometry.make(
             in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
-            preferredCaptionHeight: showsShortsCaptions ? shortsWordsHeight : 0,
-            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0
+            preferredCaptionHeight: showsShortsCaptions ? (resolvedAspect < 1 ? compactShortsWordsHeight : shortsWordsHeight) : 0,
+            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
+            videoAspect: resolvedAspect
         )
         return VStack(spacing: 0) {
             if showsChannelRow && !maximized {
@@ -413,7 +420,13 @@ struct ClipStageView: View {
                         .padding(.top, LandscapeTheaterGeometry.spacing)
                 }
                 if showsShortsCaptions {
-                    theaterKaraoke(player: player)
+                    Group {
+                        if resolvedAspect < 1 {
+                            shortsKaraoke(player: player, maxHeight: theater.captionHeight)
+                        } else {
+                            theaterKaraoke(player: player)
+                        }
+                    }
                         .padding(.horizontal, 16)
                         .frame(height: theater.captionHeight)
                         .padding(.top, LandscapeTheaterGeometry.spacing)
@@ -447,15 +460,16 @@ struct ClipStageView: View {
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
+        let controlsVisible = !videoExpanded || showsTheaterControls
         let layout = ShortsStageGeometry.make(in: size,
                                               preferredCaptionHeight: showsShortsCaptions ? compactShortsWordsHeight : 0,
-                                              controlsHeight: playbackControlsHeight)
+                                              controlsHeight: controlsVisible ? playbackControlsHeight : 0)
         let card = layout.cardSize
         let karaokeHeight = layout.captionHeight
         let videoHeight = layout.videoHeight
 
         // Explicit regions prevent flexible overlays from collapsing or covering each other.
-        // Shorts playback controls are always visible, including while maximized.
+        // Maximize uses the freed control area for the picture while controls are hidden.
         return VStack(spacing: 6) {
             ZStack(alignment: .top) {
                 ClipVideoView(
@@ -484,9 +498,11 @@ struct ClipStageView: View {
             .clipped()
             .modifier(FrameBottomReader(bottom: $videoBottom))
 
-            playbackControls(player: player, sourceMark: "Shorts")
-                .padding(.horizontal, 8)
-                .layoutPriority(1)
+            if controlsVisible {
+                playbackControls(player: player, sourceMark: "Shorts")
+                    .padding(.horizontal, 8)
+                    .layoutPriority(1)
+            }
 
             if showsShortsCaptions {
                 shortsKaraoke(player: player, maxHeight: karaokeHeight)

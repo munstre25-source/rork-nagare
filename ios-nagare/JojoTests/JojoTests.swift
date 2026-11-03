@@ -311,7 +311,7 @@ struct JojoTests {
     @Test func maximizedWideVideoLeavesTopBreathingRoomAndKeepsKaraokeVisible() {
         let size = CGSize(width: 402, height: 800)
         let layout = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
-        #expect(layout.videoTop == 28)
+        #expect(layout.videoTop == 88)
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
         #expect(layout.videoSize.width == size.width)
         #expect(layout.captionHeight > 220)
@@ -350,6 +350,27 @@ struct JojoTests {
                                                        preferredCaptionHeight: 0, controlsHeight: 88)
         #expect(withoutCaptions.captionHeight == 0)
         #expect(withoutCaptions.videoHeight > layout.videoHeight)
+    }
+
+    @Test func maximizedPortraitUsesNativeAspectAndCompactCaptionsOnTheLegacyWidePath() {
+        let size = CGSize(width: 402, height: 800)
+        let portrait = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 128,
+                                                     controlsHeight: 0, videoAspect: 9.0 / 16)
+        let wide = LandscapeTheaterGeometry.make(in: size, preferredCaptionHeight: 220, controlsHeight: 0)
+        #expect(abs(portrait.videoSize.width / portrait.videoSize.height - 9.0 / 16) < 0.001)
+        #expect(portrait.captionHeight == 128)
+        #expect(portrait.videoSize.height > wide.videoSize.height * 2)
+        #expect(portrait.videoSize.height > size.height * 0.7)
+        #expect(portrait.videoTop + portrait.videoSize.height + 6 + portrait.captionHeight <= size.height - 12 + 0.01)
+    }
+
+    @Test func maximizedShortsReclaimsSpaceWhenTheControlsHide() {
+        let size = CGSize(width: 393, height: 760)
+        let controlsShown = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 128, controlsHeight: 88)
+        let controlsHidden = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 128, controlsHeight: 0)
+        #expect(controlsHidden.captionHeight == controlsShown.captionHeight)
+        #expect(controlsHidden.videoHeight > controlsShown.videoHeight)
+        #expect(controlsHidden.videoHeight > controlsHidden.captionHeight * 4)
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
