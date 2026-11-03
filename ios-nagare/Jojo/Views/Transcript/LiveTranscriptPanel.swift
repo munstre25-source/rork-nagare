@@ -23,6 +23,8 @@ struct LiveTranscriptPanel: View {
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var spokenNamespace
+    @State private var lastEvaluatedWord: KaraokeWordAnchor?
+    @State private var sentenceScrollUntil: Date = .distantPast
 
     var body: some View {
         Group {
@@ -74,7 +76,6 @@ struct LiveTranscriptPanel: View {
                                 isPulsing: isPulsing,
                                 tooltip: index == currentLine ? tooltip : nil,
                                 showsTranslation: true,
-                                translationIsVisible: index <= currentLine,
                                 isActive: true,
                                 forceDenseAids: forceDenseAids,
                                 respectsProfileDisplay: respectsProfileDisplay,
@@ -91,8 +92,28 @@ struct LiveTranscriptPanel: View {
                     // The last sentence can still settle at the top of the viewport.
                     .padding(.bottom, max(0, viewport.size.height - 44))
                 }
+                .coordinateSpace(name: KaraokeWordAnchor.spaceName(for: clip.id))
                 .scrollBounceBehavior(.basedOnSize)
                 .scrollDisabled(lookup.isPresented)
+                .onPreferenceChange(KaraokeWordGeometryPreference.self) { geometry in
+                    guard !lookup.isPresented, let geometry,
+                          geometry.anchor.clipID == clip.id,
+                          geometry.anchor.lineIndex == currentLine,
+                          geometry.anchor.tokenIndex == spokenToken,
+                          geometry.anchor != lastEvaluatedWord else { return }
+                    // Evaluate once per word, not once per animation frame.
+                    lastEvaluatedWord = geometry.anchor
+                    guard Date.now >= sentenceScrollUntil,
+                          let edge = geometry.followEdge(viewportHeight: viewport.size.height) else { return }
+                    let alignment: UnitPoint = edge == .top ? .top : .bottom
+                    if reduceMotion {
+                        proxy.scrollTo(geometry.anchor, anchor: alignment)
+                    } else {
+                        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.25)) {
+                            proxy.scrollTo(geometry.anchor, anchor: alignment)
+                        }
+                    }
+                }
                 .onChange(of: currentLine) { _, index in
                     guard !lookup.isPresented else { return }
                     follow(index, proxy: proxy)
@@ -111,6 +132,8 @@ struct LiveTranscriptPanel: View {
 
     private func follow(_ index: Int, proxy: ScrollViewProxy) {
         guard clip.lines.indices.contains(index) else { return }
+        lastEvaluatedWord = nil
+        sentenceScrollUntil = Date.now.addingTimeInterval(reduceMotion ? 0 : 0.45)
         if reduceMotion {
             proxy.scrollTo(index, anchor: .top)
         } else {
@@ -162,5 +185,35 @@ extension EnvironmentValues {
     var spokenTokenNamespace: Namespace.ID? {
         get { self[SpokenTokenNamespaceKey.self] }
         set { self[SpokenTokenNamespaceKey.self] = newValue }
+    }
+}
+
+/// Stable identities let the scroll view reveal wrapped words without replacing the sentence.
+nonisolated struct KaraokeWordAnchor: Hashable, Sendable {
+    let clipID: String
+    let lineIndex: Int
+    let tokenIndex: Int
+
+    static func spaceName(for clipID: String) -> String { "karaoke-viewport-" + clipID }
+}
+
+nonisolated struct KaraokeWordGeometry: Equatable, Sendable {
+    enum Edge: Equatable { case top, bottom }
+    let anchor: KaraokeWordAnchor
+    let frame: CGRect
+
+    func followEdge(viewportHeight: CGFloat) -> Edge? {
+        guard viewportHeight > 16, !frame.isEmpty,
+              frame.minY.isFinite, frame.maxY.isFinite else { return nil }
+        if frame.minY < 8 || frame.height > viewportHeight - 16 { return .top }
+        if frame.maxY > viewportHeight - 8 { return .bottom }
+        return nil
+    }
+}
+
+nonisolated struct KaraokeWordGeometryPreference: PreferenceKey {
+    static let defaultValue: KaraokeWordGeometry? = nil
+    static func reduce(value: inout KaraokeWordGeometry?, nextValue: () -> KaraokeWordGeometry?) {
+        if let next = nextValue() { value = next }
     }
 }

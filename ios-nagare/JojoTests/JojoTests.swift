@@ -400,6 +400,38 @@ struct JojoTests {
         }
     }
 
+    @Test func defaultWideFeedUsesMeasuredChromeAndReservesThreeRowReadingSpace() {
+        for size in [CGSize(width: 393, height: 650), CGSize(width: 430, height: 800)] {
+            for channel: CGFloat in [48, 72] {
+                for controls: CGFloat in [56, 96] {
+                    let layout = RestingFeedGeometry.make(in: size, preferredCaptionHeight: 320,
+                                                          channelHeight: channel, controlsHeight: controls)
+                    #expect(layout.captionHeight >= 320)
+                    #expect(layout.videoSize.height > 0)
+                    #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
+                    #expect(abs(channel + controls + 4 + layout.videoSize.height + layout.captionHeight - size.height) < 0.01)
+                }
+            }
+        }
+        let short = RestingFeedGeometry.make(in: CGSize(width: 320, height: 300), preferredCaptionHeight: 320,
+                                             channelHeight: 72, controlsHeight: 96)
+        #expect(short.videoSize.height > 0)
+        #expect(short.captionHeight > 0)
+    }
+
+    @Test func karaokeFollowsOnlyWordsOutsideTheVisibleReadingArea() {
+        let anchor = KaraokeWordAnchor(clipID: "test", lineIndex: 0, tokenIndex: 2)
+        let visible = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 20, width: 80, height: 64))
+        #expect(visible.followEdge(viewportHeight: 320) == nil)
+        let below = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 290, width: 80, height: 64))
+        #expect(below.followEdge(viewportHeight: 320) == .bottom)
+        let above = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: -12, width: 80, height: 64))
+        #expect(above.followEdge(viewportHeight: 320) == .top)
+        #expect(visible.followEdge(viewportHeight: 0) == nil)
+        let tall = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 20, width: 80, height: 400))
+        #expect(tall.followEdge(viewportHeight: 320) == .top)
+    }
+
     @Test func allFeedPagersSnapToOneCompleteViewport() {
         #expect(SingleClipPerSwipeBehavior.settledOffset(original: 0, proposed: 850,
                                                         viewportHeight: 700, contentHeight: 2800) == 700)

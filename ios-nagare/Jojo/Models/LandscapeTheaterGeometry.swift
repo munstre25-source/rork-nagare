@@ -61,3 +61,21 @@ nonisolated struct ShortsStageGeometry {
         return Self(cardSize: card, videoHeight: video, captionHeight: captions)
     }
 }
+
+/// Default wide-video feed: budget using measured chrome and give every remaining point to karaoke.
+nonisolated struct RestingFeedGeometry {
+    let videoSize: CGSize
+    let captionHeight: CGFloat
+
+    static func make(in size: CGSize, preferredCaptionHeight: CGFloat,
+                     channelHeight: CGFloat, controlsHeight: CGFloat) -> Self {
+        let chrome = max(0, channelHeight) + max(0, controlsHeight) + 4
+        let available = max(0, size.height - chrome)
+        let videoFloor = min(90, available * 0.3)
+        let height = min(max(0, size.height * 0.5),
+                         max(videoFloor, available - max(0, preferredCaptionHeight)))
+        let width = min(max(0, size.width), 640, height * 16 / 9)
+        let video = CGSize(width: width, height: width * 9 / 16)
+        return Self(videoSize: video, captionHeight: max(0, available - video.height))
+    }
+}

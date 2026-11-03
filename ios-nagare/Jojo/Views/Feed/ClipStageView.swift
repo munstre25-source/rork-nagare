@@ -42,6 +42,8 @@ struct ClipStageView: View {
     /// Three wrapped Japanese rows plus readings, translation, and panel padding.
     @ScaledMetric(relativeTo: .body) private var karaokeReadingHeight: CGFloat = 320
     @State private var playbackControlsHeight: CGFloat = 88
+    @State private var channelRowHeight: CGFloat = 48
+    @State private var actionRowHeight: CGFloat = 56
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
     /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
@@ -81,16 +83,15 @@ struct ClipStageView: View {
             // rest. Stacking there would glue the video to the top edge and leave the
             // bottom half of the page dead.
             let words = wordsColumnWidth(in: size.width)
-            let maxHeight = max(150, size.height - (showsChannelRow ? 150 : 110))
+            let maxHeight = max(0, size.height - (showsChannelRow ? channelRowHeight : 0) - actionRowHeight - 22)
             let width = min(size.width - words - 44, maxHeight * 16 / 9, 900)
             return CGSize(width: width, height: width * 9 / 16)
         }
-        // Reserve reading space before sizing the picture, including in normal feed mode.
-        let chrome: CGFloat = (showsChannelRow ? 48 : 0) + 56 + 4
-        let maxHeight = max(0, min(size.height * 0.50, size.height - karaokeReadingHeight - chrome))
-        let width = min(min(size.width, 640), maxHeight * 16 / 9)
-        let height = width * 9 / 16
-        return CGSize(width: width, height: height)
+        return RestingFeedGeometry.make(
+            in: size, preferredCaptionHeight: karaokeReadingHeight,
+            channelHeight: showsChannelRow ? channelRowHeight : 0,
+            controlsHeight: actionRowHeight
+        ).videoSize
     }
 
     /// Maximize uses the largest 16:9 frame that fits the whole feed viewport without cropping.
@@ -155,7 +156,7 @@ struct ClipStageView: View {
             }
         }
         // Keep the last subtitle row clear of the dock/home-indicator edge in every feed mode.
-        .padding(.bottom, usesFlexibleVideo ? (showsShortsStage ? 6 : 20) : 0)
+        .padding(.bottom, usesFlexibleVideo ? (showsShortsStage ? 6 : 8) : 0)
         .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
             if !enabled && isPopupHere { dismiss() }
         }
@@ -255,6 +256,11 @@ struct ClipStageView: View {
                     .frame(maxWidth: .infinity)
                     .opacity(watchChromeHidden ? 0 : 1)
                     .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        if height.isFinite, height > 0, abs(height - channelRowHeight) > 1 {
+                            channelRowHeight = height
+                        }
+                    }
             }
             HStack(alignment: .center, spacing: 14) {
                 VStack(spacing: 6) {
@@ -297,16 +303,14 @@ struct ClipStageView: View {
                     }
                 }
 
-                transcript(player: player)
+                transcript(player: player, showsLearningControls: false)
                     .coachTarget(.transcript, active: isCoachPage)
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .frame(width: wordsWidth, alignment: .top)
-                    .frame(maxHeight: (videoHeight ?? 240) + 56, alignment: .top)
-                    .clipped()
+                    .frame(maxHeight: .infinity, alignment: .top)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 12)
-            Spacer(minLength: 0)
         }
         .padding(.bottom, 6)
     }
@@ -375,6 +379,11 @@ struct ClipStageView: View {
                 .frame(maxWidth: .infinity)
                 .opacity(maximized && watchChromeHidden ? 0 : 1)
                 .animation(.easeInOut(duration: 0.35), value: watchChromeHidden)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    if height.isFinite, height > 0, abs(height - channelRowHeight) > 1 {
+                        channelRowHeight = height
+                    }
+                }
             }
 
             if maximized {
@@ -444,9 +453,14 @@ struct ClipStageView: View {
                     )
                     .frame(width: columnWidth)
                     .frame(maxWidth: .infinity)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        if height.isFinite, height > 0, abs(height - actionRowHeight) > 1 {
+                            actionRowHeight = height
+                        }
+                    }
                 }
 
-                transcript(player: player)
+                transcript(player: player, showsLearningControls: false)
                     .coachTarget(.transcript, active: isCoachPage)
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .frame(width: columnWidth)
@@ -552,13 +566,10 @@ struct ClipStageView: View {
     }
 
     private func theaterKaraoke(player: (any ClipPlayer)?) -> some View {
-        VStack(spacing: 4) {
-            SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
-            transcript(player: player, showsLearningControls: false, showsLineTools: false)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .coachTarget(.transcript, active: isCoachPage)
-        }
-        .modifier(TranscriptTopReader(top: $transcriptTop))
+        transcript(player: player, showsLearningControls: false, showsLineTools: false)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .coachTarget(.transcript, active: isCoachPage)
+            .modifier(TranscriptTopReader(top: $transcriptTop))
     }
 
     private func shortsKaraoke(

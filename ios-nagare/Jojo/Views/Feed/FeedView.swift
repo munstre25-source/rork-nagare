@@ -70,8 +70,12 @@ struct FeedView: View {
                                 )
                             }
                         }
+                        // Faded progress must release its layout space to the reading area.
+                        .frame(height: watchChromeVisible ? nil : 0)
+                        .clipped()
                         .opacity(watchChromeVisible ? 1 : 0)
                         .allowsHitTesting(watchChromeVisible)
+                        .animation(.easeInOut(duration: 0.25), value: watchChromeVisible)
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(1)
