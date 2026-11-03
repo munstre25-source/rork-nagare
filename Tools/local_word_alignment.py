@@ -31,12 +31,19 @@ def map_alignment(line, items, offset, duration):
     tokens = copy.deepcopy(line["tokens"])
     cursor = offset
     spans = {}
+    # Tiny float/stretch slop only — never invent a missing boundary.
+    edge = 0.03
     for (index, text), item in zip(units, items):
         if spoken_text(item["text"]) != text:
             raise ValueError("Aligner changed the requested transcript")
-        start, end = round(offset + float(item["start_time"]), 3), round(offset + float(item["end_time"]), 3)
-        if not all(math.isfinite(t) for t in (start, end)) or start < offset or end > duration + .001:
+        start = round(offset + float(item["start_time"]), 3)
+        end = round(offset + float(item["end_time"]), 3)
+        if not all(math.isfinite(t) for t in (start, end)):
             raise ValueError("Word lies outside its actual audio")
+        if start < offset - edge or end > duration + edge:
+            raise ValueError("Word lies outside its actual audio")
+        start = min(max(start, offset), duration)
+        end = min(max(end, start), duration)
         if end <= start or start < cursor - .001:
             raise ValueError("Collapsed or overlapping word timing needs review")
         if end - start > max(2.5, len(text) * .7):
@@ -83,18 +90,24 @@ class LocalAligner:
         if abs(duration - float(clip["duration_sec"])) > .25:
             raise ValueError("Extracted audio does not match clip duration")
         lines, evidence = [], []
+        previous_end = 0.0
         for index, line in enumerate(clip["lines"]):
             # Sentence bounds restrict the search, but do not manufacture word boundaries.
-            lo = max(0, float(line["start"]) - .35)
-            hi = min(duration, float(line["end"]) + .35)
+            # Floor at the previous aligned end so padded windows cannot overlap sentences.
+            lo = max(0.0, previous_end, float(line["start"]) - .35)
+            hi = min(duration, max(lo + 0.08, float(line["end"]) + .35))
             if hi <= lo:
                 raise ValueError("Invalid original sentence bounds")
             units = [text for _, text in token_units(line)]
             if not units:
                 raise ValueError("Sentence has no spoken words")
             aligned, attempts, failure = None, [], None
-            for factor in (1, 2):
+            # 4x slows 80 ms model bins to 20 ms in the original time base for short particles.
+            for factor in (1, 2, 4):
                 window = audio[round(lo*16000):round(hi*16000)]
+                if len(window) < 1600:
+                    failure = "Sentence audio window is empty"
+                    continue
                 if factor != 1:
                     import librosa
                     import warnings
@@ -122,9 +135,10 @@ class LocalAligner:
                     failure = str(error)
             if aligned is None:
                 raise ValueError(f"line[{index}]: {failure}")
-            if lines and aligned["start"] < lines[-1]["end"]:
+            if lines and aligned["start"] < lines[-1]["end"] - 0.001:
                 raise ValueError(f"line[{index}]: aligned sentences overlap; transcript check required")
             lines.append(aligned)
+            previous_end = float(aligned["end"])
             evidence.append({"lineIndex": index, "audioStartSec": lo, "audioEndSec": hi, "attempts": attempts})
         return {"version": 1, "method": "local-forced-alignment", "model": MODEL, "revision": REVISION,
                 "audioSha256": hashlib.sha256(np.asarray(audio, dtype="<f4").tobytes()).hexdigest(),

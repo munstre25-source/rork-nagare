@@ -37,6 +37,13 @@ class LocalAlignmentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "overlapping"):
             map_alignment(self.line, self.items, 0, 3)
 
+    def test_tiny_float_slop_is_clamped_not_invented(self):
+        items = [{"text": "hello", "start_time": -0.01, "end_time": .7},
+                 {"text": "world", "start_time": 1.3, "end_time": 3.02}]
+        out = map_alignment(self.line, items, 0, 3)
+        self.assertEqual(out["tokens"][0]["start"], 0)
+        self.assertEqual(out["tokens"][2]["end"], 3)
+
     def test_normalization_matches_exact_spoken_characters(self):
         self.assertEqual(spoken_text("\u30d3\u30fc\u30eb\u3001\uff15\u676f!"), "\u30d3\u30fc\u30eb5\u676f")
         line = {"tokens": [{"surface": "\u30fc"}, {"surface": "\u4e00\u676f"}]}
