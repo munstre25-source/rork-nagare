@@ -122,11 +122,12 @@ struct ClipQueueScreen: View {
                 .padding(.trailing, Spacing.m)
                 .padding(.top, Spacing.s)
             }
-            GeometryReader { viewport in
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(clips) { clip in
+            ClipPager(
+                ids: clips.map(\.id),
+                currentId: $currentId,
+                isDisabled: lookup.isPresented
+            ) { id in
+                if let clip = clips.first(where: { $0.id == id }) {
                                 ClipStageView(
                                     clip: clip,
                                     showsChannelRow: false,
@@ -143,29 +144,12 @@ struct ClipQueueScreen: View {
                                     onActivate: { show(clip.id) },
                                     onInfo: { infoClip = clip }
                                 )
-                                .frame(width: viewport.size.width, height: viewport.size.height, alignment: .top)
                                 .background(Color.watchBackground)
-                                .clipped()
-                                .contentShape(Rectangle())
-                                .id(clip.id)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollTargetBehavior(SingleClipPerSwipeBehavior())
-                    .scrollPosition(id: $currentId, anchor: .top)
-                    .scrollDisabled(lookup.isPresented)
-                    .scrollIndicators(.hidden)
-                    .background(Color.watchBackground)
-                    .clipped()
-                    .onChange(of: viewport.size) { _, _ in
-                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-                    }
-                    .onChange(of: videoExpanded) { _, _ in
-                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-                    }
+                } else {
+                    Color.watchBackground
                 }
             }
+            .background(Color.watchBackground)
 
         }
         .background(Color.watchBackground.ignoresSafeArea())
@@ -194,7 +178,7 @@ struct ClipQueueScreen: View {
         }
         .onChange(of: forcedId) { _, id in
             guard let id, id != currentId else { return }
-            withAnimation(.easeInOut(duration: 0.55)) { currentId = id }
+            withAnimation(ClipPager<EmptyView>.settle) { currentId = id }
         }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(clip: clip)

@@ -505,7 +505,9 @@ struct ClipStageView: View {
                     }
                 }
 
-                Spacer(minLength: 0)
+                // Karaoke starts right under the controls and owns every remaining point:
+                // no dead gap above it, and no fixed well that cuts lines at the dock.
+                Color.clear.frame(height: immersiveFeed ? 6 : 10)
 
                 transcript(player: player, showsLearningControls: false)
                     .coachTarget(.transcript, active: isCoachPage)
@@ -513,10 +515,9 @@ struct ClipStageView: View {
                     .frame(width: columnWidth)
                     .frame(
                         maxWidth: .infinity,
-                        maxHeight: restingCaptionHeight == nil && (usesFlexibleVideo || immersiveFeed) ? .infinity : nil,
+                        maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil,
                         alignment: .top
                     )
-                    .frame(height: restingCaptionHeight, alignment: .top)
                     .clipped()
             }
         }
@@ -553,22 +554,24 @@ struct ClipStageView: View {
                     onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Explicit width: an aspect-fill poster must never widen the stack, or the
+                // band and title spill past both screen edges.
+                .frame(width: size.width, height: videoHeight)
+                .clipped()
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
                 ShortsHeader(clip: clip)
                     .padding(.horizontal, 10)
                     .padding(.top, 10)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .frame(width: size.width, height: videoHeight, alignment: .top)
                     .opacity(watchChromeHidden || videoExpanded ? 0 : 1)
 
                 if showsShortsCaptions, karaokeHeight > 0 {
-                    shortsKaraokeBand(player: player, maxHeight: karaokeHeight)
+                    shortsKaraokeBand(player: player, width: size.width, height: karaokeHeight)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: videoHeight)
+            .frame(width: size.width, height: videoHeight)
             .clipped()
             .layoutPriority(1)
             .modifier(FrameBottomReader(bottom: $videoBottom))
@@ -576,9 +579,10 @@ struct ClipStageView: View {
             if controlsVisible {
                 playbackControls(player: player, sourceMark: "Shorts")
                     .padding(.horizontal, 8)
+                    .frame(width: size.width)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(width: size.width, height: size.height, alignment: .top)
         .background(Color.watchBackground)
         .clipped()
     }
@@ -635,12 +639,14 @@ struct ClipStageView: View {
     }
 
     /// Three-line karaoke on a soft bottom scrim so portrait footage shows through the band.
-    private func shortsKaraokeBand(player: (any ClipPlayer)?, maxHeight: CGFloat) -> some View {
+    /// The band has a fixed height and top-aligned lines, so the current line never moves
+    /// when the next sentence is shorter or longer.
+    private func shortsKaraokeBand(player: (any ClipPlayer)?, width: CGFloat, height: CGFloat) -> some View {
         transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
-            .padding(.horizontal, 14)
+            .frame(width: max(0, width - 28), height: max(0, height - 12), alignment: .top)
             .padding(.bottom, 12)
-            .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .bottom)
             .padding(.top, 36)
+            .frame(width: width)
             .background(
                 LinearGradient(
                     stops: [

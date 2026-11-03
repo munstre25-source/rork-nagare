@@ -86,8 +86,8 @@ struct LiveTranscriptPanel: View {
                     staticWindow(window, spacing: spacing)
                 }
             }
-            // Portrait band sits on the lower edge of the picture; the wide well keeps lines at the top.
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: onPicture ? .bottom : .top)
+            // Top-anchored everywhere: the current line keeps one fixed position.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .onPreferenceChange(KaraokeLineHeightPreference.self) { heights in
                 guard !heights.isEmpty else { return }
                 var next = measuredHeights
@@ -178,10 +178,10 @@ struct LiveTranscriptPanel: View {
         }
     }
 
-    /// Measure previous/next at the real panel width so the window can grow when they fit.
+    /// Measure the following lines at the real panel width so the window can grow when they fit.
     @ViewBuilder
     private func measureNeighbors(of visible: [Int]) -> some View {
-        let neighbors = [clampedCurrentLine - 1, clampedCurrentLine + 1]
+        let neighbors = (1..<KaraokeReadingWindow.maxLines).map { clampedCurrentLine + $0 }
             .filter { clip.lines.indices.contains($0) && !visible.contains($0) }
         if !neighbors.isEmpty {
             VStack(spacing: 0) {

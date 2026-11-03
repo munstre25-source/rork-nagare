@@ -19,11 +19,12 @@ struct OnboardingFeedDemoView: View {
     var body: some View {
         VStack(spacing: 0) {
             hint
-            GeometryReader { geo in
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(clips) { clip in
+            ClipPager(
+                ids: clips.map(\.id),
+                currentId: $currentId,
+                isDisabled: lookup.isPresented
+            ) { id in
+                if let clip = clips.first(where: { $0.id == id }) {
                                 ClipStageView(
                                     clip: clip,
                                     showsChannelRow: true,
@@ -41,25 +42,9 @@ struct OnboardingFeedDemoView: View {
                             onFullscreen: nil,
                             onSkip: { skipClip() }
                         )
-                                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                                 .background(Color.watchBackground)
-                                .clipped()
-                                .contentShape(Rectangle())
-                                .id(clip.id)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollTargetBehavior(SingleClipPerSwipeBehavior())
-                    .scrollPosition(id: $currentId, anchor: .top)
-                    .scrollDisabled(lookup.isPresented)
-                    .clipped()
-                    .onChange(of: geo.size) { _, _ in
-                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-                    }
-                    .onChange(of: videoExpanded) { _, _ in
-                        FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-                    }
+                } else {
+                    Color.watchBackground
                 }
             }
             if didOpenDictionary, lookup.selection == nil {

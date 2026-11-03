@@ -67,8 +67,11 @@ nonisolated struct ShortsStageGeometry {
 
 /// At most three complete subtitle lines that fit inside a karaoke band or reading well.
 nonisolated struct KaraokeReadingWindow {
-    /// Indices into `clip.lines`, in ascending order. Always includes the current line when
-    /// the transcript is non-empty. Drops previous first, then next, when heights overflow.
+    static let maxLines = 3
+
+    /// Indices into `clip.lines`, in ascending order. The current line always comes first, so
+    /// it sits at the same spot on every sentence; the following lines fill what is left.
+    /// A finished line is never kept above it (that pushed the current line up and down).
     static func indices(
         current: Int,
         lineCount: Int,
@@ -78,8 +81,6 @@ nonisolated struct KaraokeReadingWindow {
     ) -> [Int] {
         guard lineCount > 0 else { return [] }
         let currentIndex = min(max(0, current), lineCount - 1)
-        let previous = currentIndex > 0 ? currentIndex - 1 : nil
-        let next = currentIndex + 1 < lineCount ? currentIndex + 1 : nil
 
         func height(of index: Int) -> CGFloat? {
             guard let value = heights[index], value.isFinite, value > 0 else { return nil }
@@ -92,27 +93,20 @@ nonisolated struct KaraokeReadingWindow {
 
         var chosen = [currentIndex]
         var used = currentHeight
-
-        if let next, let nextHeight = height(of: next) {
+        var next = currentIndex + 1
+        while chosen.count < maxLines, next < lineCount, let nextHeight = height(of: next) {
             let needed = used + spacing + nextHeight
-            if needed <= viewportHeight + 0.5 {
-                chosen.append(next)
-                used = needed
-            }
+            guard needed <= viewportHeight + 0.5 else { break }
+            chosen.append(next)
+            used = needed
+            next += 1
         }
-
-        if let previous, let previousHeight = height(of: previous) {
-            let needed = used + spacing + previousHeight
-            if needed <= viewportHeight + 0.5 {
-                chosen.insert(previous, at: 0)
-            }
-        }
-
         return chosen
     }
 }
 
-/// Default wide-video feed: the picture owns the page; karaoke gets a fixed leftover well.
+/// Default wide-video feed: the picture is sized so the karaoke keeps a minimum reading well;
+/// on screen the karaoke then fills everything below the controls.
 nonisolated struct RestingFeedGeometry {
     let videoSize: CGSize
     let captionHeight: CGFloat

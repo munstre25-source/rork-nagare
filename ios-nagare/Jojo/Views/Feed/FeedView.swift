@@ -73,8 +73,9 @@ struct FeedView: View {
                             )
                         }
                     }
-                    // Faded progress must release its layout space to the reading area.
-                    .frame(height: watchChromeVisible && !videoExpanded ? nil : 0)
+                    // Fading is opacity-only: the pager viewport never changes size because
+                    // chrome faded, so the clip and karaoke never shift. Only maximize resizes.
+                    .frame(height: videoExpanded ? 0 : nil)
                     .clipped()
                     .opacity(watchChromeVisible && !videoExpanded ? 1 : 0)
                     .allowsHitTesting(watchChromeVisible && !videoExpanded)
@@ -399,11 +400,12 @@ struct FeedView: View {
 
     /// Until a few words are saved (and outside the guided tour), say what a word tap does.
     private var feedPager: some View {
-        GeometryReader { viewport in
-            ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(clips) { clip in
+        ClipPager(
+            ids: clips.map(\.id),
+            currentId: $currentId,
+            isDisabled: lookup.isPresented || quizClip != nil
+        ) { id in
+            if let clip = clips.first(where: { $0.id == id }) {
                         ClipStageView(
                             clip: clip,
                             showsChannelRow: true,
@@ -441,45 +443,14 @@ struct FeedView: View {
                             },
                             reportsCoachAnchors: true,
                         )
-                        // Exact page height must match SingleClipPerSwipeBehavior's container
-                        // height so a settle always lands on one complete clip.
-                        .frame(width: viewport.size.width, height: viewport.size.height, alignment: .top)
                         .background(Color.watchBackground)
-                        .clipped()
-                        .contentShape(Rectangle())
                         // Opaque mask so the next page cannot show through rounded corners.
                         .compositingGroup()
-                        .clipped()
-                        .id(clip.id)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            // Align to each clip's actual page boundary. The viewport changes when the
-            // dock and top chrome leave or return during maximize/minimize.
-            .scrollTargetBehavior(SingleClipPerSwipeBehavior())
-            .scrollPosition(id: $currentId, anchor: .top)
-            .scrollDisabled(lookup.isPresented || quizClip != nil)
-            .scrollIndicators(.hidden)
-            .background(Color.watchBackground)
-            .clipped()
-            .onChange(of: viewport.size) { _, _ in
-                FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-            }
-            .onChange(of: pageHeightEpoch) { _, _ in
-                FeedPageReanchor.schedule(currentId: currentId, stillCurrent: { currentId }, proxy: proxy)
-            }
-            .onChange(of: autoScrollTargetId) { _, target in
-                guard let target else { return }
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(450))
-                    guard autoScrollTargetId == target, currentId == target else { return }
-                    FeedPageReanchor.snap(target, proxy: proxy)
-                    autoScrollTargetId = nil
-                }
-            }
+            } else {
+                Color.watchBackground
             }
         }
+        .background(Color.watchBackground)
         .clipped()
     }
 
@@ -659,7 +630,7 @@ struct FeedView: View {
         guard let next = clips[safe: index + 1] else { return }
         programmaticClipChange = true
         autoScrollTargetId = nil
-        withAnimation(.timingCurve(0.2, 0.85, 0.25, 1, duration: 0.36)) {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.92)) {
             currentId = next.id
         }
     }
