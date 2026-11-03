@@ -175,7 +175,7 @@ Deno.test("one review uses the original audio and cached unchanged subtitles con
       assertEquals([call.startSec, call.endSec, call.timeoutMs], [
         10,
         18,
-        45_000,
+        120_000,
       ]);
       assertEquals(
         JSON.parse(call.user).lines[0].japanese,

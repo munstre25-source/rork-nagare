@@ -1,6 +1,7 @@
 import { CLASSIFICATION_PROMPT, contentClassification, type ContentClassification } from "./content-classification.ts";
 import { geminiAnalyzeYouTubeSegment, parseJsonObject } from "./gemini.ts";
 import type { GeminiJsonResult } from "./gemini.ts";
+import { geminiModelFallback } from "./env.ts";
 import type { TimedLine } from "./timing.ts";
 import { lineAlignmentIssue, translationQualityIssue } from "./validate.ts";
 
@@ -231,33 +232,46 @@ export async function reviewJapaneseTranslations(
     };
   }
   const generate = dependencies.generate ?? geminiAnalyzeYouTubeSegment;
-  const result = await generate({
-    model: dependencies.model,
+  const reviewUser = JSON.stringify({
+    instruction:
+      "Review every indexed line against the original audio. Times below are clip-relative. Return one JSON object only.",
+    sourceStartSec: source.sourceStartSec,
+    lines: source.lines.map((line, i) => ({
+      i,
+      start: line.start,
+      end: line.end,
+      japanese: line.tokens.map((token) => token.surface).join(""),
+      timing: line.timing ?? "line",
+      tokens: line.timing === "word" ? line.tokens.map((token) => ({ surface: token.surface, start: token.start, end: token.end })) : undefined,
+      translation: line.translation,
+    })),
+  });
+  const call = (model: string) => generate({
+    model,
     system: TRANSLATION_REVIEW_SYSTEM,
-    user: JSON.stringify({
-      instruction:
-        "Review every indexed line against the original audio. Times below are clip-relative.",
-      sourceStartSec: source.sourceStartSec,
-      lines: source.lines.map((line, i) => ({
-        i,
-        start: line.start,
-        end: line.end,
-        japanese: line.tokens.map((token) => token.surface).join(""),
-        timing: line.timing ?? "line",
-        tokens: line.timing === "word" ? line.tokens.map((token) => ({ surface: token.surface, start: token.start, end: token.end })) : undefined,
-        translation: line.translation,
-      })),
-    }),
+    user: reviewUser,
     youtubeUrl: `https://www.youtube.com/watch?v=${source.videoId}`,
     startSec: source.sourceStartSec,
     endSec: source.sourceStartSec + source.durationSec,
-    timeoutMs: 45_000,
+    timeoutMs: 120_000,
   });
+  let result = await call(dependencies.model);
   let parsed: Record<string, unknown>;
   try {
     parsed = parseJsonObject(result.text);
   } catch {
-    return { ok: false, reason: "invalid", detail: "review is not valid JSON: " + result.text.slice(0, 240) };
+    // Injected test generators stay single-shot; production retries once on the fallback model.
+    const fallback = geminiModelFallback();
+    if (!dependencies.generate && fallback !== dependencies.model) {
+      result = await call(fallback);
+      try {
+        parsed = parseJsonObject(result.text);
+      } catch {
+        return { ok: false, reason: "invalid", detail: "review is not valid JSON: " + result.text.slice(0, 240) };
+      }
+    } else {
+      return { ok: false, reason: "invalid", detail: "review is not valid JSON: " + result.text.slice(0, 240) };
+    }
   }
   const classification = contentClassification(parsed);
   if (!classification) return { ok: false, reason: "unsupported", detail: "Content category or child audience could not be verified" };

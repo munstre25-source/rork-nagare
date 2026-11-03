@@ -5,7 +5,7 @@ type Row = { id: string; video_id: string; title: string; channel_name: string; 
 type Channel = { title: string; handle?: string; live: number; verified: number; queued_videos: number; queued_windows: number; discovery_status?: string; checked_at?: string };
 type Summary = {
  current_failed: number; current_held: number; current_excluded: number; current_queued_retries: number;
- live: number; drafts: number; policy_passed_live: number; needs_policy_review: number; caption_live?: number;
+ live: number; drafts: number; policy_passed_live: number; needs_policy_review: number; legacy_live?: number; caption_live?: number;
  queued_videos: number; queued_windows: number; processing: number; stalled: number;
  published_in_range: number; unpublished_in_range: number; rejected_in_range: number; failed_in_range: number; held_in_range: number; reviewed_in_range: number; legacy_rejections_in_range: number;
  history_started_at?: string; last_attempt_at?: string;
@@ -22,7 +22,7 @@ const views: { id: View; label: string }[] = [
 ];
 const statuses: Record<View, string[]> = {
  current: ["queued","processing","stalled","published","excluded","held","failed"],
- live: ["policy_passed","needs_review"], drafts: ["policy_passed","needs_review"], queued: [],
+ live: ["policy_passed","legacy_live","needs_review"], drafts: ["policy_passed","needs_review"], queued: [],
  attempts: ["processing","stalled","published","reviewed","rejected","held","failed"],
  publications: ["published","unpublished"], rejections: [], jobs: ["queued","processing","succeeded","failed"],
 };
@@ -32,7 +32,8 @@ const panel = "rounded-2xl border border-white/10 bg-[#171a21] p-5";
 const control = "rounded-xl border border-white/10 bg-[#0c0e13] px-3 py-2 text-sm";
 function Badge({ status }: { status: string }) {
  const tone = ["published","policy_passed","reviewed","succeeded"].includes(status) ? "text-emerald-300 bg-emerald-500/10" :
-  ["failed","rejected"].includes(status) ? "text-red-300 bg-red-500/10" : "text-amber-200 bg-amber-500/10";
+  ["failed","rejected"].includes(status) ? "text-red-300 bg-red-500/10" :
+  status === "legacy_live" ? "text-sky-200 bg-sky-500/10" : "text-amber-200 bg-amber-500/10";
  return <span className={`inline-block rounded-full px-2 py-1 text-xs ${tone}`}>{status.replaceAll("_", " ")}</span>;
 }
 export function CatalogPipeline({ from, to, refreshKey }: { from: string; to: string; refreshKey: number }) {
@@ -94,12 +95,13 @@ export function CatalogPipeline({ from, to, refreshKey }: { from: string; to: st
     <span>Last attempt {time(s?.last_attempt_at)}</span>
     <span>{s?.publisher?.paused_until && new Date(s.publisher.paused_until)>new Date() ? `Paused until ${time(s.publisher.paused_until)} · ${s.publisher.pause_reason}` : "Publisher: every 10 minutes · source ≤4 min"}</span>
    </div>
-   {s?.needs_policy_review ? <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">{s.needs_policy_review} existing live clips still need policy v{data?.policy_version} review. Their publication state is unchanged; older receipts do not certify the current checks.</p> : null}
+   {s?.legacy_live ? <p className="mt-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-sky-100">{s.legacy_live} live clips predate policy v{data?.policy_version} and are grandfathered (stay published). New publishes still need a current AI or caption receipt.</p> : null}
    {error ? <p role="alert" className="mt-3 text-sm text-red-200">Pipeline refresh failed: {error}. {data ? "The displayed snapshot is stale." : "Counts are unavailable."}</p> : null}
   </section>
   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
    {metric("Live lessons",s?.live,"Current published inventory","live")}
    {metric("Passed current policy · live",s?.policy_passed_live,s?.caption_live ? `AI review, plus ${s.caption_live} from creator-uploaded captions` : "Audio, timing, English and source visual check","live","policy_passed")}
+   {metric("Legacy live · grandfathered",s?.legacy_live,"Published before policy v3; no unpaid re-review","live","legacy_live")}
    {metric("Queued source videos",s?.queued_videos,`${s?.queued_windows ?? "—"} candidate windows`,"queued")}
    {metric("Processing now",s?.processing,`${s?.stalled ?? "—"} stalled over 10 minutes`,"attempts","processing")}
    {metric("Successful publications · range",s?.published_in_range,"Actual publish transitions; republishing is another event","publications","published")}

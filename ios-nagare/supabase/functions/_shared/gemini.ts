@@ -80,11 +80,26 @@ function aiProviders(textOnly = false): AiProvider[] {
 function extractText(data: unknown): string {
   const root = data as {
     candidates?: Array<{
-      content?: { parts?: Array<{ text?: string }> };
+      content?: { parts?: Array<{ text?: string; thought?: boolean }> };
+      finishReason?: string;
     }>;
   };
-  const parts = root.candidates?.[0]?.content?.parts ?? [];
-  return parts.map((p) => p.text ?? "").join("").trim();
+  const candidate = root.candidates?.[0];
+  const parts = candidate?.content?.parts ?? [];
+  // Gemini 3 thinking can emit non-JSON crumbs first; prefer the last JSON-shaped part.
+  const texts = parts
+    .filter((p) => !p.thought && typeof p.text === "string" && p.text.trim())
+    .map((p) => p.text!.trim());
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i]!;
+    if (t.startsWith("{") || t.startsWith("```")) return t;
+  }
+  const joined = texts.join("\n").trim();
+  if (joined) return joined;
+  if (candidate?.finishReason && candidate.finishReason !== "STOP") {
+    throw new GeminiError(502, `Gemini empty response (${candidate.finishReason})`);
+  }
+  return "";
 }
 
 function stripFence(text: string): string {
@@ -294,6 +309,8 @@ async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<Gemin
         generationConfig: {
           temperature: 0.2,
           responseMimeType: "application/json",
+          // Video reviews return one object per line; short clips still truncate under the default.
+          maxOutputTokens: opts.youtube ? 32768 : 8192,
           thinkingConfig: isGemini3OrLater(model)
             ? { thinkingLevel: "low" }
             : { thinkingBudget: opts.youtube ? 1024 : 0 },
