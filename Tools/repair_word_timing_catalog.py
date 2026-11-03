@@ -24,13 +24,16 @@ def configuration():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--apply", action="store_true", help="Run audio repair and save only independently verified results")
+    parser.add_argument("--apply", action="store_true", help="Run paid audio repair only with explicit --paid-ai")
+    parser.add_argument("--paid-ai", action="store_true", help="Explicitly opt into paid inference; free processing uses repair_word_timing_local.py")
     parser.add_argument("--use-existing-vault", action="store_true", help="Explicitly authorize reading this project's maintenance credential into memory")
     parser.add_argument("--limit", type=int, default=3, help="Pilot size; 0 means all remaining clips")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--id", action="append", default=[])
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    if args.apply and not args.paid_ai:
+        parser.error("--apply requires explicit --paid-ai; use Tools/repair_word_timing_local.py for zero-credit processing")
     base, anon = configuration()
     headers = {"apikey": anon, "Authorization": "Bearer " + anon, "Content-Type": "application/json"}
     clips = []

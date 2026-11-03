@@ -1,3 +1,4 @@
+import { applyLocalAlignment, snapshotJson, type LocalAlignment } from "../_shared/local-alignment.ts";
 import { startPipeline, updatePipeline, failureStatus, sealCatalogLines } from "../_shared/pipeline.ts";
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { isAdminOrCron } from "../_shared/admin.ts";
@@ -14,13 +15,14 @@ export async function handler(req: Request): Promise<Response> {
   if (!isAdminOrCron(req)) return errorResponse(401, "Unauthorized");
   let attempt: string | undefined;
   try {
-    const body = await readJson<{ id?: string; source?: TranslationSource; apply?: boolean; quarantine?: boolean; repairTiming?: boolean; lineIndexes?: number[]; translations?: Record<string, string> }>(req);
+    const body = await readJson<{ id?: string; source?: TranslationSource; apply?: boolean; quarantine?: boolean; repairTiming?: boolean; localAlignment?: LocalAlignment; expectedLines?: unknown; lineIndexes?: number[]; translations?: Record<string, string> }>(req);
     if ((!!body.id) === (!!body.source)) return errorResponse(400, "Provide exactly one id or source");
     if (body.source && body.apply) return errorResponse(400, "External bundled sources are review-only");
     const supabase = serviceClient();
     let source = body.source;
     let originalLines: unknown;
     let originalCategory: string | undefined;
+    let published = false;
     if (body.id) {
       const { data, error } = await supabase.from("clips").select("*").eq("id", body.id).maybeSingle();
       if (error) return errorResponse(500, "Catalog read failed");
@@ -31,8 +33,48 @@ export async function handler(req: Request): Promise<Response> {
       };
       originalLines = data.lines;
       originalCategory = String(data.category);
+      published = data.published === true;
     }
     if (!source || !Array.isArray(source.lines) || source.lines.length > 100) return errorResponse(400, "Invalid subtitle source");
+    if (body.localAlignment) {
+      if (!body.id || !published || body.source || body.translations || body.lineIndexes || body.repairTiming || !body.expectedLines) {
+        return errorResponse(400, "Local alignment only updates an unchanged, already-published clip");
+      }
+      if (snapshotJson(originalLines) !== snapshotJson(body.expectedLines)) {
+        return errorResponse(409, "Subtitles changed since local alignment started");
+      }
+      let lines;
+      try { lines = applyLocalAlignment(source, body.localAlignment); }
+      catch (error) { return errorResponse(422, error instanceof Error ? error.message : "Invalid local alignment"); }
+      if (!body.apply) return jsonResponse({ id: body.id, status: "aligned_locally", paidApiCalls: 0, lines });
+      const { data: originalHash, error: hashError } = await supabase.rpc("catalog_review_hash", {
+        p_video_id: source.videoId, p_start: source.sourceStartSec, p_duration: source.durationSec, p_lines: originalLines,
+      });
+      if (hashError || typeof originalHash !== "string") return errorResponse(500, "Original subtitle integrity check unavailable");
+      const receipt = {
+        version: 1, method: body.localAlignment.method, model: body.localAlignment.model,
+        revision: body.localAlignment.revision, audioSha256: body.localAlignment.audioSha256,
+        videoId: source.videoId, sourceStartSec: source.sourceStartSec, durationSec: source.durationSec,
+        sourceLinesHash: originalHash,
+      };
+      lines = lines.map((line) => ({ ...line, translationReview: {
+        ...(line.translationReview as object ?? {}), localAlignment: receipt,
+      } }));
+      const { data: databaseHash, error: sealError } = await supabase.rpc("catalog_review_hash", {
+        p_video_id: source.videoId, p_start: source.sourceStartSec, p_duration: source.durationSec, p_lines: lines,
+      });
+      if (sealError || typeof databaseHash !== "string") return errorResponse(500, "Local alignment integrity seal unavailable");
+      lines = lines.map((line) => ({ ...line, translationReview: {
+        ...(line.translationReview as object), localAlignment: { ...receipt, databaseHash },
+      } }));
+      const { data: applied, error } = await supabase.rpc("apply_catalog_local_alignment", {
+        p_id: body.id, p_expected_lines: originalLines, p_video_id: source.videoId,
+        p_source_start: source.sourceStartSec, p_duration: source.durationSec, p_lines: lines,
+      });
+      if (error) return errorResponse(500, "Local alignment could not be saved");
+      if (!applied) return errorResponse(409, "Source changed since local alignment started");
+      return jsonResponse({ id: body.id, status: "applied", method: receipt.method, paidApiCalls: 0, repairedWordLines: lines.length });
+    }
     const completeSource = source;
     const indexes = body.lineIndexes ?? source.lines.map((_, i) => i);
     if (!Array.isArray(indexes) || indexes.length === 0 || new Set(indexes).size !== indexes.length ||
