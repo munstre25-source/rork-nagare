@@ -285,7 +285,11 @@ export async function analyzeWindow(
   try {
     raw = parseJsonObject(text);
   } catch {
-    return { ok: false, reason: "transcript_invalid", detail: "response is not a JSON object" };
+    // Prose with no object at all is a refusal or a description; retrying the same video does not change it.
+    if (!text.includes("{")) {
+      return { ok: false, reason: "transcript_invalid", detail: `model replied in prose, no JSON (${text.length} chars)` };
+    }
+    return { ok: false, reason: "transcript_invalid", detail: `response is not a JSON object (${text.length} chars, unbalanced or truncated)` };
   }
   if (!Array.isArray(raw.lines) || raw.lines.length === 0) {
     return { ok: false, reason: "no_dialogue", detail: "model returned no lines" };

@@ -31,6 +31,7 @@ Deno.test("pipeline distinguishes technical errors, unknown evidence and actual 
   assertEquals(failureStatus("model_retryable"), "failed");
   assertEquals(failureStatus("pipeline_error"), "failed");
   assertEquals(failureStatus("transcript_invalid", "response is not a JSON object"), "failed");
+  assertEquals(failureStatus("transcript_invalid", "model replied in prose, no JSON (412 chars)"), "rejected");
   assertEquals(failureStatus("transcript_invalid", "line[0] translation ends mid-thought"), "rejected");
 });
 

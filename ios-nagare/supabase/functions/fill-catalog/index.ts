@@ -213,12 +213,14 @@ Deno.serve(async (req) => {
       try {
         const result = await analyzeAndPublish(supabase, candidate, language);
         if (!result.ok) {
-          const keep = failureStatus(result.reason, result.detail ?? "") !== "rejected";
+          if (result.giveUp) processed -= 1;
+          const keep = !result.giveUp && failureStatus(result.reason, result.detail ?? "") !== "rejected";
           if (!keep) await removeQueued(supabase, language, candidate.videoId, candidate.windowStartSec);
           else {
             // Rotate transient failures behind other candidates instead of repeatedly
             // charging for the same empty response while ready sources wait.
-            const retryAt = new Date(Date.now() + 20 * 60_000).toISOString();
+            const backoffMin = 20 * 3 ** Math.max(0, (result.failures ?? 1) - 1);
+            const retryAt = new Date(Date.now() + backoffMin * 60_000).toISOString();
             await supabase.from(queueTable(language)).update(language === "ja"
               ? { next_attempt_at: retryAt } : { added_at: new Date().toISOString() })
               .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec);
@@ -266,6 +268,8 @@ const RUN_CANDIDATE_TARGET = 1;
 /** A bad-yield lane must not dump the day's search quota into one pass. */
 const MAX_SEARCHES_PER_PASS = 3;
 const MAX_SOURCE_DURATION_SEC = 240;
+/** Same-video failures repeat deterministically (2026-11-02: one Short failed 35 times, 0 successes). */
+const MAX_AUTOMATIC_FAILURES = 3;
 const SOURCE_WINDOW_SEC = 90;
 const MAX_WINDOWS_PER_VIDEO = 20;
 /** Keep at least this many unprocessed candidates queued for the language. */
@@ -769,9 +773,19 @@ async function advanceCursor(
 
 async function analyzeAndPublish(
   supabase: ReturnType<typeof serviceClient>, candidate: QueuedCandidate, language: CatalogLanguage,
-): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string; detail?: string }> {
+): Promise<{ ok: true; id: string; difficulty: string; category: string } | { ok: false; reason: string; detail?: string; giveUp?: boolean; failures?: number }> {
   if (language !== "ja") return processCandidate(supabase, candidate, language);
+  const { count: priorFailures } = await supabase.from("catalog_pipeline_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("video_id", candidate.videoId).eq("window_start_sec", candidate.windowStartSec)
+    .eq("source", "automatic").eq("status", "failed");
+  const failures = priorFailures ?? 0;
   const attempt = await startPipeline(supabase, { video_id: candidate.videoId, window_start_sec: candidate.windowStartSec, title: candidate.title, channel_name: candidate.channelTitle, source: "automatic" });
+  if (failures >= MAX_AUTOMATIC_FAILURES) {
+    const detail = `Stopped after ${failures} failed automatic attempts; requeue manually to retry`;
+    await updatePipeline(supabase, attempt, { status: "rejected", stage: "retry_limit", reason: "retry_limit", detail });
+    return { ok: false, reason: "retry_limit", detail, giveUp: true, failures };
+  }
   try {
     // Queued metadata can age. Recheck the actual source on every publication attempt.
     const video = await checkYouTubeVideo(supabase, candidate.videoId);
@@ -784,7 +798,7 @@ async function analyzeAndPublish(
     await updatePipeline(supabase, attempt, result.ok
       ? { status: "published", stage: "published", clip_id: result.id }
       : { status: failureStatus(result.reason, result.detail ?? ""), stage: "quality_gate", reason: result.reason, detail: result.detail ?? "" });
-    return result;
+    return result.ok ? result : { ...result, failures: failures + 1 };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Pipeline failed";
     await updatePipeline(supabase, attempt, { status: "failed", stage: "error", reason: "pipeline_error", detail: detail.slice(0, 300) });
