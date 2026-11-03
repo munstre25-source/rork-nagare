@@ -95,7 +95,7 @@ export function CatalogPipeline({ from, to, refreshKey }: { from: string; to: st
     <span>Last attempt {time(s?.last_attempt_at)}</span>
     <span>{s?.publisher?.paused_until && new Date(s.publisher.paused_until)>new Date() ? `Paused until ${time(s.publisher.paused_until)} · ${s.publisher.pause_reason}` : "Publisher: every 10 minutes · source ≤4 min"}</span>
    </div>
-   {s?.legacy_live ? <p className="mt-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-sky-100">{s.legacy_live} live clips predate policy v{data?.policy_version} and are grandfathered (stay published). New publishes still need a current AI or caption receipt.</p> : null}
+   {s?.legacy_live ? <p className="mt-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-sm text-sky-100">{s.legacy_live} live clips predate policy v{data?.policy_version} and are grandfathered (stay published). New free publishes use creator-caption receipts; the AI review path stays optional and paused.</p> : null}
    {error ? <p role="alert" className="mt-3 text-sm text-red-200">Pipeline refresh failed: {error}. {data ? "The displayed snapshot is stale." : "Counts are unavailable."}</p> : null}
   </section>
   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

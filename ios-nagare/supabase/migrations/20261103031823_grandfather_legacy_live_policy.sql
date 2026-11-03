@@ -73,7 +73,7 @@ begin
    end reason,
    case
      when public.catalog_clip_receipt_ok(video_id,source_start_sec,duration_sec,lines,category,review_tier) then null
-     when published then 'Live before policy v3; stays published without a paid re-review'
+     when published then 'Live before policy v3; stays published. New free clips use caption receipts instead of AI review'
      else coalesce((select a.detail from public.catalog_pipeline_attempts a where a.clip_id=c.id and a.review_version=3 order by a.updated_at desc limit 1),'Current content classification policy has not been approved')
    end detail,
    coalesce((select max(a.updated_at) from public.catalog_pipeline_attempts a where a.clip_id=c.id),created_at) at,
