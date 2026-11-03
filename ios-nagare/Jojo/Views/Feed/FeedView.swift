@@ -225,8 +225,12 @@ struct FeedView: View {
             autoAdvanceTask?.cancel()
             if autoScrollTargetId != nil && autoScrollTargetId != newId { autoScrollTargetId = nil }
             lookup.dismiss()
-            revealWatchChrome()
+            // Auto-advance must not flash chrome mid-scroll — that resizes the page and shakes.
+            let wasProgrammatic = programmaticClipChange
             noteClipChange(from: oldId)
+            if !wasProgrammatic {
+                revealWatchChrome()
+            }
             guard let newId, let clip = clips.first(where: { $0.id == newId }),
                   isActiveTab, quizClip == nil, !isCovered else { return }
             if let index = clips.firstIndex(where: { $0.id == newId }), index >= max(0, clips.count - 3) {
@@ -443,6 +447,9 @@ struct FeedView: View {
                         .background(Color.watchBackground)
                         .clipped()
                         .contentShape(Rectangle())
+                        // Opaque mask so the next page cannot show through rounded corners.
+                        .compositingGroup()
+                        .clipped()
                         .id(clip.id)
                     }
                 }
@@ -646,13 +653,15 @@ struct FeedView: View {
         }
     }
 
-    /// Scroll one viewport to the next clip. A final alignment keeps the page exact.
+    /// One smooth page turn — TikTok-style. No second hard snap after the animation.
     private func advance() {
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
         guard let next = clips[safe: index + 1] else { return }
         programmaticClipChange = true
-        autoScrollTargetId = next.id
-        withAnimation(.easeInOut(duration: 0.42)) { currentId = next.id }
+        autoScrollTargetId = nil
+        withAnimation(.timingCurve(0.2, 0.85, 0.25, 1, duration: 0.36)) {
+            currentId = next.id
+        }
     }
 
     private func openPendingClip() {

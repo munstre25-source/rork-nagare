@@ -408,16 +408,19 @@ struct JojoTests {
         }
     }
 
-    @Test func defaultWideFeedUsesMeasuredChromeAndReservesThreeRowReadingSpace() {
+    @Test func defaultWideFeedKeepsVideoPrimaryAndPinsKaraokeWell() {
         for size in [CGSize(width: 393, height: 650), CGSize(width: 430, height: 800)] {
             for channel: CGFloat in [48, 72] {
                 for controls: CGFloat in [56, 96] {
                     let layout = RestingFeedGeometry.make(in: size, preferredCaptionHeight: 320,
                                                           channelHeight: channel, controlsHeight: controls)
-                    #expect(layout.captionHeight >= 320)
+                    let available = size.height - channel - controls - 4
+                    #expect(layout.captionHeight <= 200)
+                    #expect(layout.captionHeight <= available * 0.32 + 0.01)
+                    #expect(layout.videoSize.height > layout.captionHeight)
                     #expect(layout.videoSize.height > 0)
                     #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
-                    #expect(abs(channel + controls + 4 + layout.videoSize.height + layout.captionHeight - size.height) < 0.01)
+                    #expect(layout.videoSize.height + layout.captionHeight <= available + 0.01)
                 }
             }
         }
@@ -425,6 +428,15 @@ struct JojoTests {
                                              channelHeight: 72, controlsHeight: 96)
         #expect(short.videoSize.height > 0)
         #expect(short.captionHeight > 0)
+    }
+
+    @Test func shortsPageFillsViewportExactlyWithoutPeepingGap() {
+        for size in [CGSize(width: 393, height: 700), CGSize(width: 430, height: 820)] {
+            let layout = ShortsStageGeometry.make(in: size, preferredCaptionHeight: 320, controlsHeight: 88)
+            #expect(layout.cardSize.height == size.height)
+            #expect(layout.videoHeight + 88 + 6 <= layout.cardSize.height + 0.01)
+            #expect(layout.videoHeight > layout.captionHeight)
+        }
     }
 
     @Test func karaokeFollowsOnlyWordsOutsideTheVisibleReadingArea() {

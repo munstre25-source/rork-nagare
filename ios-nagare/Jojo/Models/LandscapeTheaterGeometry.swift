@@ -44,7 +44,7 @@ nonisolated struct LandscapeTheaterGeometry {
     }
 }
 
-/// Portrait short: the picture fills the card above the controls; karaoke floats on a bottom band.
+/// Portrait short: the picture fills the page above the controls; karaoke floats on a bottom band.
 nonisolated struct ShortsStageGeometry {
     let cardSize: CGSize
     let videoHeight: CGFloat
@@ -52,9 +52,10 @@ nonisolated struct ShortsStageGeometry {
     let captionHeight: CGFloat
 
     static func make(in size: CGSize, preferredCaptionHeight: CGFloat, controlsHeight: CGFloat) -> Self {
-        let card = CGSize(width: max(0, min(size.width - 12, 620)), height: max(0, size.height - 6))
+        // Exact page fill — any shortfall shows the next clip peeping under the dock.
+        let card = CGSize(width: max(0, min(size.width, 620)), height: max(0, size.height))
         let controls = max(0, controlsHeight)
-        let gaps: CGFloat = 6
+        let gaps: CGFloat = controls > 0 ? 6 : 0
         let available = max(0, card.height - controls - gaps)
         // Cap near a third of the picture so the subject stays clear, while still fitting
         // about two complete subtitle rows plus readings when Beginner aids are on.
@@ -111,7 +112,7 @@ nonisolated struct KaraokeReadingWindow {
     }
 }
 
-/// Default wide-video feed: budget using measured chrome and give every remaining point to karaoke.
+/// Default wide-video feed: the picture owns the page; karaoke gets a fixed leftover well.
 nonisolated struct RestingFeedGeometry {
     let videoSize: CGSize
     let captionHeight: CGFloat
@@ -120,11 +121,11 @@ nonisolated struct RestingFeedGeometry {
                      channelHeight: CGFloat, controlsHeight: CGFloat) -> Self {
         let chrome = max(0, channelHeight) + max(0, controlsHeight) + 4
         let available = max(0, size.height - chrome)
-        let videoFloor = min(90, available * 0.3)
-        let height = min(max(0, size.height * 0.5),
-                         max(videoFloor, available - max(0, preferredCaptionHeight)))
-        let width = min(max(0, size.width), 640, height * 16 / 9)
+        // Cap the reading well so growing subtitle aids never steal the picture.
+        let caption = min(max(0, preferredCaptionHeight), max(120, available * 0.32), 200)
+        let videoBudget = max(0, available - caption)
+        let width = min(max(0, size.width), 640, videoBudget * 16 / 9)
         let video = CGSize(width: width, height: width * 9 / 16)
-        return Self(videoSize: video, captionHeight: max(0, available - video.height))
+        return Self(videoSize: video, captionHeight: caption)
     }
 }

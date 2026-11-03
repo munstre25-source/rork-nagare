@@ -141,13 +141,19 @@ struct ClipStageView: View {
                     // Keep the same AVPlayer-backed hierarchy when resizing. Replacing it with
                     // a full-page view while a paged LazyVStack is animating can detach the
                     // player layer and crash UIKit.
-                    let restingSize = videoSize(in: geo.size)
+                    let resting = RestingFeedGeometry.make(
+                        in: geo.size,
+                        preferredCaptionHeight: karaokeReadingHeight,
+                        channelHeight: showsChannelRow ? channelRowHeight : 0,
+                        controlsHeight: actionRowHeight
+                    )
                     let expandedSize = expandedVideoSize(in: geo.size)
                     stage(
-                        videoHeight: videoExpanded ? expandedSize.height : restingSize.height,
-                        videoWidth: videoExpanded ? expandedSize.width : restingSize.width,
+                        videoHeight: videoExpanded ? expandedSize.height : resting.videoSize.height,
+                        videoWidth: videoExpanded ? expandedSize.width : resting.videoSize.width,
                         columnWidth: columnWidth(in: geo.size),
-                        stageSize: geo.size
+                        stageSize: geo.size,
+                        restingCaptionHeight: videoExpanded ? nil : resting.captionHeight
                     )
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
@@ -155,9 +161,7 @@ struct ClipStageView: View {
                 stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
             }
         }
-        // Keep the last subtitle row clear of the dock/home-indicator edge in every feed mode.
-        // Padding stays inside the page frame so the pager never grows taller than one viewport.
-        .padding(.bottom, usesFlexibleVideo ? (showsShortsStage ? 6 : 8) : 0)
+        // No outer bottom padding — even a few points makes the next clip peep under the dock.
         .onChange(of: app.profile.tapWordsEnabled) { _, enabled in
             if !enabled && isPopupHere { dismiss() }
         }
@@ -211,12 +215,32 @@ struct ClipStageView: View {
     }
 
     @ViewBuilder
-    private func stage(videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil) -> some View {
+    private func stage(
+        videoHeight: CGFloat?,
+        videoWidth: CGFloat?,
+        columnWidth: CGFloat?,
+        stageSize: CGSize? = nil,
+        restingCaptionHeight: CGFloat? = nil
+    ) -> some View {
         let player = coordinator.player(for: clip)
-        restingStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth, stageSize: stageSize)
+        restingStage(
+            player: player,
+            videoHeight: videoHeight,
+            videoWidth: videoWidth,
+            columnWidth: columnWidth,
+            stageSize: stageSize,
+            restingCaptionHeight: restingCaptionHeight
+        )
     }
 
-    private func restingStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil) -> some View {
+    private func restingStage(
+        player: (any ClipPlayer)?,
+        videoHeight: CGFloat?,
+        videoWidth: CGFloat?,
+        columnWidth: CGFloat?,
+        stageSize: CGSize? = nil,
+        restingCaptionHeight: CGFloat? = nil
+    ) -> some View {
         let maximized = showsMaximizedLandscape
         return Group {
             if maximized && isCompactLandscape(stageSize) {
@@ -236,7 +260,15 @@ struct ClipStageView: View {
                     columnWidth: columnWidth
                 )
             } else {
-                fullStage(player: player, videoHeight: videoHeight, videoWidth: videoWidth, columnWidth: columnWidth, stageSize: stageSize, maximized: maximized)
+                fullStage(
+                    player: player,
+                    videoHeight: videoHeight,
+                    videoWidth: videoWidth,
+                    columnWidth: columnWidth,
+                    stageSize: stageSize,
+                    maximized: maximized,
+                    restingCaptionHeight: restingCaptionHeight
+                )
             }
         }
     }
@@ -362,7 +394,15 @@ struct ClipStageView: View {
         .padding(.bottom, 10)
     }
 
-    private func fullStage(player: (any ClipPlayer)?, videoHeight: CGFloat?, videoWidth: CGFloat?, columnWidth: CGFloat?, stageSize: CGSize? = nil, maximized: Bool) -> some View {
+    private func fullStage(
+        player: (any ClipPlayer)?,
+        videoHeight: CGFloat?,
+        videoWidth: CGFloat?,
+        columnWidth: CGFloat?,
+        stageSize: CGSize? = nil,
+        maximized: Bool,
+        restingCaptionHeight: CGFloat? = nil
+    ) -> some View {
         let theater = LandscapeTheaterGeometry.make(
             in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
             preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
@@ -424,6 +464,8 @@ struct ClipStageView: View {
             .coachTarget(.video, active: isCoachPage)
             .modifier(FrameBottomReader(bottom: $videoBottom))
             .frame(maxWidth: .infinity)
+            // Picture keeps its budget when subtitle aids grow; karaoke scrolls inside its well.
+            .layoutPriority(1)
 
             if maximized {
                 if showsTheaterControls {
@@ -463,12 +505,18 @@ struct ClipStageView: View {
                     }
                 }
 
+                Spacer(minLength: 0)
+
                 transcript(player: player, showsLearningControls: false)
                     .coachTarget(.transcript, active: isCoachPage)
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .frame(width: columnWidth)
-                    .frame(maxWidth: .infinity, maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil, alignment: .top)
-                    .layoutPriority(1)
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: restingCaptionHeight == nil && (usesFlexibleVideo || immersiveFeed) ? .infinity : nil,
+                        alignment: .top
+                    )
+                    .frame(height: restingCaptionHeight, alignment: .top)
                     .clipped()
             }
         }
@@ -484,13 +532,13 @@ struct ClipStageView: View {
         let layout = ShortsStageGeometry.make(in: size,
                                               preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
                                               controlsHeight: controlsVisible ? playbackControlsHeight : 0)
-        let card = layout.cardSize
         let karaokeHeight = layout.captionHeight
         let videoHeight = layout.videoHeight
 
         // Maximize hides the control row and gives that space to the picture; the band
         // stays on the lower edge of the larger frame so the subject is not covered.
-        return VStack(spacing: 6) {
+        // The stack fills the page exactly — no outer padding that reveals the next clip.
+        return VStack(spacing: controlsVisible ? 6 : 0) {
             ZStack(alignment: .bottom) {
                 ClipVideoView(
                     clip: clip,
@@ -505,7 +553,7 @@ struct ClipStageView: View {
                     onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
-                .frame(width: card.width, height: videoHeight)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
@@ -519,21 +567,20 @@ struct ClipStageView: View {
                     shortsKaraokeBand(player: player, maxHeight: karaokeHeight)
                 }
             }
-            .frame(width: card.width, height: videoHeight)
+            .frame(maxWidth: .infinity)
+            .frame(height: videoHeight)
             .clipped()
+            .layoutPriority(1)
             .modifier(FrameBottomReader(bottom: $videoBottom))
 
             if controlsVisible {
                 playbackControls(player: player, sourceMark: "Shorts")
                     .padding(.horizontal, 8)
-                    .layoutPriority(1)
             }
         }
-        .frame(width: card.width, height: card.height, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.watchBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .frame(maxWidth: .infinity)
-        .padding(.top, 2)
+        .clipped()
     }
 
     private func playbackControls(player: (any ClipPlayer)?, sourceMark: String) -> some View {
