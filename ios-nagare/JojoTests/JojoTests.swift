@@ -472,7 +472,7 @@ struct JojoTests {
         let heights: [Int: CGFloat] = [0: 80, 1: 90, 2: 85, 3: 100]
         let three = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
                                                  spacing: 12, viewportHeight: 320)
-        #expect(three == [0, 1, 2])
+        #expect(three == [1, 2, 3])
         #expect(three.count <= 3)
         #expect(three.contains(1))
 
@@ -496,12 +496,15 @@ struct JojoTests {
         #expect(tallCurrent == [0])
     }
 
-    @Test func karaokeReadingWindowDropsPreviousBeforeNext() {
+    @Test func karaokeReadingWindowKeepsCurrentLineFirst() {
         let heights: [Int: CGFloat] = [0: 120, 1: 120, 2: 120]
         let mid = KaraokeReadingWindow.indices(current: 1, lineCount: 3, heights: heights,
-                                               spacing: 10, viewportHeight: 250)
+                                               spacing: 10, viewportHeight: 400)
         #expect(mid == [1, 2])
-        #expect(!mid.contains(0))
+        #expect(mid.first == 1)
+        let last = KaraokeReadingWindow.indices(current: 2, lineCount: 3, heights: heights,
+                                                spacing: 10, viewportHeight: 400)
+        #expect(last == [2])
     }
 
     @Test func feedPageReanchorWaitsPastChromeAnimation() {
