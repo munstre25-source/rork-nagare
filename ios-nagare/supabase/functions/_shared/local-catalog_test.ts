@@ -46,3 +46,11 @@ Deno.test("free discovery accepts uncaptained short videos and performs no infer
   assertEquals(calls.length,4);
  }finally {globalThis.fetch=old;names.forEach((n,i)=>saved[i]===undefined?Deno.env.delete(n):Deno.env.set(n,saved[i]!));}
 });
+
+Deno.test("flagged offline English stays held until the operator reviews it",()=>{
+ const candidate=clip();
+ candidate.translationIssues=[{lineIndex:0,reason:"missing source meaning"}];
+ assertThrows(()=>validateLocalCatalogClip(candidate),Error,"Offline English requires operator review");
+ candidate.processing.operatorReview="english-checked";
+ assertEquals(validateLocalCatalogClip(candidate)[0].translation,"Thank you!");
+});

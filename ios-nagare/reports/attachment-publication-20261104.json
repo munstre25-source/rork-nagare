@@ -1,0 +1,1217 @@
+{
+  "date": "2026-11-04",
+  "verifiedAtUtc": "2026-11-04T15:36:38.517690+00:00",
+  "imagesReviewed": 34,
+  "readableChannelLabels": 56,
+  "resolvedAndRegisteredChannels": 54,
+  "discoveredVideos": 1068,
+  "baselinePublishedClips": 451,
+  "baselineUniqueSourceVideos": 241,
+  "publishedClips": 464,
+  "uniqueSourceVideos": 254,
+  "newPublishedVideos": 13,
+  "newSourceChannels": 11,
+  "newTimedWords": 407,
+  "intervalAndReceiptErrors": [],
+  "databaseProofValidation": {
+    "published_total": 464,
+    "published_video_total": 254,
+    "local_total": 13,
+    "local_valid": 13
+  },
+  "paidInferenceCalls": 0,
+  "dailyCatalogSchedulesEnabled": false,
+  "manualReviewHolds": [
+    {
+      "videoId": "7FgW_b5PIu0",
+      "reason": "Japanese transcript not reliably supported by source evidence"
+    },
+    {
+      "videoId": "BJs6HM5bHD0",
+      "reason": "Unclear speech; draft Japanese not reliable"
+    }
+  ],
+  "clips": [
+    {
+      "id": "local-NWQ6kBW4g9g-0-19000",
+      "video_id": "NWQ6kBW4g9g",
+      "title": "Comprehensible Japanese 🇯🇵 #japanese #learnjapanese #nihongo #japan",
+      "channel_name": "Hanaso Japanese",
+      "duration_sec": 19,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-794NbT957JA-0-10000",
+      "video_id": "794NbT957JA",
+      "title": "服の収納、これでもっとスッキリ！👕✨仕切り付きで、服を種類ごとに分けて収納できる♪取り出しやすく、クローゼットや引き出し#衣類収納 #収納ボックス #クローゼット収納 #収納アイデア #便利グッズ",
+      "channel_name": "GiftJP",
+      "duration_sec": 10,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-LGweeRgR91A-0-17000",
+      "video_id": "LGweeRgR91A",
+      "title": "なんの仮装したかあててみて！？ #asmr #ドッキリ #ディズニー",
+      "channel_name": "まるもももか🐷🍑10万人行きたい",
+      "duration_sec": 17,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-W7W5nRO-rCQ-0-12000",
+      "video_id": "W7W5nRO-rCQ",
+      "title": "こんなに別人になることある、、⁉️😨⁉️#shorts #メイク",
+      "channel_name": "伊達千春【美容神😇】",
+      "duration_sec": 12,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-5JKfKnZ2pFA-0-25000",
+      "video_id": "5JKfKnZ2pFA",
+      "title": "Comprehensive Japanese 🇯🇵 #japan #learnjapanese #nihongo #japanese",
+      "channel_name": "Hanaso Japanese",
+      "duration_sec": 25,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-fz968_fhxvg-0-4000",
+      "video_id": "fz968_fhxvg",
+      "title": "モデル上手な雪若丸と脱走したいつや姫 #ハリネズミ #hedgehog #cute #ハリネズミのいる暮らし #pets",
+      "channel_name": "ハリネズミの茶々丸ファミリー🍼",
+      "duration_sec": 4,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-tXwwh5FueIs-0-7000",
+      "video_id": "tXwwh5FueIs",
+      "title": "運命の告白💘 7人それぞれの恋の結末は…？#恋ステ #恋する週末ホームステイ #shorts",
+      "channel_name": "ABEMA 恋する週末ホームステイ【公式】",
+      "duration_sec": 7,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-4FIRWjZar80-0-23000",
+      "video_id": "4FIRWjZar80",
+      "title": "ファンデがハゲがちな人だけ集合して‼️✋🧑‍🦲‼️#shorts #メイク",
+      "channel_name": "伊達千春【美容神😇】",
+      "duration_sec": 23,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-AytGyyt5JYM-0-32000",
+      "video_id": "AytGyyt5JYM",
+      "title": "にじでさんじなにじさんじ4選part1#にじさんじ切り抜き",
+      "channel_name": "にじドリル",
+      "duration_sec": 32,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-UpTmtWfjLQ0-0-22000",
+      "video_id": "UpTmtWfjLQ0",
+      "title": "#スリコ新作#あかちゃんのいる暮らし #ベビーグッズ #離乳食初期 #離乳食 #0歳育児 #令和7年ベビー",
+      "channel_name": "ゆり〻2人目妊娠中の助産師ママ",
+      "duration_sec": 22,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-3Jb9efU_3d0-0-17000",
+      "video_id": "3Jb9efU_3d0",
+      "title": "中毒性すごい🔥止まらない…！無限にいけちゃう罪なれんこん。【フライドれんこん】",
+      "channel_name": "倉嶋里菜",
+      "duration_sec": 17,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-W7jwTbVYd6A-0-28000",
+      "video_id": "W7jwTbVYd6A",
+      "title": "家族が必要です",
+      "channel_name": "魚を保護する人",
+      "duration_sec": 28,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    },
+    {
+      "id": "local-sUEGyzd3M6k-0-20000",
+      "video_id": "sUEGyzd3M6k",
+      "title": "文房具で奇跡起こす！？光に透ける神絵見る？ #修正テープ #文房具アート #光と影 #透かし絵 #仕掛け絵 #描いてみた #イラストメイキング #shorts",
+      "channel_name": "アニメ絵創作室",
+      "duration_sec": 20,
+      "source_start_sec": 0,
+      "review_tier": "local",
+      "video_orientation": "portrait"
+    }
+  ],
+  "draftScan": {
+    "processed": 142,
+    "statuses": {
+      "held": 129,
+      "ready_locally": 13
+    },
+    "results": [
+      {
+        "video_id": "qV56C_BrPsM",
+        "channel": "カズチャンネル/Kazu Channel",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.9
+      },
+      {
+        "video_id": "Q-eeYF8zrGY",
+        "channel": "伊達千春【美容神😇】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 24.3
+      },
+      {
+        "video_id": "jJ8HCKE4h6A",
+        "channel": "りくらぼ / RikuLab",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.0
+      },
+      {
+        "video_id": "5JKfKnZ2pFA",
+        "channel": "Hanaso Japanese",
+        "status": "ready_locally",
+        "id": "local-5JKfKnZ2pFA-0-25000",
+        "duration_sec": 25.0,
+        "orientation": "portrait",
+        "lines": 6,
+        "seconds": 10.7
+      },
+      {
+        "video_id": "KLRtRKxDGa4",
+        "channel": "トリビアン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 25.9
+      },
+      {
+        "video_id": "CFLCCpegyzQ",
+        "channel": "伊豆のぬし釣り",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 4.8
+      },
+      {
+        "video_id": "ATO8lCkF7Aw",
+        "channel": "あかちゃす丸裸🍎",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 6.1
+      },
+      {
+        "video_id": "UpTmtWfjLQ0",
+        "channel": "ゆり〻2人目妊娠中の助産師ママ",
+        "status": "ready_locally",
+        "id": "local-UpTmtWfjLQ0-0-22000",
+        "duration_sec": 22.0,
+        "orientation": "portrait",
+        "lines": 8,
+        "seconds": 17.7
+      },
+      {
+        "video_id": "bfOUPCtkwPU",
+        "channel": "あおぎり高校 - Aogiri Vtuber High School",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 24.0
+      },
+      {
+        "video_id": "DYub2dd2vO0",
+        "channel": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 5.7
+      },
+      {
+        "video_id": "cR-8JJ8uvkg",
+        "channel": "ここちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 19.7
+      },
+      {
+        "video_id": "fz968_fhxvg",
+        "channel": "ハリネズミの茶々丸ファミリー🍼",
+        "status": "ready_locally",
+        "id": "local-fz968_fhxvg-0-4000",
+        "duration_sec": 4.0,
+        "orientation": "portrait",
+        "lines": 1,
+        "seconds": 6.5
+      },
+      {
+        "video_id": "W5-jF4cNi2c",
+        "channel": "極悪特区",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 22.2
+      },
+      {
+        "video_id": "tXwwh5FueIs",
+        "channel": "ABEMA 恋する週末ホームステイ【公式】",
+        "status": "ready_locally",
+        "id": "local-tXwwh5FueIs-0-7000",
+        "duration_sec": 7.0,
+        "orientation": "portrait",
+        "lines": 3,
+        "seconds": 7.8
+      },
+      {
+        "video_id": "NI6wF7kIXxg",
+        "channel": "いい声ボイトレ研究所",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 53.3
+      },
+      {
+        "video_id": "oitVFgLH2Nk",
+        "channel": "Team Nitro Channel",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 4.3
+      },
+      {
+        "video_id": "x88uCTmH31Q",
+        "channel": "マイ",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 26.3
+      },
+      {
+        "video_id": "6NjKw4M14KE",
+        "channel": "kattyanneru/かっちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 28.5
+      },
+      {
+        "video_id": "mPWc3N4rU4Y",
+        "channel": "manaのアイデア料理",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 34.7
+      },
+      {
+        "video_id": "BuKQnCljnNY",
+        "channel": "erika_kurashi",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 10.5
+      },
+      {
+        "video_id": "059UtxcQTlI",
+        "channel": "アニメ絵創作室",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 23.5
+      },
+      {
+        "video_id": "ykw6STTksAM",
+        "channel": "ちゃまはし【アニメ・声優】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 36.8
+      },
+      {
+        "video_id": "yT12afxLAnc",
+        "channel": "毎日しんちゃん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 25.5
+      },
+      {
+        "video_id": "oEnaPwvWfQI",
+        "channel": "錬磨",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 22.8
+      },
+      {
+        "video_id": "0S34ZgqRQHs",
+        "channel": "にじドリル",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.7
+      },
+      {
+        "video_id": "AabYgeRFp-g",
+        "channel": "アニまち",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 28.4
+      },
+      {
+        "video_id": "Q6_ZQaD2VVM",
+        "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.0
+      },
+      {
+        "video_id": "rjr9uxcSn0A",
+        "channel": "世界をのぞき見!",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 31.5
+      },
+      {
+        "video_id": "DIlhbsI-9-Q",
+        "channel": "長野県でラジコンを飛ばそう！",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 17.2
+      },
+      {
+        "video_id": "hmGy6-jpASs",
+        "channel": "田舎民カイジ【shorts】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 21.1
+      },
+      {
+        "video_id": "F6TTFSBI11o",
+        "channel": "よへ 僕がいい旦那になるまで",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 20.9
+      },
+      {
+        "video_id": "rkRsxjISMUY",
+        "channel": "もふもふ事件簿",
+        "status": "held",
+        "reason": "Source audio gap: head=0.000s tail=0.547s internal=8 samples",
+        "seconds": 8.8
+      },
+      {
+        "video_id": "cvIULMseJDM",
+        "channel": "たろたん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 22.2
+      },
+      {
+        "video_id": "NSI9hvrVsuw",
+        "channel": "はじめしゃちょー（hajime）",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 18.0
+      },
+      {
+        "video_id": "Ukfa2vNxXu4",
+        "channel": "GiftJP",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 16.7
+      },
+      {
+        "video_id": "Ze7q-vso82s",
+        "channel": "東出昌大",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.5
+      },
+      {
+        "video_id": "KurTx8aJY_0",
+        "channel": "ふじやま家族",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 10.9
+      },
+      {
+        "video_id": "NC7MzVbCZ4U",
+        "channel": "のすけぼっち飯",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 48.2
+      },
+      {
+        "video_id": "8hGepBfxC1Q",
+        "channel": "ヘビさんのアウトドア日誌",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.7
+      },
+      {
+        "video_id": "enPeEvSe5Ow",
+        "channel": "レッチャンネル",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 5.8
+      },
+      {
+        "video_id": "k3cd46BDKdw",
+        "channel": "日本の紫陽花",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.8
+      },
+      {
+        "video_id": "3Jb9efU_3d0",
+        "channel": "倉嶋里菜",
+        "status": "ready_locally",
+        "id": "local-3Jb9efU_3d0-0-17000",
+        "duration_sec": 17.0,
+        "orientation": "portrait",
+        "lines": 6,
+        "seconds": 19.7
+      },
+      {
+        "video_id": "7FgW_b5PIu0",
+        "channel": "大阪グルメ【関西グルメ】公式",
+        "status": "ready_locally",
+        "id": "local-7FgW_b5PIu0-0-14000",
+        "duration_sec": 14.0,
+        "orientation": "portrait",
+        "lines": 2,
+        "seconds": 8.9
+      },
+      {
+        "video_id": "LGweeRgR91A",
+        "channel": "まるもももか🐷🍑10万人行きたい",
+        "status": "ready_locally",
+        "id": "local-LGweeRgR91A-0-17000",
+        "duration_sec": 17.0,
+        "orientation": "portrait",
+        "lines": 1,
+        "seconds": 8.1
+      },
+      {
+        "video_id": "eyPWgzChkM4",
+        "channel": "はるひなちゃんねる",
+        "status": "held",
+        "reason": "DownloadError",
+        "seconds": 2.2
+      },
+      {
+        "video_id": "fsFrcj8N1QI",
+        "channel": "ひみつ基地。",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 29.8
+      },
+      {
+        "video_id": "X9q4wQng5fk",
+        "channel": "えり | 親子で楽しむおうち遊び",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 18.1
+      },
+      {
+        "video_id": "SJKqmPmjIDU",
+        "channel": "やまかわてるき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 53.8
+      },
+      {
+        "video_id": "SwiQky3hUrI",
+        "channel": "あーずかい",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 28.8
+      },
+      {
+        "video_id": "W7jwTbVYd6A",
+        "channel": "魚を保護する人",
+        "status": "ready_locally",
+        "id": "local-W7jwTbVYd6A-0-28000",
+        "duration_sec": 28.0,
+        "orientation": "portrait",
+        "lines": 8,
+        "seconds": 24.9
+      },
+      {
+        "video_id": "AVZIkKg70oU",
+        "channel": "小物ロマン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 54.5
+      },
+      {
+        "video_id": "Lr7aYnodVVg",
+        "channel": "Hanaの暮らし",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.2
+      },
+      {
+        "video_id": "pZdzrYF4D9o",
+        "channel": "三津家貴也",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 19.1
+      },
+      {
+        "video_id": "kJylcRMFtd4",
+        "channel": "ともき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.4
+      },
+      {
+        "video_id": "K-2CVUw-xAg",
+        "channel": "カズチャンネル/Kazu Channel",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 29.5
+      },
+      {
+        "video_id": "4FIRWjZar80",
+        "channel": "伊達千春【美容神😇】",
+        "status": "ready_locally",
+        "id": "local-4FIRWjZar80-0-23000",
+        "duration_sec": 23.0,
+        "orientation": "portrait",
+        "lines": 5,
+        "seconds": 25.1
+      },
+      {
+        "video_id": "Jq_UVLhV9SE",
+        "channel": "りくらぼ / RikuLab",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 25.6
+      },
+      {
+        "video_id": "gZULl_R05Cw",
+        "channel": "トリビアン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 29.4
+      },
+      {
+        "video_id": "hz73MJ8KmGw",
+        "channel": "伊豆のぬし釣り",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 10.7
+      },
+      {
+        "video_id": "Dq5ieFAb0N8",
+        "channel": "あかちゃす丸裸🍎",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 8.3
+      },
+      {
+        "video_id": "RZzkmN9ODvo",
+        "channel": "あおぎり高校 - Aogiri Vtuber High School",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 28.3
+      },
+      {
+        "video_id": "KPp0Fz3rMCE",
+        "channel": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 7.6
+      },
+      {
+        "video_id": "Tb_ItgrQlNU",
+        "channel": "ここちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 33.4
+      },
+      {
+        "video_id": "bGYpSxCJY1A",
+        "channel": "極悪特区",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 21.5
+      },
+      {
+        "video_id": "faoboC067GE",
+        "channel": "いい声ボイトレ研究所",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.8
+      },
+      {
+        "video_id": "BJs6HM5bHD0",
+        "channel": "Team Nitro Channel",
+        "status": "ready_locally",
+        "id": "local-BJs6HM5bHD0-0-12000",
+        "duration_sec": 12.0,
+        "orientation": "portrait",
+        "lines": 2,
+        "seconds": 9.1
+      },
+      {
+        "video_id": "vGdVLHOQvO4",
+        "channel": "マイ",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 37.2
+      },
+      {
+        "video_id": "YThIbra3t3w",
+        "channel": "kattyanneru/かっちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 26.3
+      },
+      {
+        "video_id": "jVyTJZxj_18",
+        "channel": "manaのアイデア料理",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.6
+      },
+      {
+        "video_id": "wkOTMSnJYKw",
+        "channel": "erika_kurashi",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 16.9
+      },
+      {
+        "video_id": "xUd33Baf_yI",
+        "channel": "アニメ絵創作室",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 24.7
+      },
+      {
+        "video_id": "cNOAFv80RLk",
+        "channel": "ちゃまはし【アニメ・声優】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 34.4
+      },
+      {
+        "video_id": "RHotkJktt5Q",
+        "channel": "毎日しんちゃん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.0
+      },
+      {
+        "video_id": "tBcIjdnzDcs",
+        "channel": "錬磨",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 45.1
+      },
+      {
+        "video_id": "AytGyyt5JYM",
+        "channel": "にじドリル",
+        "status": "ready_locally",
+        "id": "local-AytGyyt5JYM-0-32000",
+        "duration_sec": 32.0,
+        "orientation": "portrait",
+        "lines": 2,
+        "seconds": 21.6
+      },
+      {
+        "video_id": "KBl7i8slgb0",
+        "channel": "アニまち",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.9
+      },
+      {
+        "video_id": "LUmrgB1XnSo",
+        "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+        "status": "held",
+        "reason": "line[0]: Word spans implausibly long audio",
+        "seconds": 35.1
+      },
+      {
+        "video_id": "V4TDB9cZgw0",
+        "channel": "世界をのぞき見!",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 36.4
+      },
+      {
+        "video_id": "0jOYJLHhrjk",
+        "channel": "長野県でラジコンを飛ばそう！",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 23.4
+      },
+      {
+        "video_id": "xIUYjjHMESg",
+        "channel": "田舎民カイジ【shorts】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 35.8
+      },
+      {
+        "video_id": "ZP20NwTBT00",
+        "channel": "よへ 僕がいい旦那になるまで",
+        "status": "held",
+        "reason": "line[0]: Word spans implausibly long audio",
+        "seconds": 27.9
+      },
+      {
+        "video_id": "6Tg62yO9zTU",
+        "channel": "もふもふ事件簿",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 11.8
+      },
+      {
+        "video_id": "OqoZYpSQiMc",
+        "channel": "たろたん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 31.9
+      },
+      {
+        "video_id": "42KzsSzAtnM",
+        "channel": "はじめしゃちょー（hajime）",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 22.5
+      },
+      {
+        "video_id": "794NbT957JA",
+        "channel": "GiftJP",
+        "status": "ready_locally",
+        "id": "local-794NbT957JA-0-10000",
+        "duration_sec": 10.0,
+        "orientation": "portrait",
+        "lines": 4,
+        "seconds": 9.8
+      },
+      {
+        "video_id": "Ju6K6demcuU",
+        "channel": "東出昌大",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 25.1
+      },
+      {
+        "video_id": "ytzSJAw96sk",
+        "channel": "ふじやま家族",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 19.7
+      },
+      {
+        "video_id": "69Z6XYoYNpA",
+        "channel": "のすけぼっち飯",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 39.8
+      },
+      {
+        "video_id": "SxeH6D7Bcj8",
+        "channel": "ヘビさんのアウトドア日誌",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 40.8
+      },
+      {
+        "video_id": "ZzqYssLLImo",
+        "channel": "レッチャンネル",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 17.2
+      },
+      {
+        "video_id": "7zQRoqD4d1k",
+        "channel": "日本の紫陽花",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 56.2
+      },
+      {
+        "video_id": "51JVRnuOYC4",
+        "channel": "はるひなちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.8
+      },
+      {
+        "video_id": "r5Xnazbf1Go",
+        "channel": "ひみつ基地。",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 33.9
+      },
+      {
+        "video_id": "IJKBGKojZXo",
+        "channel": "えり | 親子で楽しむおうち遊び",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 33.2
+      },
+      {
+        "video_id": "eXb0s-kVuC8",
+        "channel": "やまかわてるき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 55.0
+      },
+      {
+        "video_id": "VrzsTij2gkA",
+        "channel": "あーずかい",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 23.3
+      },
+      {
+        "video_id": "6uXEoiEuc1E",
+        "channel": "小物ロマン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 41.6
+      },
+      {
+        "video_id": "hCCPJ-etKNg",
+        "channel": "Hanaの暮らし",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 34.0
+      },
+      {
+        "video_id": "k_-b76oRa6Q",
+        "channel": "三津家貴也",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 49.0
+      },
+      {
+        "video_id": "sDfaEpM9LIk",
+        "channel": "ともき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.4
+      },
+      {
+        "video_id": "LhkJVdi8CcM",
+        "channel": "カズチャンネル/Kazu Channel",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 62.9
+      },
+      {
+        "video_id": "TyS8SeJNfeI",
+        "channel": "りくらぼ / RikuLab",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.4
+      },
+      {
+        "video_id": "tRt0vQzCUYo",
+        "channel": "トリビアン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.7
+      },
+      {
+        "video_id": "FRml1nnawSU",
+        "channel": "伊豆のぬし釣り",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 23.2
+      },
+      {
+        "video_id": "uM2I5PeEYWQ",
+        "channel": "あかちゃす丸裸🍎",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 18.9
+      },
+      {
+        "video_id": "LoBDOW2-AJg",
+        "channel": "あおぎり高校 - Aogiri Vtuber High School",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 40.1
+      },
+      {
+        "video_id": "_UyPJzP2rzY",
+        "channel": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 36.6
+      },
+      {
+        "video_id": "nOCiMBsGNao",
+        "channel": "ここちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.2
+      },
+      {
+        "video_id": "ffChOg3t0FE",
+        "channel": "極悪特区",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 24.4
+      },
+      {
+        "video_id": "q2a02nfgfZE",
+        "channel": "いい声ボイトレ研究所",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 29.1
+      },
+      {
+        "video_id": "XsFd2f2w0vU",
+        "channel": "マイ",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 35.1
+      },
+      {
+        "video_id": "L8YzKNYvXeU",
+        "channel": "kattyanneru/かっちゃんねる",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 29.6
+      },
+      {
+        "video_id": "ePbC3feznrU",
+        "channel": "manaのアイデア料理",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 44.5
+      },
+      {
+        "video_id": "zBn_Ok9bwQY",
+        "channel": "erika_kurashi",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 24.0
+      },
+      {
+        "video_id": "sUEGyzd3M6k",
+        "channel": "アニメ絵創作室",
+        "status": "ready_locally",
+        "id": "local-sUEGyzd3M6k-0-20000",
+        "duration_sec": 20.0,
+        "orientation": "portrait",
+        "lines": 6,
+        "seconds": 15.6
+      },
+      {
+        "video_id": "G4EkX9MraGk",
+        "channel": "ちゃまはし【アニメ・声優】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 39.4
+      },
+      {
+        "video_id": "lG26PCAT5z4",
+        "channel": "毎日しんちゃん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 102.3
+      },
+      {
+        "video_id": "c74g0BarqBE",
+        "channel": "錬磨",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 40.1
+      },
+      {
+        "video_id": "EHo-WpfQksY",
+        "channel": "アニまち",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.2
+      },
+      {
+        "video_id": "yU2tLkfS7j8",
+        "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 35.7
+      },
+      {
+        "video_id": "NSqs3cajFzg",
+        "channel": "世界をのぞき見!",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 27.9
+      },
+      {
+        "video_id": "b6Frd92ucpI",
+        "channel": "長野県でラジコンを飛ばそう！",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 31.0
+      },
+      {
+        "video_id": "j5ar9MRTc68",
+        "channel": "田舎民カイジ【shorts】",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 23.7
+      },
+      {
+        "video_id": "RRGebB-JBD8",
+        "channel": "よへ 僕がいい旦那になるまで",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.1
+      },
+      {
+        "video_id": "myQhpZOQNkc",
+        "channel": "もふもふ事件簿",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 16.2
+      },
+      {
+        "video_id": "mhBbYPeTZ9o",
+        "channel": "たろたん",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.3
+      },
+      {
+        "video_id": "kcfeaejvzy8",
+        "channel": "はじめしゃちょー（hajime）",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.9
+      },
+      {
+        "video_id": "-h2btPiOxlk",
+        "channel": "東出昌大",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 21.0
+      },
+      {
+        "video_id": "llvmSi2eamE",
+        "channel": "ふじやま家族",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 12.5
+      },
+      {
+        "video_id": "iURMTVKNCbk",
+        "channel": "のすけぼっち飯",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 44.9
+      },
+      {
+        "video_id": "jcpJaSK0oDM",
+        "channel": "ヘビさんのアウトドア日誌",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 35.5
+      },
+      {
+        "video_id": "Ux48t71hG2w",
+        "channel": "レッチャンネル",
+        "status": "held",
+        "reason": "No Japanese speech with usable offline vocabulary",
+        "seconds": 10.1
+      },
+      {
+        "video_id": "UwEHgaS-ihY",
+        "channel": "日本の紫陽花",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 31.7
+      },
+      {
+        "video_id": "TzmBuiwxRCY",
+        "channel": "はるひなちゃんねる",
+        "status": "held",
+        "reason": "DownloadError",
+        "seconds": 2.8
+      },
+      {
+        "video_id": "8gVuJ9aZBZI",
+        "channel": "ひみつ基地。",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 32.6
+      },
+      {
+        "video_id": "phGyfevu_o0",
+        "channel": "えり | 親子で楽しむおうち遊び",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 21.6
+      },
+      {
+        "video_id": "63p0o7t3HMU",
+        "channel": "やまかわてるき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 44.0
+      },
+      {
+        "video_id": "AhCds2EUG24",
+        "channel": "あーずかい",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.5
+      },
+      {
+        "video_id": "TWrHhgP7FD4",
+        "channel": "小物ロマン",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 38.5
+      },
+      {
+        "video_id": "ph3ZEzGZnVg",
+        "channel": "Hanaの暮らし",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 25.6
+      },
+      {
+        "video_id": "yXW4ynIhRBA",
+        "channel": "三津家貴也",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 30.1
+      },
+      {
+        "video_id": "CzbzzIrgQ3o",
+        "channel": "ともき",
+        "status": "held",
+        "reason": "line[0]: Collapsed or overlapping word timing needs review",
+        "seconds": 42.1
+      }
+    ]
+  },
+  "notes": [
+    "Draft status ready_locally is not publication approval. Public catalog rows are the publication authority.",
+    "Japanese homophone and English meaning corrections were reviewed before publishing. Corrected Japanese was re-aligned against source audio.",
+    "Qwen audio-derived timestamps and valid receipts do not establish human-audited perfect word timing across the existing catalog.",
+    "No Gemini key was retrieved or used.",
+    "No live clip identifiers were rewritten.",
+    "Two screenshot channel names remain unresolved; obscured rows are documented in the channel inventory.",
+    "Fresh iOS build required for the pushed feed eligibility and duration changes."
+  ]
+}
