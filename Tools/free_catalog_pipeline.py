@@ -161,7 +161,9 @@ def main():
     p.add_argument("--asr-model",default="/tmp/jojo-qwen-asr-model")
     p.add_argument("--aligner-model",default="/tmp/jojo-qwen-aligner-model")
     p.add_argument("--translation-model",default="/tmp/jojo-ja-en-model")
-    args=p.parse_args();args.report_directory.mkdir(parents=True,exist_ok=True)
+    args=p.parse_args()
+    if args.apply:p.error("Review draft Japanese and English, then use publish_reviewed_local.py --apply with an exact review snapshot")
+    args.report_directory.mkdir(parents=True,exist_ok=True)
     base,anon=configuration();headers=maintenance_headers(base,anon,args.use_existing_vault)
     sources=json.loads(args.sources.read_text())["sources"]
     sources=list({s["channel_id"]:s for s in sources if s["status"]=="resolved"}.values())
@@ -207,13 +209,7 @@ def main():
             clip,evidence=processor.process(video,info,audio,start)
             (args.report_directory/(clip["id"]+".json")).write_text(json.dumps(clip,ensure_ascii=False,indent=2))
             (args.report_directory/(clip["id"]+"-evidence.json")).write_text(json.dumps(evidence,ensure_ascii=False))
-            if args.apply and clip["translationIssues"]:
-                raise ValueError("Offline English requires review: " + ",".join(str(x["lineIndex"]) for x in clip["translationIssues"]))
-            if args.apply:
-                response=request_json(base+"/functions/v1/ingest-local-clips",headers,{"clips":[clip]},timeout=180)
-                if not response.get("accepted"):raise ValueError((response.get("rejected") or [{"reason":"Publication not accepted"}])[0]["reason"])
-                result["status"]="published"
-            else:result["status"]="ready_locally"
+            result["status"]="ready_locally"
             result.update(id=clip["id"],duration_sec=clip["duration_sec"],orientation=clip["video_orientation"],lines=len(clip["lines"]))
             accepted[video["channel_id"]]+=1
         except urllib.error.HTTPError as error:

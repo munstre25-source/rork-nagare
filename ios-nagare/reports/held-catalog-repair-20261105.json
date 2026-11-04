@@ -1,0 +1,795 @@
+{
+  "date": "2026-11-05",
+  "baselinePublished": 464,
+  "additionalPublished": 24,
+  "publishedTotal": 488,
+  "distinctPublishedVideos": 278,
+  "localTierPublished": 37,
+  "databaseLocalPublicationProofsValid": 37,
+  "paidInferenceCalls": 0,
+  "readyForReviewStillUnpublished": 48,
+  "heldStillUnpublished": 41,
+  "validation": {
+    "pythonTests": 24,
+    "denoTests": 47,
+    "sqlGuardTransactions": "Both migrations and SQL guard tested in rollback transactions before production apply"
+  },
+  "added": [
+    {
+      "id": "local-L8YzKNYvXeU-0-49000",
+      "videoId": "L8YzKNYvXeU",
+      "title": "【ただ焼くだけで旨すぎる！】マヨなしで作る神コスパおかず「やみつきてりマヨ風チキン」 #簡単レシピ #料理",
+      "channel": "kattyanneru/かっちゃんねる",
+      "durationSec": 49,
+      "lines": 19,
+      "timedSpokenTokens": 136,
+      "url": "https://www.youtube.com/watch?v=L8YzKNYvXeU"
+    },
+    {
+      "id": "local-6NjKw4M14KE-0-42000",
+      "videoId": "6NjKw4M14KE",
+      "title": "【並べて焼くだけで旨すぎる！】レンジとトースターで簡単「やみつき焼き蓮根」の作り方  #料理 #簡単レシピ",
+      "channel": "kattyanneru/かっちゃんねる",
+      "durationSec": 42,
+      "lines": 18,
+      "timedSpokenTokens": 117,
+      "url": "https://www.youtube.com/watch?v=6NjKw4M14KE"
+    },
+    {
+      "id": "local-Lr7aYnodVVg-0-51000",
+      "videoId": "Lr7aYnodVVg",
+      "title": "5分で作れる簡単ビビンバに今日は決まり!🥕#簡単レシピ #夜ごはん #お弁当レシピ#ビビンバ",
+      "channel": "Hanaの暮らし",
+      "durationSec": 51,
+      "lines": 20,
+      "timedSpokenTokens": 155,
+      "url": "https://www.youtube.com/watch?v=Lr7aYnodVVg"
+    },
+    {
+      "id": "local-gZULl_R05Cw-0-20000",
+      "videoId": "gZULl_R05Cw",
+      "title": "本当に煽ってるアオリイカ",
+      "channel": "トリビアン",
+      "durationSec": 20,
+      "lines": 9,
+      "timedSpokenTokens": 61,
+      "url": "https://www.youtube.com/watch?v=gZULl_R05Cw"
+    },
+    {
+      "id": "local-6Tg62yO9zTU-0-9000",
+      "videoId": "6Tg62yO9zTU",
+      "title": "野良猫に決闘を申し込んだらww",
+      "channel": "もふもふ事件簿",
+      "durationSec": 9,
+      "lines": 2,
+      "timedSpokenTokens": 14,
+      "url": "https://www.youtube.com/watch?v=6Tg62yO9zTU"
+    },
+    {
+      "id": "local-ZzqYssLLImo-0-14000",
+      "videoId": "ZzqYssLLImo",
+      "title": "こんなお兄ちゃん欲しかった🥲 #shorts",
+      "channel": "レッチャンネル",
+      "durationSec": 14,
+      "lines": 2,
+      "timedSpokenTokens": 22,
+      "url": "https://www.youtube.com/watch?v=ZzqYssLLImo"
+    },
+    {
+      "id": "local-DIlhbsI-9-Q-0-16000",
+      "videoId": "DIlhbsI-9-Q",
+      "title": "着陸に失敗するE-2 ホークアイ #ラジコン飛行機",
+      "channel": "長野県でラジコンを飛ばそう！",
+      "durationSec": 16,
+      "lines": 4,
+      "timedSpokenTokens": 27,
+      "url": "https://www.youtube.com/watch?v=DIlhbsI-9-Q"
+    },
+    {
+      "id": "local-NSI9hvrVsuw-0-12000",
+      "videoId": "NSI9hvrVsuw",
+      "title": "危なそうだけど大丈夫ですよ",
+      "channel": "はじめしゃちょー（hajime）",
+      "durationSec": 12,
+      "lines": 6,
+      "timedSpokenTokens": 48,
+      "url": "https://www.youtube.com/watch?v=NSI9hvrVsuw"
+    },
+    {
+      "id": "local-X9q4wQng5fk-0-12000",
+      "videoId": "X9q4wQng5fk",
+      "title": "【これを！？ホイップしてみた😳】#ホイップクリーム#スパンコールボトル#工作#ちいかわ#100均 #おうち遊び #簡単",
+      "channel": "えり | 親子で楽しむおうち遊び",
+      "durationSec": 12,
+      "lines": 4,
+      "timedSpokenTokens": 38,
+      "url": "https://www.youtube.com/watch?v=X9q4wQng5fk"
+    },
+    {
+      "id": "local-uM2I5PeEYWQ-0-11000",
+      "videoId": "uM2I5PeEYWQ",
+      "title": "占いカフェ知ってる！？💖 #shorts",
+      "channel": "あかちゃす丸裸🍎",
+      "durationSec": 11,
+      "lines": 4,
+      "timedSpokenTokens": 33,
+      "url": "https://www.youtube.com/watch?v=uM2I5PeEYWQ"
+    },
+    {
+      "id": "local-cR-8JJ8uvkg-0-12000",
+      "videoId": "cR-8JJ8uvkg",
+      "title": "まさかの…😂💦　#ラプンツェル　#スタジオアリス",
+      "channel": "ここちゃんねる",
+      "durationSec": 12,
+      "lines": 7,
+      "timedSpokenTokens": 40,
+      "url": "https://www.youtube.com/watch?v=cR-8JJ8uvkg"
+    },
+    {
+      "id": "local-KLRtRKxDGa4-0-20000",
+      "videoId": "KLRtRKxDGa4",
+      "title": "西京焼きにしかチーズケーキ",
+      "channel": "トリビアン",
+      "durationSec": 20,
+      "lines": 10,
+      "timedSpokenTokens": 77,
+      "url": "https://www.youtube.com/watch?v=KLRtRKxDGa4"
+    },
+    {
+      "id": "local-myQhpZOQNkc-0-11000",
+      "videoId": "myQhpZOQNkc",
+      "title": "屋上から落ちた犬の衝撃の結末",
+      "channel": "もふもふ事件簿",
+      "durationSec": 11,
+      "lines": 2,
+      "timedSpokenTokens": 22,
+      "url": "https://www.youtube.com/watch?v=myQhpZOQNkc"
+    },
+    {
+      "id": "local-V4TDB9cZgw0-0-25000",
+      "videoId": "V4TDB9cZgw0",
+      "title": "想定外の超大ヒット。",
+      "channel": "世界をのぞき見!",
+      "durationSec": 25,
+      "lines": 11,
+      "timedSpokenTokens": 77,
+      "url": "https://www.youtube.com/watch?v=V4TDB9cZgw0"
+    },
+    {
+      "id": "local-k_-b76oRa6Q-0-48000",
+      "videoId": "k_-b76oRa6Q",
+      "title": "あなたのその発信は誰かを傷つけていませんか？#言葉に6秒深呼吸 #PR",
+      "channel": "三津家貴也",
+      "durationSec": 48,
+      "lines": 10,
+      "timedSpokenTokens": 133,
+      "url": "https://www.youtube.com/watch?v=k_-b76oRa6Q"
+    },
+    {
+      "id": "local-_UyPJzP2rzY-0-31000",
+      "videoId": "_UyPJzP2rzY",
+      "title": "今回は、ポパイ選手が絶大な信頼を置く「ニースリーブ」に完全フォーカス！【Team ALLOUT ポパイ関根選手】",
+      "channel": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+      "durationSec": 31,
+      "lines": 7,
+      "timedSpokenTokens": 78,
+      "url": "https://www.youtube.com/watch?v=_UyPJzP2rzY"
+    },
+    {
+      "id": "local-wkOTMSnJYKw-0-13000",
+      "videoId": "wkOTMSnJYKw",
+      "title": "さつまいも🍠はコレ♡ #秋の味覚  #ライフハック #裏ワザ #裏技 #さつまいも #youtubeshorts  #簡単レシピ #炊飯器レシピ",
+      "channel": "erika_kurashi",
+      "durationSec": 13,
+      "lines": 7,
+      "timedSpokenTokens": 40,
+      "url": "https://www.youtube.com/watch?v=wkOTMSnJYKw"
+    },
+    {
+      "id": "local-mPWc3N4rU4Y-0-38000",
+      "videoId": "mPWc3N4rU4Y",
+      "title": "ミニポークタマゴ#shorts #お弁当 #おにぎり弁当",
+      "channel": "manaのアイデア料理",
+      "durationSec": 38,
+      "lines": 15,
+      "timedSpokenTokens": 115,
+      "url": "https://www.youtube.com/watch?v=mPWc3N4rU4Y"
+    },
+    {
+      "id": "local-Q-eeYF8zrGY-0-18000",
+      "videoId": "Q-eeYF8zrGY",
+      "title": "目安の鍵はまつ毛、、⁉️🧐⁉️#shorts #メイク",
+      "channel": "伊達千春【美容神😇】",
+      "durationSec": 18,
+      "lines": 3,
+      "timedSpokenTokens": 67,
+      "url": "https://www.youtube.com/watch?v=Q-eeYF8zrGY"
+    },
+    {
+      "id": "local-Ukfa2vNxXu4-0-11000",
+      "videoId": "Ukfa2vNxXu4",
+      "title": "これ、キッチンにあると便利すぎる…！😳 1枚で「鍋敷き」にも「収納ボックス」にも大変身！さらにマグネットで壁にペ#キッチン便利グッズ #マグネット収納 #シリコンマット #時短家事 #暮らしの道具",
+      "channel": "GiftJP",
+      "durationSec": 11,
+      "lines": 7,
+      "timedSpokenTokens": 43,
+      "url": "https://www.youtube.com/watch?v=Ukfa2vNxXu4"
+    },
+    {
+      "id": "local-jVyTJZxj_18-0-49000",
+      "videoId": "jVyTJZxj_18",
+      "title": "詳細はコメント欄を見てね！#おもてなし #お稲荷さん #shorts",
+      "channel": "manaのアイデア料理",
+      "durationSec": 49,
+      "lines": 18,
+      "timedSpokenTokens": 126,
+      "url": "https://www.youtube.com/watch?v=jVyTJZxj_18"
+    },
+    {
+      "id": "local-ePbC3feznrU-0-56000",
+      "videoId": "ePbC3feznrU",
+      "title": "このおにぎりの詳細はコメント欄！#shorts #お弁当 #おにぎり弁当",
+      "channel": "manaのアイデア料理",
+      "durationSec": 56,
+      "lines": 21,
+      "timedSpokenTokens": 152,
+      "url": "https://www.youtube.com/watch?v=ePbC3feznrU"
+    },
+    {
+      "id": "local-IJKBGKojZXo-0-17000",
+      "videoId": "IJKBGKojZXo",
+      "title": "【お水がつかめる！？😳】 #100均 #おうち遊び #つかめる水#チカバルーン#キラキラ#オーロラ",
+      "channel": "えり | 親子で楽しむおうち遊び",
+      "durationSec": 17,
+      "lines": 8,
+      "timedSpokenTokens": 58,
+      "url": "https://www.youtube.com/watch?v=IJKBGKojZXo"
+    },
+    {
+      "id": "local-YThIbra3t3w-0-49000",
+      "videoId": "YThIbra3t3w",
+      "title": "【ボウル１つ・レンジで完結】さつまいもが秒でなくなる絶品「マヨたまさつまいもサラダ」の作り方 #簡単レシピ #料理",
+      "channel": "kattyanneru/かっちゃんねる",
+      "durationSec": 49,
+      "lines": 19,
+      "timedSpokenTokens": 147,
+      "url": "https://www.youtube.com/watch?v=YThIbra3t3w"
+    }
+  ],
+  "remaining": [
+    {
+      "videoId": "yT12afxLAnc",
+      "channel": "毎日しんちゃん",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "AabYgeRFp-g",
+      "channel": "アニまち",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "hmGy6-jpASs",
+      "channel": "田舎民カイジ【shorts】",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "W5-jF4cNi2c",
+      "channel": "極悪特区",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "fsFrcj8N1QI",
+      "channel": "ひみつ基地。",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "8hGepBfxC1Q",
+      "channel": "ヘビさんのアウトドア日誌",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "SwiQky3hUrI",
+      "channel": "あーずかい",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "oEnaPwvWfQI",
+      "channel": "錬磨",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "k3cd46BDKdw",
+      "channel": "日本の紫陽花",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "NC7MzVbCZ4U",
+      "channel": "のすけぼっち飯",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "ytzSJAw96sk",
+      "channel": "ふじやま家族",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "F6TTFSBI11o",
+      "channel": "よへ 僕がいい旦那になるまで",
+      "status": "held",
+      "reason": "No Japanese speech: en"
+    },
+    {
+      "videoId": "rjr9uxcSn0A",
+      "channel": "世界をのぞき見!",
+      "status": "held",
+      "reason": "line[2]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "FRml1nnawSU",
+      "channel": "伊豆のぬし釣り",
+      "status": "held",
+      "reason": "No Japanese speech: en"
+    },
+    {
+      "videoId": "bfOUPCtkwPU",
+      "channel": "あおぎり高校 - Aogiri Vtuber High School",
+      "status": "held",
+      "reason": "line[9]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "51JVRnuOYC4",
+      "channel": "はるひなちゃんねる",
+      "status": "held",
+      "reason": "line[7]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "jJ8HCKE4h6A",
+      "channel": "りくらぼ / RikuLab",
+      "status": "held",
+      "reason": "line[10]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "cvIULMseJDM",
+      "channel": "たろたん",
+      "status": "held",
+      "reason": "line[12]: No speech in alignment phrase"
+    },
+    {
+      "videoId": "Ze7q-vso82s",
+      "channel": "東出昌大",
+      "status": "held",
+      "reason": "line[0]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "x88uCTmH31Q",
+      "channel": "マイ",
+      "status": "held",
+      "reason": "line[3]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "AVZIkKg70oU",
+      "channel": "小物ロマン",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "kJylcRMFtd4",
+      "channel": "ともき",
+      "status": "held",
+      "reason": "line[1]: No speech in alignment phrase"
+    },
+    {
+      "videoId": "SJKqmPmjIDU",
+      "channel": "やまかわてるき",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "NI6wF7kIXxg",
+      "channel": "いい声ボイトレ研究所",
+      "status": "held",
+      "reason": "line[19]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "Q6_ZQaD2VVM",
+      "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "qV56C_BrPsM",
+      "channel": "カズチャンネル/Kazu Channel",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "42KzsSzAtnM",
+      "channel": "はじめしゃちょー（hajime）",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "059UtxcQTlI",
+      "channel": "アニメ絵創作室",
+      "status": "held",
+      "reason": "line[3]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "0jOYJLHhrjk",
+      "channel": "長野県でラジコンを飛ばそう！",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "Tb_ItgrQlNU",
+      "channel": "ここちゃんねる",
+      "status": "held",
+      "reason": "line[8]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "0S34ZgqRQHs",
+      "channel": "にじドリル",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "ykw6STTksAM",
+      "channel": "ちゃまはし【アニメ・声優】",
+      "status": "held",
+      "reason": "line[13]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "zBn_Ok9bwQY",
+      "channel": "erika_kurashi",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "RHotkJktt5Q",
+      "channel": "毎日しんちゃん",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "ZP20NwTBT00",
+      "channel": "よへ 僕がいい旦那になるまで",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "KBl7i8slgb0",
+      "channel": "アニまち",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "xIUYjjHMESg",
+      "channel": "田舎民カイジ【shorts】",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "bGYpSxCJY1A",
+      "channel": "極悪特区",
+      "status": "held",
+      "reason": "line[18]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "RZzkmN9ODvo",
+      "channel": "あおぎり高校 - Aogiri Vtuber High School",
+      "status": "held",
+      "reason": "line[15]: No speech in alignment phrase"
+    },
+    {
+      "videoId": "r5Xnazbf1Go",
+      "channel": "ひみつ基地。",
+      "status": "held",
+      "reason": "line[10]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "Jq_UVLhV9SE",
+      "channel": "りくらぼ / RikuLab",
+      "status": "held",
+      "reason": "line[11]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "OqoZYpSQiMc",
+      "channel": "たろたん",
+      "status": "held",
+      "reason": "line[5]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "yXW4ynIhRBA",
+      "channel": "三津家貴也",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "SxeH6D7Bcj8",
+      "channel": "ヘビさんのアウトドア日誌",
+      "status": "held",
+      "reason": "line[2]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "Ju6K6demcuU",
+      "channel": "東出昌大",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "VrzsTij2gkA",
+      "channel": "あーずかい",
+      "status": "held",
+      "reason": "No Japanese speech: en"
+    },
+    {
+      "videoId": "hCCPJ-etKNg",
+      "channel": "Hanaの暮らし",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "tBcIjdnzDcs",
+      "channel": "錬磨",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "7zQRoqD4d1k",
+      "channel": "日本の紫陽花",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "69Z6XYoYNpA",
+      "channel": "のすけぼっち飯",
+      "status": "held",
+      "reason": "line[21]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "vGdVLHOQvO4",
+      "channel": "マイ",
+      "status": "held",
+      "reason": "line[5]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "6uXEoiEuc1E",
+      "channel": "小物ロマン",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "sDfaEpM9LIk",
+      "channel": "ともき",
+      "status": "held",
+      "reason": "line[0]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "eXb0s-kVuC8",
+      "channel": "やまかわてるき",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "faoboC067GE",
+      "channel": "いい声ボイトレ研究所",
+      "status": "held",
+      "reason": "line[15]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "LUmrgB1XnSo",
+      "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+      "status": "held",
+      "reason": "line[0]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "K-2CVUw-xAg",
+      "channel": "カズチャンネル/Kazu Channel",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "kcfeaejvzy8",
+      "channel": "はじめしゃちょー（hajime）",
+      "status": "held",
+      "reason": "line[19]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "phGyfevu_o0",
+      "channel": "えり | 親子で楽しむおうち遊び",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "xUd33Baf_yI",
+      "channel": "アニメ絵創作室",
+      "status": "held",
+      "reason": "line[3]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "b6Frd92ucpI",
+      "channel": "長野県でラジコンを飛ばそう！",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "tRt0vQzCUYo",
+      "channel": "トリビアン",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "nOCiMBsGNao",
+      "channel": "ここちゃんねる",
+      "status": "held",
+      "reason": "line[2]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "cNOAFv80RLk",
+      "channel": "ちゃまはし【アニメ・声優】",
+      "status": "held",
+      "reason": "line[1]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "lG26PCAT5z4",
+      "channel": "毎日しんちゃん",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "RRGebB-JBD8",
+      "channel": "よへ 僕がいい旦那になるまで",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "NSqs3cajFzg",
+      "channel": "世界をのぞき見!",
+      "status": "held",
+      "reason": "line[6]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "EHo-WpfQksY",
+      "channel": "アニまち",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "j5ar9MRTc68",
+      "channel": "田舎民カイジ【shorts】",
+      "status": "held",
+      "reason": "line[11]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "ffChOg3t0FE",
+      "channel": "極悪特区",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "LoBDOW2-AJg",
+      "channel": "あおぎり高校 - Aogiri Vtuber High School",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "8gVuJ9aZBZI",
+      "channel": "ひみつ基地。",
+      "status": "held",
+      "reason": "line[17]: No speech in alignment phrase"
+    },
+    {
+      "videoId": "TyS8SeJNfeI",
+      "channel": "りくらぼ / RikuLab",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "mhBbYPeTZ9o",
+      "channel": "たろたん",
+      "status": "held",
+      "reason": "line[13]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "jcpJaSK0oDM",
+      "channel": "ヘビさんのアウトドア日誌",
+      "status": "held",
+      "reason": "line[11]: No speech in alignment phrase"
+    },
+    {
+      "videoId": "-h2btPiOxlk",
+      "channel": "東出昌大",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "AhCds2EUG24",
+      "channel": "あーずかい",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "ph3ZEzGZnVg",
+      "channel": "Hanaの暮らし",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "c74g0BarqBE",
+      "channel": "錬磨",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "UwEHgaS-ihY",
+      "channel": "日本の紫陽花",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "iURMTVKNCbk",
+      "channel": "のすけぼっち飯",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "XsFd2f2w0vU",
+      "channel": "マイ",
+      "status": "held",
+      "reason": "line[18]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "TWrHhgP7FD4",
+      "channel": "小物ロマン",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "CzbzzIrgQ3o",
+      "channel": "ともき",
+      "status": "held",
+      "reason": "line[7]: Collapsed or overlapping word timing needs review"
+    },
+    {
+      "videoId": "63p0o7t3HMU",
+      "channel": "やまかわてるき",
+      "status": "held",
+      "reason": "line[39]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "q2a02nfgfZE",
+      "channel": "いい声ボイトレ研究所",
+      "status": "held",
+      "reason": "line[34]: Word spans implausibly long audio"
+    },
+    {
+      "videoId": "yU2tLkfS7j8",
+      "channel": "青ヶ島ちゃんねる AOGASHIMA Channel",
+      "status": "held",
+      "reason": "line[0]: DTW audio context exceeded"
+    },
+    {
+      "videoId": "LhkJVdi8CcM",
+      "channel": "カズチャンネル/Kazu Channel",
+      "status": "ready_for_review",
+      "reason": "Japanese/English language review still required"
+    },
+    {
+      "videoId": "G4EkX9MraGk",
+      "channel": "ちゃまはし【アニメ・声優】",
+      "status": "held",
+      "reason": "line[14]: No speech in alignment phrase"
+    }
+  ]
+}

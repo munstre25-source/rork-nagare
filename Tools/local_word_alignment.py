@@ -61,6 +61,54 @@ def map_alignment(line, items, offset, duration):
             "end": max(s[1] for s in spans.values()), "tokens": tokens, "timing": "word"}
 
 
+
+def invalid_items(items, duration):
+    """Locate unusable model predictions without repairing them arithmetically."""
+    bad = set()
+    for i, item in enumerate(items):
+        start, end = item["start_time"], item["end_time"]
+        if not all(math.isfinite(x) for x in (start, end)) or start < -.03 or end > duration + .03 or end <= start or end-start > max(2.5, len(item["text"])*.7):
+            bad.add(i)
+        if i and start < items[i-1]["end_time"]-.001:
+            bad.update((i-1, i))
+    return bad
+
+
+def refine_items(items, audio, infer):
+    """Re-predict failed words in short anchored audio, retaining real model boundaries."""
+    import copy
+    current, evidence = copy.deepcopy(items), []
+    duration = len(audio)/16000
+    for _ in range(2):
+        bad = invalid_items(current, duration)
+        if not bad: break
+        groups = []
+        for index in sorted(bad):
+            lo, hi = max(0,index-2), min(len(current),index+3)
+            if groups and lo <= groups[-1][1]: groups[-1][1] = max(groups[-1][1],hi)
+            else: groups.append([lo,hi])
+        changed = False
+        for first, last in groups:
+            lo = max(0.,current[first-1]["end_time"]) if first else 0.
+            hi = min(duration,current[last]["start_time"]) if last<len(current) else duration
+            if not math.isfinite(lo+hi) or hi-lo < .1: continue
+            units = [x["text"] for x in current[first:last]]
+            window = audio[round(lo*16000):round(hi*16000)]
+            for factor in (2,4):
+                try:
+                    predicted = infer(window,units,factor)
+                except ValueError:
+                    continue
+                evidence.append({"firstWord":first,"lastWordExclusive":last,"audioStartSec":lo,"audioEndSec":hi,"audioTimeScale":factor,"items":predicted})
+                if len(predicted)!=len(units) or any(x["text"]!=u for x,u in zip(predicted,units)) or invalid_items(predicted,len(window)/16000): continue
+                replacement = [{**x,"start_time":round(x["start_time"]+lo,3),"end_time":round(x["end_time"]+lo,3)} for x in predicted]
+                candidate = current[:first]+replacement+current[last:]
+                if len(invalid_items(candidate,duration)) < len(invalid_items(current,duration)):
+                    current = candidate;changed = True;break
+        if not changed: break
+    return current,evidence
+
+
 def extract_audio(path, start, duration):
     import imageio_ffmpeg
     import numpy as np
@@ -84,6 +132,22 @@ class LocalAligner:
             dtype=torch.bfloat16 if device.startswith("cuda") else torch.float32,
             device_map=device, attn_implementation="sdpa")
 
+    def _infer(self, window, units, factor):
+        if factor != 1:
+            import librosa
+            window = librosa.effects.time_stretch(window, rate=1/factor)
+        processor = self.model.aligner_processor
+        tokenize, fix = processor.tokenize_japanese, processor.fix_timestamp
+        processor.tokenize_japanese = lambda text: units
+        # The upstream postprocessor interpolates some non-monotonic outliers.
+        # Keep raw predictions here so refinement must use the actual sound.
+        processor.fix_timestamp = lambda data: [int(x) for x in data.tolist()]
+        try:
+            result = self.model.align(audio=(window,16000),text=" ".join(units),language="Japanese")[0]
+        finally:
+            processor.tokenize_japanese, processor.fix_timestamp = tokenize, fix
+        return [dict(text=t.text,start_time=round(t.start_time/factor,3),end_time=round(t.end_time/factor,3)) for t in result]
+
     def align(self, clip, audio):
         import numpy as np
         duration = len(audio) / 16000
@@ -102,32 +166,23 @@ class LocalAligner:
             if not units:
                 raise ValueError("Sentence has no spoken words")
             aligned, attempts, failure = None, [], None
-            # 4x slows 80 ms model bins to 20 ms in the original time base for short particles.
-            for factor in (1, 2, 4):
-                window = audio[round(lo*16000):round(hi*16000)]
+            window = audio[round(lo*16000):round(hi*16000)]
+            for factor in (1,2,4):
                 if len(window) < 1600:
                     failure = "Sentence audio window is empty"
                     continue
-                if factor != 1:
-                    import librosa
-                    import warnings
-                    # Pitch-preserving slowdown resolves words shorter than the native
-                    # 80 ms timestamp bin. Every boundary is still predicted from sound.
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", FutureWarning)
-                        window = librosa.effects.time_stretch(window, rate=1/factor)
-                processor = self.model.aligner_processor
-                original = processor.tokenize_japanese
-                # Ask for the app's exact word units. No arithmetic subdivision.
-                processor.tokenize_japanese = lambda text: units
+                if getattr(self,"max_audio_seconds",None) and len(window)*factor/16000 > self.max_audio_seconds:
+                    failure = "Phrase exceeds aligner audio context"
+                    continue
                 try:
-                    result = self.model.align(audio=(window, 16000),
-                        text=" ".join(units), language="Japanese")[0]
-                finally:
-                    processor.tokenize_japanese = original
-                items = [dict(text=t.text, start_time=round(t.start_time/factor, 3),
-                              end_time=round(t.end_time/factor, 3)) for t in result]
-                attempts.append({"audioTimeScale": factor, "items": items})
+                    items = self._infer(window,units,factor)
+                except ValueError as error:
+                    failure = str(error)
+                    continue
+                attempts.append({"audioTimeScale":factor,"rawPredictions":True,"items":items})
+                if invalid_items(items,len(window)/16000):
+                    items,refinements = refine_items(items,window,self._infer)
+                    attempts[-1]["refinements"] = refinements
                 try:
                     aligned = map_alignment(line, items, lo, duration)
                     break

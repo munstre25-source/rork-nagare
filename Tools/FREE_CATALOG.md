@@ -1,13 +1,36 @@
-# One-off catalog expansion without Gemini
+# One-off catalog expansion without paid inference
 
-The daily publishing schedule is disabled at the user's request. Use `free_catalog_pipeline.py` for manual one-off runs. It uses public YouTube metadata through the authenticated `ingest-local-clips` endpoint; it never reads a Gemini key or calls a paid inference provider.
+The daily publishing schedule is disabled at the user's request. These tools never read a Gemini key or call a paid inference provider. Public YouTube metadata is rechecked by the authenticated `ingest-local-clips` endpoint. Only registered source channels may publish; existing windows are not overwritten.
 
-Source inventory: `ios-nagare/reports/attachment-channels-20261104.json`. Verified channel identities: `attachment-channel-resolution-20261104.json`. Every readable label is tied to its screenshot; names covered by navigation are explicitly marked as obscured.
+## Build, review, publish
 
-The local tier accepts uncaptained videos and burned English. Short sources up to three minutes can stay complete. Longer uploads receive a coherent longer excerpt rather than a fixed 40-second maximum. The database accepts bounded processing windows up to five minutes and at least one valid subtitle line, including Shorts shorter than eight seconds. Only explicitly registered source channels may publish; live metadata is rechecked and existing source windows are not overwritten.
+1. Discover candidates with `free_catalog_pipeline.py`, or reuse its candidates JSON. Creator captions are optional and burned English is allowed. Sources up to three minutes can stay complete; longer uploads use a coherent excerpt. The backend supports 3–300 seconds, including Shorts, without a 40-second ceiling.
+2. Run `repair_held_catalog.py` against held results. Supply explicit candidate, audio-cache and report paths; `--device cpu` is the default. GPU runs use `--device cuda`. `--corrections` maps video IDs and recognition-segment indices to source-checked Japanese; original recognition and audio hashes remain separate evidence. The result is a draft, never automatic publication.
+3. Review Japanese against speech and visible creator captions; fix recognition errors and rerun actual audio alignment. Review **every** English line, including output that passed heuristics. Offline OPUS translations can be seriously wrong. Check context vocabulary and proper names against the offline dictionary.
+4. Prepare review JSON: a list of `{id, videoId, japanese: [exact concatenated Japanese per card], english: [reviewed translation per card], notes, dictionary?: [...]}`. Dictionary corrections identify an exact `surface` and may supply definitions/reading/romaji/POS. Consecutive tokens can merge using their existing outer audio boundaries; tokens cannot split into invented times. Single-token corrections retain conjugation bases.
+5. Run `publish_reviewed_local.py --draft-directory ... --reviews ...` to produce reviewed artifacts. Add `--apply` for the explicitly authorized publication. Japanese, video ID and clip/window ID must still match the review snapshot. The endpoint requires a recorded English review, source validation, pinned model provenance and database-sealed audio alignment. Credentials come from the environment or an explicitly authorized in-memory Vault read (`--use-existing-vault`); reports never contain credentials.
 
-Offline processing uses Qwen speech recognition/alignment and OPUS Japanese-to-English translation, with pinned public model revisions. Word timings come from actual audio; collapsed or missing intervals are held. Offline English can contain errors: compare the Japanese and English before publishing and correct errors through the authenticated operator path. The operator records corrections separately from local model provenance. Do not invent independent paid-review flags.
+`free_catalog_pipeline.py --apply` is deliberately rejected: use the explicit reviewed publisher. Use `--help` on each tool for required paths and limits. Ready-for-review counts are not publication counts.
 
-Install a CPU PyTorch wheel, then `pip install -r Tools/requirements-free-catalog.txt`. The `--asr-model`, `--aligner-model`, and `--translation-model` arguments select downloaded local model directories. Run `free_catalog_pipeline.py --help` for the explicit source/report/cache paths. The default builds artifacts without publishing. `--apply` publishes only through the local endpoint and holds flagged English for review. Credentials are supplied by environment or an explicitly authorized in-memory Vault read, never reports.
+## Timing evidence
 
-The iOS feed now retains the server review tier and accepts these locally processed lessons and complete Shorts. A fresh app build is required for that client change. Backend publication itself does not rebuild or distribute the iOS binary.
+The newer path uses local faster-whisper recognition and **raw attention/DTW jumps at the application's exact dictionary-word boundaries**. It does not call the duration-adjusting word-timestamp helper, distribute a sentence evenly, or invent missing word times. Silero VAD trims only the outside silence of each audio phrase; internal pauses and source offsets remain. Collapsed intervals are re-predicted from real audio neighborhoods, optionally slowed with pitch preserved. Unresolved words, out-of-bounds intervals and overlong DTW contexts stay held. Model alignment is not a claim of a perfect human boundary audit.
+
+The Qwen path remains available. Its outlier timestamp interpolation is disabled; the same real-audio refinement and rejection rules apply.
+
+| Purpose | Pinned public model | Revision |
+| --- | --- | --- |
+| Whisper ASR / raw DTW | dropbox-dash/faster-whisper-large-v3-turbo | 0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf |
+| Qwen ASR | Qwen/Qwen3-ASR-0.6B | 5eb144179a02acc5e5ba31e748d22b0cf3e303b0 |
+| Qwen forced alignment | Qwen/Qwen3-ForcedAligner-0.6B | c7cbfc2048c462b0d63a45797104fc9db3ad62b7 |
+| Draft English | Helsinki-NLP/opus-mt-ja-en | 0770961a39ba6bd66305b149c3f4110bcafca2e6 |
+
+Whisper `model.bin` SHA-256: `e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da`. Processing records also bind the actual PCM audio hash.
+
+Install CPU PyTorch, then `pip install -r Tools/requirements-free-catalog.txt`. Optional NVIDIA support used in this repair: `nvidia-cublas-cu12==12.9.1.4`, `nvidia-cudnn-cu12==9.10.2.21`; expose their package `lib` directories in `LD_LIBRARY_PATH`. CPU processing does not need these packages. Downloaded model weights and cached audio remain outside version control.
+
+## Inventories and client
+
+Original screenshot sources: `ios-nagare/reports/attachment-channels-20261104.json`; verified identities: `attachment-channel-resolution-20261104.json`. Recording-derived labels and observed filter taxonomy: `kiku-recordings-20261105.json` and the matching Markdown/CSV. Label-only and truncated names are not canonical channel IDs or approved sources. Offline OCR uses the checksum-verified PP-OCRv4 Japanese mobile model; see `extract_recording_channels.py`.
+
+The iOS feed retains the local server review tier and accepts locally processed lessons and complete Shorts. A fresh app build is required for that previously committed client change; publishing backend clips does not distribute an iOS binary.

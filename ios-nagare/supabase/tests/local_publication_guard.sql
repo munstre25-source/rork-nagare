@@ -11,6 +11,14 @@ begin
  lines := jsonb_set(lines,'{0,translationReview}',jsonb_build_object('version','local-1','localAlignment',alignment,'localPublication',proof));
  if not public.catalog_local_publication_ok('abcdefghijk',0,124,lines,'variety') then raise exception 'Complete 124-second local Short rejected'; end if;
  if public.catalog_local_publication_ok('abcdefghijk',0,124,lines,'anime') then raise exception 'Wrong category accepted'; end if;
+ lines := jsonb_set(jsonb_set(lines,'{0,translationReview,localPublication,asrModel}','"dropbox-dash/faster-whisper-large-v3-turbo"'),'{0,translationReview,localPublication,asrRevision}','"0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf"');
+ if not public.catalog_local_publication_ok('abcdefghijk',0,124,lines,'variety') then raise exception 'Pinned free Whisper rejected'; end if;
+ if public.catalog_local_publication_ok('abcdefghijk',0,124,jsonb_set(lines,'{0,translationReview,localPublication,asrRevision}','"5eb144179a02acc5e5ba31e748d22b0cf3e303b0"'),'variety') then raise exception 'Mixed model/revision accepted'; end if;
+ lines := jsonb_set(lines,'{0,translationReview,localAlignment,method}','"local-attention-dtw"');
+ lines := jsonb_set(lines,'{0,translationReview,localAlignment,model}','"dropbox-dash/faster-whisper-large-v3-turbo"');
+ lines := jsonb_set(lines,'{0,translationReview,localAlignment,revision}','"0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf"');
+ if not public.catalog_local_publication_ok('abcdefghijk',0,124,lines,'variety') then raise exception 'Pinned attention timing rejected'; end if;
+ if public.catalog_local_publication_ok('abcdefghijk',0,124,jsonb_set(lines,'{0,translationReview,localAlignment,method}','"local-forced-alignment"'),'variety') then raise exception 'Mixed alignment method/model accepted'; end if;
  if public.catalog_review_receipt_ok('abcdefghijk',0,124,lines) then raise exception 'Local publication pretended to be paid independent review'; end if;
  insert into public.catalog_sources(handle,channel_id,title,discovery_status,local_pipeline_ok,local_category)
  values('__local_publication_qa__','UC'||repeat('z',22),'Local QA','test',false,'variety');

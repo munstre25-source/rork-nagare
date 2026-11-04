@@ -1,5 +1,5 @@
 import unittest
-from local_word_alignment import map_alignment, spoken_text, token_units
+from local_word_alignment import map_alignment, spoken_text, token_units, refine_items, invalid_items
 
 class LocalAlignmentTests(unittest.TestCase):
     def setUp(self):
@@ -43,6 +43,28 @@ class LocalAlignmentTests(unittest.TestCase):
         out = map_alignment(self.line, items, 0, 3)
         self.assertEqual(out["tokens"][0]["start"], 0)
         self.assertEqual(out["tokens"][2]["end"], 3)
+
+    def test_collapsed_word_is_repredicted_from_an_audio_crop(self):
+        import numpy as np
+        items=[{"text":str(i),"start_time":i*.2,"end_time":i*.2+.1} for i in range(9)]
+        items[4]["end_time"]=items[4]["start_time"]
+        seen=[]
+        def infer(audio,units,factor):
+            seen.append((len(audio),units,factor))
+            return [{"text":u,"start_time":.1+n*.2,"end_time":.18+n*.2} for n,u in enumerate(units)]
+        result,evidence=refine_items(items,np.zeros(32000),infer)
+        self.assertFalse(invalid_items(result,2))
+        self.assertEqual(result[4]["start_time"],.8)
+        self.assertEqual(result[4]["end_time"],.88)
+        self.assertEqual(seen[0][1],["2","3","4","5","6"])
+        self.assertTrue(evidence)
+        self.assertEqual(items[4]["start_time"],items[4]["end_time"])
+
+    def test_unrecoverable_words_remain_invalid(self):
+        import numpy as np
+        items=[{"text":"missing","start_time":0.,"end_time":0.}]
+        result,_=refine_items(items,np.zeros(16000),lambda *args:items)
+        self.assertEqual(invalid_items(result,1),{0})
 
     def test_normalization_matches_exact_spoken_characters(self):
         self.assertEqual(spoken_text("\u30d3\u30fc\u30eb\u3001\uff15\u676f!"), "\u30d3\u30fc\u30eb5\u676f")

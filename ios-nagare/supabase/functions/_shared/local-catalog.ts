@@ -3,6 +3,9 @@ import { translationQualityIssue } from "./validate.ts";
 import type { TranslationSource } from "./translation-review.ts";
 export const LOCAL_ASR_MODEL = "Qwen/Qwen3-ASR-0.6B";
 export const LOCAL_ASR_REVISION = "5eb144179a02acc5e5ba31e748d22b0cf3e303b0";
+export const LOCAL_WHISPER_MODEL = "dropbox-dash/faster-whisper-large-v3-turbo";
+export const LOCAL_WHISPER_REVISION = "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf";
+const LOCAL_ASR_REVISIONS = new Map([[LOCAL_ASR_MODEL,LOCAL_ASR_REVISION],[LOCAL_WHISPER_MODEL,LOCAL_WHISPER_REVISION]]);
 export const LOCAL_TRANSLATION_MODEL = "Helsinki-NLP/opus-mt-ja-en";
 export const LOCAL_TRANSLATION_REVISION = "0770961a39ba6bd66305b149c3f4110bcafca2e6";
 export const LOCAL_CATEGORIES = new Set(["anime", "drama", "variety", "vtuber", "interview", "kids", "gaming", "learning", "podcast"]);
@@ -19,8 +22,8 @@ export function validateLocalCatalogClip(clip: LocalCatalogClip): TranslationSou
       !Number.isFinite(clip.duration_sec) || clip.duration_sec < 3 || clip.duration_sec > 300 ||
       !Array.isArray(clip.lines) || clip.lines.length < 1 || clip.lines.length > 100) throw new Error("Invalid local clip identity, category or bounds");
   const proof = clip.processing;
-  if (clip.translationIssues?.length && proof?.operatorReview !== "english-checked") throw new Error("Offline English requires operator review");
-  if (!proof || proof.language !== "Japanese" || proof.asrModel !== LOCAL_ASR_MODEL || proof.asrRevision !== LOCAL_ASR_REVISION ||
+  if (proof?.operatorReview !== "english-checked") throw new Error("Offline English requires operator review");
+  if (!proof || proof.language !== "Japanese" || !LOCAL_ASR_REVISIONS.has(proof.asrModel) || LOCAL_ASR_REVISIONS.get(proof.asrModel) !== proof.asrRevision ||
       proof.translationModel !== LOCAL_TRANSLATION_MODEL || proof.translationRevision !== LOCAL_TRANSLATION_REVISION) throw new Error("Local transcription/translation provenance required");
   let spoken = "", count = 0, tappable = 0;
   for (const line of clip.lines) {
