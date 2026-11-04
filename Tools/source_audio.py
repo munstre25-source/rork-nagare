@@ -50,16 +50,24 @@ class RangeReader(io.RawIOBase):
         return b"".join(chunks)
 
 
+
+def select_audio_format(info):
+    formats = [f for f in info["formats"] if f.get("acodec") not in (None, "none") and
+               f.get("vcodec") == "none" and f.get("protocol") == "https" and f.get("filesize")]
+    japanese = [f for f in formats if str(f.get("language") or "").lower().startswith("ja")]
+    original = [f for f in formats if "original" in str(f.get("format_note") or "").lower()]
+    preferred = japanese or original or formats
+    chosen = next((f for f in preferred if f.get("format_id") == "140"), None)
+    if chosen is None:
+        chosen = max(preferred, key=lambda f: f.get("abr") or 0) if preferred else None
+    if chosen is None: raise ValueError("No accessible seekable source audio")
+    return chosen
+
 def extract_source_window(info, start, duration):
     import av
     import numpy as np
-    formats = [f for f in info["formats"] if f.get("acodec") not in (None, "none") and
-               f.get("vcodec") == "none" and f.get("protocol") == "https" and f.get("filesize")]
-    chosen = next((f for f in formats if f.get("format_id") == "140"), None)
-    if chosen is None:
-        chosen = max(formats, key=lambda f: f.get("abr") or 0) if formats else None
-    if chosen is None: raise ValueError("No accessible seekable source audio")
-    if not math.isfinite(start) or not math.isfinite(duration) or start < 0 or not 0 < duration <= 120:
+    chosen = select_audio_format(info)
+    if not math.isfinite(start) or not math.isfinite(duration) or start < 0 or not 0 < duration <= 300:
         raise ValueError("Invalid source window")
     reader = RangeReader(chosen["url"], chosen["filesize"], chosen.get("http_headers"))
     length, origin = round(duration * 16000), round(start * 16000)
@@ -79,7 +87,16 @@ def extract_source_window(info, start, duration):
                     covered[lo:hi] = True
             if raw.time is not None and raw.time > start + duration + .1: break
     if not covered.all():
-        raise ValueError("Source window has missing audio samples")
+        # Container durations can include a few trailing encoder-padding samples.
+        # Trim only a short missing tail; never fill missing speech in the window.
+        valid = np.flatnonzero(covered)
+        first = int(valid[0]) if len(valid) else length
+        last = int(valid[-1]) + 1 if len(valid) else 0
+        middle_missing = int((~covered[first:last]).sum()) if last else length
+        # Preserve source time zero. Short codec priming / rounded container tails
+        # contain no audio frames; they are silence, not invented speech.
+        if not (last and first <= 1920 and length-last <= 16800 and middle_missing == 0):
+            raise ValueError(f"Source audio gap: head={first/16000:.3f}s tail={(length-last)/16000:.3f}s internal={middle_missing} samples")
     if not np.isfinite(audio).all() or float(np.max(np.abs(audio))) < .001:
         raise ValueError("Source window has no usable audio")
     return audio, reader.bytes_fetched

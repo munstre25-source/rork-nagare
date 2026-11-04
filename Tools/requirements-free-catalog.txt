@@ -1,0 +1,4 @@
+-r requirements-captions.txt
+-r requirements-word-alignment.txt
+sentencepiece==0.2.1
+sacremoses==0.1.1

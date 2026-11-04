@@ -1,7 +1,7 @@
 import io
 import unittest
 from unittest.mock import patch
-from source_audio import RangeReader
+from source_audio import RangeReader, select_audio_format
 
 class Response(io.BytesIO):
     status = 206
@@ -29,6 +29,13 @@ class RangeAudioTests(unittest.TestCase):
             self.assertEqual(reader.read(100), self.data[-15:])
             self.assertEqual(reader.read(1), b"")
         self.assertLessEqual(reader.bytes_fetched, len(self.data))
+
+    def test_original_japanese_audio_wins_over_default_english_dub(self):
+        info = {"formats": [
+            {"format_id": "140", "acodec": "aac", "vcodec": "none", "protocol": "https", "filesize": 200, "language": "en", "abr": 128},
+            {"format_id": "140-ja", "acodec": "aac", "vcodec": "none", "protocol": "https", "filesize": 200, "language": "ja", "abr": 128},
+        ]}
+        self.assertEqual(select_audio_format(info)["format_id"], "140-ja")
 
     def test_incomplete_range_rejected(self):
         reader = RangeReader("https://example.invalid/audio", 500000)

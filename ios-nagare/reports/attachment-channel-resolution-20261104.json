@@ -1,0 +1,600 @@
+{
+  "sources": [
+    {
+      "name": "カズチャンネル/Kazu Channel",
+      "handle": "@kazuch0924",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCVPz_nauEJpqPxxvYiOpCHQ",
+      "title": "カズチャンネル/Kazu Channel",
+      "uploads": "UUVPz_nauEJpqPxxvYiOpCHQ",
+      "subscribers": "1850000"
+    },
+    {
+      "name": "伊達千春【美容神】",
+      "handle": "@date_chiharu",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCPgNELa2TvOhmaCIGqJj8zw",
+      "title": "伊達千春【美容神😇】",
+      "uploads": "UUPgNELa2TvOhmaCIGqJj8zw",
+      "subscribers": "140000"
+    },
+    {
+      "name": "りくらぼ / RikuLab",
+      "handle": "@rikulab",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCcbY9SXrE46otnOw2gYM3uA",
+      "title": "りくらぼ / RikuLab",
+      "uploads": "UUcbY9SXrE46otnOw2gYM3uA",
+      "subscribers": "899000"
+    },
+    {
+      "name": "Hanaso Japanese",
+      "handle": "@hanasojapanese",
+      "category": "learning",
+      "status": "resolved",
+      "channel_id": "UCYBcW6U6TMG18AqTd6EpBsw",
+      "title": "Hanaso Japanese",
+      "uploads": "UUYBcW6U6TMG18AqTd6EpBsw",
+      "subscribers": "675"
+    },
+    {
+      "name": "トリビアン",
+      "handle": "@トリビアンだよ",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCsToy27Ug50dXxvnTsKgeZw",
+      "title": "トリビアン",
+      "uploads": "UUsToy27Ug50dXxvnTsKgeZw",
+      "subscribers": "218000"
+    },
+    {
+      "name": "伊豆のぬし釣り",
+      "handle": "@伊豆のぬし釣り",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCOhe6qFb96OZorhMnzJOlJQ",
+      "title": "伊豆のぬし釣り",
+      "uploads": "UUOhe6qFb96OZorhMnzJOlJQ",
+      "subscribers": "644000"
+    },
+    {
+      "name": "あかちゃす丸裸",
+      "handle": "@akachas._.22",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCf68P7dWjIOLdKY24IyU1Wg",
+      "title": "あかちゃす丸裸🍎",
+      "uploads": "UUf68P7dWjIOLdKY24IyU1Wg",
+      "subscribers": "275000"
+    },
+    {
+      "name": "ゆり 2人目妊娠中の助産師ママ",
+      "handle": "@yuri_mamababy",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCc-7kOjlKQ0jQbqNN06lbXw",
+      "title": "ゆり〻2人目妊娠中の助産師ママ",
+      "uploads": "UUc-7kOjlKQ0jQbqNN06lbXw",
+      "subscribers": "7000"
+    },
+    {
+      "name": "あおぎり高校 - Aogiri Vtuber High School",
+      "handle": "@aogiri1027",
+      "category": "vtuber",
+      "status": "resolved",
+      "channel_id": "UCPLeqi7rIqS9uY4_TrSUOMg",
+      "title": "あおぎり高校 - Aogiri Vtuber High School",
+      "uploads": "UUPLeqi7rIqS9uY4_TrSUOMg",
+      "subscribers": "1120000"
+    },
+    {
+      "name": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+      "handle": "@hackallout7963",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCP5xSOpT4s9KZKg4DshmkTg",
+      "title": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+      "uploads": "UUP5xSOpT4s9KZKg4DshmkTg",
+      "subscribers": "31800"
+    },
+    {
+      "name": "ここちゃんねる",
+      "handle": "@ここちゃんねる-m2z",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCkOrdMTccmYrCEu81csfn9w",
+      "title": "ここちゃんねる",
+      "uploads": "UUkOrdMTccmYrCEu81csfn9w",
+      "subscribers": "285000"
+    },
+    {
+      "name": "ハリネズミの茶々丸ファミリー",
+      "handle": "@aoringo_ham1229",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCl1-tGJXRAH04KTd4MUwYhg",
+      "title": "ハリネズミの茶々丸ファミリー🍼",
+      "uploads": "UUl1-tGJXRAH04KTd4MUwYhg",
+      "subscribers": "5410"
+    },
+    {
+      "name": "極悪特区",
+      "handle": "@gokuaku_tokku",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCYSeks1YPf9b_-l9KR_s16Q",
+      "title": "極悪特区",
+      "uploads": "UUYSeks1YPf9b_-l9KR_s16Q",
+      "subscribers": "125000"
+    },
+    {
+      "name": "ABEMA 恋する週末ホームステイ【公式】",
+      "handle": "@koisute_abema",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCe816MskSn1I90H02pVzHTg",
+      "title": "ABEMA 恋する週末ホームステイ【公式】",
+      "uploads": "UUe816MskSn1I90H02pVzHTg",
+      "subscribers": "86300"
+    },
+    {
+      "name": "いい声ボイトレ研究所",
+      "handle": "@いい声ボイトレ研究所",
+      "category": "learning",
+      "status": "resolved",
+      "channel_id": "UCpcQQ_qOFxQt09jKGL6FamQ",
+      "title": "いい声ボイトレ研究所",
+      "uploads": "UUpcQQ_qOFxQt09jKGL6FamQ",
+      "subscribers": "64900"
+    },
+    {
+      "name": "Team Nitro Channel",
+      "handle": "@team_nitro_channel",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCn3qNl9MU9XxUWZb5Pl0u5g",
+      "title": "Team Nitro Channel",
+      "uploads": "UUn3qNl9MU9XxUWZb5Pl0u5g",
+      "subscribers": "10100"
+    },
+    {
+      "name": "マイ",
+      "handle": "@mai2022",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCtKD9STIJlg5Yiaqa42YPxQ",
+      "title": "マイ",
+      "uploads": "UUtKD9STIJlg5Yiaqa42YPxQ",
+      "subscribers": "402000"
+    },
+    {
+      "name": "kattyanneru/かっちゃんねる",
+      "handle": "@kattyanneru",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UC1Lp8HbCqOPBMT1W_mjb21A",
+      "title": "kattyanneru/かっちゃんねる",
+      "uploads": "UU1Lp8HbCqOPBMT1W_mjb21A",
+      "subscribers": "1580000"
+    },
+    {
+      "name": "manaのアイデア料理",
+      "handle": "@ayaaya.mana1",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCaMw5qcJdms7Ys-axWihFSQ",
+      "title": "manaのアイデア料理",
+      "uploads": "UUaMw5qcJdms7Ys-axWihFSQ",
+      "subscribers": "180000"
+    },
+    {
+      "name": "erika_kurashi",
+      "handle": "@eriii0805",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCTjDGQ3glo-Pm7gvmGZMgRw",
+      "title": "erika_kurashi",
+      "uploads": "UUTjDGQ3glo-Pm7gvmGZMgRw",
+      "subscribers": "9260"
+    },
+    {
+      "name": "アニメ絵創作室",
+      "handle": "@mallory-p9r",
+      "category": "anime",
+      "status": "resolved",
+      "channel_id": "UC0-qJgMEVVI4dKJd20DsCkA",
+      "title": "アニメ絵創作室",
+      "uploads": "UU0-qJgMEVVI4dKJd20DsCkA",
+      "subscribers": "18800"
+    },
+    {
+      "name": "ちゃまはし【アニメ・声優】",
+      "handle": "@chamahashi2110",
+      "category": "anime",
+      "status": "resolved",
+      "channel_id": "UCM_9oMuHmuJY2l6hzJcvwvw",
+      "title": "ちゃまはし【アニメ・声優】",
+      "uploads": "UUM_9oMuHmuJY2l6hzJcvwvw",
+      "subscribers": "75400"
+    },
+    {
+      "name": "毎日しんちゃん",
+      "handle": "@毎日しんちゃん-m3l",
+      "category": "anime",
+      "status": "resolved",
+      "channel_id": "UC4sdr7xet82Muu62E9I4mNw",
+      "title": "毎日しんちゃん",
+      "uploads": "UU4sdr7xet82Muu62E9I4mNw",
+      "subscribers": "25900"
+    },
+    {
+      "name": "錬磨",
+      "handle": "@renma-0101",
+      "category": "anime",
+      "status": "resolved",
+      "channel_id": "UCCkbGVWX9Gam997CLqzXY0g",
+      "title": "錬磨",
+      "uploads": "UUCkbGVWX9Gam997CLqzXY0g",
+      "subscribers": "113000"
+    },
+    {
+      "name": "にじドリル",
+      "handle": "@にじドリル",
+      "category": "vtuber",
+      "status": "resolved",
+      "channel_id": "UCDdVQaUJfdbgoIzG7NoGNTA",
+      "title": "にじドリル",
+      "uploads": "UUDdVQaUJfdbgoIzG7NoGNTA",
+      "subscribers": "2340"
+    },
+    {
+      "name": "ANIMATI",
+      "handle": "@animati_production",
+      "category": "anime",
+      "status": "resolved",
+      "channel_id": "UCVxlsRGn_JH9VWnKpUKtTWA",
+      "title": "アニまち",
+      "uploads": "UUVxlsRGn_JH9VWnKpUKtTWA",
+      "subscribers": "15800"
+    },
+    {
+      "name": "AOGASHIMA Channel",
+      "channel_id": "UC3D6ZIuBbLNZri9VztaZTiA",
+      "category": "variety",
+      "status": "resolved",
+      "title": "青ヶ島ちゃんねる AOGASHIMA Channel",
+      "handle": "@aogashimachannel",
+      "uploads": "UU3D6ZIuBbLNZri9VztaZTiA",
+      "subscribers": "233000",
+      "identityNote": "Matched screenshot context and canonical public channel; similar-name low-subscriber matches excluded."
+    },
+    {
+      "name": "世界をのぞき見!",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCbP08HY2gO6vx9-DmLtIXWQ",
+      "title": "世界をのぞき見!",
+      "handle": "@world_nozokimi",
+      "uploads": "UUbP08HY2gO6vx9-DmLtIXWQ",
+      "subscribers": "288000"
+    },
+    {
+      "name": "長野県でラジコンを飛ばそう!",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCXVIeB_FmQ8Igro0wN4mVcg",
+      "title": "長野県でラジコンを飛ばそう！",
+      "handle": "@naganorc",
+      "uploads": "UUXVIeB_FmQ8Igro0wN4mVcg",
+      "subscribers": "19600"
+    },
+    {
+      "name": "田舎民カイジ【shorts】",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UC2dWSCQluKtkppFXLQAp0vQ",
+      "title": "田舎民カイジ【shorts】",
+      "handle": "@kaiji_inakappe",
+      "uploads": "UU2dWSCQluKtkppFXLQAp0vQ",
+      "subscribers": "636000"
+    },
+    {
+      "name": "ぐち美く 主婦の本音",
+      "category": "variety",
+      "status": "needs_identity_check",
+      "candidates": [
+        {
+          "channel_id": "UCISFw0-qszcCyMRntHtDe2g",
+          "title": "ナナオは立派なユーチューバー",
+          "handle": "@nanasefuji0721",
+          "subscribers": "999000"
+        },
+        {
+          "channel_id": "UCaminwG9MTO4sLYeC3s6udA",
+          "title": "ヒカル（Hikaru）",
+          "handle": "@hikaruyoutube",
+          "subscribers": "5000000"
+        },
+        {
+          "channel_id": "UCHVUG5H7qsMygUHXOY7Xo_g",
+          "title": "まぐろかわさしみ / Magurokawa Sashimi",
+          "handle": "@343mgmg",
+          "subscribers": "499"
+        },
+        {
+          "channel_id": "UCh7IsMrygg8X4hEJe8mUcQw",
+          "title": "LAST CALL / ラストコール【公式】",
+          "handle": "@lastcall_official",
+          "subscribers": "675000"
+        },
+        {
+          "channel_id": "UCI0xPNkgivK-FCcaCYDC8Yg",
+          "title": "ヘラヘラ三銃士",
+          "handle": "@herahera.3",
+          "subscribers": "1710000"
+        }
+      ]
+    },
+    {
+      "name": "よへ 僕がいい旦那になるまで",
+      "handle": "@bokuga_iidanna",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCSHYSrvh9E__9Fs-l4cTpPA",
+      "title": "よへ 僕がいい旦那になるまで",
+      "uploads": "UUSHYSrvh9E__9Fs-l4cTpPA",
+      "subscribers": "95500"
+    },
+    {
+      "name": "もふもふ事件簿",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCDjXp2mwq3fvfRIBlvHuOAw",
+      "title": "もふもふ事件簿",
+      "handle": "@もふもふ事件簿",
+      "uploads": "UUDjXp2mwq3fvfRIBlvHuOAw",
+      "subscribers": "257000"
+    },
+    {
+      "name": "たろたん",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCAmX4-xOCziCUAXPBu39NEQ",
+      "title": "たろたん",
+      "handle": "@i.am.tarotan",
+      "uploads": "UUAmX4-xOCziCUAXPBu39NEQ",
+      "subscribers": "234000"
+    },
+    {
+      "name": "はじめしゃちょー（hajime）",
+      "handle": "@hajimesyacho",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCgMPP6RRjktV7krOfyUewqw",
+      "title": "はじめしゃちょー（hajime）",
+      "uploads": "UUgMPP6RRjktV7krOfyUewqw",
+      "subscribers": "16300000"
+    },
+    {
+      "name": "GiftJP",
+      "channel_id": "UCEYsEFmDXys7G0Ti1ZomqqA",
+      "category": "variety",
+      "status": "resolved",
+      "title": "GiftJP",
+      "handle": "@giftjp-jp",
+      "uploads": "UUEYsEFmDXys7G0Ti1ZomqqA",
+      "subscribers": "17900",
+      "identityNote": "Matched screenshot context and canonical public channel; similar-name low-subscriber matches excluded."
+    },
+    {
+      "name": "Japanese hunter’s meal / ENG sub",
+      "handle": "@higashide.masahiro",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCMUlmS8pieIFbNhN1SkeB8g",
+      "title": "東出昌大",
+      "uploads": "UUMUlmS8pieIFbNhN1SkeB8g",
+      "subscribers": "1300000"
+    },
+    {
+      "name": "ノモトヒロキ",
+      "category": "variety",
+      "status": "needs_identity_check",
+      "candidates": [
+        {
+          "channel_id": "UCsWIZ-aEy5zeQk4M3jZAcTQ",
+          "title": "消防官養成スクール | RISE",
+          "handle": "@rise_kouan",
+          "subscribers": "18900"
+        }
+      ]
+    },
+    {
+      "name": "ふじやま家族",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCdth2hRuLga96-K0DOCeMgg",
+      "title": "ふじやま家族",
+      "handle": "@hello_fujiyama",
+      "uploads": "UUdth2hRuLga96-K0DOCeMgg",
+      "subscribers": "223000"
+    },
+    {
+      "name": "のすけぼっち飯",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCW1m4ZOBYZ8mWXCPX-5EMqg",
+      "title": "のすけぼっち飯",
+      "handle": "@nosuke_bocchi",
+      "uploads": "UUW1m4ZOBYZ8mWXCPX-5EMqg",
+      "subscribers": "972000"
+    },
+    {
+      "name": "へびさんのアウトドア日誌",
+      "channel_id": "UCJeid4dNjpbM7ZZ6i9Z6wBA",
+      "category": "variety",
+      "status": "resolved",
+      "title": "ヘビさんのアウトドア日誌",
+      "handle": "@hebisan_nisshi",
+      "uploads": "UUJeid4dNjpbM7ZZ6i9Z6wBA",
+      "subscribers": "460000",
+      "identityNote": "Matched screenshot context and canonical public channel; similar-name low-subscriber matches excluded."
+    },
+    {
+      "name": "レッチャンネル",
+      "channel_id": "UCdyCaOErTQW6feag_lNLSZw",
+      "category": "variety",
+      "status": "resolved",
+      "title": "レッチャンネル",
+      "handle": "@recchichannel",
+      "uploads": "UUdyCaOErTQW6feag_lNLSZw",
+      "subscribers": "181000",
+      "identityNote": "Matched screenshot context and canonical public channel; similar-name low-subscriber matches excluded."
+    },
+    {
+      "name": "日本の紫陽花",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCszC2upvnODDYiL99tLFOsQ",
+      "title": "日本の紫陽花",
+      "handle": "@sirpei-c7n",
+      "uploads": "UUszC2upvnODDYiL99tLFOsQ",
+      "subscribers": "85400"
+    },
+    {
+      "name": "倉嶋里菜",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCOywfV92VIHB2c9EW7Fm8Pg",
+      "title": "倉嶋里菜",
+      "handle": "@rina_kitchen_channel",
+      "uploads": "UUOywfV92VIHB2c9EW7Fm8Pg",
+      "subscribers": "142000"
+    },
+    {
+      "name": "大阪グルメ【関西グルメ】公式",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCgahNwpj1hEKJjXAD4prOIA",
+      "title": "大阪グルメ【関西グルメ】公式",
+      "handle": "@osaka-kansai-gourmet1",
+      "uploads": "UUgahNwpj1hEKJjXAD4prOIA",
+      "subscribers": "185000"
+    },
+    {
+      "name": "まるももか 10万人行きたい",
+      "channel_id": "UCMDWnfP58Zna_qZJtqaGqIQ",
+      "category": "variety",
+      "status": "resolved",
+      "title": "まるもももか🐷🍑10万人行きたい",
+      "handle": "@まるもももかまるもチャンネル",
+      "uploads": "UUMDWnfP58Zna_qZJtqaGqIQ",
+      "subscribers": "99300",
+      "identityNote": "Matched screenshot context and canonical public channel; similar-name low-subscriber matches excluded."
+    },
+    {
+      "name": "はるひなちゃんねる",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCwc_LJW44FerVGq-zFcOUBw",
+      "title": "はるひなちゃんねる",
+      "handle": "@haruhinachannel",
+      "uploads": "UUwc_LJW44FerVGq-zFcOUBw",
+      "subscribers": "493000"
+    },
+    {
+      "name": "ひみつ基地。",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UC4b2j0oY5iop4cqREcBGs3A",
+      "title": "ひみつ基地。",
+      "handle": "@himitsu-kichi",
+      "uploads": "UU4b2j0oY5iop4cqREcBGs3A",
+      "subscribers": "1860000"
+    },
+    {
+      "name": "えり | 親子で楽しむおうち遊び",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCkfFQt4QltWrkV2A62auoHw",
+      "title": "えり | 親子で楽しむおうち遊び",
+      "handle": "@eri_asobi",
+      "uploads": "UUkfFQt4QltWrkV2A62auoHw",
+      "subscribers": "2980"
+    },
+    {
+      "name": "やまかわてるき",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCdd64FlemydZH2Xq1PsmCAA",
+      "title": "やまかわてるき",
+      "handle": "@yamakawateruki",
+      "uploads": "UUdd64FlemydZH2Xq1PsmCAA",
+      "subscribers": "215000"
+    },
+    {
+      "name": "あーずかい",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCaXo5t_49yr6pzFiGtwECpw",
+      "title": "あーずかい",
+      "handle": "@a_zkai",
+      "uploads": "UUaXo5t_49yr6pzFiGtwECpw",
+      "subscribers": "518000"
+    },
+    {
+      "name": "魚を保護する人",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCDtj4w7C1wcg5gKQqz2kX8A",
+      "title": "魚を保護する人",
+      "handle": "@魚を保護する人",
+      "uploads": "UUDtj4w7C1wcg5gKQqz2kX8A",
+      "subscribers": "1980"
+    },
+    {
+      "name": "小物ロマン",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCXWP0u_nhbylEwRtFzmAyrA",
+      "title": "小物ロマン",
+      "handle": "@小物ロマン",
+      "uploads": "UUXWP0u_nhbylEwRtFzmAyrA",
+      "subscribers": "156000"
+    },
+    {
+      "name": "Hanaの暮らし",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCssjzDdjGMyf2EUInLKEx3Q",
+      "title": "Hanaの暮らし",
+      "handle": "@hanacookinglife",
+      "uploads": "UUssjzDdjGMyf2EUInLKEx3Q",
+      "subscribers": "467000"
+    },
+    {
+      "name": "三津家貴也",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCQwSBqzlAq-H7GPvv9Hr17A",
+      "title": "三津家貴也",
+      "handle": "@takaya_mitsuka",
+      "uploads": "UUQwSBqzlAq-H7GPvv9Hr17A",
+      "subscribers": "387000"
+    },
+    {
+      "name": "ともき",
+      "handle": "@tomosu1-no",
+      "category": "variety",
+      "status": "resolved",
+      "channel_id": "UCZ0obDWBeumW3Tk3jDcjxwg",
+      "title": "ともき",
+      "uploads": "UUZ0obDWBeumW3Tk3jDcjxwg",
+      "subscribers": "1100000"
+    }
+  ],
+  "paidApiCalls": 0
+}

@@ -1,0 +1,565 @@
+{
+  "images_reviewed": 34,
+  "attachment_images": 33,
+  "channels": [
+    {
+      "name": "カズチャンネル/Kazu Channel",
+      "handle": "@kazuch0924",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162636_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "伊達千春【美容神】",
+      "handle": "@date_chiharu",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162650_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "りくらぼ / RikuLab",
+      "handle": "@rikulab",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162703_YouTube.jpg",
+        "attachments/Screenshot_20261104_163909_Kiku.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "Hanaso Japanese",
+      "handle": "@hanasojapanese",
+      "category": "learning",
+      "evidence": [
+        "attachments/Screenshot_20261104_162716_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "トリビアン",
+      "handle": "@トリビアンだよ",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162744_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "伊豆のぬし釣り",
+      "handle": "@伊豆のぬし釣り",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162832_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "あかちゃす丸裸",
+      "handle": "@akachas._.22",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162846_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ゆり 2人目妊娠中の助産師ママ",
+      "handle": "@yuri_mamababy",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162854_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "あおぎり高校 - Aogiri Vtuber High School",
+      "handle": "@aogiri1027",
+      "category": "vtuber",
+      "evidence": [
+        "attachments/Screenshot_20261104_162918_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ALLOUTの筋トレHACK【トレーニングギアブランド】",
+      "handle": "@hackallout7963",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162930_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ここちゃんねる",
+      "handle": "@ここちゃんねる-m2z",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_162947_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ハリネズミの茶々丸ファミリー",
+      "handle": "@aoringo_ham1229",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163018_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "極悪特区",
+      "handle": "@gokuaku_tokku",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163151_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ABEMA 恋する週末ホームステイ【公式】",
+      "handle": "@koisute_ABEMA",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163228_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "いい声ボイトレ研究所",
+      "handle": "@いい声ボイトレ研究所",
+      "category": "learning",
+      "evidence": [
+        "attachments/Screenshot_20261104_163250_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "Team Nitro Channel",
+      "handle": "@Team_Nitro_Channel",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163301_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "マイ",
+      "handle": "@mai2022",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163310_YouTube.jpg",
+        "attachments/Screenshot_20261104_163857_Kiku.jpg",
+        "attachments/Screenshot_20261104_163904_Kiku.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "kattyanneru/かっちゃんねる",
+      "handle": "@kattyanneru",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163322_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "manaのアイデア料理",
+      "handle": "@ayaaya.mana1",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163425_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "erika_kurashi",
+      "handle": "@eriii0805",
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163440_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "アニメ絵創作室",
+      "handle": "@Mallory-p9r",
+      "category": "anime",
+      "evidence": [
+        "attachments/Screenshot_20261104_163542_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ちゃまはし【アニメ・声優】",
+      "handle": "@chamahashi2110",
+      "category": "anime",
+      "evidence": [
+        "attachments/Screenshot_20261104_163556_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "毎日しんちゃん",
+      "handle": "@毎日しんちゃん-m3l",
+      "category": "anime",
+      "evidence": [
+        "attachments/Screenshot_20261104_163616_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "錬磨",
+      "handle": "@RENMA-0101",
+      "category": "anime",
+      "evidence": [
+        "attachments/Screenshot_20261104_163639_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "にじドリル",
+      "handle": "@にじドリル",
+      "category": "vtuber",
+      "evidence": [
+        "attachments/Screenshot_20261104_163713_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "ANIMATI",
+      "handle": "@ANIMATI_production",
+      "category": "anime",
+      "evidence": [
+        "attachments/Screenshot_20261104_163758_YouTube.jpg"
+      ],
+      "extraction": "visible-header"
+    },
+    {
+      "name": "AOGASHIMA Channel",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163857_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "世界をのぞき見!",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163857_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "長野県でラジコンを飛ばそう!",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163857_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "田舎民カイジ【shorts】",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163857_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "ぐち美く 主婦の本音",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163904_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "よへ 僕がいい旦那になるまで",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163904_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "もふもふ事件簿",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163904_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "たろたん",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163904_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "はじめしゃちょー（hajime）",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163909_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "GiftJP",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163909_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "Japanese hunter’s meal / ENG sub",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163909_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "ノモトヒロキ",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163909_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "ふじやま家族",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163914_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "のすけぼっち飯",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163914_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "へびさんのアウトドア日誌",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163914_Kiku.jpg",
+        "attachments/Screenshot_20261104_163930_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "レッチャンネル",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163914_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "日本の紫陽花",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163919_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "倉嶋里菜",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163919_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "大阪グルメ【関西グルメ】公式",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163919_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "まるももか 10万人行きたい",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163919_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "はるひなちゃんねる",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163924_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "ひみつ基地。",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163924_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "えり | 親子で楽しむおうち遊び",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163924_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "やまかわてるき",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163924_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "あーずかい",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163924_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "魚を保護する人",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163930_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "小物ロマン",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163930_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "Hanaの暮らし",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163930_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "三津家貴也",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "attachments/Screenshot_20261104_163930_Kiku.jpg"
+      ],
+      "extraction": "visible-list-name",
+      "resolution": "pending-exact-channel-match"
+    },
+    {
+      "name": "ともき",
+      "handle": null,
+      "category": "variety",
+      "evidence": [
+        "Screenshot_20261104_152822_Kiku.jpg"
+      ],
+      "extraction": "visible-player-channel",
+      "resolution": "pending-exact-channel-match"
+    }
+  ],
+  "obscured_rows": [
+    {
+      "image": "attachments/Screenshot_20261104_163914_Kiku.jpg",
+      "description": "skateboard creator name covered by navigation"
+    },
+    {
+      "image": "attachments/Screenshot_20261104_163919_Kiku.jpg",
+      "description": "bankaradio-related creator and following cooking creator names covered or below image"
+    },
+    {
+      "image": "attachments/Screenshot_20261104_163930_Kiku.jpg",
+      "description": "bottom ferry-video creator name covered by navigation"
+    }
+  ],
+  "policy": {
+    "paid_inference": false,
+    "creator_captions_required": false,
+    "burned_english_allowed": true,
+    "fixed_40_second_limit": false,
+    "shorts": "retain complete coherent Shorts where possible; use natural speech boundaries for longer sources"
+  }
+}

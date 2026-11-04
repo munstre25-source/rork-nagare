@@ -19,8 +19,11 @@ def request_json(url, headers, body=None, timeout=240):
         return json.load(response)
 
 def configuration():
+    base, anon = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_ANON_KEY")
+    if base and anon:
+        return base.rstrip("/"), anon
     config = plistlib.loads((ROOT / "ios-nagare/Config/Secrets.plist").read_bytes())
-    return os.environ.get("SUPABASE_URL", config["SUPABASE_URL"]).rstrip("/"), os.environ.get("SUPABASE_ANON_KEY", config["SUPABASE_ANON_KEY"])
+    return (base or config["SUPABASE_URL"]).rstrip("/"), anon or config["SUPABASE_ANON_KEY"]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
