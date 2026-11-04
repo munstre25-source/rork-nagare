@@ -1,10 +1,9 @@
 name: Daily caption clips
 
+# Manual-only legacy caption workflow; daily scheduling was disabled at the user request.
 # Free content enrichment: creator-captioned videos from approved channels,
 # tokenized locally and published as caption-tier clips. No AI credits.
 on:
-  schedule:
-    - cron: "40 3 * * *"
   workflow_dispatch:
     inputs:
       max_videos:

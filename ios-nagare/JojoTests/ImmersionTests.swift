@@ -43,6 +43,26 @@ struct ImmersionTests {
         #expect(YouTubeLink.videoId(from: input) == nil)
     }
 
+    @Test func localCatalogRowsKeepTheirProvenanceAndLongShortsDuration() throws {
+        let json = """
+        {"id":"local-abcdefghijk-0-180000","video_id":"abcdefghijk","title":"Complete Short",
+         "channel_name":"Selected channel","category":"variety","difficulty":"Intermediate",
+         "source_start_sec":0,"duration_sec":180,"lines":[],"review_tier":"local","video_orientation":"portrait"}
+        """
+        let clip = try JSONDecoder().decode(ClipRow.self, from: Data(json.utf8)).clip
+        #expect(clip.reviewTier == "local")
+        #expect(clip.hasVerifiedTranscript)
+        #expect(clip.hasSupportedDuration)
+        #expect(clip.isPortraitVideo)
+        var short = clip
+        short.durationSec = 4
+        #expect(short.hasSupportedDuration)
+        short.durationSec = 301
+        #expect(!short.hasSupportedDuration)
+        short.reviewTier = "unknown"
+        #expect(!short.hasVerifiedTranscript)
+    }
+
     // MARK: Timing modes
 
     @Test func lineTimingDecodesAndDisablesWordHighlight() throws {

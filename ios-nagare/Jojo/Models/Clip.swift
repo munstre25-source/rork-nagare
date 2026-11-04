@@ -186,11 +186,17 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     var thumbnailGradient: [String]
     /// Aspect of the actual YouTube video frame (not the subject inside a landscape upload).
     var videoOrientation: String? = nil
+    /// Server-approved publication provenance, including local audio processing.
+    var reviewTier: String? = nil
 
     var isPortraitVideo: Bool { videoOrientation == "portrait" }
 
     /// Clips produced by the catalog pipeline. Their lines were taken from the video itself.
-    var hasVerifiedTranscript: Bool { id.hasPrefix("immersion-") }
+    var hasVerifiedTranscript: Bool {
+        id.hasPrefix("immersion-") || ["ai_v3", "caption", "local"].contains(reviewTier ?? "")
+    }
+
+    var hasSupportedDuration: Bool { durationSec.isFinite && (3...300.5).contains(durationSec) }
 
     var categoryKind: ClipCategory { ClipCategory(rawValue: category) ?? .drama }
     var difficultyKind: Difficulty { Difficulty(rawValue: difficulty) ?? .beginner }

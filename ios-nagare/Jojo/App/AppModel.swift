@@ -300,13 +300,13 @@ final class AppModel {
             if publishedClips == nil, let published, !remoteIds.contains(clip.id), !published.contains(clip.videoId) { return true }
             return false
         }
-        // Complete lessons from short source videos can run up to two minutes.
+        // Keep complete Shorts and longer coherent locally processed lessons.
         // Bundled clips predate the range and stay as they are.
         let bundledIds = Set(seedClips.map(\.id))
         merged.removeAll { clip in
             clip.hasRealVideo
                 && !bundledIds.contains(clip.id)
-                && !(8...120.5).contains(clip.durationSec)
+                && !clip.hasSupportedDuration
         }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
