@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--per-channel",type=int,default=2)
     parser.add_argument("--id",action="append",default=[])
     parser.add_argument("--corrections",type=Path)
+    parser.add_argument("--salvage-excerpt",action="store_true",help="Build a reviewable contiguous speech excerpt if the complete window fails")
+    parser.add_argument("--resegment",action="store_true",help="Use native ASR word anchors only for short phrase windows; final timing remains raw DTW")
     args=parser.parse_args();root=args.report_directory;root.mkdir(parents=True,exist_ok=True)
     candidates={v["video_id"]:v for v in json.loads(args.candidates.read_text())}
     held=json.loads(args.held_report.read_text());held=[x for x in held if x["status"]=="held" and x["video_id"] in candidates]
@@ -62,14 +64,18 @@ def main():
                 if 'formats' not in info:
                     with YoutubeDL({"quiet":True,"no_warnings":True}) as y:info=y.extract_info('https://www.youtube.com/watch?v='+vid,download=False)
                 audio,start=source_window(video,info,args.media_directory)
-            digest=hashlib.sha256(audio.tobytes()).hexdigest();heard_path=root/(vid+'-whisper.json')
+            digest=hashlib.sha256(audio.tobytes()).hexdigest();heard_path=root/(vid+('-whisper-phrases.json' if args.resegment else '-whisper.json'))
             if heard_path.exists():heard=json.loads(heard_path.read_text())
-            else:heard={**processor.recognize(audio),'audioSha256':digest,'asrModel':ASR_MODEL,'asrRevision':ASR_REVISION};heard_path.write_text(json.dumps(heard,ensure_ascii=False,indent=2))
+            else:heard={**(processor.recognize_phrases(audio) if args.resegment else processor.recognize(audio)),'audioSha256':digest,'asrModel':ASR_MODEL,'asrRevision':ASR_REVISION};heard_path.write_text(json.dumps(heard,ensure_ascii=False,indent=2))
             if heard.get('audioSha256')!=digest or heard.get('asrModel')!=ASR_MODEL or heard.get('asrRevision')!=ASR_REVISION:raise ValueError('Recognition cache identity mismatch')
             if vid in corrections:
                 heard=json.loads(json.dumps(heard))
                 for index,text in corrections[vid].items():heard['segments'][int(index)]['text']=text
-            clip,evidence=processor.process(video,info,audio,start,heard)
+            try:clip,evidence=processor.process(video,info,audio,start,heard)
+            except ValueError as full_error:
+                if not args.salvage_excerpt:raise
+                clip,evidence=processor.salvage_excerpt(video,info,audio,start,heard)
+                result['originalFailure']=str(full_error)
             if vid in corrections:clip['processing'].update(operatorTranscriptCorrections=list(corrections[vid]),operatorTranscriptEvidence='Operator corrected recognizer wording against source evidence')
             (root/(clip['id']+'.json')).write_text(json.dumps(clip,ensure_ascii=False,indent=2))
             (root/(clip['id']+'-evidence.json')).write_text(json.dumps(evidence,ensure_ascii=False))

@@ -20,6 +20,39 @@ def verify_whisper_weights(model_path):
         for block in iter(lambda:weights.read(8*1024*1024),b""):digest.update(block)
     if digest.hexdigest()!=ASR_SHA256:raise ValueError("Whisper model checksum mismatch")
 
+def align_phrase_context(aligner,clip,audio):
+    """Retry adjacent phrases jointly when a greedy ASR boundary misplaces words."""
+    import copy
+    draft=copy.deepcopy(clip);merges=[]
+    for attempt in range(4):
+        try:return aligner.align(draft,audio),merges
+        except ValueError as error:
+            match=re.search(r"line\[(\d+)\]",str(error))
+            if not match or attempt==3:raise
+            index=int(match.group(1));first=max(0,index-1);last=min(len(draft["lines"]),index+2)
+            group=draft["lines"][first:last]
+            if len(group)<2 or group[-1]["end"]-group[0]["start"]>14:raise
+            # Every dictionary token and its order survives. Only the coarse ASR
+            # search window changes; all final times are inferred again from audio.
+            combined={**group[0],"end":group[-1]["end"],"tokens":[token for line in group for token in line["tokens"]]}
+            draft["lines"][first:last]=[combined]
+            merges.append({"firstPhrase":first,"lastPhraseExclusive":last,"reason":str(error)})
+
+def restore_phrase_groups(original_lines, aligned_lines):
+    """Restore natural card boundaries after joint acoustic search, keeping every word time."""
+    original = [t for line in original_lines for t in line["tokens"]]
+    aligned = [t for line in aligned_lines for t in line["tokens"]]
+    if [t["surface"] for t in original] != [t["surface"] for t in aligned]:
+        raise ValueError("Joint alignment changed transcript word identity/order")
+    restored, offset = [], 0
+    for line in original_lines:
+        tokens = aligned[offset:offset + len(line["tokens"])]; offset += len(tokens)
+        spoken = [t for t in tokens if t["end"] > t["start"]]
+        if spoken:
+            restored.append({"start":spoken[0]["start"], "end":spoken[-1]["end"],
+                "timing":"word", "tokens":tokens})
+    return restored
+
 class LocalWhisperAligner(LocalAligner):
     """Raw attention/DTW jumps at exact app-word token boundaries; no duration hacks."""
     max_audio_seconds=None
@@ -73,6 +106,48 @@ class LocalWhisperProcessor:
         heard=[dict(start=s.start,end=s.end,text=s.text,avgLogProbability=s.avg_logprob,noSpeechProbability=s.no_speech_prob) for s in segments]
         return {"language":info.language,"languageProbability":info.language_probability,"segments":heard}
 
+    def recognize_phrases(self,audio):
+        # Native ASR word times provide coarse search windows only. Final word
+        # intervals are always re-predicted by raw attention/DTW below.
+        segments,info=self.asr.transcribe(audio,beam_size=5,condition_on_previous_text=False,temperature=0,word_timestamps=True,vad_filter=True)
+        heard=[]
+        for segment in segments:
+            group=[]
+            for word in segment.words or []:
+                group.append(word)
+                if word.end-group[0].start>=6 or sum(len(w.word) for w in group)>=50 or (word.word.rstrip().endswith(("。","!","?","！","？")) and word.end-group[0].start>=1):
+                    heard.append(dict(start=group[0].start,end=group[-1].end,text="".join(w.word for w in group),avgLogProbability=segment.avg_logprob,noSpeechProbability=segment.no_speech_prob));group=[]
+            if group:heard.append(dict(start=group[0].start,end=group[-1].end,text="".join(w.word for w in group),avgLogProbability=segment.avg_logprob,noSpeechProbability=segment.no_speech_prob))
+        return {"language":info.language,"languageProbability":info.language_probability,"segmentation":"native-asr-coarse-windows-v1","segments":heard}
+
+    def salvage_excerpt(self,video,info,audio,source_start,heard):
+        """Choose a contiguous real-audio region; never fill a missing word interval."""
+        if heard["language"]!="ja":raise ValueError("Source has no recognized Japanese speech")
+        import copy
+        groups=[];group=[]
+        for segment in heard["segments"]:
+            text=segment["text"].strip()
+            try:
+                if not text or not re.search(r"[\u3040-\u30ff\u3400-\u9fff]",text) or segment["avgLogProbability"] < -1.25:raise ValueError("Unusable speech")
+                line={"start":max(0.,segment["start"]),"end":min(len(audio)/16000,segment["end"]),"tokens":self.dictionary_module.tokenize(text,self.dictionary)}
+                proof=self.aligner.align({"video_id":video["video_id"],"duration_sec":len(audio)/16000,"source_start_sec":source_start,"lines":[line]},audio)
+                group.append((segment,proof["lines"][0]))
+            except ValueError:
+                if group:groups.append(group);group=[]
+        if group:groups.append(group)
+        groups.sort(key=lambda g:g[-1][1]["end"]-g[0][1]["start"],reverse=True)
+        for group in groups:
+            lo=max(0.,group[0][1]["start"]-.2);hi=min(len(audio)/16000,group[-1][1]["end"]+.2)
+            first,last=round(lo*16000),round(hi*16000);lo=first/16000;duration=(last-first)/16000
+            if duration<3:continue
+            excerpt=copy.deepcopy(heard);excerpt["segments"]=[{**segment,"start":max(0.,segment["start"]-lo),"end":min(duration,segment["end"]-lo)} for segment,_ in group]
+            try:
+                clip,evidence=self.process(video,info,audio[first:last],source_start+lo,excerpt)
+                clip["processing"]["sourceWindowSelection"]="Contiguous speech excerpt after full-window timing failure; actual audio re-aligned; requires language review"
+                return clip,evidence
+            except ValueError:continue
+        raise ValueError("No contiguous Japanese speech excerpt passed raw timing checks")
+
     def process(self,video,info,audio,source_start,heard):
         import torch
         if heard["language"]!="ja":raise ValueError("No Japanese speech: "+heard["language"])
@@ -85,9 +160,10 @@ class LocalWhisperProcessor:
             lines.append({"start":max(0.,segment["start"]),"end":min(duration,segment["end"]),"timing":"line","translation":"Local translation pending.","tokens":self.dictionary_module.tokenize(text,self.dictionary)})
         if not lines:raise ValueError("No Japanese learning transcript")
         clip={"id":f"local-{video['video_id']}-{round(source_start*1000)}-{round(duration*1000)}","video_id":video["video_id"],"title":video["title"],"channel_name":video["channel_name"],"category":video["category"],"difficulty":"Intermediate","source_start_sec":source_start,"duration_sec":duration,"video_orientation":"portrait" if (info.get("height") or 0)>(info.get("width") or 1) else "landscape","lines":lines,"processing":{"language":"Japanese","asrModel":ASR_MODEL,"asrRevision":ASR_REVISION,"asrSha256":ASR_SHA256,"translationModel":TRANSLATION_MODEL,"translationRevision":TRANSLATION_REVISION}}
-        alignment=self.aligner.align(clip,audio)
+        alignment,merges=align_phrase_context(self.aligner,clip,audio)
+        if merges:clip["processing"]["alignmentPhraseMerges"]=merges
         out=[]
-        for line in alignment["lines"]:
+        for line in restore_phrase_groups(lines, alignment["lines"]):
             for group in display_groups(line["tokens"],max_chars=60):
                 spoken=[t for t in group if t["end"]>t["start"]]
                 if spoken:out.append({"start":spoken[0]["start"],"end":spoken[-1]["end"],"timing":"word","tokens":group})
