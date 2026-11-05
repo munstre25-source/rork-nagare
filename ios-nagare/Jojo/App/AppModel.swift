@@ -713,6 +713,11 @@ final class AppModel {
             s += durationFitScore(for: clip.durationSec, level: profile.readingLevel)
             s += savedVocabularyFitScore(for: clip)
             if clip.hasVerifiedTranscript { s += 4 }
+            // Word-by-word karaoke is the core experience; line-only clips stay eligible but rank lower.
+            let spoken = clip.lines.filter { !$0.tokens.isEmpty }
+            if !spoken.isEmpty {
+                s += 20 * Double(spoken.filter(\.hasWordTiming).count) / Double(spoken.count)
+            }
             if let seen = profile.finishedClipIds.firstIndex(of: clip.id) {
                 s -= 400 + Double(seen)
             }

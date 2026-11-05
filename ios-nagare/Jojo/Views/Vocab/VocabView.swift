@@ -22,6 +22,7 @@ struct VocabView: View {
     @State private var jlpt: String?
     @State private var posFilter: StudyPosFilter = .all
     @State private var sourceChannel: String?
+    @State private var stateFilter: SRSState?
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showDeckBuilder: Bool = false
     @State private var showFilters: Bool = false
@@ -44,6 +45,7 @@ struct VocabView: View {
             }
         }
         if let jlpt { result = result.filter { $0.jlpt == jlpt } }
+        if let stateFilter { result = result.filter { $0.state == stateFilter } }
         if posFilter != .all { result = result.filter { posFilter.matches($0.pos) } }
         if let sourceChannel {
             result = result.filter { app.clip(id: $0.contextClipId)?.channelName == sourceChannel }
@@ -57,7 +59,7 @@ struct VocabView: View {
         return ReviewQueue.due(in: words)
     }
 
-    private var hasFilters: Bool { jlpt != nil || posFilter != .all || sourceChannel != nil }
+    private var hasFilters: Bool { jlpt != nil || posFilter != .all || sourceChannel != nil || stateFilter != nil }
 
     private var channels: [String] {
         Array(Set(words.compactMap { app.clip(id: $0.contextClipId)?.channelName })).sorted()
@@ -113,6 +115,7 @@ struct VocabView: View {
                                 jlpt = nil
                                 posFilter = .all
                                 sourceChannel = nil
+                                stateFilter = nil
                             }
                             .font(.caption.weight(.semibold))
                             .frame(minHeight: 44)
@@ -172,6 +175,7 @@ struct VocabView: View {
                 jlpt: $jlpt,
                 posFilter: $posFilter,
                 sourceChannel: $sourceChannel,
+                stateFilter: $stateFilter,
                 channels: channels,
                 onNewDeck: { buildDeckAfterFilters = true }
             )
@@ -181,33 +185,47 @@ struct VocabView: View {
         .onChange(of: app.pendingDeepLink) { _, _ in openPendingReviewIfNeeded() }
     }
 
-    /// Title, subtitle, known count, and the cheer mascot — matching the design boards.
+    /// Kiku-style hero: the one number that matters, the words you know, with Jojo cheering.
     private var vocabHeader: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Vocab")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(LearningInk.japanese)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .textGlow(LearningInk.glow, level: app.profile.glow)
-                Text("Grow your vocabulary, one word at a time.")
-                    .font(.subheadline)
+        let known = Set(words.filter { $0.state == .known }.map(\.key)).count
+        return HStack(alignment: .bottom, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Japanese words you know")
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.studyMuted)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text("\(known)")
+                    .font(.system(size: 56, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .foregroundStyle(LearningInk.japanese)
+                    .textGlow(LearningInk.glow, level: app.profile.glow)
+                    .animation(.snappy, value: known)
                 if !words.isEmpty {
-                    Text(dueWords.isEmpty ? "Nothing due right now" : "\(dueWords.count) due")
-                        .font(.caption.weight(.semibold))
+                    HStack(spacing: 6) {
+                        Label("\(words.count) saved", systemImage: "bookmark.fill")
+                        Text("·")
+                        Label(dueWords.isEmpty ? "Nothing due" : "\(dueWords.count) due",
+                              systemImage: dueWords.isEmpty ? "checkmark.circle.fill" : "clock.fill")
+                            .foregroundStyle(dueWords.isEmpty ? Color.studyMuted : Color.jojoOrange)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.studyMuted)
+                    .labelStyle(.titleAndIcon)
+                    .lineLimit(1)
+                } else {
+                    Text("Tap words in clips and they land here.")
+                        .font(.caption)
                         .foregroundStyle(Color.studyMuted)
-                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
-            JojoMascot(height: 84, floats: false, pose: .cheer)
+            JojoMascot(height: 96, floats: true, pose: known > 0 ? .cheer : .wave)
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(known) Japanese words you know, \(words.count) saved, \(dueWords.count) due")
     }
 
     private func learningProgress(at now: Date) -> some View {
@@ -777,6 +795,7 @@ private struct VocabFilterSheet: View {
     @Binding var jlpt: String?
     @Binding var posFilter: StudyPosFilter
     @Binding var sourceChannel: String?
+    @Binding var stateFilter: SRSState?
     let channels: [String]
     let onNewDeck: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -793,6 +812,12 @@ private struct VocabFilterSheet: View {
                     choice("Any level", selected: jlpt == nil) { jlpt = nil }
                     ForEach(["N5", "N4", "N3", "N2", "N1"], id: \.self) { level in
                         choice(level, selected: jlpt == level) { jlpt = level }
+                    }
+                }
+                Section("Progress") {
+                    choice("Any stage", selected: stateFilter == nil) { stateFilter = nil }
+                    ForEach(SRSState.allCases, id: \.self) { state in
+                        choice(state.title, selected: stateFilter == state) { stateFilter = state }
                     }
                 }
                 Section("Word type") {
@@ -822,6 +847,7 @@ private struct VocabFilterSheet: View {
                         jlpt = nil
                         posFilter = .all
                         sourceChannel = nil
+                        stateFilter = nil
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {

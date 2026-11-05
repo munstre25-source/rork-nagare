@@ -10,10 +10,9 @@ struct ExploreView: View {
     let onPlay: (Clip, Int?, [Clip]) -> Void
 
     @Environment(AppModel.self) private var app
-    @State private var difficulty: Difficulty?
-    @State private var topic: ClipCategory?
-    @State private var source: SourceType?
+    @State private var filterState = ExploreFilters()
     @State private var favoritesOnly: Bool = false
+    @State private var showFilters = false
     @State private var appeared: Bool = false
 
     private var filtered: [Clip] {
@@ -25,12 +24,27 @@ struct ExploreView: View {
     }
 
     private func matchesFilters(_ clip: Clip) -> Bool {
-        let selectedDifficulty = lockedDifficulty ?? difficulty
-        return (lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind))
-            && (selectedDifficulty == nil || clip.difficultyKind == selectedDifficulty)
-            && (topic == nil || clip.categoryKind == topic)
-            && (source == nil || clip.categoryKind.sourceType == source)
-            && (!favoritesOnly || app.isFavorite(clip.id))
+        matches(clip, filterState)
+    }
+
+    private func matches(_ clip: Clip, _ f: ExploreFilters) -> Bool {
+        let selectedDifficulty = lockedDifficulty ?? f.difficulty
+        guard (lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)),
+              selectedDifficulty == nil || clip.difficultyKind == selectedDifficulty,
+              f.topic == nil || clip.categoryKind == f.topic,
+              f.source == nil || clip.categoryKind.sourceType == f.source,
+              !favoritesOnly || app.isFavorite(clip.id) else { return false }
+        switch f.watched {
+        case .any: break
+        case .watched: guard app.profile.finishedClipIds.contains(clip.id) else { return false }
+        case .unwatched: guard !app.profile.finishedClipIds.contains(clip.id) else { return false }
+        }
+        if let grammar = f.grammar, !grammar.matches(clip) { return false }
+        return true
+    }
+
+    private var hasActiveFilters: Bool {
+        filterState.activeCount > (lockedDifficulty == nil ? 0 : 1) || favoritesOnly
     }
 
     var body: some View {
@@ -73,7 +87,7 @@ struct ExploreView: View {
         .scrollIndicators(.hidden)
         .onAppear {
             if favoritesOnlyStart { favoritesOnly = true }
-            if let lockedDifficulty { difficulty = lockedDifficulty }
+            if let lockedDifficulty { filterState.difficulty = lockedDifficulty }
             withAnimation { appeared = true }
         }
     }
@@ -83,41 +97,37 @@ struct ExploreView: View {
             HStack(spacing: Spacing.s) {
                 Button {
                     Haptics.selection()
+                    showFilters = true
+                } label: {
+                    let extra = filterState.activeCount - (lockedDifficulty == nil ? 0 : 1)
+                    FilterChip(title: extra > 0 ? "Filters · \(extra)" : "Filters",
+                               systemImage: "line.3.horizontal.decrease", isSelected: extra > 0)
+                }
+                .accessibilityHint("Difficulty, grammar, topic, source and watched")
+                Button {
+                    Haptics.selection()
                     favoritesOnly.toggle()
                 } label: {
                     FilterChip(title: "Saved", systemImage: favoritesOnly ? "bookmark.fill" : "bookmark", isSelected: favoritesOnly)
                 }
-                if lockedDifficulty == nil {
-                    Menu {
-                        Button("Any difficulty") { difficulty = nil }
-                        ForEach(Difficulty.allCases) { d in
-                            Button(d.rawValue) { difficulty = d }
-                        }
-                    } label: {
-                        FilterChip(title: difficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: difficulty != nil)
-                    }
-                } else {
-                    FilterChip(title: lockedDifficulty?.rawValue ?? "Difficulty", systemImage: "chart.bar.fill", isSelected: true)
+                if let lockedDifficulty {
+                    FilterChip(title: lockedDifficulty.rawValue, systemImage: "chart.bar.fill", isSelected: true)
+                } else if let d = filterState.difficulty {
+                    activeChip(d.rawValue, symbol: "chart.bar.fill") { filterState.difficulty = nil }
                 }
-                if lockedCategories.isEmpty {
-                    Menu {
-                        Button("Any topic") { topic = nil }
-                        ForEach(ClipCategory.allCases) { c in
-                            Button { topic = c } label: { Label(c.displayName, systemImage: c.symbol) }
-                        }
-                    } label: {
-                        FilterChip(title: topic?.displayName ?? "Topic", systemImage: "square.grid.2x2.fill", isSelected: topic != nil)
-                    }
+                if let g = filterState.grammar {
+                    activeChip(g.title, symbol: "text.book.closed.fill") { filterState.grammar = nil }
                 }
-                Menu {
-                    Button("Any source") { source = nil }
-                    ForEach(SourceType.allCases) { s in
-                        Button(s.displayName) { source = s }
-                    }
-                } label: {
-                    FilterChip(title: source?.displayName ?? "Source type", systemImage: "play.tv.fill", isSelected: source != nil)
+                if let t = filterState.topic {
+                    activeChip(t.displayName, symbol: t.symbol) { filterState.topic = nil }
                 }
-                if difficulty != nil || topic != nil || source != nil || favoritesOnly {
+                if let s = filterState.source {
+                    activeChip(s.displayName, symbol: "play.tv.fill") { filterState.source = nil }
+                }
+                if filterState.watched != .any {
+                    activeChip(filterState.watched.title, symbol: "eye.fill") { filterState.watched = .any }
+                }
+                if hasActiveFilters {
                     Button("Clear") { clearFilters() }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.jojoOrange)
@@ -126,13 +136,29 @@ struct ExploreView: View {
             }
         }
         .contentMargins(.horizontal, Spacing.l, for: .scrollContent)
+        .sheet(isPresented: $showFilters) {
+            ExploreFiltersSheet(
+                filters: $filterState,
+                lockedDifficulty: lockedDifficulty,
+                lockTopic: !lockedCategories.isEmpty,
+                count: { draft in app.studyLibrary.filter { matches($0, draft) }.count }
+            )
+        }
+    }
+
+    private func activeChip(_ title: String, symbol: String, remove: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.selection()
+            withAnimation(.snappy) { remove() }
+        } label: {
+            FilterChip(title: "\(title)  ✕", systemImage: symbol, isSelected: true)
+        }
+        .accessibilityLabel("Remove \(title) filter")
     }
 
     private func clearFilters() {
         withAnimation(.snappy) {
-            difficulty = nil
-            topic = nil
-            source = nil
+            filterState = ExploreFilters(difficulty: lockedDifficulty)
             favoritesOnly = false
         }
     }
