@@ -18,6 +18,8 @@ struct TapPopupCard: View {
     /// Natural height of the scrollable middle, so the card hugs short content and only
     /// scrolls when it exceeds the cap.
     @State private var middleNaturalHeight: CGFloat?
+    @State private var askDraft = ""
+    @FocusState private var askFocused: Bool
 
     private var onDark: Bool { colorScheme == .dark }
     private var ink: Color { onDark ? .white : Color.primary }
@@ -173,6 +175,8 @@ struct TapPopupCard: View {
                     switch lookup.tab {
                     case .dictionary:
                         compactDictionaryTab(explanation, primaryGloss: gloss)
+                    case .ai:
+                        aiTab(selection: selection, explanation: explanation)
                     case .flashcard:
                         flashcardTab(selection: selection, explanation: explanation)
                         paintRow(selection: selection)
@@ -196,7 +200,7 @@ struct TapPopupCard: View {
                     Button {
                         Haptics.selection()
                         withAnimation(.snappy) { lookup.tab = tab }
-                        if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                        if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
                         if tab == .dictionary { showAllDefinitions = true }
                     } label: {
                         Image(systemName: tab.symbol)
@@ -240,6 +244,7 @@ struct TapPopupCard: View {
             Group {
                 switch lookup.tab {
                 case .dictionary: dictionaryTab(explanation, limit: showAllDefinitions ? 99 : 2)
+                case .ai: aiTab(selection: selection, explanation: explanation)
                 case .flashcard: flashcardTab(selection: selection, explanation: explanation)
                 case .examples: examplesTab
                 }
@@ -297,7 +302,7 @@ struct TapPopupCard: View {
                     Haptics.selection()
                     withAnimation(.snappy) {
                         lookup.tab = tabs[idx + 1]
-                        if tabs[idx + 1] == .examples { lookup.loadContextIfNeeded(app: app) }
+                        if tabs[idx + 1] == .examples || tabs[idx + 1] == .ai { lookup.loadContextIfNeeded(app: app) }
                     }
                 } else if value.translation.width > 40, idx > 0 {
                     Haptics.selection()
@@ -400,7 +405,7 @@ struct TapPopupCard: View {
                 Button {
                     Haptics.selection()
                     withAnimation(.snappy) { lookup.tab = tab }
-                    if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                    if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
                 } label: {
                     VStack(spacing: 2) {
                         Image(systemName: tab.symbol)
@@ -504,7 +509,7 @@ struct TapPopupCard: View {
                 Button {
                     Haptics.selection()
                     withAnimation(.snappy) { lookup.tab = tab }
-                    if tab == .examples { lookup.loadContextIfNeeded(app: app) }
+                    if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
                 } label: {
                     Image(systemName: tab.symbol)
                         .font(.system(size: compact ? 15 : 17, weight: .semibold))
@@ -770,6 +775,142 @@ struct TapPopupCard: View {
             .frame(minHeight: 60)
             .onAppear { lookup.loadContextIfNeeded(app: app) }
         }
+    }
+
+    // MARK: AI tab
+
+    /// Meaning in this sentence, an example and the grammar note, then a tiny Ask Jojo thread.
+    private func aiTab(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
+        let context = lookup.context
+        let live = context?.isFallback == false
+        let example = context.flatMap { ctx in
+            uniqueNonEmpty(ctx.examples).first { $0.components(separatedBy: " — ").first?
+                .trimmingCharacters(in: .whitespacesAndNewlines) != selection.sentence }
+        }
+        let grammar = GrammarFormNotes.line(for: selection.token)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.jojoOrange)
+                Text(live ? "Jojo AI" : "Jojo")
+                    .font(.caption.weight(.heavy))
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.jojoOrange)
+                if lookup.isLoadingContext {
+                    ProgressView().controlSize(.mini).tint(inkSoft)
+                }
+                Spacer(minLength: 0)
+            }
+            aiSection("Meaning here", body: context?.contextualExplanation
+                      ?? explanation.definitions.first ?? selection.translation)
+            if let example, !example.isEmpty {
+                aiSection("Example", body: example, japanese: true)
+            }
+            if let grammar {
+                aiSection("Grammar", body: grammar)
+            } else if let note = explanation.formalityNote {
+                aiSection("Register", body: note.capitalized)
+            }
+
+            Divider().overlay(onDark ? Color.white.opacity(0.1) : Color.primary.opacity(0.08))
+
+            ForEach(lookup.askThread) { message in
+                askBubble(message)
+            }
+            if lookup.isAsking {
+                HStack(spacing: 6) {
+                    JojoMascotAvatar(size: 22)
+                    ProgressView().controlSize(.small).tint(inkSoft)
+                    Text("Jojo is thinking…").font(.caption).foregroundStyle(inkSoft)
+                }
+            }
+            if lookup.askThread.isEmpty && !lookup.isAsking {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(askSuggestions(for: selection.token), id: \.self) { suggestion in
+                            Button {
+                                Haptics.selection()
+                                lookup.ask(suggestion, app: app)
+                            } label: {
+                                Text(suggestion)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(ink)
+                                    .padding(.horizontal, 11)
+                                    .frame(minHeight: 32)
+                                    .background(chip, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                TextField("Ask Jojo about \(selection.token.surface)…", text: $askDraft)
+                    .font(.subheadline)
+                    .foregroundStyle(ink)
+                    .focused($askFocused)
+                    .submitLabel(.send)
+                    .onSubmit(sendAsk)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 40)
+                    .background(chip, in: Capsule())
+                Button(action: sendAsk) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(askDraft.trimmingCharacters(in: .whitespaces).isEmpty || lookup.isAsking
+                                    ? Color.accentDisabled : Color.sakuraButton, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(askDraft.trimmingCharacters(in: .whitespaces).isEmpty || lookup.isAsking)
+                .accessibilityLabel("Send question")
+            }
+        }
+    }
+
+    private func sendAsk() {
+        let text = askDraft
+        askDraft = ""
+        lookup.ask(text, app: app)
+    }
+
+    private func askSuggestions(for token: Token) -> [String] {
+        var list = ["Why this form here?", "Is it casual or polite?", "Give me another example"]
+        if token.baseForm != nil { list.insert("What's the dictionary form?", at: 1) }
+        list.append("Similar words?")
+        return list
+    }
+
+    private func aiSection(_ title: String, body: String, japanese: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .textCase(.uppercase)
+                .foregroundStyle(inkSoft)
+            Text(body)
+                .font(japanese ? JojoFont.jp(14, relativeTo: .footnote) : .footnote)
+                .foregroundStyle(ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func askBubble(_ message: WordLookupController.AskMessage) -> some View {
+        HStack(alignment: .bottom, spacing: 6) {
+            if message.fromLearner { Spacer(minLength: 40) } else { JojoMascotAvatar(size: 22) }
+            Text(message.text)
+                .font(.footnote)
+                .foregroundStyle(message.fromLearner ? Color.white : (message.failed ? inkSoft : ink))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 8)
+                .background(message.fromLearner ? Color.sakuraButton : chip,
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            if !message.fromLearner { Spacer(minLength: 24) }
+        }
+        .frame(maxWidth: .infinity, alignment: message.fromLearner ? .trailing : .leading)
     }
 }
 

@@ -107,6 +107,34 @@ actor WordExplainService {
         }
     }
 
+    /// Ask Jojo: one free-form question about a word in its sentence. Returns nil when
+    /// offline, unsubscribed or rate-limited so the card can show a calm retry.
+    func ask(token: Token, sentence: String, question: String, appUserId: String) async -> String? {
+        let normalized = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty, api.isConfigured else { return nil }
+        let key = "ask|\(token.dictionaryForm)|\(JapaneseText.sentenceHash(sentence))|\(normalized.lowercased())"
+        if let cached = memoryCache[key], let answer = Self.decodeAnswer(cached) { return answer }
+        let started = Date()
+        do {
+            let data = try await api.explainWord(kind: "ask", word: token.dictionaryForm, sentence: sentence,
+                                                 appUserId: appUserId, question: String(normalized.prefix(200)))
+            logCall(started: started, status: "ok")
+            guard let answer = Self.decodeAnswer(data) else { return nil }
+            memoryCache[key] = data
+            return answer
+        } catch {
+            logCall(started: started, status: statusLabel(error))
+            return nil
+        }
+    }
+
+    nonisolated private static func decodeAnswer(_ data: Data) -> String? {
+        struct Payload: Decodable { let answer: String }
+        guard let answer = try? JSONDecoder().decode(Payload.self, from: data).answer
+            .trimmingCharacters(in: .whitespacesAndNewlines), !answer.isEmpty else { return nil }
+        return answer
+    }
+
     nonisolated static func decodeLookup(_ data: Data, token: Token, source: WordExplanation.Source) -> WordExplanation? {
         guard let response = try? JSONDecoder().decode(LookupResponse.self, from: data) else { return nil }
         let definitions = WordExplanation.meaningfulDefinitions(response.definitions ?? [])

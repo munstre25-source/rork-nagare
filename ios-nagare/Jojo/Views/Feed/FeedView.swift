@@ -25,6 +25,10 @@ struct FeedView: View {
     @State private var maximizeNavShown: Bool = false
     @State private var theaterOptionsPresented = false
     @State private var goalCompletionVisible = false
+    @State private var headerHeight: CGFloat = 96
+    @State private var celebration: FeedCelebration?
+    @AppStorage(PlayerPrefs.focusModeKey) private var focusMode = false
+    @AppStorage("jojo.seenAchievements") private var seenAchievements = ""
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var bornCard: BornCardPayload?
     @State private var watchChromeVisible: Bool = true
@@ -48,44 +52,33 @@ struct FeedView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // The navigation chrome is a real row ABOVE the feed, never painted on top of
-            // the video. In theater the chrome steps out and the picture takes the screen.
-            // Keep the header in the tree and collapse its height — removing it with a
-            // transition animates the pager mid-swipe and leaves two clips on one screen.
-            VStack(spacing: 0) {
-                VStack(spacing: 0) {
-                    // Navigation stays directly below the safe area; progress and resume
-                    // details must not push the For You / Explore links down.
-                    header
-                    VStack(spacing: 0) {
-                        ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
-                        if showResumeChip, let resumeSnapshot {
-                            ResumeChip(
-                                title: resumeSnapshot.title,
-                                channel: resumeSnapshot.channel,
-                                time: resumeSnapshot.time,
-                                onResume: { resumeFromSnapshot() },
-                                onDismiss: {
-                                    showResumeChip = false
-                                    ResumePlaybackStore.clear()
-                                    self.resumeSnapshot = nil
-                                }
-                            )
-                        }
-                    }
-                    // Fading is opacity-only: the pager viewport never changes size because
-                    // chrome faded, so the clip and karaoke never shift. Only maximize resizes.
-                    .frame(height: videoExpanded ? 0 : nil)
-                    .clipped()
-                    .opacity(watchChromeVisible && !videoExpanded ? 1 : 0)
-                    .allowsHitTesting(watchChromeVisible && !videoExpanded)
+            // The pager owns the full height. The For You / Explore header floats over the
+            // top: over a gradient on vertical Shorts, over a solid band on landscape clips
+            // (which get `topInset` so the picture still starts below it). The pager never
+            // resizes when chrome fades, so two half-clips are never on screen at once.
+            feedPager
+            headerStack
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    if abs(height - headerHeight) > 0.5 { headerHeight = height }
                 }
-                .frame(height: videoExpanded ? 0 : nil)
+                .background(alignment: .top) { headerBackdrop }
+                .frame(height: videoExpanded ? 0 : nil, alignment: .top)
                 .clipped()
                 .opacity(videoExpanded ? 0 : 1)
                 .allowsHitTesting(!videoExpanded)
                 .zIndex(1)
-                feedPager
+
+            if let celebration {
+                FeedCelebrationToast(celebration: celebration)
+                    .padding(.top, 6)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(4)
+                    .task(id: celebration.id) {
+                        try? await Task.sleep(for: .seconds(3.2))
+                        guard !Task.isCancelled, self.celebration?.id == celebration.id else { return }
+                        withAnimation(.snappy) { self.celebration = nil }
+                    }
+                    .onTapGesture { withAnimation(.snappy) { self.celebration = nil } }
             }
 
             if quickChecksEnabled, let quizClip {
@@ -145,6 +138,7 @@ struct FeedView: View {
                 }
         )
         .onAppear {
+            if seenAchievements.isEmpty { checkAchievements() }
             setup()
             scheduleWatchChromeHide()
             loadResumeChip()
@@ -168,6 +162,12 @@ struct FeedView: View {
         .onChange(of: app.hidesMainTabBar) { _, _ in
             bumpPageHeightEpoch()
         }
+        .onChange(of: app.goalCelebrationCount) { _, _ in
+            celebrate(FeedCelebration(kind: .goal, title: "You're on fire!",
+                                      detail: "\(app.profile.dailyGoalMinutes) minutes of real Japanese today"))
+        }
+        .onChange(of: savedWords.count) { _, _ in checkAchievements() }
+        .onChange(of: app.currentStreak) { _, _ in checkAchievements() }
         .onChange(of: goalCompletionVisible) { _, visible in
             if visible { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
@@ -314,6 +314,56 @@ struct FeedView: View {
         }
     }
 
+    private var currentClip: Clip? {
+        guard let currentId else { return clips.first }
+        return clips.first { $0.id == currentId }
+    }
+
+    /// Navigation stays directly below the safe area; progress and resume details
+    /// sit under it and fade with the watch chrome (opacity only, never height).
+    private var headerStack: some View {
+        VStack(spacing: 0) {
+            header
+            VStack(spacing: 0) {
+                if !focusMode {
+                    ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
+                }
+                if showResumeChip, let resumeSnapshot {
+                    ResumeChip(
+                        title: resumeSnapshot.title,
+                        channel: resumeSnapshot.channel,
+                        time: resumeSnapshot.time,
+                        onResume: { resumeFromSnapshot() },
+                        onDismiss: {
+                            showResumeChip = false
+                            ResumePlaybackStore.clear()
+                            self.resumeSnapshot = nil
+                        }
+                    )
+                }
+            }
+            .opacity(watchChromeVisible ? 1 : 0)
+            .allowsHitTesting(watchChromeVisible)
+        }
+    }
+
+    @ViewBuilder
+    private var headerBackdrop: some View {
+        if currentClip?.isPortraitVideo == true {
+            LinearGradient(
+                colors: [Color.black.opacity(0.72), Color.black.opacity(0.35), .clear],
+                startPoint: .top, endPoint: .bottom
+            )
+            .padding(.bottom, -36)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+            .opacity(watchChromeVisible ? 1 : 0.6)
+        } else {
+            Color.watchBackground
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+
     /// Feed navigation just below the status bar, above progress and the video.
     private var header: some View {
         HStack(spacing: 0) {
@@ -345,6 +395,29 @@ struct FeedView: View {
         }
         .padding(.horizontal, 8)
         .padding(.bottom, 2)
+    }
+
+    private func celebrate(_ item: FeedCelebration) {
+        guard !focusMode, isActiveTab, !lookup.isPresented else { return }
+        if item.kind == .goal { Haptics.success() } else { Haptics.medium() }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { celebration = item }
+    }
+
+    /// Achievements are computed from progress; we only remember which ones were announced.
+    private func checkAchievements() {
+        let known = savedWords.count { $0.state == .known }
+        let unlocked = ProfileAchievement.all(streak: app.currentStreak, words: savedWords.count, known: known,
+                                              minutes: Int(app.totalWatchSeconds / 60)).filter(\.unlocked)
+        var seen = Set(seenAchievements.split(separator: ",").map(String.init))
+        let firstRun = seenAchievements.isEmpty
+        let fresh = unlocked.filter { !seen.contains($0.id) }
+        if firstRun { seen.insert("_") }
+        guard !fresh.isEmpty || firstRun else { return }
+        fresh.forEach { seen.insert($0.id) }
+        seenAchievements = seen.sorted().joined(separator: ",")
+        // The first check only records what was already earned before this feature existed.
+        guard !firstRun, let newest = fresh.last else { return }
+        celebrate(FeedCelebration(kind: .achievement, title: newest.title, detail: newest.detail, symbol: newest.symbol))
     }
 
     private func openDueReview() {
@@ -442,6 +515,7 @@ struct FeedView: View {
                                 advance()
                             },
                             reportsCoachAnchors: true,
+                            topInset: videoExpanded ? 0 : headerHeight
                         )
                         .background(Color.watchBackground)
                         // Opaque mask so the next page cannot show through rounded corners.

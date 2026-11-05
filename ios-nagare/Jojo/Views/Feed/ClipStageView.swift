@@ -30,6 +30,8 @@ struct ClipStageView: View {
     var onSkip: (() -> Void)? = nil
     /// The For You feed reports its active page's controls to the guided tour.
     var reportsCoachAnchors: Bool = false
+    /// Height of the feed header floating over the page. Wide clips reserve it; Shorts run under it.
+    var topInset: CGFloat = 0
     /// Early on, one quiet line under the controls says what tapping a word does.
 
     @Environment(PlaybackCoordinator.self) private var coordinator
@@ -37,8 +39,11 @@ struct ClipStageView: View {
     @Environment(AppModel.self) private var app
     @AppStorage("jojo.wordSavedHintShown") private var hasShownWordSavedHint = false
     @State private var wordSavedHint: String?
-    /// Shorts: the captions button hides the separate karaoke section.
-    @State private var showsShortsCaptions: Bool = true
+    /// CC removes every subtitle layer on every clip until it is turned back on.
+    @AppStorage(PlayerPrefs.subtitlesHiddenKey) private var subtitlesHidden = false
+    @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeTextSize: Double = 1
+    @AppStorage(PlayerPrefs.popupTextSizeKey) private var popupTextSize: Double = 1
+    private var showsShortsCaptions: Bool { !subtitlesHidden }
     /// Three wrapped Japanese rows plus readings, translation, and panel padding.
     @ScaledMetric(relativeTo: .body) private var karaokeReadingHeight: CGFloat = 320
     @State private var playbackControlsHeight: CGFloat = 88
@@ -157,6 +162,7 @@ struct ClipStageView: View {
                     )
                     .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                 }
+                .padding(.top, topInset)
             } else {
                 stage(videoHeight: nil, videoWidth: nil, columnWidth: nil)
             }
@@ -338,9 +344,16 @@ struct ClipStageView: View {
                     }
                 }
 
-                transcript(player: player, showsLearningControls: false)
-                    .coachTarget(.transcript, active: isCoachPage)
-                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                Group {
+                    if subtitlesHidden {
+                        SubtitlesOffPill()
+                            .frame(maxHeight: .infinity)
+                    } else {
+                        transcript(player: player, showsLearningControls: false)
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .modifier(TranscriptTopReader(top: $transcriptTop))
+                    }
+                }
                     .frame(width: wordsWidth, alignment: .top)
                     .frame(maxHeight: .infinity, alignment: .top)
             }
@@ -509,9 +522,16 @@ struct ClipStageView: View {
                 // no dead gap above it, and no fixed well that cuts lines at the dock.
                 Color.clear.frame(height: immersiveFeed ? 6 : 10)
 
-                transcript(player: player, showsLearningControls: false)
-                    .coachTarget(.transcript, active: isCoachPage)
-                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                Group {
+                    if subtitlesHidden && immersiveFeed {
+                        SubtitlesOffPill()
+                            .padding(.top, 18)
+                    } else {
+                        transcript(player: player, showsLearningControls: false)
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .modifier(TranscriptTopReader(top: $transcriptTop))
+                    }
+                }
                     .frame(width: columnWidth)
                     .frame(
                         maxWidth: .infinity,
@@ -525,21 +545,28 @@ struct ClipStageView: View {
         .clipped()
     }
 
-    // MARK: Shorts: full picture, controls under it, karaoke on a bottom gradient band.
+    // MARK: Shorts: picture under the floating header, rail on the right, karaoke below.
 
     private func shortsStage(in size: CGSize) -> some View {
         let player = coordinator.player(for: clip)
-        let controlsVisible = !videoExpanded || showsTheaterControls
-        let layout = ShortsStageGeometry.make(in: size,
-                                              preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
-                                              controlsHeight: controlsVisible ? playbackControlsHeight : 0)
-        let karaokeHeight = layout.captionHeight
-        let videoHeight = layout.videoHeight
+        let focus = videoExpanded
+        let captionsOn = showsShortsCaptions
+        let karaokeBelow = captionsOn && !focus
+        // Normal: the picture takes the top ~62% and the karaoke reads underneath (Kiku).
+        // Focus or subtitles off: the picture owns the whole page.
+        let belowHeight: CGFloat = karaokeBelow
+            ? min(max(size.height * 0.36, 210), max(210, karaokeReadingHeight * 0.95), size.height * 0.48)
+            : 0
+        let videoHeight = max(0, size.height - belowHeight)
+        let bandHeight = focus && captionsOn
+            ? ShortsStageGeometry.make(in: CGSize(width: size.width, height: videoHeight),
+                                       preferredCaptionHeight: karaokeReadingHeight,
+                                       controlsHeight: 0).captionHeight
+            : 0
+        let headerTop = watchChromeHidden || focus ? 10 : topInset + 6
+        let railHidden = focus && watchChromeHidden
 
-        // Maximize hides the control row and gives that space to the picture; the band
-        // stays on the lower edge of the larger frame so the subject is not covered.
-        // The stack fills the page exactly — no outer padding that reveals the next clip.
-        return VStack(spacing: controlsVisible ? 6 : 0) {
+        return VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
                 ClipVideoView(
                     clip: clip,
@@ -554,21 +581,47 @@ struct ClipStageView: View {
                     onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
-                // Explicit width: an aspect-fill poster must never widen the stack, or the
-                // band and title spill past both screen edges.
+                // Explicit width: an aspect-fill poster must never widen the stack.
                 .frame(width: size.width, height: videoHeight)
                 .clipped()
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
+                // Title slides up into the header's place once the header fades.
                 ShortsHeader(clip: clip)
-                    .padding(.horizontal, 10)
-                    .padding(.top, 10)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 64)
+                    .padding(.top, headerTop)
                     .frame(width: size.width, height: videoHeight, alignment: .top)
-                    .opacity(watchChromeHidden || videoExpanded ? 0 : 1)
+                    .opacity(isPopupHere ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: headerTop)
+                    .allowsHitTesting(false)
 
-                if showsShortsCaptions, karaokeHeight > 0 {
-                    shortsKaraokeBand(player: player, width: size.width, height: karaokeHeight)
+                if focus && captionsOn && bandHeight > 0 {
+                    shortsKaraokeBand(player: player, width: size.width, height: bandHeight)
+                }
+
+                if !isPopupHere {
+                    ShortsBottomBar(clip: clip, player: player)
+                        .padding(.bottom, focus && captionsOn ? bandHeight : 0)
+                        .frame(width: size.width)
+                        .opacity(railHidden ? 0 : 1)
+                        .allowsHitTesting(!railHidden)
+
+                    ShortsRail(
+                        clip: clip,
+                        player: player,
+                        expanded: focus,
+                        onInfo: onInfo,
+                        onToggleSize: onToggleVideoSize,
+                        onPresentationChange: onTheaterPresentationChange
+                    )
+                    .padding(.trailing, 8)
+                    .padding(.bottom, (focus && captionsOn ? bandHeight : 0) + 52)
+                    .frame(width: size.width, height: videoHeight, alignment: .bottomTrailing)
+                    .opacity(railHidden ? 0 : 1)
+                    .allowsHitTesting(!railHidden)
+                    .animation(.easeInOut(duration: 0.3), value: railHidden)
                 }
             }
             .frame(width: size.width, height: videoHeight)
@@ -576,14 +629,19 @@ struct ClipStageView: View {
             .layoutPriority(1)
             .modifier(FrameBottomReader(bottom: $videoBottom))
 
-            if controlsVisible {
-                playbackControls(player: player, sourceMark: "Shorts")
-                    .padding(.horizontal, 8)
-                    .frame(width: size.width)
+            if karaokeBelow {
+                transcript(player: player, showsLearningControls: false, showsLineTools: false)
+                    .coachTarget(.transcript, active: isCoachPage)
+                    .modifier(TranscriptTopReader(top: $transcriptTop))
+                    .padding(.horizontal, 14)
+                    .padding(.top, 10)
+                    .frame(width: size.width, height: belowHeight, alignment: .top)
+                    .clipped()
             }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
         .background(Color.watchBackground)
+        .animation(.snappy(duration: 0.28), value: captionsOn)
         .clipped()
     }
 
@@ -609,7 +667,7 @@ struct ClipStageView: View {
             clip: clip,
             player: player,
             expanded: videoExpanded,
-            showsCaptions: $showsShortsCaptions,
+            showsCaptions: Binding(get: { !subtitlesHidden }, set: { subtitlesHidden = !$0 }),
             onInfo: onInfo,
             onMinimize: onToggleVideoSize,
             onPresentationChange: onTheaterPresentationChange
@@ -716,6 +774,7 @@ struct ClipStageView: View {
                 showsLineTools: showsLineTools,
                 onPicture: onPicture
             )
+            .modifier(OptionalTypeSize(index: immersiveFeed ? karaokeTextSize : 1))
         }
     }
 
@@ -732,12 +791,14 @@ struct ClipStageView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
+                let grow = 1 + max(0, popupTextSize - 1) * 0.12
                 TapPopupCard(
                     compact: true,
-                    scrollableMiddleHeight: min(120, stageHeight * 0.18)
+                    scrollableMiddleHeight: min(120 * grow, stageHeight * 0.22)
                 )
+                .modifier(OptionalTypeSize(index: popupTextSize))
                 .frame(maxWidth: 390)
-                .frame(maxHeight: min(220, stageHeight * 0.36), alignment: .top)
+                .frame(maxHeight: min(220 * grow, stageHeight * 0.42), alignment: .top)
                 .coachTarget(.popupCard, active: isCoachPage)
                 .padding(.top, min(dockY, stageHeight * 0.55))
             }
@@ -946,7 +1007,6 @@ struct ClipActionRow: View {
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
-    @State private var showFeatureRequest = false
 
     private var rateLabel: String {
         switch coordinator.preferredRate {
@@ -1032,7 +1092,9 @@ struct ClipActionRow: View {
                 }
                 .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
 
-                TranscriptDisplayMenu(tint: .secondary)
+                SubtitlesToggleButton(tint: .secondary, activeTint: .sakuraPink)
+
+                PlayerSettingsButton(clip: clip, player: player)
 
                 if let onInfo {
                     Button(action: onInfo) {
@@ -1041,15 +1103,6 @@ struct ClipActionRow: View {
                     .accessibilityLabel("Clip info")
                 }
 
-                Button {
-                    Haptics.selection()
-                    coordinator.pauseForPopup()
-                    showFeatureRequest = true
-                } label: {
-                    rowIcon("lightbulb", tint: .secondary)
-                }
-                .accessibilityLabel("Request a feature")
-
                 if let onToggleVideoSize {
                     VideoSizeBox(expanded: videoExpanded, action: onToggleVideoSize)
                 }
@@ -1057,11 +1110,6 @@ struct ClipActionRow: View {
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
-        .sheet(isPresented: $showFeatureRequest, onDismiss: {
-            coordinator.resumeAfterPopupIfNeeded()
-        }) {
-            ClipFeatureRequestSheet(contextNote: "While watching “\(clip.title)”.")
-        }
     }
 
     private func rowIcon(_ system: String, tint: Color) -> some View {
@@ -1137,6 +1185,21 @@ private struct FrameBottomReader: ViewModifier {
             proxy.frame(in: .named(StageSpace.name)).maxY
         } action: { newValue in
             if abs(newValue - bottom) > 0.5 { bottom = newValue }
+        }
+    }
+}
+
+/// Applies the learner's subtitle or card size only when it differs from the default,
+/// so system accessibility sizes still win otherwise.
+private struct OptionalTypeSize: ViewModifier {
+    var index: Double
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if Int(index.rounded()) == 1 {
+            content
+        } else {
+            content.dynamicTypeSize(PlayerPrefs.typeSize(index))
         }
     }
 }

@@ -2,11 +2,12 @@ import Foundation
 import Observation
 
 nonisolated enum PopupTab: Int, CaseIterable, Sendable {
-    case dictionary, flashcard, examples
+    case dictionary, ai, flashcard, examples
 
     var symbol: String {
         switch self {
         case .dictionary: "book.closed"
+        case .ai: "sparkles"
         case .flashcard: "rectangle.on.rectangle"
         case .examples: "text.alignleft"
         }
@@ -15,6 +16,7 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
     var title: String {
         switch self {
         case .dictionary: "Dictionary"
+        case .ai: "Ask Jojo"
         case .flashcard: "Flashcard preview"
         case .examples: "Example sentences"
         }
@@ -23,6 +25,7 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
     var compactTitle: String {
         switch self {
         case .dictionary: "Dictionary"
+        case .ai: "AI"
         case .flashcard: "Card"
         case .examples: "Examples"
         }
@@ -33,6 +36,13 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
 @Observable
 @MainActor
 final class WordLookupController {
+    struct AskMessage: Identifiable, Equatable {
+        let id = UUID()
+        let fromLearner: Bool
+        let text: String
+        var failed = false
+    }
+
     struct Selection: Equatable {
         let clip: Clip
         let lineIndex: Int
@@ -49,6 +59,10 @@ final class WordLookupController {
     private(set) var isLoadingContext = false
     private(set) var isLoadingMeaning = false
     var tab: PopupTab = .dictionary
+    /// Ask Jojo thread for the current word; cleared when a new word is tapped.
+    private(set) var askThread: [AskMessage] = []
+    private(set) var isAsking = false
+    @ObservationIgnored private var askTask: Task<Void, Never>?
     /// Bumps on every tap so the badge can animate.
     private(set) var tapPulse: Int = 0
     /// When true (onboarding demo), never touches the network.
@@ -81,6 +95,9 @@ final class WordLookupController {
             context = nil
             contextTask?.cancel()
             isLoadingContext = false
+            askTask?.cancel()
+            askThread = []
+            isAsking = false
         }
         let instant = app.localWordExplanation(for: token, sentence: newSelection.sentence) ?? .fallback(for: token)
         explanation = instant
@@ -145,8 +162,8 @@ final class WordLookupController {
                 app.rememberContext(fallback.contextualExplanation, token: selection.token, preferExisting: true)
             }
         }
-        // Only spend a network call when the Examples tab is active.
-        guard tab == .examples else { return }
+        // Only spend a network call when the Examples or AI tab is active.
+        guard tab == .examples || tab == .ai else { return }
         guard context?.isFallback != false else { return }
         if offlineOnly || previewOnly { return }
         isLoadingContext = true
@@ -165,6 +182,36 @@ final class WordLookupController {
         }
     }
 
+    /// Sends one Ask Jojo question. At most 6 questions per word keep Gemini spend small.
+    func ask(_ question: String, app: AppModel) {
+        let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let selection, !trimmed.isEmpty, !isAsking else { return }
+        guard askThread.filter(\.fromLearner).count < 6 else {
+            askThread.append(AskMessage(fromLearner: false, text: "That's a lot of questions for one word! Tap another word and keep exploring.", failed: true))
+            return
+        }
+        askThread.append(AskMessage(fromLearner: true, text: trimmed))
+        guard !offlineOnly, !previewOnly else {
+            askThread.append(AskMessage(fromLearner: false, text: "Ask Jojo works once you're in the app.", failed: true))
+            return
+        }
+        isAsking = true
+        let service = app.explainService
+        let userId = app.purchases.appUserId
+        track("ask_jojo", props: ["word": selection.token.surface])
+        askTask = Task { [weak self] in
+            let answer = await service.ask(token: selection.token, sentence: selection.sentence, question: trimmed, appUserId: userId)
+            guard let self, !Task.isCancelled, self.selection == selection else { return }
+            self.isAsking = false
+            if let answer {
+                self.askThread.append(AskMessage(fromLearner: false, text: answer))
+                Haptics.light()
+            } else {
+                self.askThread.append(AskMessage(fromLearner: false, text: "I couldn't answer just now. Check your connection and try again.", failed: true))
+            }
+        }
+    }
+
     func retryContext(app: AppModel) {
         contextTask?.cancel()
         context = nil
@@ -175,6 +222,9 @@ final class WordLookupController {
     func dismiss() {
         lookupTask?.cancel()
         contextTask?.cancel()
+        askTask?.cancel()
+        askThread = []
+        isAsking = false
         isLoadingContext = false
         isLoadingMeaning = false
         selection = nil

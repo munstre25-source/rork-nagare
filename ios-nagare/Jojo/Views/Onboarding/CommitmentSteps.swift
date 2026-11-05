@@ -1,80 +1,76 @@
 import SwiftUI
 import Charts
 
-/// Daily minutes. Tap highlights orange and auto-advances.
+/// Daily minutes on a slider, with a words-per-month estimate.
 struct DailyGoalStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
-    @State private var selected: Int?
+    @State private var minutes: Double = 10
+
+    private var wordsPerMonth: Int { DailyGoalOption.wordsPerMonth(Int(minutes)) }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: Spacing.m) {
-                MascotCoach(message: "I'll keep the sessions this short. Promise.")
-                    .padding(.bottom, Spacing.xs)
-                OnboardingTitle(title: "How many minutes a day?", subtitle: "This sets your daily goal timer. Change it anytime.")
-                    .padding(.bottom, Spacing.s)
-                ForEach([2, 5, 10, 15, 20], id: \.self) { minutes in
-                    goalCard(minutes)
-                }
-            }
-            .padding(.horizontal, Spacing.l)
-            .padding(.top, Spacing.l)
-        }
-    }
+        VStack(spacing: Spacing.l) {
+            ScrollView {
+                VStack(spacing: Spacing.l) {
+                    MascotCoach(message: "Short and steady wins. I'll keep each session this size.")
+                    OnboardingTitle(title: "How much time can you give each day?", accent: "each day")
+                    VStack(spacing: Spacing.m) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text("\(Int(minutes))")
+                                .font(.system(size: 72, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.white)
+                                .contentTransition(.numericText())
+                                .animation(.snappy, value: Int(minutes))
+                            Text("min / day")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(Color.white.opacity(0.7))
+                        }
+                        Text(DailyGoalOption.caption(Int(minutes)))
+                            .font(.subheadline)
+                            .foregroundStyle(Color.white.opacity(0.7))
+                        Slider(value: $minutes, in: 2...30, step: 1)
+                            .tint(Color.sakuraPink)
+                            .onChange(of: Int(minutes)) { _, _ in Haptics.selection() }
+                            .accessibilityValue("\(Int(minutes)) minutes")
+                        HStack {
+                            Text("2 min").font(.caption).foregroundStyle(Color.white.opacity(0.5))
+                            Spacer()
+                            Text("30 min").font(.caption).foregroundStyle(Color.white.opacity(0.5))
+                        }
+                    }
+                    .padding(Spacing.l)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous).strokeBorder(Color.white.opacity(0.12)))
 
-    private func goalCard(_ minutes: Int) -> some View {
-        let isSelected = selected == minutes
-        return Button {
-            Haptics.medium()
-            selected = minutes
-            app.setDailyGoal(minutes)
-            track("onboarding_dailygoal_selected", props: ["minutes": String(minutes)])
-            Task {
-                try? await Task.sleep(for: .milliseconds(380))
+                    VStack(spacing: 6) {
+                        Label("Meet ~\(wordsPerMonth) new words a month", systemImage: "sparkles")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, Spacing.m)
+                            .padding(.vertical, Spacing.s)
+                            .background(Color.jojoVermilion.opacity(0.85), in: Capsule())
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: wordsPerMonth)
+                        Text("Estimate: about one new word for each minute you watch.")
+                            .font(.caption)
+                            .foregroundStyle(Color.white.opacity(0.55))
+                    }
+                }
+                .padding(.horizontal, Spacing.l)
+                .padding(.top, Spacing.l)
+            }
+            Button("I'm committed") {
+                Haptics.medium()
+                app.setDailyGoal(Int(minutes))
+                track("onboarding_dailygoal_selected", props: ["minutes": String(Int(minutes))])
                 onContinue()
             }
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(minutes) min")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(isSelected ? Color.white : Color.jojoInk)
-                    Text(DailyGoalOption.caption(minutes))
-                        .font(.subheadline)
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.jojoInkSoft)
-                }
-                Spacer()
-                if minutes == 10 {
-                    Text("Popular")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(isSelected ? .white : Color.jojoVermilion)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            isSelected ? Color.white.opacity(0.22) : Color.sakuraPinkSoft,
-                            in: Capsule()
-                        )
-                }
-            }
-            .padding(Spacing.l)
-            .frame(minHeight: 80)
-            .background {
-                RoundedRectangle(cornerRadius: 40, style: .continuous)
-                    .fill(
-                        isSelected
-                        ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        : AnyShapeStyle(Color.jojoPaper)
-                    )
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 40, style: .continuous)
-                    .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(isSelected ? 0.18 : 0.06), radius: 12, y: 5)
-            .animation(.snappy, value: isSelected)
+            .buttonStyle(PrimaryButtonStyle())
+            .padding(.horizontal, Spacing.l)
+            .padding(.bottom, Spacing.m)
         }
-        .buttonStyle(PressableStyle())
+        .onAppear { minutes = Double(min(30, max(2, app.profile.dailyGoalMinutes))) }
     }
 }
 
@@ -189,85 +185,6 @@ struct JourneyStepView: View {
             }
         }
         .accessibilityHidden(true)
-    }
-}
-
-/// Notification soft-ask. Only "Turn on" triggers the system prompt.
-struct NotificationStepView: View {
-    let onContinue: () -> Void
-    @Environment(AppModel.self) private var app
-    @State private var bell: Bool = false
-
-    var body: some View {
-        VStack(spacing: Spacing.l) {
-            Spacer()
-            Image(systemName: "bell.badge.fill")
-                .font(.system(size: 68))
-                .foregroundStyle(Color.jojoVermilion, Color.jojoOrangeLight)
-                .rotationEffect(.degrees(bell ? 12 : -12))
-                .animation(.easeInOut(duration: 0.18).repeatCount(5, autoreverses: true), value: bell)
-            OnboardingTitle(
-                title: "Want a reminder for those \(app.profile.dailyGoalMinutes) minutes?",
-                subtitle: "One gentle nudge in the evening. Never spammy."
-            )
-            notificationPreview
-            Spacer()
-            Button("Continue") {
-                Haptics.light()
-                app.profile.notificationsAsked = true
-                Task {
-                    await app.setReminders(true)
-                    track("onboarding_notifications_answer", props: ["granted": app.profile.remindersEnabled ? "1" : "0"])
-                    onContinue()
-                }
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            Text("iOS will ask next. You can say no and change it anytime in Settings.")
-                .font(.footnote)
-                .foregroundStyle(Color.white.opacity(0.8))
-                .multilineTextAlignment(.center)
-                .frame(minHeight: 44)
-        }
-        .padding(.horizontal, Spacing.l)
-        .padding(.bottom, Spacing.m)
-        .onAppear { bell = true }
-    }
-
-    /// Mimics a real iOS notification so the ask is concrete rather than abstract.
-    private var notificationPreview: some View {
-        HStack(alignment: .top, spacing: Spacing.m) {
-            Image("JojoMascotHead")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 42, height: 42)
-                .background(Color.jojoCream)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text("JOJO")
-                        .font(.caption2.weight(.bold))
-                        .tracking(0.6)
-                        .foregroundStyle(Color.jojoInkSoft)
-                    Spacer()
-                    Text("19:00")
-                        .font(.caption2)
-                        .foregroundStyle(Color.jojoInkFaint)
-                }
-                Text(previewTitle)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.jojoInk)
-                Text("A couple of clips keeps your streak alive.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.jojoInkSoft)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .brandCard(radius: Radius.card)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var previewTitle: String {
-        app.profile.firstName.isEmpty ? "Your daily flow is waiting" : "\(app.profile.firstName), your daily flow is waiting"
     }
 }
 

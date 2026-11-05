@@ -20,7 +20,18 @@ type Body = {
   kind?: string;
   word?: string;
   sentence?: string;
+  question?: string;
 };
+
+const MAX_QUESTION = 200;
+const MAX_ANSWER = 900;
+
+function askSystem(language: "ja" | "ko"): string {
+  const name = language === "ko" ? "Korean" : "Japanese";
+  return `You are Jojo, a warm, concise ${name} tutor inside a video app. Respond with a single JSON object only.
+Keys: answer (string).
+Answer the learner's question about the given word in the given sentence in at most 4 short English sentences. Include ${name} only when it helps, with readings in parentheses. Stay on topic: if the question is not about ${name} language, politely steer back to the word. No markdown.`;
+}
 
 function lookupSystem(language: "ja" | "ko"): string {
   const name = language === "ko" ? "Korean" : "Japanese";
@@ -67,7 +78,17 @@ Deno.serve(async (req) => {
     if (!appUserId) return errorResponse(401, "Missing x-app-user-id");
 
     const body = await readJson<Body>(req);
-    const kind = body.kind === "context" ? "context" : body.kind === "lookup" ? "lookup" : null;
+    const kind = body.kind === "context"
+      ? "context"
+      : body.kind === "lookup"
+      ? "lookup"
+      : body.kind === "ask"
+      ? "ask"
+      : null;
+    const question = typeof body.question === "string"
+      ? body.question.trim().replace(/\s+/g, " ").slice(0, MAX_QUESTION)
+      : "";
+    if (kind === "ask" && !question) return errorResponse(400, "question is required");
     const word = typeof body.word === "string" ? body.word.trim() : "";
     const sentence = typeof body.sentence === "string" ? body.sentence : "";
     if (!kind || !word) return errorResponse(400, "kind and word are required");
@@ -91,6 +112,53 @@ Deno.serve(async (req) => {
     if (!entitled) return errorResponse(403, "Active subscription required");
 
     const version = promptVersion();
+
+    // Ask Jojo: free-form follow-up about one word. Shares the context bucket and the
+    // global Gemini cap, and caches identical questions so repeats cost nothing.
+    if (kind === "ask") {
+      const { cacheKey, sentenceHash } = await buildCacheKey(
+        "context",
+        word,
+        `${sentence}\n?${question.toLowerCase()}`,
+        `${version}|ask`,
+        true,
+        language,
+      );
+      const { data: cachedAsk } = await supabase
+        .from("word_explanations")
+        .select("payload")
+        .eq("cache_key", cacheKey)
+        .maybeSingle();
+      if (cachedAsk?.payload?.answer) return jsonResponse(cachedAsk.payload);
+      if (!(await tryIncrementExplainRate(supabase, appUserId, "context"))) {
+        return errorResponse(429, "Rate limit exceeded");
+      }
+      if (!(await tryIncrementGeminiUsage(supabase))) {
+        return errorResponse(429, "Global Gemini cap exceeded");
+      }
+      const viaGemini = await geminiGenerateJson({
+        model: geminiModelExplain(),
+        system: askSystem(language),
+        user: `Word: ${word}\nSentence: ${sentence || "(none)"}\nQuestion: ${question}`,
+        timeoutMs: 12_000,
+      });
+      const raw = parseJsonObject(viaGemini.text);
+      const answer = typeof raw.answer === "string" ? raw.answer.trim().slice(0, MAX_ANSWER) : "";
+      if (!answer) return errorResponse(502, "Invalid model response");
+      const payload = { answer };
+      await supabase.from("word_explanations").upsert({
+        cache_key: cacheKey,
+        kind: "context",
+        word,
+        sentence_hash: sentenceHash,
+        payload,
+        model: viaGemini.model,
+        prompt_version: `${version}|ask`,
+        updated_at: new Date().toISOString(),
+      });
+      return jsonResponse(payload);
+    }
+
     const includeSentence = kind === "context" || sentence.trim().length > 0;
     const { cacheKey, sentenceHash } = await buildCacheKey(
       kind,

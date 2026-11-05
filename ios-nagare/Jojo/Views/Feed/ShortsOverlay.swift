@@ -24,28 +24,17 @@ struct ShortsHeader: View {
     }
 }
 
-/// Right-hand Shorts rail: speed, like, bookmark, captions, info, fullscreen.
+/// Right-hand Shorts rail over the picture: speed, like, bookmark, CC, gear, info, size.
 struct ShortsRail: View {
     let clip: Clip
     let player: (any ClipPlayer)?
-    var showsCaptions: Bool
-    var onToggleCaptions: () -> Void
+    var expanded: Bool
     var onInfo: (() -> Void)?
-    var onFullscreen: (() -> Void)?
-    /// Portrait shorts: enter the in-feed theater (chrome steps away) instead of opening
-    /// another player screen — resizing never leaves the feed.
-    var onMaximize: (() -> Void)? = nil
-    /// Maximized landscape: the last control returns the video to its usual size.
-    var onMinimize: (() -> Void)? = nil
-    /// White glyphs on footage; theme ink when the rail sits on the page.
-    var onPicture: Bool = true
+    var onToggleSize: (() -> Void)?
     var onPresentationChange: (Bool) -> Void = { _ in }
 
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
-
-    private var ink: Color { onPicture ? .white : .primary }
-    private var activeInk: Color { onPicture ? .videoControlAccent : .designOrange }
 
     private var rateLabel: String {
         switch coordinator.preferredRate {
@@ -56,17 +45,7 @@ struct ShortsRail: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
-            if let onMaximize {
-                railButton("arrow.up.left.and.arrow.down.right", tint: ink, label: "Maximize video") {
-                    onMaximize()
-                }
-            } else if let onMinimize {
-                railButton("arrow.down.right.and.arrow.up.left", tint: ink, label: "Normal video size") {
-                    Haptics.selection()
-                    onMinimize()
-                }
-            }
+        VStack(spacing: 6) {
             Button {
                 Haptics.selection()
                 coordinator.cycleRate()
@@ -74,16 +53,18 @@ struct ShortsRail: View {
                 Text(rateLabel)
                     .font(.caption.weight(.heavy))
                     .monospacedDigit()
-                    .foregroundStyle(ink)
-                    .frame(width: 44, height: 44)
-                    .modifier(VideoControlSurface(onPicture: onPicture))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .foregroundStyle(.white)
+                    .frame(width: 42, height: 42)
+                    .modifier(VideoControlSurface())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Playback speed \(rateLabel)")
 
             railButton(
                 app.isLiked(clip.id) ? "heart.fill" : "heart",
-                tint: app.isLiked(clip.id) ? activeInk : ink,
+                tint: app.isLiked(clip.id) ? .videoControlAccent : .white,
                 label: app.isLiked(clip.id) ? "Unlike video" : "Like video"
             ) {
                 Haptics.light()
@@ -92,52 +73,104 @@ struct ShortsRail: View {
 
             railButton(
                 app.isFavorite(clip.id) ? "bookmark.fill" : "bookmark",
-                tint: app.isFavorite(clip.id) ? activeInk : ink,
+                tint: app.isFavorite(clip.id) ? .videoControlAccent : .white,
                 label: app.isFavorite(clip.id) ? "Remove bookmark" : "Bookmark clip"
             ) {
                 Haptics.light()
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             }
 
-            TranscriptDisplayMenu(tint: ink, compact: true, onPicture: onPicture, onPresentationChange: onPresentationChange)
+            SubtitlesToggleButton(tint: .white, activeTint: .videoControlAccent, size: 18, width: 42, onPicture: true)
+                .frame(height: 42)
+
+            PlayerSettingsButton(clip: clip, player: player, tint: .white, size: 18, width: 42,
+                                 onPicture: true, onPresentationChange: onPresentationChange)
+                .frame(height: 42)
 
             if let onInfo {
-                railButton("info.circle", tint: ink, label: "Clip info", action: onInfo)
+                railButton("info.circle", tint: .white, label: "Clip info", action: onInfo)
             }
 
-            railButton(
-                showsCaptions ? "captions.bubble.fill" : "captions.bubble",
-                tint: showsCaptions ? activeInk : ink,
-                label: showsCaptions ? "Hide words" : "Show words"
-            ) {
-                Haptics.selection()
-                onToggleCaptions()
-            }
-
-            if onMaximize == nil, let onFullscreen {
-                railButton(onMinimize == nil ? "arrow.up.left.and.arrow.down.right" : "rotate.right",
-                           tint: ink, label: onMinimize == nil ? "Fullscreen" : "Rotate to fullscreen") {
-                    Haptics.selection()
-                    onFullscreen()
+            if let onToggleSize {
+                railButton(expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                           tint: .white, label: expanded ? "Normal video size" : "Focus on the video") {
+                    onToggleSize()
                 }
             }
-
         }
-        .shadow(color: .black.opacity(onPicture ? 0.45 : 0), radius: 6, y: 1)
+        .shadow(color: .black.opacity(0.4), radius: 6, y: 1)
     }
 
     private func railButton(_ system: String, tint: Color, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
             Image(systemName: system)
-                .font(.system(size: 19, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(tint)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
+                .frame(width: 42, height: 42)
                 .contentShape(Rectangle())
-                .modifier(VideoControlSurface(onPicture: onPicture))
+                .modifier(VideoControlSurface())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
+    }
+}
+
+/// Bottom-left of a Short: share and time, with a hairline progress along the picture's edge.
+struct ShortsBottomBar: View {
+    let clip: Clip
+    let player: (any ClipPlayer)?
+
+    private var progress: Double {
+        let duration = max(player?.duration ?? clip.durationSec, 0.001)
+        return min(1, max(0, (player?.currentTime ?? 0) / duration))
+    }
+
+    private var shareText: String {
+        if let url = clip.youtubeURL {
+            return "Learning Japanese with “\(clip.title)” on Jojo 流れ \(url.absoluteString)"
+        }
+        return "Learning Japanese with “\(clip.title)” on Jojo 流れ"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                ShareLink(item: shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .modifier(VideoControlSurface())
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Share clip")
+                Text("\(formatClock(player?.currentTime ?? 0)) / \(formatClock(player?.duration ?? clip.durationSec))")
+                    .font(.caption2.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.videoControlBackground, in: Capsule())
+                    .accessibilityLabel("Elapsed time")
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(.white.opacity(0.22))
+                    Rectangle()
+                        .fill(Color.videoControlAccent)
+                        .frame(width: max(2, proxy.size.width * progress))
+                }
+            }
+            .frame(height: 2.5)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
     }
 }
 

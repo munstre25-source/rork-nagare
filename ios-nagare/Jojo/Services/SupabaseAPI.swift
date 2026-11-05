@@ -40,14 +40,16 @@ nonisolated struct SupabaseAPI: Sendable {
     }
 
     /// POST /functions/v1/explain-word. Returns the raw payload for caching.
-    func explainWord(kind: String, word: String, sentence: String, appUserId: String) async throws -> Data {
+    func explainWord(kind: String, word: String, sentence: String, appUserId: String, question: String? = nil) async throws -> Data {
         guard let baseURL else { throw SupabaseError.notConfigured }
         var request = URLRequest(url: baseURL.appending(path: "functions/v1/explain-word"))
         request.httpMethod = "POST"
         authorized(&request)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(appUserId, forHTTPHeaderField: "x-app-user-id")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["kind": kind, "word": word, "sentence": sentence])
+        var body: [String: String] = ["kind": kind, "word": word, "sentence": sentence]
+        if let question { body["question"] = question }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await Self.explainSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw SupabaseError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else { throw SupabaseError.http(http.statusCode) }

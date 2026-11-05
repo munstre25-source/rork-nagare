@@ -14,14 +14,19 @@ struct OnboardingFlowView: View {
         ZStack {
             background
             if showSplash {
-                SplashView {
+                SplashView(onFinish: {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         showSplash = false
                         if step == .splash {
                             go(to: .name)
                         }
                     }
-                }
+                }, onRestored: {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        showSplash = false
+                        go(to: .welcome)
+                    }
+                })
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
             } else {
                 VStack(spacing: 0) {
@@ -50,8 +55,12 @@ struct OnboardingFlowView: View {
             // preferences only, so those interrupted states restart at the setup flow.
             switch restored {
             case .valueCaptions, .valueTap, .valueFlashcards, .demo, .flashcardTry,
-                 .socialProof, .journey, .trialTimeline, .appReview, .acquisition:
+                 .socialProof, .journey, .trialTimeline, .appReview:
                 restored = .name
+            case .notifications:
+                restored = .studyWindow
+            case .buildingPlan:
+                restored = .planReady
             default:
                 break
             }
@@ -156,16 +165,32 @@ struct OnboardingFlowView: View {
             TasteSwipeStepView { next() }
         case .level:
             LevelStepView { next() }
+        case .challenges:
+            ChallengesStepView { next() }
+        case .comparison:
+            ComparisonStepView { next() }
+        case .acquisition:
+            AcquisitionStepView { next() }
+        case .fluencyGoal:
+            FluencyGoalStepView { next() }
         case .dailyGoal:
             DailyGoalStepView { next() }
-        case .notifications:
-            NotificationStepView { next() }
+        case .studyWindow:
+            StudyWindowStepView { next() }
+        case .streakCommit:
+            StreakCommitStepView { next() }
+        case .buildingPlan:
+            BuildingPlanStepView { next() }
+        case .planReady:
+            PlanReadyStepView { next() }
         case .look:
             LookStepView { next() }
+        case .trialReminder:
+            TrialReminderStepView { next() }
         // These cases are only retained so interrupted onboarding from older builds decodes.
-        // `onAppear` redirects them to `.name` before the view becomes visible.
+        // `onAppear` redirects them before the view becomes visible.
         case .valueCaptions, .valueTap, .valueFlashcards, .demo, .flashcardTry,
-             .socialProof, .journey, .trialTimeline, .appReview, .acquisition:
+             .socialProof, .journey, .trialTimeline, .appReview, .notifications:
             Color.clear
         case .paywall:
             PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {
@@ -181,7 +206,7 @@ struct OnboardingFlowView: View {
     /// Sakura night for the funnel. The look they just saved paints the paywall and the welcome.
     private func applyPalette(for step: OnboardingStep) {
         switch step {
-        case .look, .paywall, .welcome:
+        case .look, .trialReminder, .paywall, .welcome:
             app.restorePalette()
         default:
             JojoPalette.activateOnboarding()
@@ -194,7 +219,9 @@ struct OnboardingFlowView: View {
     }
 
     private func back() {
-        guard let previous = step.advanced(by: -1), previous != .splash else { return }
+        guard var previous = step.advanced(by: -1), previous != .splash else { return }
+        // The plan builder is a one-way beat; stepping back skips over it.
+        if previous == .buildingPlan, let earlier = previous.advanced(by: -1) { previous = earlier }
         Haptics.selection()
         isForward = false
         withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) { step = previous }
@@ -209,7 +236,10 @@ struct OnboardingFlowView: View {
 /// Splash: night lantern scene, peeking panda, wordmark brush stroke, then actions.
 struct SplashView: View {
     let onFinish: () -> Void
+    var onRestored: () -> Void = {}
     @Environment(AppModel.self) private var app
+    @State private var isRestoring = false
+    @State private var restoreMessage: String?
     @State private var progress: CGFloat = 0
     @State private var appeared: Bool = false
     @State private var peekIn: Bool = false
@@ -238,6 +268,20 @@ struct SplashView: View {
                         }
                         .buttonStyle(PrimaryButtonStyle())
 
+                        Button {
+                            Task { await restore() }
+                        } label: {
+                            HStack(spacing: Spacing.s) {
+                                if isRestoring { ProgressView().tint(.white).controlSize(.small) }
+                                Text("I already have Jojo Pro")
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .disabled(isRestoring)
+                        .accessibilityHint("Restores your subscription from the App Store")
+
                         #if DEBUG
                         debugSkipToFeedButton
                         debugMarketingButtons
@@ -260,12 +304,34 @@ struct SplashView: View {
             MarketingShowcaseView(initialScript: script, autoBegin: true)
         }
         #endif
+        .alert("Restore purchases", isPresented: Binding(get: { restoreMessage != nil }, set: { if !$0 { restoreMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(restoreMessage ?? "")
+        }
         .task {
             withAnimation(.easeOut(duration: 0.35)) { appeared = true }
             withAnimation(.spring(response: 0.7, dampingFraction: 0.78).delay(0.15)) { peekIn = true }
             withAnimation(.easeInOut(duration: 0.8).delay(0.1)) { progress = 1 }
             try? await Task.sleep(for: .milliseconds(950))
             withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) { showActions = true }
+        }
+    }
+
+    private func restore() async {
+        Haptics.light()
+        isRestoring = true
+        let outcome = await app.purchases.restore()
+        isRestoring = false
+        switch outcome {
+        case .success:
+            track("onboarding_splash_restore_success")
+            Haptics.success()
+            onRestored()
+        case .cancelled, .pending:
+            break
+        case .failed(let message):
+            restoreMessage = message
         }
     }
 

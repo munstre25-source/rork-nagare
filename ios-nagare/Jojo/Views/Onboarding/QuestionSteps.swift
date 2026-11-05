@@ -12,17 +12,19 @@ struct MotivationStepView: View {
                 VStack(spacing: Spacing.m) {
                     MascotCoach(message: coachMessage)
                         .padding(.bottom, Spacing.xs)
-                    OnboardingTitle(title: "What's pulling you toward Japanese?", subtitle: "Pick as many as you like.")
+                    OnboardingTitle(title: "Why are you learning Japanese?", subtitle: "Pick as many as you like.", accent: "Japanese")
                         .padding(.bottom, Spacing.s)
-                    ForEach(Motivation.allCases) { m in
-                        Button {
-                            Haptics.selection()
-                            if selected.contains(m.rawValue) { selected.remove(m.rawValue) } else { selected.insert(m.rawValue) }
-                            track("onboarding_motivation_selected", props: ["value": m.rawValue])
-                        } label: {
-                            OptionCard(title: m.title, symbol: m.symbol, isSelected: selected.contains(m.rawValue))
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: Spacing.m), GridItem(.flexible(), spacing: Spacing.m)], spacing: Spacing.m) {
+                        ForEach(Motivation.allCases) { m in
+                            Button {
+                                Haptics.selection()
+                                if selected.contains(m.rawValue) { selected.remove(m.rawValue) } else { selected.insert(m.rawValue) }
+                                track("onboarding_motivation_selected", props: ["value": m.rawValue])
+                            } label: {
+                                ChoiceTile(symbol: m.symbol, title: m.shortTitle, isSelected: selected.contains(m.rawValue))
+                            }
+                            .buttonStyle(PressableStyle())
                         }
-                        .buttonStyle(PressableStyle())
                     }
                 }
                 .padding(.horizontal, Spacing.l)
@@ -275,91 +277,108 @@ private struct TasteCard: View {
     }
 }
 
-/// "Which of these can you read comfortably?"
+/// Five-step self assessment with signal bars. Auto-advances.
 struct LevelStepView: View {
     let onContinue: () -> Void
     @Environment(AppModel.self) private var app
-    @State private var selected: ReadingLevel?
+    @State private var selected: SelfLevel?
     @State private var continuationTask: Task<Void, Never>?
 
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.m) {
-                OnboardingTitle(title: "Which of these can you read comfortably?",
-                                subtitle: "Tap the hardest one. No wrong answers, we'll adjust as you go.")
+                MascotCoach(message: "No pressure. I'll pick clips that stretch you just a little.")
+                    .padding(.bottom, Spacing.xs)
+                OnboardingTitle(title: "How much Japanese do you know?", accent: "Japanese")
                     .padding(.bottom, Spacing.s)
-                levelCard(.beginner, label: "Beginner", words: [
-                    .init(surface: "こんにちは", romaji: "konnichiwa")
-                ], translation: "Hello")
-                levelCard(.intermediate, label: "Intermediate", words: [
-                    .init(surface: "明日", furigana: "あした", romaji: "ashita"),
-                    .init(surface: "友達", furigana: "ともだち", romaji: "tomodachi"),
-                    .init(surface: "と", romaji: "to"),
-                    .init(surface: "映画", furigana: "えいが", romaji: "eiga"),
-                    .init(surface: "を", romaji: "o"),
-                    .init(surface: "見", furigana: "み", romaji: "mi"),
-                    .init(surface: "ます", romaji: "masu")
-                ], translation: "I'll watch a movie with a friend tomorrow.")
-                levelCard(.advanced, label: "Advanced", words: [
-                    .init(surface: "曖昧"), .init(surface: "な"), .init(surface: "返事"), .init(surface: "を"),
-                    .init(surface: "繰り返す"), .init(surface: "と"), .init(surface: "、"), .init(surface: "信頼"),
-                    .init(surface: "を"), .init(surface: "損なう"), .init(surface: "恐れ"), .init(surface: "が"), .init(surface: "ある")
-                ], translation: "Repeating vague replies risks damaging trust.", underline: false)
+                ForEach(SelfLevel.allCases) { level in
+                    row(level)
+                }
+                Label("You can change this anytime in Settings", systemImage: "slider.horizontal.3")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.75))
+                    .padding(.horizontal, Spacing.m)
+                    .padding(.vertical, Spacing.s)
+                    .background(Color.white.opacity(0.1), in: Capsule())
+                    .padding(.top, Spacing.s)
             }
             .padding(.horizontal, Spacing.l)
             .padding(.vertical, Spacing.l)
         }
+        .onAppear {
+            let saved = UserDefaults.standard.object(forKey: OnboardingPrefs.selfLevelKey) as? Int
+            if let saved, let level = SelfLevel(rawValue: saved) { selected = level }
+        }
         .onDisappear { continuationTask?.cancel() }
     }
 
-    private func levelCard(_ level: ReadingLevel, label: String, words: [StaticSentence.Word], translation: String, underline: Bool = true) -> some View {
+    private func row(_ level: SelfLevel) -> some View {
         let isSelected = selected == level
         return Button {
             Haptics.medium()
             selected = level
-            app.updateOnboardingPreferences(level: level)
-            track("onboarding_level_selected", props: ["level": level.rawValue])
+            UserDefaults.standard.set(level.rawValue, forKey: OnboardingPrefs.selfLevelKey)
+            UserDefaults.standard.set(level.jlpt.rawValue, forKey: PlayerPrefs.jlptLevelKey)
+            app.updateOnboardingPreferences(level: level.readingLevel)
+            track("onboarding_level_selected", props: ["level": level.readingLevel.rawValue, "step": String(level.rawValue)])
             continuationTask?.cancel()
             continuationTask = Task {
-                do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
+                do { try await Task.sleep(for: .milliseconds(380)) } catch { return }
                 guard !Task.isCancelled else { return }
                 onContinue()
             }
         } label: {
-            VStack(alignment: .leading, spacing: Spacing.m) {
-                Text(label.uppercased())
-                    .font(.caption.weight(.bold))
-                    .tracking(1.2)
-                    .foregroundStyle(isSelected ? Color.white : Color.jojoVermilion)
-                StaticSentence(
-                    words: words,
-                    size: level == .advanced ? 20 : 24,
-                    showsUnderline: underline,
-                    surface: isSelected ? .cinema : .cream
-                )
-                Text(translation)
-                    .font(.subheadline)
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.85) : Color.jojoInkSoft)
+            HStack(spacing: Spacing.m) {
+                SignalBars(filled: level.rawValue + 1, highlighted: isSelected)
+                    .frame(width: 44, height: 44)
+                    .background(isSelected ? Color.white.opacity(0.22) : Color.white.opacity(0.1),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(level.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text(level.subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.white.opacity(isSelected ? 0.88 : 0.65))
+                }
+                Spacer(minLength: 0)
+                Text(level.jlpt.rawValue)
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(isSelected ? .white : Color.sakuraPink)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(isSelected ? Color.white.opacity(0.22) : Color.sakuraPink.opacity(0.14), in: Capsule())
             }
-            .padding(Spacing.l)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.m)
+            .frame(minHeight: 72)
             .background {
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(
-                        isSelected
-                        ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        : AnyShapeStyle(Color.jojoPaper)
-                    )
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(isSelected
+                          ? AnyShapeStyle(LinearGradient(colors: [Color.jojoOrange, Color.jojoVermilion], startPoint: .topLeading, endPoint: .bottomTrailing))
+                          : AnyShapeStyle(Color.white.opacity(0.08)))
             }
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .strokeBorder(isSelected ? .clear : Color.jojoPaperStroke, lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(isSelected ? 0.18 : 0.06), radius: 14, y: 6)
+            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(isSelected ? .clear : Color.white.opacity(0.12), lineWidth: 1))
             .animation(.snappy, value: isSelected)
         }
         .buttonStyle(PressableStyle())
-        .disabled(selected != nil)
-        .accessibilityLabel("\(label): \(translation)")
+        .accessibilityLabel("\(level.title). \(level.subtitle)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// Five ascending bars, `filled` of them lit.
+struct SignalBars: View {
+    let filled: Int
+    var highlighted: Bool = false
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 3) {
+            ForEach(0..<5, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(i < filled ? (highlighted ? Color.white : Color.sakuraPink) : Color.white.opacity(0.2))
+                    .frame(width: 4, height: 6 + CGFloat(i) * 4)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

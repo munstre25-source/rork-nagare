@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
-    case anime, vtubers, travel, heritage, fun
+    case anime, vtubers, travel, heritage, fun, work
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -10,6 +10,18 @@ nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
         case .travel: "Travel"
         case .heritage: "Connect with heritage"
         case .fun: "Just for fun"
+        case .work: "Work or study in Japan"
+        }
+    }
+    /// Two-line tile label for the grid.
+    var shortTitle: String {
+        switch self {
+        case .anime: "Anime without subtitles"
+        case .vtubers: "VTubers & streams"
+        case .travel: "Travel in Japan"
+        case .heritage: "Family & heritage"
+        case .fun: "Just for fun"
+        case .work: "Work or study"
         }
     }
     var symbol: String {
@@ -19,6 +31,7 @@ nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
         case .travel: "airplane.departure"
         case .heritage: "house.and.flag.fill"
         case .fun: "face.smiling.inverse"
+        case .work: "briefcase.fill"
         }
     }
 
@@ -30,6 +43,144 @@ nonisolated enum Motivation: String, CaseIterable, Identifiable, Sendable {
         case .travel: [.drama, .interview, .learning, .variety]
         case .heritage: [.drama, .interview]
         case .fun: [.variety, .anime]
+        case .work: [.interview, .learning]
+        }
+    }
+}
+
+/// What makes Japanese hard for this learner. Device-only; shapes coach copy and the plan.
+nonisolated enum LearningChallenge: String, CaseIterable, Identifiable, Sendable {
+    case listening, start, motivation, grammar, kanji, vocab
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .listening: "Native speed is too fast"
+        case .start: "Not sure where to start"
+        case .motivation: "Staying motivated"
+        case .grammar: "Grammar"
+        case .kanji: "Reading kanji"
+        case .vocab: "Words don't stick"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .listening: "ear.fill"
+        case .start: "map.fill"
+        case .motivation: "flame.fill"
+        case .grammar: "text.book.closed.fill"
+        case .kanji: "character.ja"
+        case .vocab: "brain.head.profile"
+        }
+    }
+    /// How Jojo answers this challenge on the plan screen.
+    var answer: String {
+        switch self {
+        case .listening: "Slow any line to 0.5x and loop it"
+        case .start: "Clips picked for your level, in order"
+        case .motivation: "Daily goal, streaks and real shows"
+        case .grammar: "Ask Jojo why a sentence works"
+        case .kanji: "Furigana above every kanji"
+        case .vocab: "Spaced review with the original clip"
+        }
+    }
+}
+
+/// The five self-assessment steps, from brand new to near-fluent.
+nonisolated enum SelfLevel: Int, CaseIterable, Identifiable, Sendable {
+    case new, kana, basics, everyday, fluent
+    var id: Int { rawValue }
+    var title: String {
+        switch self {
+        case .new: "Brand new"
+        case .kana: "I know some words"
+        case .basics: "Simple conversations"
+        case .everyday: "Everyday Japanese"
+        case .fluent: "Almost fluent"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .new: "こんにちは is about it"
+        case .kana: "Kana, greetings, a few phrases"
+        case .basics: "I can introduce myself and order food"
+        case .everyday: "I follow slow shows with subtitles"
+        case .fluent: "I want natural, fast speech"
+        }
+    }
+    var jlpt: JLPTStep {
+        switch self {
+        case .new, .kana: .n5
+        case .basics: .n4
+        case .everyday: .n3
+        case .fluent: .n1
+        }
+    }
+    var readingLevel: ReadingLevel { jlpt.readingLevel }
+}
+
+/// Device-only answers the plan screens read back.
+enum OnboardingPrefs {
+    static let challengesKey = "jojo.onboarding.challenges"
+    static let goalMonthsKey = "jojo.onboarding.goalMonths"
+    static let streakGoalKey = "jojo.onboarding.streakGoal"
+    static let selfLevelKey = "jojo.onboarding.selfLevel"
+
+    static var challenges: [LearningChallenge] {
+        let raw = UserDefaults.standard.stringArray(forKey: challengesKey) ?? []
+        return LearningChallenge.allCases.filter { raw.contains($0.rawValue) }
+    }
+
+    static func targetDate(months: Int, from now: Date = Date()) -> Date {
+        Calendar.current.date(byAdding: .month, value: months, to: now) ?? now
+    }
+
+    static func monthYear(_ date: Date) -> String {
+        date.formatted(.dateTime.month(.abbreviated).year())
+    }
+}
+
+/// When the daily reminder fires. Hours match Settings.
+nonisolated enum StudyWindow: Int, CaseIterable, Identifiable, Sendable {
+    case morning = 8, afternoon = 13, evening = 19, night = 22
+    var id: Int { rawValue }
+    var title: String {
+        switch self {
+        case .morning: "Morning"
+        case .afternoon: "Afternoon"
+        case .evening: "Evening"
+        case .night: "Night"
+        }
+    }
+    var range: String {
+        switch self {
+        case .morning: "6 – 11 am"
+        case .afternoon: "12 – 5 pm"
+        case .evening: "6 – 9 pm"
+        case .night: "9 pm – late"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .morning: "sunrise.fill"
+        case .afternoon: "sun.max.fill"
+        case .evening: "sunset.fill"
+        case .night: "moon.stars.fill"
+        }
+    }
+    var plural: String {
+        switch self {
+        case .morning: "mornings"
+        case .afternoon: "afternoons"
+        case .evening: "evenings"
+        case .night: "nights"
+        }
+    }
+    var timeLabel: String {
+        switch self {
+        case .morning: "08:00"
+        case .afternoon: "13:00"
+        case .evening: "19:00"
+        case .night: "22:00"
         }
     }
 }
@@ -172,15 +323,33 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
     case flashcardTry = 18
     /// Theme and text-glow setup, immediately before the paywall.
     case look = 19
+    /// What makes Japanese hard for you?
+    case challenges = 20
+    /// Drill vs real speech, with an honest labelled estimate.
+    case comparison = 21
+    /// Months-to-goal slider.
+    case fluencyGoal = 22
+    /// Reminder time of day (replaces the notification soft-ask in the flow).
+    case studyWindow = 23
+    /// 7 / 14 / 30 / 50 day streak pledge.
+    case streakCommit = 24
+    /// Animated "building your plan" beat.
+    case buildingPlan = 25
+    /// Summary of every answer.
+    case planReady = 26
+    /// Bell: we remind you before the trial ends.
+    case trialReminder = 27
 
     /// Presentation order. Legacy experience/demo steps stay on the enum so saved state still decodes,
     /// but production onboarding only gathers settings that personalize the learner's real feed.
     static let flow: [OnboardingStep] = [
         .splash,
         .name,
-        .motivation, .taste, .level,
-        .dailyGoal, .notifications,
-        .look,
+        .motivation, .level, .challenges, .comparison,
+        .taste, .acquisition,
+        .fluencyGoal, .dailyGoal, .studyWindow, .streakCommit,
+        .buildingPlan, .planReady,
+        .look, .trialReminder,
         .paywall, .welcome
     ]
 
@@ -210,19 +379,27 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Sendable {
         case .paywall: "paywall"
         case .welcome: "welcome"
         case .look: "look"
+        case .challenges: "challenges"
+        case .comparison: "comparison"
+        case .fluencyGoal: "fluency_goal"
+        case .studyWindow: "study_window"
+        case .streakCommit: "streak_commit"
+        case .buildingPlan: "building_plan"
+        case .planReady: "plan_ready"
+        case .trialReminder: "trial_reminder"
         }
     }
 
     var allowsBack: Bool {
         switch self {
-        case .splash, .paywall, .welcome: false
+        case .splash, .paywall, .welcome, .buildingPlan: false
         default: true
         }
     }
 
     var showsProgress: Bool {
         switch self {
-        case .splash, .paywall, .welcome: false
+        case .splash, .paywall, .welcome, .buildingPlan: false
         default: true
         }
     }
