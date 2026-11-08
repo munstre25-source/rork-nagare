@@ -39,3 +39,27 @@ Install CPU PyTorch, then `pip install -r Tools/requirements-free-catalog.txt`. 
 Original screenshot sources: `ios-nagare/reports/attachment-channels-20261104.json`; verified identities: `attachment-channel-resolution-20261104.json`. Recording-derived labels and observed filter taxonomy: `kiku-recordings-20261105.json` and the matching Markdown/CSV. Label-only and truncated names are not canonical channel IDs or approved sources. Offline OCR uses the checksum-verified PP-OCRv4 Japanese mobile model; see `extract_recording_channels.py`.
 
 The iOS feed retains the local server review tier and accepts locally processed lessons and complete Shorts. A fresh app build is required for that previously committed client change; publishing backend clips does not distribute an iOS binary.
+
+## Count source archives
+
+Use the maintenance-authenticated, read-only `catalog-inventory` function to
+enumerate full public uploads playlists and check each video’s metadata. The
+function uses the configured YouTube key server-side and makes no inference calls.
+
+```bash
+python3 Tools/catalog_inventory.py archives \
+  --channels /path/to/verified-channels.json \
+  --output /path/to/archive-checkpoints \
+  --request-limit 2000 --use-existing-vault
+```
+
+The channel manifest is a JSON array with `channel_id`, `title`, and
+`public_upload_count` for each verified channel. Reuse the same output directory
+to resume a bounded scan. Inspect `archive-summary.json` for completeness and
+`metadata-candidates.jsonl.gz` for deduplicated video records.
+
+The screen checks public status, embedding, age restrictions, live status and a
+three-second minimum. It keeps long videos and videos without captions.
+Declared audio language and duration are screening signals. The three-minute
+bucket can prioritize short-form review. Portrait format, spoken Japanese,
+transcript quality and word alignment each require their own verification.
