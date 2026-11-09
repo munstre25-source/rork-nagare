@@ -84,7 +84,7 @@ struct ImmersionTests {
         #expect(line.hasWordTiming)
     }
 
-    @Test func tokenIndexFollowsWordsOnlyWhenWordTimed() {
+    @Test func tokenIndexUsesVerifiedWordsOrLandscapeFallback() {
         let tokens = [
             Token(surface: "今日", reading: "きょう", romaji: "kyou", start: 0.0, end: 0.6, pos: "noun"),
             Token(surface: "は", romaji: "wa", start: 0.6, end: 0.9, pos: "particle"),
@@ -95,8 +95,8 @@ struct ImmersionTests {
         #expect(PlaybackUI.tokenIndex(clip: wordClip, line: 0, time: 1.2) == 2)
 
         let lineClip = makeClip(lines: [Line(tokens: tokens, translation: "Sunny today", start: 0, end: 1.6, timing: "line")])
-        #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 0.3) == nil)
-        #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 1.2) == nil)
+        #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 0.3) == 0)
+        #expect(PlaybackUI.tokenIndex(clip: lineClip, line: 0, time: 1.2) == 2)
     }
 
     @Test func wordCursorStopsDuringRealPausesInsteadOfHoldingThePreviousWord() {
@@ -121,14 +121,15 @@ struct ImmersionTests {
         #expect(tokens[1].isPunctuation)
     }
 
-    @Test func invalidTokenTimingFallsBackToSentenceSync() {
+    @Test func invalidTokenTimingGetsEstimatedLandscapeKaraoke() {
         let tokens = [
             Token(surface: "あ", romaji: "a", start: 0.0, end: 0.5, pos: "interjection"),
             Token(surface: "ね", romaji: "ne", start: 0.5, end: 0.5, pos: "particle"),
         ]
         let clip = makeClip(lines: [Line(tokens: tokens, translation: "Ah", start: 0, end: 1)])
         #expect(!clip.lines[0].hasWordTiming)
-        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.7) == nil)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.2) == 0)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.7) == 1)
     }
 
     @Test func punctuationAliasesDoNotDisableWordKaraoke() {
@@ -143,7 +144,7 @@ struct ImmersionTests {
         #expect(PlaybackUI.tokenIndex(clip: makeClip(lines: [line]), line: 0, time: 1.2) == 1)
     }
 
-    @Test func repeatedSentenceWindowsAreNotWordAlignment() {
+    @Test func repeatedSentenceWindowsUseEstimatedLandscapeKaraoke() {
         let tokens = [
             Token(surface: "今日", romaji: "kyou", start: 0, end: 2, pos: "noun"),
             Token(surface: "です", romaji: "desu", start: 0, end: 2, pos: "auxiliary"),
@@ -151,13 +152,26 @@ struct ImmersionTests {
         let line = Line(tokens: tokens, translation: "Today.", start: 0, end: 2, timing: "word")
         #expect(!line.hasWordTiming)
         let clip = makeClip(lines: [line])
-        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1) == nil)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 0.4) == 0)
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1.4) == 1)
     }
 
     @Test func emptyAndOutOfBoundsTokenTimesDoNotClaimWordSync() {
         #expect(!Line(tokens: [], translation: "", start: 0, end: 1).hasWordTiming)
         let token = Token(surface: "はい", romaji: "hai", start: 3, end: 4, pos: "expression")
-        #expect(!Line(tokens: [token], translation: "Yes", start: 0, end: 1, timing: "word").hasWordTiming)
+        let line = Line(tokens: [token], translation: "Yes", start: 0, end: 1, timing: "word")
+        #expect(!line.hasWordTiming)
+        #expect(PlaybackUI.tokenIndex(clip: makeClip(lines: [line]), line: 0, time: 0.5) == 0)
+    }
+
+    @Test func portraitSentenceTimingRemainsSentenceLevel() {
+        let tokens = [
+            Token(surface: "今日", romaji: "kyou", start: 0, end: 2, pos: "noun"),
+            Token(surface: "です", romaji: "desu", start: 0, end: 2, pos: "auxiliary"),
+        ]
+        var clip = makeClip(lines: [Line(tokens: tokens, translation: "Today.", start: 0, end: 2, timing: "line")])
+        clip.videoOrientation = "portrait"
+        #expect(PlaybackUI.tokenIndex(clip: clip, line: 0, time: 1) == nil)
     }
 
     // MARK: Job decoding

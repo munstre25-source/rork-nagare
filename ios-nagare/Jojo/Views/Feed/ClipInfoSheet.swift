@@ -8,7 +8,6 @@ struct ClipInfoSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(AppModel.self) private var app
-    @Environment(PlaybackCoordinator.self) private var coordinator
     @State private var showSpeaking = false
     @State private var showTranscriptReport = false
 
@@ -144,7 +143,6 @@ struct ClipInfoSheet: View {
                 }
                 Section {
                     Button {
-                        coordinator.pauseForPopup()
                         showTranscriptReport = true
                     } label: {
                         Label("Report a transcript issue", systemImage: "flag")
@@ -162,9 +160,7 @@ struct ClipInfoSheet: View {
             .sheet(isPresented: $showSpeaking) {
                 SpeakingScenesView()
             }
-            .sheet(isPresented: $showTranscriptReport, onDismiss: {
-                coordinator.resumeAfterPopupIfNeeded()
-            }) {
+            .sheet(isPresented: $showTranscriptReport) {
                 TranscriptCorrectionSheet(clip: clip)
             }
         }

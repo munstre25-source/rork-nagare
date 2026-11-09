@@ -146,8 +146,9 @@ nonisolated struct Line: Codable, Hashable, Sendable {
 
     var text: String { tokens.map(\.surface).joined() }
 
-    /// False for sentence timing or unusable legacy token times; the UI then highlights the
-    /// whole sentence instead of guessing which word is being spoken.
+    /// False for sentence timing or unusable legacy token times. The player preserves this
+    /// distinction so verified word timestamps remain authoritative; landscape karaoke may
+    /// derive a display-only cursor from the trusted sentence window.
     var hasWordTiming: Bool {
         guard timing != "line", start.isFinite, end.isFinite, end > start else { return false }
         let spoken = tokens.filter { !$0.isPunctuation && !$0.surface.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

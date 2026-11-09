@@ -376,22 +376,29 @@ struct ClipStageView: View {
         let wordsWidth = wordsColumnWidth(in: stageSize.width)
         return VStack(spacing: 8) {
             HStack(alignment: .center, spacing: 14) {
-                ClipVideoView(
-                    clip: clip,
-                    player: player,
-                    showsControls: false,
-                    showsRail: false,
-                    compactChrome: true,
-                    onActivate: onActivate,
-                    onFullscreen: onFullscreen,
-                    fitsFrame: true,
-                    watchChromeHidden: watchChromeHidden,
-                    onRevealWatchChrome: onRevealWatchChrome,
-                    onSkip: onSkip
-                )
-                .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
-                .coachTarget(.video, active: isCoachPage)
-                .modifier(FrameBottomReader(bottom: $videoBottom))
+                VStack(spacing: 0) {
+                    ClipVideoView(
+                        clip: clip,
+                        player: player,
+                        showsControls: false,
+                        showsRail: false,
+                        compactChrome: true,
+                        onActivate: onActivate,
+                        onFullscreen: onFullscreen,
+                        fitsFrame: true,
+                        watchChromeHidden: watchChromeHidden,
+                        onRevealWatchChrome: onRevealWatchChrome,
+                        onSkip: onSkip
+                    )
+                    .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+                    .coachTarget(.video, active: isCoachPage)
+                    .modifier(FrameBottomReader(bottom: $videoBottom))
+
+                    landscapePlaybackFooter(player: player)
+                        .frame(width: videoWidth)
+                        .opacity(showsTheaterControls ? 1 : 0)
+                        .accessibilityHidden(!showsTheaterControls)
+                }
 
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
@@ -400,7 +407,7 @@ struct ClipStageView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
-            playbackControls(player: player, sourceMark: "YouTube")
+            landscapePlaybackControls(player: player)
                 .opacity(showsTheaterControls ? 1 : 0)
                 .allowsHitTesting(showsTheaterControls)
                 .accessibilityHidden(!showsTheaterControls)
@@ -663,6 +670,28 @@ struct ClipStageView: View {
         }
     }
 
+    /// Landscape immersion keeps the clock directly below the picture. Portrait continues
+    /// to use `playbackControls`, where its existing control/timer stack remains unchanged.
+    private func landscapePlaybackFooter(player: (any ClipPlayer)?) -> some View {
+        ShortsFooter(
+            clip: clip,
+            player: player,
+            onPicture: false,
+            sourceMark: "YouTube",
+            showsSourceMark: false
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+        .background(Color.bgSurfaceDark)
+    }
+
+    private func landscapePlaybackControls(player: (any ClipPlayer)?) -> some View {
+        theaterControls(player: player)
+            .padding(.vertical, 4)
+            .fixedSize(horizontal: false, vertical: true)
+            .background(Color.bgSurfaceDark)
+    }
+
     private func theaterControls(player: (any ClipPlayer)?) -> some View {
         TheaterPlaybackControls(
             clip: clip,
@@ -682,7 +711,6 @@ struct ClipStageView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .coachTarget(.transcript, active: isCoachPage)
             .modifier(TranscriptTopReader(top: $transcriptTop))
-            .modifier(MaximizedKaraokeReadability())
     }
 
     private func shortsKaraoke(
@@ -696,7 +724,6 @@ struct ClipStageView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .modifier(TranscriptTopReader(top: $transcriptTop))
-            .modifier(MaximizedKaraokeReadability())
     }
 
     /// Three-line karaoke on a soft bottom scrim so portrait footage shows through the band.
@@ -824,35 +851,6 @@ struct ClipStageView: View {
     }
 }
 
-/// Kiku's maximized player separates picture and words with a cool halo. The veil
-/// stays subtle and at the panel's top edge so it improves contrast without tinting
-/// the whole transcript or changing the learner's mastery colours.
-private struct MaximizedKaraokeReadability: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .overlay(alignment: .top) {
-                LinearGradient(
-                    stops: [
-                        .init(color: Color(hex: "#4A8DFF").opacity(0.24), location: 0),
-                        .init(color: Color(hex: "#1B4E9B").opacity(0.12), location: 0.42),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 72)
-                .blendMode(.screen)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-            }
-            .shadow(
-                color: Color(hex: "#397DFF").opacity(0.32),
-                radius: 18,
-                y: -8
-            )
-    }
-}
-
 /// Theater controls stay separate from karaoke and shrink to a compact row on narrow screens.
 private struct TheaterPlaybackControls: View {
     let clip: Clip
@@ -940,6 +938,15 @@ private struct TheaterPlaybackControls: View {
 
             TranscriptDisplayMenu(compact: true, onPresentationChange: onPresentationChange)
 
+            ShareLink(item: shareText) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Share video")
+
             Button {
                 compactOptions = compact
                 showsOptions = true
@@ -976,6 +983,13 @@ private struct TheaterPlaybackControls: View {
         .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityAddTraits(active ? .isSelected : [])
+    }
+
+    private var shareText: String {
+        if let url = clip.youtubeURL {
+            return "Learning Japanese with “\(clip.title)” on Jojo 流れ \(url.absoluteString)"
+        }
+        return "Learning Japanese with “\(clip.title)” on Jojo 流れ"
     }
 }
 

@@ -94,12 +94,45 @@ enum PlaybackUI {
         token = tokenIndex(clip: clip, line: line, time: clock)
     }
 
-    /// Word under the playhead. Nil for sentence-timed lines: their token times are the
-    /// whole line's window, so picking a word would be a guess.
+    /// Word under the playhead. Verified token timestamps always win. Landscape clips that
+    /// only have sentence timing receive a stable, character-weighted karaoke fallback;
+    /// portrait clips keep their existing sentence-level presentation.
     static func tokenIndex(clip: Clip, line: Int, time: Double) -> Int? {
-        guard let row = clip.lines[safe: line], row.hasWordTiming,
+        guard let row = clip.lines[safe: line],
               time >= row.start, time <= row.end + 0.2 else { return nil }
-        return row.tokens.lastIndex { $0.start <= time && time < $0.end && !$0.isPunctuation }
+        if row.hasWordTiming {
+            return row.tokens.lastIndex { $0.start <= time && time < $0.end && !$0.isPunctuation }
+        }
+        guard !clip.isPortraitVideo else { return nil }
+        return estimatedTokenIndex(in: row, at: time)
+    }
+
+    private static func estimatedTokenIndex(in row: Line, at time: Double) -> Int? {
+        guard row.start.isFinite, row.end.isFinite, row.end > row.start,
+              time >= row.start, time < row.end else { return nil }
+        let spoken = row.tokens.indices.filter { index in
+            let token = row.tokens[index]
+            return !token.isPunctuation
+                && !token.surface.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        guard !spoken.isEmpty else { return nil }
+
+        let weights = spoken.map { index -> Double in
+            let units = row.tokens[index].surface.unicodeScalars.reduce(into: 0) { count, scalar in
+                if !CharacterSet.whitespacesAndNewlines.contains(scalar) { count += 1 }
+            }
+            return Double(max(1, units))
+        }
+        let totalWeight = weights.reduce(0, +)
+        guard totalWeight > 0 else { return spoken.first }
+        let progress = min(max((time - row.start) / (row.end - row.start), 0), 0.999_999)
+        let target = progress * totalWeight
+        var boundary = 0.0
+        for (offset, index) in spoken.enumerated() {
+            boundary += weights[offset]
+            if target < boundary { return index }
+        }
+        return spoken.last
     }
 }
 
