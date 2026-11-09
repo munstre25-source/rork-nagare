@@ -142,6 +142,9 @@ struct MainTabView: View {
             switch link {
             case .review:
                 tab = .vocab
+            case .vocab:
+                tab = .vocab
+                app.clearDeepLink()
             case .feed:
                 showingExplore = false
                 tab = .feed
@@ -175,6 +178,10 @@ struct MainTabView: View {
                 }
             }
             if app.pendingDeepLink == .review { tab = .vocab }
+            if app.pendingDeepLink == .vocab {
+                tab = .vocab
+                app.clearDeepLink()
+            }
             if app.pendingDeepLink == .feed { tab = .feed }
             // Counts opens only; the experience prompt shows at calm moments (see below).
             app.noteMainAppOpenAndShouldAskFeedback()

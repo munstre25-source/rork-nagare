@@ -28,6 +28,7 @@ struct VocabView: View {
     @State private var showFilters: Bool = false
     @State private var buildDeckAfterFilters = false
     @State private var showClipSearch = false
+    @State private var path: [String] = []
     var tabBarHidden: Binding<Bool> = .constant(false)
 
     private var filtered: [SavedWord] {
@@ -81,7 +82,7 @@ struct VocabView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     vocabHeader
@@ -181,11 +182,18 @@ struct VocabView: View {
             )
             .presentationDetents([.medium, .large])
         }
-        .onAppear { openPendingReviewIfNeeded() }
-        .onChange(of: app.pendingDeepLink) { _, _ in openPendingReviewIfNeeded() }
+        .onAppear {
+            openPendingWordIfNeeded()
+            openPendingReviewIfNeeded()
+        }
+        .onChange(of: app.pendingVocabWordKey) { _, _ in openPendingWordIfNeeded() }
+        .onChange(of: app.pendingDeepLink) { _, _ in
+            openPendingWordIfNeeded()
+            openPendingReviewIfNeeded()
+        }
     }
 
-    /// Kiku-style hero: the one number that matters, the words you know, with Jojo cheering.
+    /// Jojo's Vocab hero: the one number that matters, with the learner's review state beside it.
     private var vocabHeader: some View {
         let known = Set(words.filter { $0.state == .known }.map(\.key)).count
         return HStack(alignment: .bottom, spacing: 12) {
@@ -578,6 +586,14 @@ struct VocabView: View {
         sourceChannel = nil
         let pool = ReviewQueue.session(in: words)
         startReview(pool, title: ReviewQueue.label(for: pool))
+    }
+
+    private func openPendingWordIfNeeded() {
+        guard let key = app.pendingVocabWordKey else { return }
+        app.pendingVocabWordKey = nil
+        guard words.contains(where: { $0.key == key }) else { return }
+        section = .mine
+        path = [key]
     }
 
     private func deckWords(_ deck: CustomDeck) -> [SavedWord] {

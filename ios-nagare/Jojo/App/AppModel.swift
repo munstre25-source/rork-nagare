@@ -12,6 +12,7 @@ nonisolated struct DayMinutes: Identifiable, Sendable {
 /// Destinations opened from the home-screen widget or `jojo://` URLs.
 nonisolated enum DeepLink: String, Equatable, Sendable {
     case feed
+    case vocab
     case review
 }
 
@@ -44,7 +45,9 @@ final class AppModel {
     private(set) var tasteRevision: Int = 0
     /// Clip to open in the feed on next appearance (e.g. from Review / Search).
     var pendingFeedClipId: String?
-    /// Deep link destination from widgets / URLs (`jojo://review`, `jojo://feed`).
+    /// Saved word to open after switching to Vocab from the dictionary card.
+    var pendingVocabWordKey: String?
+    /// Deep link destination from widgets / URLs (`jojo://review`, `jojo://vocab`, `jojo://feed`).
     var pendingDeepLink: DeepLink?
     /// True while a flashcard review is on screen (and for a short grace period after it
     /// ends), so the one-time experience prompt never interrupts review; it re-fires at a
@@ -171,7 +174,7 @@ final class AppModel {
         if !gone.isEmpty { vocabSync.noteDeleted(keys: gone) }
     }
 
-    /// Handles `jojo://feed` and `jojo://review` from widgets / local notifications.
+    /// Handles `jojo://feed`, `jojo://vocab`, and `jojo://review` from widgets / local notifications.
     func handleDeepLink(_ url: URL) {
         guard url.scheme == "jojo" else { return }
         let clipFromQuery = URLComponents(url: url, resolvingAgainstBaseURL: false)?
@@ -185,6 +188,9 @@ final class AppModel {
         case "review":
             pendingDeepLink = .review
             track("deep_link", props: ["dest": "review"])
+        case "vocab":
+            pendingDeepLink = .vocab
+            track("deep_link", props: ["dest": "vocab"])
         case "feed", nil:
             pendingDeepLink = .feed
             track("deep_link", props: ["dest": "feed"])
@@ -2227,6 +2233,7 @@ final class AppModel {
         lookedUpKeys = []
         wordStates = [:]
         pendingFeedClipId = nil
+        pendingVocabWordKey = nil
         pendingDeepLink = nil
         goalCelebrationCount = 0
         unsavedWatchSeconds = 0

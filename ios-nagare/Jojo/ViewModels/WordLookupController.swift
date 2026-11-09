@@ -7,7 +7,7 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
     var symbol: String {
         switch self {
         case .dictionary: "book.closed"
-        case .ai: "sparkles"
+        case .ai: "bubble.left.and.bubble.right.fill"
         case .flashcard: "rectangle.on.rectangle"
         case .examples: "text.alignleft"
         }
@@ -24,8 +24,8 @@ nonisolated enum PopupTab: Int, CaseIterable, Sendable {
 
     var compactTitle: String {
         switch self {
-        case .dictionary: "Dictionary"
-        case .ai: "AI"
+        case .dictionary: "Meaning"
+        case .ai: "Jojo"
         case .flashcard: "Card"
         case .examples: "Examples"
         }

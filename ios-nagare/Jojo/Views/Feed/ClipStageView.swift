@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Reusable clip composition matching kiku demo2 For You / ULTIMATE Explore watch:
-/// video → Kiku action strip (… maximize box) → karaoke. Dictionary card centered over the stage.
+/// Reusable Jojo clip composition: video → learning controls → karaoke, with a centered
+/// dictionary workspace that stays independent from transcript layout.
 struct ClipStageView: View {
     let clip: Clip
     var videoAspect: CGFloat = 16 / 10
@@ -51,9 +51,9 @@ struct ClipStageView: View {
     @State private var actionRowHeight: CGFloat = 56
     @State private var transcriptReportLineIndex: Int?
     @State private var showTranscriptReport = false
-    /// Top of the words, in stage space. The dictionary card docks just above it (Kiku).
+    /// Top of the words, retained for transcript layout diagnostics.
     @State private var transcriptTop: CGFloat = 0
-    /// Bottom of the picture, in stage space. The dictionary card never rises above it.
+    /// Bottom of the picture, retained for stage layout diagnostics.
     @State private var videoBottom: CGFloat = 0
 
     private var isPopupHere: Bool {
@@ -825,22 +825,15 @@ struct ClipStageView: View {
         }
     }
 
-    /// Compact dictionary card docks just above the karaoke words so the video stays
-    /// mostly clear. Extra detail scrolls inside a short middle strip.
+    /// The dictionary lives at the visual center of the stage. Its detail region scrolls
+    /// internally, so expanding definitions or Ask Jojo never pushes actions behind the dock.
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
             let grow = 1 + max(0, popupTextSize - 1) * 0.12
-            let cardHeight = min(390 * grow, stageHeight * 0.58)
-            let middleHeight = min(220 * grow, stageHeight * 0.30)
-            let preferredTop = transcriptTop > 40
-                ? transcriptTop - 24
-                : stageHeight * 0.18
-            let cardTop = min(
-                max(12, preferredTop),
-                max(12, stageHeight - cardHeight - 12)
-            )
-            ZStack(alignment: .top) {
+            let cardHeight = min(520 * grow, stageHeight * 0.74)
+            let middleHeight = min(270 * grow, stageHeight * 0.34)
+            ZStack {
                 Color.black.opacity(0.05)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
@@ -853,9 +846,8 @@ struct ClipStageView: View {
                 .frame(maxWidth: 430)
                 .frame(maxHeight: cardHeight, alignment: .top)
                 .coachTarget(.popupCard, active: isCoachPage)
-                .padding(.top, cardTop)
             }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
         }
         .padding(.horizontal, 10)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))

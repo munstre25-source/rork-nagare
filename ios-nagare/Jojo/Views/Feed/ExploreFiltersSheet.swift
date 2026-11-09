@@ -121,94 +121,38 @@ struct ExploreFiltersSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.xl) {
+                VStack(alignment: .leading, spacing: 22) {
+                    compassHeader
                     if lockedDifficulty == nil {
-                        section("Difficulty") {
+                        section("Level", symbol: "speedometer", caption: "Match the clip to your current comfort zone") {
                             chips(Difficulty.allCases, selected: draft.difficulty, title: \.rawValue) { draft.difficulty = $0 }
                         }
                     }
-                    section("Grammar", caption: "Clips where this pattern is spoken") {
-                        FlowLayout(spacing: 8, lineSpacing: 8) {
-                            ForEach(ExploreGrammar.allCases) { g in
-                                Button {
-                                    Haptics.selection()
-                                    draft.grammar = draft.grammar == g ? nil : g
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        Text(g.title).font(JojoFont.jp(15, bold: true, relativeTo: .subheadline))
-                                        Text(g.gloss).font(.caption2)
-                                            .foregroundStyle(draft.grammar == g ? Color.white.opacity(0.85) : .secondary)
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .foregroundStyle(draft.grammar == g ? .white : .primary)
-                                    .background(draft.grammar == g ? Color.jojoOrange : Color.fieldFill,
-                                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                }
-                                .buttonStyle(PressableStyle())
-                                .accessibilityAddTraits(draft.grammar == g ? .isSelected : [])
-                            }
-                        }
+                    section("Language patterns", symbol: "character.book.closed.fill", caption: "Hear a grammar shape in a real sentence") {
+                        grammarOptions
                     }
                     if !lockTopic {
-                        section("Topic") {
-                            FlowLayout(spacing: 8, lineSpacing: 8) {
-                                ForEach(ClipCategory.allCases) { c in
-                                    Button {
-                                        Haptics.selection()
-                                        draft.topic = draft.topic == c ? nil : c
-                                    } label: {
-                                        FilterChip(title: c.displayName, systemImage: c.symbol, isSelected: draft.topic == c)
-                                    }
-                                    .buttonStyle(PressableStyle())
-                                }
-                            }
+                        section("Scene", symbol: "binoculars.fill", caption: "Choose the kind of Japanese you want to step into") {
+                            topicOptions
                         }
                     }
-                    section("Source") {
+                    section("Format", symbol: "play.rectangle.on.rectangle.fill") {
                         chips(SourceType.allCases, selected: draft.source, title: \.displayName) { draft.source = $0 }
                     }
-                    section("Watched") {
-                        Picker("Watched", selection: $draft.watched) {
-                            ForEach(WatchedFilter.allCases) { Text($0.title).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
+                    section("Watch history", symbol: "clock.arrow.circlepath") {
+                        historyOptions
                     }
                 }
                 .padding(Spacing.l)
             }
             .safeAreaInset(edge: .bottom) {
-                let n = count(draft)
-                HStack(spacing: Spacing.m) {
-                    Button("Reset") {
-                        Haptics.light()
-                        withAnimation(.snappy) { draft = ExploreFilters(difficulty: lockedDifficulty) }
-                    }
-                    .font(.headline)
-                    .foregroundStyle(Color.jojoOrange)
-                    .frame(minWidth: 88, minHeight: 56)
-                    .disabled(draft.activeCount == (lockedDifficulty == nil ? 0 : 1))
-
-                    Button(n == 0 ? "No clips match" : "Apply · \(n) clip\(n == 1 ? "" : "s")") {
-                        Haptics.medium()
-                        filters = draft
-                        dismiss()
-                        onApply?()
-                    }
-                    .buttonStyle(PrimaryButtonStyle(isEnabled: n > 0))
-                    .disabled(n == 0)
-                    .contentTransition(.numericText())
-                    .animation(.snappy, value: n)
-                }
-                .padding(.horizontal, Spacing.l)
-                .padding(.vertical, Spacing.s)
-                .background(.bar)
+                filterActions
             }
-            .navigationTitle("Filters")
+            .navigationTitle("Clip Compass")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -217,16 +161,189 @@ struct ExploreFiltersSheet: View {
         .onAppear { draft = filters }
     }
 
-    private func section<Content: View>(_ title: String, caption: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+    private var grammarOptions: some View {
+        FlowLayout(spacing: 8, lineSpacing: 8) {
+            ForEach(ExploreGrammar.allCases) { grammar in
+                let isSelected = draft.grammar == grammar
+                Button {
+                    Haptics.selection()
+                    draft.grammar = isSelected ? nil : grammar
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(grammar.title)
+                            .font(JojoFont.jp(15, bold: true, relativeTo: .subheadline))
+                        Text(grammar.gloss)
+                            .font(.caption2)
+                            .foregroundStyle(isSelected ? Color.primary.opacity(0.72) : .secondary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(.primary)
+                    .background(
+                        isSelected ? Color.jojoOrange.opacity(0.16) : Color.card,
+                        in: UnevenRoundedRectangle(
+                            topLeadingRadius: 6,
+                            bottomLeadingRadius: 16,
+                            bottomTrailingRadius: 6,
+                            topTrailingRadius: 16,
+                            style: .continuous
+                        )
+                    )
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(isSelected ? Color.jojoOrange : Color.clear)
+                            .frame(width: 3)
+                            .padding(.vertical, 7)
+                    }
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+    }
+
+    private var topicOptions: some View {
+        FlowLayout(spacing: 8, lineSpacing: 8) {
+            ForEach(ClipCategory.allCases) { category in
+                Button {
+                    Haptics.selection()
+                    draft.topic = draft.topic == category ? nil : category
+                } label: {
+                    compassChip(
+                        title: category.displayName,
+                        systemImage: category.symbol,
+                        isSelected: draft.topic == category
+                    )
+                }
+                .buttonStyle(PressableStyle())
+            }
+        }
+    }
+
+    private var historyOptions: some View {
+        HStack(spacing: 8) {
+            ForEach(WatchedFilter.allCases) { option in
+                Button {
+                    Haptics.selection()
+                    draft.watched = option
+                } label: {
+                    Text(option.title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(draft.watched == option ? Color.primary : .secondary)
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .background(
+                            draft.watched == option ? Color.jojoOrange.opacity(0.16) : Color.card,
+                            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .strokeBorder(draft.watched == option ? Color.jojoOrange : Color.cardStroke)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(draft.watched == option ? .isSelected : [])
+            }
+        }
+    }
+
+    private var filterActions: some View {
+        let resultCount = count(draft)
+        return HStack(spacing: Spacing.m) {
+            Button {
+                Haptics.light()
+                withAnimation(.snappy) { draft = ExploreFilters(difficulty: lockedDifficulty) }
+            } label: {
+                Label("Clear", systemImage: "arrow.counterclockwise")
+            }
+            .font(.headline)
+            .foregroundStyle(Color.jojoOrange)
+            .frame(minWidth: 88, minHeight: 56)
+            .disabled(draft.activeCount == (lockedDifficulty == nil ? 0 : 1))
+
+            Button(resultCount == 0 ? "No clips on this route" : "Explore \(resultCount) clip\(resultCount == 1 ? "" : "s")") {
+                Haptics.medium()
+                filters = draft
+                dismiss()
+                onApply?()
+            }
+            .buttonStyle(PrimaryButtonStyle(isEnabled: resultCount > 0))
+            .disabled(resultCount == 0)
+            .contentTransition(.numericText())
+            .animation(.snappy, value: resultCount)
+        }
+        .padding(.horizontal, Spacing.l)
+        .padding(.vertical, Spacing.s)
+        .background(.bar)
+    }
+
+    private var compassHeader: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle().fill(Color.jojoOrange.opacity(0.16))
+                Image(systemName: "location.north.fill")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Color.jojoOrange)
+                    .rotationEffect(.degrees(Double(draft.activeCount) * 18))
+                    .animation(.spring(response: 0.4, dampingFraction: 0.72), value: draft.activeCount)
+            }
+            .frame(width: 54, height: 54)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Build a clip route")
+                    .font(.title3.weight(.bold))
+                Text(draft.activeCount == 0
+                     ? "Start broad, then add signals that matter to you."
+                     : "\(draft.activeCount) signal\(draft.activeCount == 1 ? "" : "s") shaping this route.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.cardStroke, lineWidth: 1)
+        )
+    }
+
+    private func section<Content: View>(
+        _ title: String,
+        symbol: String,
+        caption: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                if let caption {
-                    Text(caption).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 9) {
+                Image(systemName: symbol)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Color.jojoOrange)
+                    .frame(width: 24, height: 24)
+                    .background(Color.jojoOrange.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline)
+                    if let caption {
+                        Text(caption).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             content()
         }
+    }
+
+    private func compassChip(title: String, systemImage: String? = nil, isSelected: Bool) -> some View {
+        HStack(spacing: 7) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.bold))
+            }
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+        }
+        .foregroundStyle(isSelected ? Color.primary : .secondary)
+        .padding(.horizontal, 13)
+        .frame(minHeight: 40)
+        .background(isSelected ? Color.jojoOrange.opacity(0.16) : Color.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(isSelected ? Color.jojoOrange : Color.cardStroke, lineWidth: 1))
     }
 
     private func chips<T: Identifiable & Equatable>(_ values: [T], selected: T?, title: KeyPath<T, String>, set: @escaping (T?) -> Void) -> some View {
@@ -236,7 +353,7 @@ struct ExploreFiltersSheet: View {
                     Haptics.selection()
                     set(selected == v ? nil : v)
                 } label: {
-                    FilterChip(title: v[keyPath: title], isSelected: selected == v)
+                    compassChip(title: v[keyPath: title], isSelected: selected == v)
                 }
                 .buttonStyle(PressableStyle())
             }

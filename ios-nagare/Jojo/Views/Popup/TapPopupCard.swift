@@ -19,6 +19,7 @@ struct TapPopupCard: View {
     /// scrolls when it exceeds the cap.
     @State private var middleNaturalHeight: CGFloat?
     @State private var askDraft = ""
+    @State private var showsWordJourney = false
     @FocusState private var askFocused: Bool
 
     private var onDark: Bool { colorScheme == .dark }
@@ -46,6 +47,30 @@ struct TapPopupCard: View {
                 }
             }
             .gesture(swipeTabs)
+            .sheet(isPresented: $showsWordJourney) {
+                wordJourney
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var wordJourney: some View {
+        if let selection = lookup.selection {
+            WordJourneySheet(
+                word: selection.token.surface,
+                encounterCount: max(lookup.occurrenceCount, 1),
+                current: app.wordState(for: selection.token) ?? .new,
+                onSelect: { mark in
+                    app.paint(
+                        token: selection.token,
+                        explanation: lookup.explanation,
+                        clip: selection.clip,
+                        lineIndex: selection.lineIndex,
+                        mark: mark
+                    )
+                },
+                onOpenWords: openYourWords
+            )
         }
     }
 
@@ -110,9 +135,7 @@ struct TapPopupCard: View {
                 Spacer(minLength: 0)
                 HStack(spacing: 2) {
                     if !lookup.deferredSave && !lookup.previewOnly {
-                        OccurrenceBadge(count: max(lookup.occurrenceCount, 1), size: 32)
-                            .scaleEffect(badgeBump ? 1.15 : 1)
-                            .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                        journeyButton(selection: selection, size: 36)
                     }
                     Button {
                         SpeechService.shared.speak(selection.token.surface)
@@ -127,7 +150,6 @@ struct TapPopupCard: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Play pronunciation")
                     .coachTarget(.popupSpeaker, active: GuidanceCenter.shared.tourStep == .practice)
-                    closeButton(size: 44)
                 }
             }
 
@@ -171,7 +193,12 @@ struct TapPopupCard: View {
                 .buttonStyle(.plain)
             }
 
+            compactTabRail
+
             let middle = VStack(alignment: .leading, spacing: 8) {
+                if lookup.tab != .dictionary {
+                    detailReturnRow
+                }
                 pitchChip(for: selection.token)
                 conjugationStrip(for: selection.token)
                 switch lookup.tab {
@@ -206,28 +233,6 @@ struct TapPopupCard: View {
                 }
             } else {
                 middle
-            }
-
-            HStack(spacing: 4) {
-                ForEach(PopupTab.allCases, id: \.self) { tab in
-                    Button {
-                        Haptics.selection()
-                        withAnimation(.snappy) { lookup.tab = tab }
-                        if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
-                        if tab == .dictionary { showAllDefinitions = true }
-                    } label: {
-                        Image(systemName: tab.symbol)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(lookup.tab == tab && (tab != .dictionary || showAllDefinitions) ? LearningInk.selected : inkSoft.opacity(0.7))
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(tab.title)
-                    .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
-                }
-                Spacer(minLength: 0)
-                pageDots
             }
         }
     }
@@ -385,56 +390,103 @@ struct TapPopupCard: View {
                 }
             }
             Spacer(minLength: 0)
-            HStack(alignment: .top, spacing: Spacing.s) {
-                closeButton(size: 32)
-                OccurrenceBadge(count: lookup.occurrenceCount, size: 38)
-                    .scaleEffect(badgeBump ? 1.25 : 1)
-                    .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
-                    .animation(.snappy, value: lookup.occurrenceCount)
+            if !lookup.deferredSave && !lookup.previewOnly {
+                journeyButton(selection: selection, size: 42)
             }
         }
     }
 
-    /// Explicit way out: the card also closes on an outside tap, but learners asked for a
-    /// visible control so they never have to guess the dismiss gesture.
-    private func closeButton(size: CGFloat) -> some View {
+    private func journeyButton(selection: WordLookupController.Selection, size: CGFloat) -> some View {
         Button {
             Haptics.selection()
-            withAnimation(.snappy) { lookup.dismiss() }
+            showsWordJourney = true
         } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: size * 0.4, weight: .bold))
-                .foregroundStyle(inkSoft)
-                .frame(width: size, height: size)
-                .background(chip, in: Circle())
+            OccurrenceBadge(count: max(lookup.occurrenceCount, 1), size: size)
+                .scaleEffect(badgeBump ? 1.15 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.5), value: badgeBump)
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: max(8, size * 0.22), weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: max(15, size * 0.36), height: max(15, size * 0.36))
+                        .background(Color.black.opacity(0.72), in: Circle())
+                        .offset(x: 3, y: 3)
+                }
         }
-        .accessibilityLabel("Close")
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            "Word journey for \(selection.token.surface), encountered \(max(lookup.occurrenceCount, 1)) times"
+        )
+        .accessibilityHint("Change how well you know this word or open Your Words")
     }
 
-    /// Compact feed tabs with short labels so each icon's purpose is clear.
-    private var quietTabRow: some View {
-        HStack(spacing: 4) {
+    private var compactTabRail: some View {
+        HStack(spacing: 5) {
             ForEach(PopupTab.allCases, id: \.self) { tab in
                 Button {
-                    Haptics.selection()
-                    withAnimation(.snappy) { lookup.tab = tab }
-                    if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
+                    select(tab)
                 } label: {
-                    VStack(spacing: 2) {
-                        Image(systemName: tab.symbol)
-                            .font(.system(size: 14, weight: .semibold))
+                    VStack(spacing: 3) {
+                        if tab == .ai {
+                            JojoMascotAvatar(size: 19)
+                        } else {
+                            Image(systemName: tab.symbol)
+                                .font(.system(size: 15, weight: .semibold))
+                                .frame(height: 19)
+                        }
                         Text(tab.compactTitle)
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.system(size: 9, weight: .bold))
                             .lineLimit(1)
                     }
-                    .foregroundStyle(lookup.tab == tab ? LearningInk.selected : inkSoft.opacity(0.7))
-                    .frame(minWidth: 56, minHeight: 38)
+                    .foregroundStyle(lookup.tab == tab ? LearningInk.selected : inkSoft)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(
+                        lookup.tab == tab ? LearningInk.selected.opacity(0.14) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(lookup.tab == tab ? LearningInk.selected.opacity(0.55) : Color.clear)
+                    }
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(tab.title)
                 .accessibilityAddTraits(lookup.tab == tab ? .isSelected : [])
             }
-            Spacer(minLength: 0)
         }
+    }
+
+    private var detailReturnRow: some View {
+        HStack(spacing: 8) {
+            Button {
+                select(.dictionary)
+            } label: {
+                Label("Back to word", systemImage: "chevron.left")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(LearningInk.selected)
+                    .frame(minHeight: 32)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            Text(lookup.tab.title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(inkSoft)
+                .textCase(.uppercase)
+        }
+    }
+
+    private func select(_ tab: PopupTab) {
+        Haptics.selection()
+        withAnimation(.snappy) { lookup.tab = tab }
+        if tab == .examples || tab == .ai { lookup.loadContextIfNeeded(app: app) }
+        if tab == .dictionary { showAllDefinitions = true }
+    }
+
+    private func openYourWords() {
+        showsWordJourney = false
+        app.pendingVocabWordKey = lookup.selection.map { AppModel.wordKey(for: $0.token) }
+        lookup.dismiss()
+        app.pendingDeepLink = .vocab
     }
 
     private func paintRow(selection: WordLookupController.Selection) -> some View {
@@ -803,10 +855,8 @@ struct TapPopupCard: View {
         let grammar = GrammarFormNotes.line(for: selection.token)
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.jojoOrange)
-                Text(live ? "Jojo AI" : "Jojo")
+                JojoMascotAvatar(size: 24)
+                Text(live ? "Jojo Sensei" : "Jojo")
                     .font(.caption.weight(.heavy))
                     .textCase(.uppercase)
                     .foregroundStyle(Color.jojoOrange)
@@ -924,6 +974,155 @@ struct TapPopupCard: View {
             if !message.fromLearner { Spacer(minLength: 24) }
         }
         .frame(maxWidth: .infinity, alignment: message.fromLearner ? .trailing : .leading)
+    }
+}
+
+/// Jojo's original mastery picker: a small learning map rather than a copied status list.
+/// The encounter badge opens it, turning the count into a useful control and a path to Vocab.
+private struct WordJourneySheet: View {
+    let word: String
+    let encounterCount: Int
+    let current: SRSState
+    let onSelect: (SRSState) -> Void
+    let onOpenWords: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var localSelection: SRSState?
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+    ]
+
+    private var selected: SRSState { localSelection ?? current }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top, spacing: 14) {
+                        ZStack {
+                            Circle().fill(Color.jojoOrange.opacity(0.16))
+                            Image(systemName: "map.fill")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(Color.jojoOrange)
+                        }
+                        .frame(width: 52, height: 52)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Word Journey")
+                                .font(.title2.weight(.bold))
+                            Text(word)
+                                .font(JojoFont.jp(22, bold: true, relativeTo: .title3))
+                            Text("Met \(encounterCount) time\(encounterCount == 1 ? "" : "s") · choose the pace that feels honest")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(SRSState.allCases, id: \.self) { state in
+                            journeyStop(state)
+                        }
+                    }
+
+                    Button {
+                        dismiss()
+                        onOpenWords()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "books.vertical.fill")
+                                .font(.headline)
+                                .foregroundStyle(Color.jojoOrange)
+                                .frame(width: 38, height: 38)
+                                .background(Color.jojoOrange.opacity(0.14), in: Circle())
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Your Words")
+                                    .font(.headline)
+                                Text("Review this word with everything you have collected")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "arrow.right")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(Color.cardStroke, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(20)
+            }
+            .background(Color.canvas.ignoresSafeArea())
+            .navigationTitle("Learning map")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func journeyStop(_ state: SRSState) -> some View {
+        let isSelected = selected == state
+        return Button {
+            Haptics.selection()
+            localSelection = state
+            onSelect(state)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: symbol(for: state))
+                        .font(.subheadline.weight(.bold))
+                    Spacer()
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                }
+                Text(state.title)
+                    .font(.subheadline.weight(.bold))
+                Text(detail(for: state))
+                    .font(.caption2)
+                    .foregroundStyle(isSelected ? Color.primary.opacity(0.75) : .secondary)
+                    .lineLimit(2)
+            }
+            .foregroundStyle(isSelected ? Color.primary : .secondary)
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+            .background(
+                isSelected ? LearningInk.mastery(state).opacity(0.22) : Color.card,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(isSelected ? LearningInk.mastery(state) : Color.cardStroke, lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func symbol(for state: SRSState) -> String {
+        switch state {
+        case .new: "circle.dashed"
+        case .learning: "leaf.fill"
+        case .familiar: "circle.hexagongrid.fill"
+        case .easy: "wind"
+        case .known: "checkmark.seal.fill"
+        }
+    }
+
+    private func detail(for state: SRSState) -> String {
+        switch state {
+        case .new: "Just met · review soon"
+        case .learning: "Still taking root"
+        case .familiar: "Recognise it most times"
+        case .easy: "Feels natural now"
+        case .known: "Keep it in long-term memory"
+        }
     }
 }
 
