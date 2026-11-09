@@ -18,6 +18,7 @@ from repair_word_timing_catalog import ROOT, configuration, request_json
 from repair_word_timing_local import maintenance_headers
 
 DEFAULT_REPORT = ROOT / "ios-nagare/reports/live-word-timing-repair-20261109.json"
+PUBLISH_BATCH_SIZE = 5
 QUOTA_REASONS = ("quotaExceeded", "dailyLimitExceeded")
 
 
@@ -94,6 +95,85 @@ def publish_batch(base, headers, clips, candidates):
     return request_json(endpoint, headers, {"clips": publishable}, timeout=180)
 
 
+def write_source_queue(root, candidates, media, live_videos, reviews):
+    reviewed = {row["videoId"] for row in reviews}
+    queue = []
+    for vid, candidate in candidates.items():
+        if vid in live_videos:
+            continue
+        status = "awaiting_authorized_audio"
+        if vid in reviewed:
+            status = "reviewed"
+        elif media is not None and vid in media:
+            try:
+                media.file_path(vid)
+            except FileNotFoundError:
+                pass
+            else:
+                status = "audio_available"
+        queue.append({**candidate, "status": status})
+    write_json(root / "source-queue.json", queue)
+    return queue
+
+
+def publish_reviews(
+    args, base, anon, candidates, reviews, live_ids, live_videos, drafts, result, limit
+):
+    root = args.state
+    if not args.publish_reviewed:
+        return "prepared"
+    clips = []
+    selected_videos = set(live_videos)
+    for review in reviews:
+        cid, vid = review["id"], review["videoId"]
+        if cid in live_ids or vid in selected_videos or vid not in candidates:
+            continue
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", cid) or (
+            not isinstance(review.get("notes"), str) or not review["notes"].strip()
+        ):
+            raise ValueError(
+                "Reviewed drafts require a valid clip ID and explicit review notes"
+            )
+        draft = json.loads((drafts / (cid + ".json")).read_text())
+        if review.get("audioSha256") != draft["alignment"]["audioSha256"]:
+            raise ValueError("The reviewed audio no longer matches the draft")
+        if draft["category"] != candidates[vid]["category"]:
+            raise ValueError("Reviewed draft category differs from the selected source")
+        clips.append(reviewed_clip(draft, review))
+        selected_videos.add(vid)
+        if limit is not None and len(clips) >= limit:
+            break
+    if not clips:
+        return "waiting_for_review"
+    headers = maintenance_headers(base, anon, args.use_existing_vault)
+    receipts = []
+    status = "publication_checked"
+    for start in range(0, len(clips), PUBLISH_BATCH_SIZE):
+        try:
+            receipt = publish_batch(
+                base, headers, clips[start : start + PUBLISH_BATCH_SIZE], candidates
+            )
+        except (urllib.error.HTTPError, RuntimeError) as exc:
+            if isinstance(exc, urllib.error.HTTPError):
+                try:
+                    reason = json.loads(exc.read()).get("error", "")
+                except ValueError:
+                    reason = ""
+                if not any(q in reason for q in QUOTA_REASONS):
+                    raise
+            elif str(exc) != "youtube_quota_exhausted":
+                raise
+            status = "youtube_quota_exhausted"
+            break
+        receipts.append(receipt)
+        result["published"] += receipt["accepted"]
+        write_json(
+            root / "last-publication-receipt.json",
+            {"batches": receipts, "accepted": result["published"]},
+        )
+    return status
+
+
 def run(args):
     root = args.state
     media_path = root / "authorized-media.json"
@@ -105,16 +185,30 @@ def run(args):
     )
     media = AuthorizedMedia(media_path) if media_path.exists() else None
     reviews = json.loads(reviews_path.read_text()) if reviews_path.exists() else []
-    if (media is None or not media.entries) and not reviews:
-        return dict(result, status="waiting_for_authorized_media_or_review")
-
     base, anon = configuration()
     live = public_catalog(base, anon)
     live_ids = {c["id"] for c in live}
     live_videos = {c["video_id"] for c in live}
+    queue = write_source_queue(root, candidates, media, live_videos, reviews)
+    result["queuedSources"] = len(queue)
+    if (media is None or not media.entries) and not reviews:
+        return dict(result, status="waiting_for_authorized_media_or_review")
+    limit = args.limit or None
     live_line_ids = {c["id"] for c in live if c["timing_mode"] != "word"}
     proofs = root / "timing-proofs"
     drafts = root / "drafts"
+    status = publish_reviews(
+        args,
+        base,
+        anon,
+        candidates,
+        reviews,
+        live_ids,
+        live_videos,
+        drafts,
+        result,
+        limit,
+    )
     attempts_path = root / "attempted-media.json"
     attempts = json.loads(attempts_path.read_text()) if attempts_path.exists() else {}
 
@@ -145,7 +239,7 @@ def run(args):
             and (stamp := unattempted("timing:" + c["id"], c["videoId"]))
         }
         if targets:
-            batch = list(targets)[: args.limit]
+            batch = list(targets)[:limit]
             cmd = [
                 sys.executable,
                 str(ROOT / "Tools/repair_word_timing_local.py"),
@@ -184,7 +278,7 @@ def run(args):
             and (stamp := unattempted("draft:" + vid, vid))
         }
         if selected:
-            draft_batch = dict(list(selected.items())[: args.limit])
+            draft_batch = dict(list(selected.items())[:limit])
             write_json(root / "candidates.json", list(candidates.values()))
             write_json(
                 root / "draft-queue.json",
@@ -208,6 +302,8 @@ def run(args):
                     str(root / "audio"),
                     "--report-directory",
                     str(drafts),
+                    "--per-channel",
+                    str(len(draft_batch)),
                     "--device",
                     args.device,
                     "--resegment",
@@ -226,46 +322,7 @@ def run(args):
                     result["newDraftsReady"] += row["status"] == "ready_for_review"
             write_json(attempts_path, attempts)
 
-    if not args.publish_reviewed:
-        return dict(result, status="prepared")
-    clips = []
-    for review in reviews:
-        cid, vid = review["id"], review["videoId"]
-        if cid in live_ids or vid in live_videos or vid not in candidates:
-            continue
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", cid) or (
-            not isinstance(review.get("notes"), str) or not review["notes"].strip()
-        ):
-            raise ValueError(
-                "Reviewed drafts require a valid clip ID and explicit review notes"
-            )
-        draft = json.loads((drafts / (cid + ".json")).read_text())
-        if review.get("audioSha256") != draft["alignment"]["audioSha256"]:
-            raise ValueError("The reviewed audio no longer matches the draft")
-        if draft["category"] != candidates[vid]["category"]:
-            raise ValueError("Reviewed draft category differs from the selected source")
-        clips.append(reviewed_clip(draft, review))
-        live_videos.add(vid)
-        if len(clips) >= args.limit:
-            break
-    if not clips:
-        return dict(result, status="waiting_for_review")
-    headers = maintenance_headers(base, anon, args.use_existing_vault)
-    try:
-        receipt = publish_batch(base, headers, clips, candidates)
-    except (urllib.error.HTTPError, RuntimeError) as exc:
-        if isinstance(exc, urllib.error.HTTPError):
-            try:
-                reason = json.loads(exc.read()).get("error", "")
-            except ValueError:
-                reason = ""
-            if not any(q in reason for q in QUOTA_REASONS):
-                raise
-        elif str(exc) != "youtube_quota_exhausted":
-            raise
-        return dict(result, status="youtube_quota_exhausted")
-    write_json(root / "last-publication-receipt.json", receipt)
-    return dict(result, status="publication_checked", published=receipt["accepted"])
+    return dict(result, status=status)
 
 
 def main():
@@ -274,10 +331,17 @@ def main():
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--model-directory", type=Path, default=Path("/tmp"))
-    parser.add_argument("--limit", type=int, choices=range(1, 6), default=5)
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Maximum items per stage. Use 0 to drain the eligible queue",
+    )
     parser.add_argument("--publish-reviewed", action="store_true")
     parser.add_argument("--use-existing-vault", action="store_true")
     args = parser.parse_args()
+    if args.limit < 0:
+        parser.error("--limit must be nonnegative")
     args.state.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (args.state / "run.lock").open("a") as lock:
         try:

@@ -66,9 +66,8 @@ transcript quality and word alignment each require their own verification.
 
 ## Daily local queue
 
-`daily_local_catalog.py` runs the existing local models and checks at most five
-explicitly reviewed new lessons for publication per run. It keeps incomplete work
-in a local state directory. An empty queue makes zero network calls.
+`daily_local_catalog.py` runs the existing local models and drains the eligible queue by default. It sends reviewed lessons in batches of five, stopping at the YouTube quota. Use `--limit` to cap a run. It keeps incomplete work
+in a local state directory. Each run records unpublished candidates in `source-queue.json`, including those awaiting authorized audio. An empty intake does not trigger downloads or publication.
 
 ```bash
 /path/to/local-venv/bin/python Tools/daily_local_catalog.py \
