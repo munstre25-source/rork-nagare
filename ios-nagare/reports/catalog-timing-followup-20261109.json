@@ -1,0 +1,179 @@
+{
+  "date": "2026-11-09",
+  "paidInferenceCalls": 0,
+  "publishedClips": 570,
+  "cachedReviews": [
+    {
+      "id": "cap-9sgdQO087vo-630",
+      "videoId": "9sgdQO087vo",
+      "sourceStartSec": 630.51,
+      "durationSec": 17.03,
+      "result": "unspoken_gloss",
+      "nextAction": "Remove the parenthetical dialect gloss from the spoken Japanese. Keep it in vocabulary or a note.",
+      "detectedLanguage": "ja",
+      "languageConfidence": 0.987,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-0",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 0.76,
+      "durationSec": 31.639,
+      "result": "clipped_speech",
+      "nextAction": "Both models end the clip before the last words of the published example. Review the spelling of the speaker’s name and cut at the last confirmed phrase.",
+      "detectedLanguage": "ja",
+      "languageConfidence": 0.999,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-263",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 263.28,
+      "durationSec": 28.6,
+      "result": "clipped_speech",
+      "nextAction": "The opening starts partway through the published phrase and the closing cuts off before the full last sentence. Keep only the confirmed in-window speech.",
+      "detectedLanguage": "ja",
+      "languageConfidence": 0.993,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-C3oPjuudXas-1060",
+      "videoId": "C3oPjuudXas",
+      "sourceStartSec": 1060.392,
+      "durationSec": 15.057,
+      "result": "english_audio",
+      "nextAction": "The outro is spoken in English. Choose a Japanese-language window or verify an official Japanese track before timing these Japanese subtitles.",
+      "detectedLanguage": "en",
+      "languageConfidence": 0.657,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-596",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 596.279,
+      "durationSec": 31.352,
+      "result": "clipped_speech",
+      "nextAction": "The final answer cuts off partway through the phrase about reading comprehension. End on the preceding complete spoken thought or use a longer authorized source window.",
+      "detectedLanguage": "ja",
+      "languageConfidence": 0.903,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-D53XrHaS80g-650",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 650.625,
+      "durationSec": 18.041,
+      "result": "onscreen_text",
+      "nextAction": "Keep the opening tournament notice separate from spoken karaoke. Both models identify only the final short exchange as speech.",
+      "detectedLanguage": "ja",
+      "languageConfidence": 0.87,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-130",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 130.505,
+      "durationSec": 18.644,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.999,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-150",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 150.817,
+      "durationSec": 19.644,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.999,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-171",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 171.212,
+      "durationSec": 17.977,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.992,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-189",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 189.314,
+      "durationSec": 15.724,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.966,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-29",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 29.571,
+      "durationSec": 42.626,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.98,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-72",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 72.447,
+      "durationSec": 19.77,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.994,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-8",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 8.133,
+      "durationSec": 16.474,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.998,
+      "publishedTiming": "line"
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-92",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 92.425,
+      "durationSec": 19.061,
+      "result": "portuguese_dub",
+      "nextAction": "The cached track is Portuguese. Obtain the original Japanese track from the exact official episode before running alignment.",
+      "detectedLanguage": "pt",
+      "languageConfidence": 0.989,
+      "publishedTiming": "line"
+    }
+  ],
+  "cachedReviewCounts": {
+    "unspoken_gloss": 1,
+    "clipped_speech": 3,
+    "english_audio": 1,
+    "onscreen_text": 1,
+    "portuguese_dub": 8
+  },
+  "missingAudioWindows": 148,
+  "missingAudioSourceVideos": 55,
+  "previousTimingRepairs": 49,
+  "newLiveClips": 0,
+  "dailyWorkflow": {
+    "taskName": "Jojo Local Catalog",
+    "localTime": "11:15",
+    "timezone": "Africa/Nairobi",
+    "stateDirectory": "~/.local/state/jojo-catalog",
+    "publication": "explicit review snapshots only"
+  }
+}

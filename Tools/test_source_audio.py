@@ -37,6 +37,14 @@ class RangeAudioTests(unittest.TestCase):
         ]}
         self.assertEqual(select_audio_format(info)["format_id"], "140-ja")
 
+    def test_labelled_foreign_dub_is_not_a_japanese_fallback(self):
+        info = {"formats": [
+            {"format_id": "140", "acodec": "aac", "vcodec": "none", "protocol": "https",
+             "filesize": 200, "language": "pt-BR", "format_note": "original"},
+        ]}
+        with self.assertRaisesRegex(ValueError, "No accessible Japanese"):
+            select_audio_format(info)
+
     def test_incomplete_range_rejected(self):
         reader = RangeReader("https://example.invalid/audio", 500000)
         with patch("urllib.request.urlopen", return_value=Response(b"short")):

@@ -63,3 +63,53 @@ three-second minimum. It keeps long videos and videos without captions.
 Declared audio language and duration are screening signals. The three-minute
 bucket can prioritize short-form review. Portrait format, spoken Japanese,
 transcript quality and word alignment each require their own verification.
+
+## Daily local queue
+
+`daily_local_catalog.py` runs the existing local models and checks at most five
+explicitly reviewed new lessons for publication per run. It keeps incomplete work
+in a local state directory. An empty queue makes zero network calls.
+
+```bash
+/path/to/local-venv/bin/python Tools/daily_local_catalog.py \
+  --state "$HOME/.local/state/jojo-catalog" --publish-reviewed --use-existing-vault
+```
+
+Use `--report` to replace the initial manifest of timing holds and new-channel
+candidates. The local runtime and pinned model files from the existing free
+pipeline must be installed on the machine that runs the job. Pass
+`--model-directory` when the model folders are outside `/tmp`. The optional
+Vault flag uses the existing maintenance credential in memory when a reviewed
+publish batch is ready.
+
+Place original, creator-authorized media next to `authorized-media.json` in the
+state directory. Use each YouTube video ID as the key. Record the file’s exact
+source offset, covered duration, SHA-256 and permission or license. New drafts
+also need the verified channel ID and original video dimensions.
+
+```json
+{
+  "abcdefghijk": {
+    "file": "creator-original.mp4",
+    "sourceStartSec": 0,
+    "durationSec": 45,
+    "sha256": "<SHA-256 of the file>",
+    "permission": "<creator permission or applicable license>",
+    "channelId": "<verified YouTube channel ID>",
+    "width": 1080,
+    "height": 1920
+  }
+}
+```
+
+The local audio file must be the same edit and language track as the source
+video. Alternate edits need their own source-time verification. The YouTube
+metadata quota resets at midnight Pacific Time. Fresh metadata checks can then
+resume, and local audio remains a separate input.
+
+Timing proofs land in `timing-proofs` for review. New drafts land in `drafts`.
+Use the existing review JSON format in `reviews.json` and include the draft’s
+`alignment.audioSha256` as `audioSha256` on each review. The daily runner sends
+only those reviewed snapshots for publication. It checks the current live
+catalog first to avoid publishing an existing source twice. See `last-run.json`
+for the result of each run.

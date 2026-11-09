@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import time
+from authorized_media import AuthorizedMedia
 from free_catalog_pipeline import source_window
 from local_whisper_catalog import LocalWhisperProcessor,ASR_MODEL,ASR_REVISION
 from repair_word_timing_catalog import configuration,request_json
@@ -15,8 +16,11 @@ def main():
     parser.add_argument("--held-report",type=Path,required=True)
     parser.add_argument("--candidates",type=Path,required=True)
     parser.add_argument("--media-directory",type=Path,required=True)
+    parser.add_argument("--authorized-media",type=Path,help="Use only the listed creator-authorized local files")
     parser.add_argument("--report-directory",type=Path,required=True)
     parser.add_argument("--device",choices=["cpu","cuda"],default="cpu")
+    parser.add_argument("--whisper-model",default="/tmp/jojo-whisper-turbo-model")
+    parser.add_argument("--translation-model",default="/tmp/jojo-ja-en-model")
     parser.add_argument("--limit",type=int,default=0)
     parser.add_argument("--max-source-seconds",type=float,default=0)
     parser.add_argument("--per-channel",type=int,default=2)
@@ -25,7 +29,9 @@ def main():
     parser.add_argument("--salvage-excerpt",action="store_true",help="Build a reviewable contiguous speech excerpt if the complete window fails")
     parser.add_argument("--resegment",action="store_true",help="Use native ASR word anchors only for short phrase windows; final timing remains raw DTW")
     args=parser.parse_args();root=args.report_directory;root.mkdir(parents=True,exist_ok=True)
-    candidates={v["video_id"]:v for v in json.loads(args.candidates.read_text())}
+    authorized=AuthorizedMedia(args.authorized_media) if args.authorized_media else None
+    candidates={v["video_id"]:v for v in json.loads(args.candidates.read_text())
+                if authorized is None or v["video_id"] in authorized}
     held=json.loads(args.held_report.read_text());held=[x for x in held if x["status"]=="held" and x["video_id"] in candidates]
     base,anon=configuration();headers={"apikey":anon,"Authorization":"Bearer "+anon}
     live=request_json(base+"/rest/v1/clips?published=eq.true&select=video_id,channel_name&limit=1000",headers)
@@ -38,7 +44,10 @@ def main():
     channel_order=sorted(queues,key=lambda c:(queues[c][0]["channel_name"] in known_channels,min(v["duration_sec"] for v in queues[c])))
     ordered=[queues[c][n] for n in range(args.per_channel) for c in channel_order if len(queues[c])>n]
     if args.limit:ordered=ordered[:args.limit]
-    processor=LocalWhisperProcessor('/tmp/jojo-whisper-turbo-model','/tmp/jojo-ja-en-model',args.device)
+    if not ordered:
+        print(json.dumps(dict(processed=0,ready=0,paidInferenceCalls=0)),flush=True)
+        return
+    processor=LocalWhisperProcessor(args.whisper_model,args.translation_model,args.device)
     corrections=json.loads(args.corrections.read_text()) if args.corrections else {}
     from yt_dlp import YoutubeDL
     import soundfile as sf
@@ -47,24 +56,34 @@ def main():
         vid=video["video_id"];result={"video_id":vid,"channel":video["channel_name"],"status":"held"};started=time.monotonic()
         if accepted[video["channel_id"]]>=args.per_channel:continue
         previous=prior.get(vid)
-        if previous and previous['status']=='ready_for_review' and vid not in corrections:
+        media_fingerprint = hashlib.sha256(json.dumps(authorized.entries[vid],sort_keys=True).encode()).hexdigest() if authorized is not None else None
+        if previous and previous['status']=='ready_for_review' and vid not in corrections and (
+            authorized is None or previous.get("sourceMediaFingerprint")==media_fingerprint
+        ):
             accepted[video['channel_id']]+=1;continue
         try:
-            metadata=root/(vid+'-metadata.json')
-            if metadata.exists():info=json.loads(metadata.read_text())
+            if authorized is not None:
+                audio,start,info=authorized.draft_input(video)
             else:
-                with YoutubeDL({"quiet":True,"no_warnings":True,"noplaylist":True,"socket_timeout":30}) as y:info=y.extract_info('https://www.youtube.com/watch?v='+vid,download=False)
-                if info.get('channel_id')!=video['channel_id']:raise ValueError('Source channel changed')
-                metadata.write_text(json.dumps({k:info.get(k) for k in ['id','channel_id','width','height','duration']}))
-            cached=next((x for x in args.media_directory.glob('*.json') if json.loads(x.read_text()).get('videoId')==vid),None)
-            if cached:
-                identity=json.loads(cached.read_text());audio,rate=sf.read(cached.with_suffix('.wav'),dtype='float32');start=identity['sourceStartSec']
-                if rate!=16000 or audio.ndim!=1:raise ValueError('Invalid cached audio')
-            else:
-                if 'formats' not in info:
-                    with YoutubeDL({"quiet":True,"no_warnings":True}) as y:info=y.extract_info('https://www.youtube.com/watch?v='+vid,download=False)
-                audio,start=source_window(video,info,args.media_directory)
-            digest=hashlib.sha256(audio.tobytes()).hexdigest();heard_path=root/(vid+('-whisper-phrases.json' if args.resegment else '-whisper.json'))
+                metadata=root/(vid+'-metadata.json')
+                if metadata.exists():info=json.loads(metadata.read_text())
+                else:
+                    with YoutubeDL({"quiet":True,"no_warnings":True,"noplaylist":True,"socket_timeout":30}) as y:info=y.extract_info('https://www.youtube.com/watch?v='+vid,download=False)
+                    if info.get('channel_id')!=video['channel_id']:raise ValueError('Source channel changed')
+                    metadata.write_text(json.dumps({k:info.get(k) for k in ['id','channel_id','width','height','duration']}))
+                cached=next((x for x in args.media_directory.glob('*.json') if json.loads(x.read_text()).get('videoId')==vid),None)
+                if cached:
+                    identity=json.loads(cached.read_text());audio,rate=sf.read(cached.with_suffix('.wav'),dtype='float32');start=identity['sourceStartSec']
+                    if rate!=16000 or audio.ndim!=1:raise ValueError('Invalid cached audio')
+                else:
+                    if 'formats' not in info:
+                        with YoutubeDL({"quiet":True,"no_warnings":True}) as y:info=y.extract_info('https://www.youtube.com/watch?v='+vid,download=False)
+                    audio,start=source_window(video,info,args.media_directory)
+            digest=hashlib.sha256(audio.tobytes()).hexdigest()
+            suffix='-whisper-phrases.json' if args.resegment else '-whisper.json'
+            heard_path=root/(vid+('-'+digest if authorized is not None else '')+suffix)
+            if authorized is not None:
+                result["sourceMediaFingerprint"] = media_fingerprint
             if heard_path.exists():heard=json.loads(heard_path.read_text())
             else:heard={**(processor.recognize_phrases(audio) if args.resegment else processor.recognize(audio)),'audioSha256':digest,'asrModel':ASR_MODEL,'asrRevision':ASR_REVISION};heard_path.write_text(json.dumps(heard,ensure_ascii=False,indent=2))
             if heard.get('audioSha256')!=digest or heard.get('asrModel')!=ASR_MODEL or heard.get('asrRevision')!=ASR_REVISION:raise ValueError('Recognition cache identity mismatch')

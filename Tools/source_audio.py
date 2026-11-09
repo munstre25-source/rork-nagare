@@ -54,13 +54,17 @@ class RangeReader(io.RawIOBase):
 def select_audio_format(info):
     formats = [f for f in info["formats"] if f.get("acodec") not in (None, "none") and
                f.get("vcodec") == "none" and f.get("protocol") == "https" and f.get("filesize")]
-    japanese = [f for f in formats if str(f.get("language") or "").lower().startswith("ja")]
-    original = [f for f in formats if "original" in str(f.get("format_note") or "").lower()]
-    preferred = japanese or original or formats
+    def language(fmt):
+        return str(fmt.get("language") or "").lower().replace("_", "-").split("-", 1)[0]
+
+    japanese = [f for f in formats if language(f) in ("ja", "jpn")]
+    unlabelled = [f for f in formats if language(f) in ("", "und")]
+    original = [f for f in unlabelled if "original" in str(f.get("format_note") or "").lower()]
+    preferred = japanese or original or unlabelled
     chosen = next((f for f in preferred if f.get("format_id") == "140"), None)
     if chosen is None:
         chosen = max(preferred, key=lambda f: f.get("abr") or 0) if preferred else None
-    if chosen is None: raise ValueError("No accessible seekable source audio")
+    if chosen is None: raise ValueError("No accessible Japanese or unlabelled seekable source audio")
     return chosen
 
 def extract_source_window(info, start, duration):

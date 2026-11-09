@@ -71,10 +71,13 @@ def main():
     p.add_argument("--id", action="append", default=[])
     p.add_argument("--limit", type=int, default=3, help="0 processes all remaining live clips")
     p.add_argument("--media-directory", type=Path, required=True)
+    p.add_argument("--authorized-media", type=Path, help="Use only the listed creator-authorized local files")
     p.add_argument("--report-directory", type=Path, required=True)
     p.add_argument("--model-path", default="Qwen/Qwen3-ForcedAligner-0.6B")
     p.add_argument("--device", default="cpu")
     args = p.parse_args()
+    from authorized_media import AuthorizedMedia
+    authorized = AuthorizedMedia(args.authorized_media) if args.authorized_media else None
     base, anon = configuration()
     headers = {"apikey": anon, "Authorization": "Bearer " + anon, "Content-Type": "application/json"}
     clips, offset = [], 0
@@ -83,7 +86,8 @@ def main():
         clips.extend(rows)
         if len(rows) < 500: break
         offset += len(rows)
-    pending = [c for c in clips if needs_alignment(c) and (not args.id or c["id"] in args.id)]
+    pending = [c for c in clips if needs_alignment(c) and (not args.id or c["id"] in args.id)
+               and (authorized is None or c["video_id"] in authorized)]
     selected = pending if args.limit == 0 else pending[:max(0, args.limit)]
     print(json.dumps({"published": len(clips), "pending": len(pending), "selected": len(selected), "paidApiCalls": 0}), flush=True)
     if not selected: return
@@ -95,7 +99,8 @@ def main():
         result = {"id": clip["id"], "status": "held"}
         stop = False
         try:
-            audio = source_audio(clip, args.media_directory, sources)
+            audio = (source_audio(clip, args.media_directory, sources) if authorized is None else
+                     authorized.window(clip["video_id"], float(clip.get("source_start_sec") or 0), float(clip["duration_sec"])))
             alignment = aligner.align(clip, audio)
             # This is subtitle/timestamp data only; credentials never go into reports.
             safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", clip["id"])
