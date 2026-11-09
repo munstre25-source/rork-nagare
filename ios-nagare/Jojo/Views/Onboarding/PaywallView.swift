@@ -7,7 +7,6 @@ nonisolated enum PlanChoice: Sendable {
 
 /// Hard paywall in the onboarding style. No skip, no close button.
 struct PaywallView: View {
-    var allowsDebugBypass: Bool = false
     let onSubscribed: () -> Void
 
     @Environment(AppModel.self) private var app
@@ -28,24 +27,6 @@ struct PaywallView: View {
         // The annual-first native comparison is the canonical onboarding offer.
         // RevenueCat still supplies products, localized prices, trials and entitlements.
         nativePaywall
-        #if DEBUG
-        .overlay(alignment: .topTrailing) {
-            if allowsDebugBypass {
-                Button("DEBUG · Skip paywall") {
-                    purchases.activateDebugBypass()
-                    onSubscribed()
-                }
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white.opacity(0.78))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background(Color.black.opacity(0.48), in: Capsule())
-                .padding(.top, 8)
-                .padding(.trailing, 8)
-                .accessibilityHint("Available only in DEBUG builds")
-            }
-        }
-        #endif
             .alert("Restore Purchases", isPresented: Binding(
                 get: { restoreAlert != nil },
                 set: { if !$0 { restoreAlert = nil } }
@@ -87,72 +68,194 @@ struct PaywallView: View {
     }
 
     private var nativePaywall: some View {
-        ZStack(alignment: .bottomTrailing) {
-            paywallBackdrop
-            BrandPetalField(tint: PaywallInk.pink, density: .lush)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+        ZStack {
+            Color(hex: "#11110F").ignoresSafeArea()
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    wordmark
-                    headline
-                    yearlyCard
-                    monthlyCard
-                    benefitRow
+                VStack(alignment: .leading, spacing: 22) {
+                    HStack {
+                        Text("JOJO PRO")
+                            .font(.caption.weight(.heavy))
+                            .tracking(1.2)
+                            .foregroundStyle(Color.sakuraPink)
+                        Spacer()
+                        Button("Restore") { Task { await restore() } }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.76))
+                            .disabled(purchases.isRestoring || purchases.isPurchasing)
+                    }
+
+                    Text("Unlock Jojo to Learn Japanese Faster")
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 24)
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        benefitLine(
+                            "checkmark",
+                            title: "Unlock Your Custom Learning Plan",
+                            detail: "Clips matched to your level, interests, and goals."
+                        )
+                        benefitLine(
+                            "checkmark",
+                            title: "Learn Like a Native Speaker",
+                            detail: "Tap words inside authentic videos and hear them in context."
+                        )
+                        benefitLine(
+                            "checkmark",
+                            title: "Master New Words Effortlessly",
+                            detail: "Every word you explore becomes a review card automatically."
+                        )
+                    }
+
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(Spacing.m)
-                            .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .padding(14)
+                            .background(Color.red.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    VStack(spacing: 8) {
-                        Text(trialCaption)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
-                        Text(subscriptionDisclosure)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
-                    }
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(14)
-                    .background(Color(hex: "#140C2E"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    trustRow
-                    flourish
-                    legalRow
+
+                    Text(subscriptionDisclosure)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.52))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    minimalLegalRow
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
+                .padding(.top, 12)
+                .padding(.bottom, 230)
             }
-            .scaleEffect(appeared ? 1 : 0.96)
+            .scaleEffect(appeared ? 1 : 0.985)
             .opacity(appeared ? 1 : 0)
-
-            JojoMascot(height: 150, floats: false, pose: .peek)
-                .offset(x: peekIn ? 36 : 150, y: peekIn ? 24 : 70)
-                .opacity(peekIn ? 1 : 0)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) { purchaseDock }
     }
 
     private var purchaseDock: some View {
-        VStack(spacing: 8) {
-            if offeringUnavailable { offeringRetry } else { purchaseButton }
+        VStack(spacing: 10) {
+            if !offeringUnavailable {
+                compactPlanPicker
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark")
+                        .font(.subheadline.weight(.heavy))
+                        .foregroundStyle(Color.sakuraPink)
+                    Text("No Commitment - Cancel Anytime")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            if offeringUnavailable {
+                offeringRetry
+            } else {
+                purchaseButton
+            }
             Text(trialCaption)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 14)
+        .padding(.top, 12)
         .padding(.bottom, 12)
-        .background(Color(hex: "#140C2E").opacity(0.97))
+        .background(.ultraThinMaterial)
+        .background(Color(hex: "#11110F").opacity(0.94))
+    }
+
+    private var compactPlanPicker: some View {
+        HStack(spacing: 10) {
+            compactPlanCard(.monthly, title: "Monthly", package: purchases.monthly)
+            compactPlanCard(.yearly, title: "Yearly", package: purchases.yearly)
+        }
+    }
+
+    private func compactPlanCard(
+        _ choice: PlanChoice,
+        title: String,
+        package: Package?
+    ) -> some View {
+        let selected = plan == choice
+        let price = purchases.priceText(package) ?? "—"
+        let period = purchases.periodSuffix(package) ?? (choice == .yearly ? "year" : "month")
+        return Button {
+            Haptics.selection()
+            userSelectedPlan = true
+            withAnimation(.snappy) { plan = choice }
+            track("onboarding_plan_selected", props: ["plan": choice == .yearly ? "yearly" : "monthly"])
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.subheadline.weight(.bold))
+                    Spacer(minLength: 4)
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                        .font(.caption.weight(.bold))
+                }
+                Text("\(price) / \(period)")
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if choice == .yearly {
+                    Text(!purchases.trialText(purchases.yearly).isEmpty ? "FREE TRIAL" : (saveBadge ?? "BEST VALUE"))
+                        .font(.caption2.weight(.heavy))
+                        .foregroundStyle(Color.sakuraPink)
+                } else {
+                    Text("FLEXIBLE")
+                        .font(.caption2.weight(.heavy))
+                        .opacity(0.62)
+                }
+            }
+            .foregroundStyle(selected ? Color.black : Color.white)
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+            .background(
+                selected ? Color.white : Color.white.opacity(0.08),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(selected ? Color.sakuraPink : Color.white.opacity(0.16), lineWidth: selected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(purchases.isPurchasing || purchases.isRestoring)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func benefitLine(_ symbol: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.caption.weight(.heavy))
+                .foregroundStyle(Color.sakuraPink)
+                .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.64))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var minimalLegalRow: some View {
+        HStack(spacing: 18) {
+            if let terms = StoreConstants.termsURL { Link("Terms", destination: terms) }
+            if let privacy = StoreConstants.privacyURL { Link("Privacy", destination: privacy) }
+            if let support = StoreConstants.supportURL { Link("Support", destination: support) }
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.white.opacity(0.58))
+        .frame(maxWidth: .infinity)
     }
 
     private var paywallBackdrop: some View {
@@ -261,12 +364,6 @@ struct PaywallView: View {
     }
 
     private var selectedPackageHasTrial: Bool { !purchases.trialText(selectedPackage).isEmpty }
-
-    /// "Start Free Trial" only when the selected product really offers one to this user.
-    private var primaryCTATitle: String {
-        guard selectedPlanReady else { return "Loading Plans…" }
-        return plan == .yearly && selectedPackageHasTrial ? "Start Free Trial" : "Continue"
-    }
 
     /// Apple 3.1.2-style disclosure: title length, price, trial, auto-renew, and how to cancel.
     private var subscriptionDisclosure: String {
@@ -472,12 +569,8 @@ struct PaywallView: View {
             if purchases.isPurchasing || purchases.isRestoring {
                 ProgressView().tint(.white)
             } else {
-                HStack(spacing: 8) {
-                    Text(primaryCTATitle)
-                    Image(systemName: "arrow.right")
-                        .font(.headline.weight(.bold))
-                }
-                .contentTransition(.opacity)
+                Text("Start Learning Today")
+                    .contentTransition(.opacity)
             }
         }
         .buttonStyle(PaywallCTAStyle())
@@ -650,12 +743,12 @@ struct PaywallView: View {
 }
 
 private enum PaywallInk {
-    static let pink = Color(hex: "#FC45A5")
-    static let pinkHot = Color(hex: "#FD4FA7")
-    static let pinkDeep = Color(hex: "#E21888")
-    static let card = Color(hex: "#FDECF8")
-    static let monthly = Color(hex: "#3C2644")
-    static let ink = Color(hex: "#3A1848")
+    static let pink = Color(hex: "#FF8A1C")
+    static let pinkHot = Color(hex: "#FF9F35")
+    static let pinkDeep = Color(hex: "#E96F00")
+    static let card = Color(hex: "#FFF1E4")
+    static let monthly = Color(hex: "#2A211A")
+    static let ink = Color(hex: "#2A1C12")
 }
 
 private struct PaywallCTAStyle: ButtonStyle {
@@ -664,8 +757,7 @@ private struct PaywallCTAStyle: ButtonStyle {
             .font(.system(size: 20, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 58)
-            .background(Color.sakuraButton, in: Capsule())
-            .shadow(color: Color.sakuraButton.opacity(0.4), radius: 16, y: 8)
+            .background(Color.sakuraButton, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }

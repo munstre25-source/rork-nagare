@@ -78,8 +78,8 @@ final class UserProfile {
     var didSeedDemoData: Bool = false
     var firstClipId: String?
 
-    // Learning preferences. New installs open on Sakura dark with neon glow.
-    var accentTheme: String = AccentTheme.sakura.rawValue
+    // Learning preferences. New installs open on Amber dark with neon glow.
+    var accentTheme: String = AccentTheme.amber.rawValue
     /// `light` or `dark`. Older installs stored the accent name here; `AppModel` migrates those.
     var appearanceMode: String = JojoScheme.dark.rawValue
     /// `off`, `soft`, `glow`, or `liquid`. Controls the halo on karaoke and dictionary words.
@@ -159,7 +159,7 @@ final class UserProfile {
     init() {}
 
     var theme: AccentTheme {
-        get { AccentTheme(rawValue: accentTheme) ?? .sakura }
+        get { AccentTheme(rawValue: accentTheme) ?? .amber }
         set { accentTheme = newValue.rawValue }
     }
 

@@ -200,14 +200,15 @@ final class WordLookupController {
         let userId = app.purchases.appUserId
         track("ask_jojo", props: ["word": selection.token.surface])
         askTask = Task { [weak self] in
-            let answer = await service.ask(token: selection.token, sentence: selection.sentence, question: trimmed, appUserId: userId)
+            let outcome = await service.ask(token: selection.token, sentence: selection.sentence, question: trimmed, appUserId: userId)
             guard let self, !Task.isCancelled, self.selection == selection else { return }
             self.isAsking = false
-            if let answer {
+            switch outcome {
+            case .answer(let answer):
                 self.askThread.append(AskMessage(fromLearner: false, text: answer))
                 Haptics.light()
-            } else {
-                self.askThread.append(AskMessage(fromLearner: false, text: "I couldn't answer just now. Check your connection and try again.", failed: true))
+            case .failure(let message):
+                self.askThread.append(AskMessage(fromLearner: false, text: message, failed: true))
             }
         }
     }

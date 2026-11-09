@@ -1755,7 +1755,7 @@ final class AppModel {
             profile.accentTheme = AccentTheme.amber.rawValue
         default:
             if AccentTheme(rawValue: profile.accentTheme) == nil {
-                profile.accentTheme = AccentTheme.sakura.rawValue
+                profile.accentTheme = AccentTheme.amber.rawValue
             }
         }
     }

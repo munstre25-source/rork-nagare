@@ -14,10 +14,14 @@ struct ExploreHomeView: View {
     @State private var showGoal: Bool = false
     @State private var showCapture: Bool = false
     @State private var showImport: Bool = false
+    @State private var showExploreFilters = false
+    @State private var exploreFilters = ExploreFilters()
     @State private var path = NavigationPath()
     @State private var dueKeys: [String] = []
     @State private var reviewSession: ReviewSessionConfig?
     @State private var playing: Clip?
+    @State private var playQueue: [Clip] = []
+    @State private var playLine: Int?
     @State private var practiceClip: Clip?
     @State private var reviewDone = false
     @State private var watchDone = false
@@ -53,21 +57,9 @@ struct ExploreHomeView: View {
                     if !app.profile.hideDailyGoalBar {
                         DailyGoalBar()
                     }
-                    topBar
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Explore")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(LearningInk.japanese)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .textGlow(LearningInk.glow, level: app.profile.glow)
-                        Text("Find a word, hear it in context, then make it yours.")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.studyMuted)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    searchEntry
+                    exploreFinder
+                    Text("More ways to learn")
+                        .font(.headline)
                     Button {
                         Haptics.selection()
                         showSpeakingScenes = true
@@ -97,14 +89,6 @@ struct ExploreHomeView: View {
                         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
                     }
                     .buttonStyle(.plain)
-                    VStack(spacing: 12) {
-                        ForEach(LearningPath.allCases) { path in
-                            NavigationLink(value: path) {
-                                LearningPathCard(path: path)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
                     todayPlan
                     if app.immersion.isAvailable {
                         importRow
@@ -129,6 +113,28 @@ struct ExploreHomeView: View {
             .navigationDestination(for: TopicHub.self) { _ in
                 TopicStylesView()
             }
+            .navigationDestination(for: ExploreBrowseRoute.self) { _ in
+                ExploreView(initialFilters: exploreFilters) { clip, line, list in
+                    playQueue = list
+                    playLine = line
+                    playing = clip
+                }
+                .navigationTitle("Explore Clips")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .sheet(isPresented: $showExploreFilters) {
+                ExploreFiltersSheet(
+                    filters: $exploreFilters,
+                    lockedDifficulty: nil,
+                    lockTopic: false,
+                    count: { filters in
+                        app.studyLibrary.filter {
+                            filters.matches($0, finishedClipIds: app.profile.finishedClipIds)
+                        }.count
+                    },
+                    onApply: { path.append(ExploreBrowseRoute.results) }
+                )
+            }
             .sheet(isPresented: $showGoal) {
                 DailyGoalSheet()
             }
@@ -145,8 +151,15 @@ struct ExploreHomeView: View {
             .fullScreenCover(item: $reviewSession, onDismiss: reloadPlan) { config in
                 ReviewSessionView(config: config)
             }
-            .fullScreenCover(item: $playing, onDismiss: reloadPlan) { clip in
-                ClipPlayerScreen(clip: clip, queue: app.personalized(app.studyLibrary))
+            .fullScreenCover(item: $playing, onDismiss: {
+                playQueue = []
+                playLine = nil
+                reloadPlan()
+            }) { clip in
+                ClipPlayerScreen(clip: clip,
+                                 queue: playQueue.isEmpty ? app.personalized(app.studyLibrary) : playQueue,
+                                 startLine: playLine,
+                                 loopLine: playLine != nil)
                     .environment(app)
             }
             .sheet(item: $practiceClip, onDismiss: reloadPlan) { clip in
@@ -164,6 +177,125 @@ struct ExploreHomeView: View {
             guard let newPath else { return }
             path.append(newPath)
         }
+    }
+
+    private var exploreFinder: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                NavigationLink(value: SearchRoute.search) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                        Text("English, Japanese, or romaji")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 48)
+                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Search clips")
+
+                Button {
+                    Haptics.selection()
+                    showExploreFilters = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(exploreFilters.activeCount == 0 ? Color.primary : Color.white)
+                        .frame(width: 48, height: 48)
+                        .background(
+                            exploreFilters.activeCount == 0 ? Color.fieldFill : Color.designOrange,
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        )
+                        .overlay(alignment: .topTrailing) {
+                            if exploreFilters.activeCount > 0 {
+                                Text("\(exploreFilters.activeCount)")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 20, height: 20)
+                                    .background(Color.sakuraButton, in: Circle())
+                                    .offset(x: 5, y: -5)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Filter clips")
+                .accessibilityValue(exploreFilters.activeCount == 0 ? "No filters" : "\(exploreFilters.activeCount) active")
+            }
+
+            VStack(spacing: 4) {
+                Text("Explore Clips")
+                    .font(.title3.weight(.bold))
+                Text("Search and filter to find exactly what you want to study.")
+                    .font(.caption)
+                    .foregroundStyle(Color.studyMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10)
+            ], spacing: 10) {
+                finderCard("🔍", title: "Search a word", subtitle: "Find clips containing any word") {
+                    path.append(SearchRoute.search)
+                }
+                finderCard("🎯", title: "Difficulty levels", subtitle: "Filter by your current level") {
+                    showExploreFilters = true
+                }
+                finderCard("📖", title: "Grammar patterns", subtitle: "Find grammar in real speech") {
+                    path.append(LearningPath.grammar)
+                }
+                finderCard("🎬", title: "Topic & source", subtitle: "Browse anime, interviews, and more") {
+                    showExploreFilters = true
+                }
+            }
+
+            if exploreFilters.activeCount > 0 {
+                Button {
+                    path.append(ExploreBrowseRoute.results)
+                } label: {
+                    Label("Show \(matchingExploreClipCount) matching clips", systemImage: "play.rectangle.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.designOrangeDeep)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(Color.designOrange.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func finderCard(_ emoji: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(emoji).font(.title2)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(Color.studyMuted)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 126, alignment: .topLeading)
+            .background(Color.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
+        }
+        .buttonStyle(PressableStyle())
+    }
+
+    private var matchingExploreClipCount: Int {
+        app.studyLibrary.filter {
+            exploreFilters.matches($0, finishedClipIds: app.profile.finishedClipIds)
+        }.count
     }
 
     private var searchEntry: some View {
@@ -396,6 +528,10 @@ struct ExploreHomeView: View {
         watchDone = DailyPlanProgress.isDone(.watch)
         speakDone = DailyPlanProgress.isDone(.speak)
     }
+}
+
+nonisolated enum ExploreBrowseRoute: Hashable, Sendable {
+    case results
 }
 
 nonisolated enum SearchRoute: Hashable, Sendable {

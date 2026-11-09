@@ -215,6 +215,7 @@ struct ShortsFooter: View {
     let player: (any ClipPlayer)?
     var onPicture: Bool = true
     var sourceMark: String = "Shorts"
+    var showsSourceMark: Bool = true
 
     private var ink: Color { onPicture ? .white : .primary }
     private var activeInk: Color { onPicture ? .videoControlAccent : .designOrange }
@@ -242,14 +243,16 @@ struct ShortsFooter: View {
                     .monospacedDigit()
                     .foregroundStyle(ink.opacity(0.8))
                 Spacer(minLength: 8)
-                HStack(spacing: 4) {
-                    Image(systemName: "play.rectangle.fill")
-                        .font(.system(size: 12, weight: .bold))
-                    Text(sourceMark)
-                        .font(.caption.weight(.heavy))
+                if showsSourceMark {
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(sourceMark)
+                            .font(.caption.weight(.heavy))
+                    }
+                    .foregroundStyle(ink.opacity(0.85))
+                    .accessibilityLabel(sourceMark == "Shorts" ? "YouTube Shorts" : "YouTube")
                 }
-                .foregroundStyle(ink.opacity(0.85))
-                .accessibilityLabel(sourceMark == "Shorts" ? "YouTube Shorts" : "YouTube")
             }
         }
         .padding(.horizontal, onPicture ? 10 : 0)

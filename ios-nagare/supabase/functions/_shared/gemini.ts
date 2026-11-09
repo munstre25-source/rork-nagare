@@ -60,8 +60,8 @@ type AiProvider = {
 /**
  * Ordered provider list built from whatever keys are configured. OpenRouter goes
  * first by default (AI_PROVIDER_ORDER), and the other provider is the failover
- * when this one is rate-limited, out of credits, or down. Text calls (word explanations)
- * use TEXT_AI_PROVIDER_ORDER, which puts the direct Gemini key first.
+ * when this one is rate-limited, out of credits, or down. Text calls can override
+ * the order separately, but also default to the configured OpenRouter Gemini key.
  */
 function aiProviders(textOnly = false): AiProvider[] {
   const openRouter = openRouterApiKey() ?? (geminiApiKey()?.startsWith("sk-or-") ? geminiApiKey() : null);
@@ -71,7 +71,7 @@ function aiProviders(textOnly = false): AiProvider[] {
     google: google ? { transport: "google", apiKey: google } : null,
   };
   const order = (textOnly
-    ? Deno.env.get("TEXT_AI_PROVIDER_ORDER") ?? "google,openrouter"
+    ? Deno.env.get("TEXT_AI_PROVIDER_ORDER") ?? "openrouter,google"
     : Deno.env.get("AI_PROVIDER_ORDER") ?? "openrouter,google")
     .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   return order.map((name) => byName[name]).filter((p): p is AiProvider => p !== null);

@@ -86,6 +86,22 @@ nonisolated struct ExploreFilters: Equatable, Sendable {
     var activeCount: Int {
         [difficulty != nil, grammar != nil, topic != nil, source != nil, watched != .any].filter { $0 }.count
     }
+
+    func matches(_ clip: Clip, finishedClipIds: Set<String>) -> Bool {
+        guard difficulty == nil || clip.difficultyKind == difficulty,
+              topic == nil || clip.categoryKind == topic,
+              source == nil || clip.categoryKind.sourceType == source else { return false }
+        switch watched {
+        case .any:
+            break
+        case .watched:
+            guard finishedClipIds.contains(clip.id) else { return false }
+        case .unwatched:
+            guard !finishedClipIds.contains(clip.id) else { return false }
+        }
+        if let grammar, !grammar.matches(clip) { return false }
+        return true
+    }
 }
 
 struct ExploreFiltersSheet: View {
@@ -94,6 +110,7 @@ struct ExploreFiltersSheet: View {
     var lockTopic: Bool
     /// How many clips the draft would show, for the Apply button.
     let count: (ExploreFilters) -> Int
+    var onApply: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var draft = ExploreFilters()
@@ -169,10 +186,11 @@ struct ExploreFiltersSheet: View {
                     .frame(minWidth: 88, minHeight: 56)
                     .disabled(draft.activeCount == (lockedDifficulty == nil ? 0 : 1))
 
-                    Button(n == 0 ? "No clips match" : "Show \(n) clip\(n == 1 ? "" : "s")") {
+                    Button(n == 0 ? "No clips match" : "Apply · \(n) clip\(n == 1 ? "" : "s")") {
                         Haptics.medium()
                         filters = draft
                         dismiss()
+                        onApply?()
                     }
                     .buttonStyle(PrimaryButtonStyle(isEnabled: n > 0))
                     .disabled(n == 0)

@@ -15,26 +15,61 @@ struct ClipInfoSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    HStack(spacing: Spacing.m) {
-                        ChannelAvatar(clip: clip, size: 48)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(clip.title).font(.headline)
-                            Text(clip.channelName).font(.subheadline).foregroundStyle(.secondary)
+                Section("Video") {
+                    metadataField("Video", value: clip.title, systemImage: "play.rectangle")
+                    metadataField("Channel", value: clip.channelName, systemImage: "person.crop.rectangle")
+                    HStack(spacing: 12) {
+                        ChannelAvatar(clip: clip, size: 42)
+                        FollowChannelButton(channelName: clip.channelName)
+                        Spacer(minLength: 0)
+                        Button {
+                            Haptics.light()
+                            _ = app.toggleWatchLater(clip.id)
+                        } label: {
+                            Label(
+                                app.isWatchLater(clip.id) ? "Saved" : "Later",
+                                systemImage: app.isWatchLater(clip.id) ? "bookmark.fill" : "bookmark"
+                            )
                         }
+                        .buttonStyle(.bordered)
                     }
-                    .padding(.vertical, 4)
-                    FollowChannelButton(channelName: clip.channelName)
-                    Button {
-                        Haptics.light()
-                        _ = app.toggleWatchLater(clip.id)
-                    } label: {
-                        Label(
-                            app.isWatchLater(clip.id) ? "Remove from Later" : "Watch later",
-                            systemImage: app.isWatchLater(clip.id) ? "bookmark.fill" : "bookmark"
+                    .padding(.vertical, 2)
+                }
+
+                Section("Playback") {
+                    HStack(spacing: 28) {
+                        detailMetric(
+                            "Clip",
+                            value: "\(formatClock(sourceStart)) – \(formatClock(sourceEnd))",
+                            systemImage: "film"
                         )
+                        detailMetric("Clip length", value: formatClock(clip.durationSec), systemImage: "clock")
                     }
                 }
+
+                Section("Difficulty") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(difficultyTitle, systemImage: "chart.bar")
+                            .font(.headline)
+                        Text(difficultyDescription)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                }
+
+                Section("Topics") {
+                    FlowLayout(spacing: 8, lineSpacing: 8) {
+                        metadataChip(clip.categoryKind.displayName)
+                    }
+                }
+
+                Section("Style") {
+                    FlowLayout(spacing: 8, lineSpacing: 8) {
+                        ForEach(styleTags, id: \.self) { metadataChip($0) }
+                    }
+                }
+
                 Section("Practice") {
                     if let onShadowing {
                         Button {
@@ -54,33 +89,48 @@ struct ClipInfoSheet: View {
                             dismiss()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onFullscreen() }
                         } label: {
-                            Label("Watch fullscreen", systemImage: "arrow.up.left.and.arrow.down.right")
+                            Label("Open focused player", systemImage: "arrow.up.left.and.arrow.down.right")
                         }
                     }
                 }
-                Section("Details") {
-                    if let jlpt = clip.dominantJLPT {
-                        LabeledContent("JLPT est.", value: jlpt)
-                    }
-                    LabeledContent("Category", value: clip.categoryKind.displayName)
-                    LabeledContent("Difficulty", value: clip.difficulty)
-                    LabeledContent("Length", value: formatClock(clip.durationSec))
-                    LabeledContent("Lines", value: "\(clip.lines.count)")
+
+                Section("Your progress") {
+                    LabeledContent("Transcript lines", value: "\(clip.lines.count)")
                     if let mastery = app.seriesMastery().first(where: { $0.channelName == clip.channelName }),
                        mastery.seenUnique >= 5 {
-                        LabeledContent("Your coverage", value: "\(mastery.percent)% of words from this channel")
+                        LabeledContent("Channel coverage", value: "\(mastery.percent)%")
                     }
                     let understood = ClipComprehension.measure(clip: clip) { app.wordState(for: $0) }
                     if understood.total > 0 {
                         LabeledContent("Understood now", value: "\(understood.percent)%")
                     }
                 }
+
+                if let url = clip.youtubeURL {
+                    Section {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            HStack {
+                                Spacer(minLength: 0)
+                                Label("Watch full video", systemImage: "play.circle")
+                                    .font(.headline)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.jojoOrange)
+                    }
+                    .listRowBackground(Color.clear)
+                }
+
                 Section {
                     if let url = clip.youtubeURL {
                         Button {
                             openURL(url)
                         } label: {
-                            Label("Watch the original on YouTube", systemImage: "play.rectangle.fill")
+                            Label("Open original on YouTube", systemImage: "play.rectangle.fill")
                         }
                     } else {
                         Label("Preview clip with timed captions. The original video plugs in once a YouTube ID is added.", systemImage: "waveform")
@@ -90,9 +140,7 @@ struct ClipInfoSheet: View {
                 } header: {
                     Text("Source")
                 } footer: {
-                    Text(clip.lines.first?.timing == "line" && clip.id.hasPrefix("cap-")
-                         ? "Jojo streams this clip from its original public source. Subtitles for this clip come from the creator’s own uploaded captions, tokenized for study. All rights belong to the creators."
-                         : "Jojo streams clips from their original public source and never re-hosts video. Learner subtitles are Jojo’s own transcript + translation, not third-party closed captions (e.g. Crunchyroll). All rights belong to the creators.")
+                    Text("Jojo streams the original public source and does not re-host the video. The clip range above is the excerpt used for this lesson.")
                 }
                 Section {
                     Button {
@@ -104,7 +152,7 @@ struct ClipInfoSheet: View {
                     .disabled(clip.lines.isEmpty)
                 }
             }
-            .navigationTitle("Clip info")
+            .navigationTitle("Video details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -122,5 +170,92 @@ struct ClipInfoSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationContentInteraction(.scrolls)
+    }
+
+    private var sourceStart: Double {
+        max(0, clip.sourceStartSec ?? 0)
+    }
+
+    private var sourceEnd: Double {
+        sourceStart + max(0, clip.durationSec)
+    }
+
+    private var difficultyTitle: String {
+        if let jlpt = clip.dominantJLPT {
+            return "\(jlpt) · \(clip.difficulty)"
+        }
+        return clip.difficulty
+    }
+
+    private var difficultyDescription: String {
+        switch clip.difficultyKind {
+        case .beginner:
+            "Everyday expressions and short, straightforward sentences."
+        case .intermediate:
+            "Natural speech with a broader vocabulary and more connected ideas."
+        case .advanced:
+            "Fast or nuanced speech with less common vocabulary and grammar."
+        }
+    }
+
+    private var styleTags: [String] {
+        let transcriptStyles = Set(
+            clip.lines
+                .flatMap(\.tokens)
+                .compactMap(\.formality)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { $0.capitalized }
+        )
+        if !transcriptStyles.isEmpty { return transcriptStyles.sorted() }
+
+        switch clip.categoryKind {
+        case .anime, .drama:
+            return ["Scripted"]
+        case .learning:
+            return ["Instructional"]
+        case .interview, .podcast:
+            return ["Conversational"]
+        case .kids:
+            return ["Family"]
+        case .variety, .vtuber, .gaming:
+            return ["Casual"]
+        }
+    }
+
+    private func metadataField(_ label: String, value: String, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(label, systemImage: systemImage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func detailMetric(_ label: String, value: String, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(label, systemImage: systemImage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.body)
+                .monospacedDigit()
+                .fixedSize()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func metadataChip(_ value: String) -> some View {
+        Text(value)
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.fieldFill, in: Capsule())
     }
 }

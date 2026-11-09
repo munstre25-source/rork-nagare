@@ -24,7 +24,7 @@ struct OnboardingFlowView: View {
                 }, onRestored: {
                     withAnimation(.easeInOut(duration: 0.5)) {
                         showSplash = false
-                        go(to: .welcome)
+                        go(to: .name)
                     }
                 })
                 .transition(.opacity.combined(with: .scale(scale: 1.04)))
@@ -84,12 +84,19 @@ struct OnboardingFlowView: View {
     private var activeSurface: BrandSurface { step.surface }
 
     private var background: some View {
-        JojoBrandBackground(
-            scene: sceneForStep,
-            showsHills: false,
-            showsPetals: true
-        )
-        .animation(.easeInOut(duration: 0.45), value: sceneForStep)
+        ZStack {
+            Color(hex: "#11110F")
+            LinearGradient(
+                colors: [
+                    Color.jojoOrange.opacity(0.09),
+                    Color.clear,
+                    Color.black.opacity(0.2),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .ignoresSafeArea()
     }
 
     private var sceneForStep: BrandScene {
@@ -117,12 +124,6 @@ struct OnboardingFlowView: View {
                         .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(onNight ? .white : Color.jojoInk)
                         .frame(width: 44, height: 44)
-                        .background(onNight ? Color.white.opacity(0.12) : Color.jojoPaper, in: Circle())
-                        .overlay {
-                            if !onNight {
-                                Circle().strokeBorder(Color.jojoPaperStroke, lineWidth: 1)
-                            }
-                        }
                 }
                 .accessibilityLabel("Back")
             } else {
@@ -131,14 +132,14 @@ struct OnboardingFlowView: View {
             if step.showsProgress, let index = progressSteps.firstIndex(of: step) {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(onNight ? Color.white.opacity(0.14) : Color.jojoInk.opacity(0.08))
-                        Capsule()
+                        Rectangle().fill(onNight ? Color.white.opacity(0.12) : Color.jojoInk.opacity(0.08))
+                        Rectangle()
                             .fill(Color.sakuraPink)
                             .frame(width: proxy.size.width * CGFloat(index + 1) / CGFloat(progressSteps.count))
-                            .animation(.spring(response: 0.5, dampingFraction: 0.85), value: index)
+                            .animation(.easeOut(duration: 0.3), value: index)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 3)
                 .accessibilityElement()
                 .accessibilityLabel("Step \(index + 1) of \(progressSteps.count)")
             } else {
@@ -193,7 +194,7 @@ struct OnboardingFlowView: View {
              .socialProof, .journey, .trialTimeline, .appReview, .notifications:
             Color.clear
         case .paywall:
-            PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {
+            PaywallView {
                 go(to: .welcome)
             }
         case .welcome:
@@ -203,7 +204,7 @@ struct OnboardingFlowView: View {
         }
     }
 
-    /// Sakura night for the funnel. The look they just saved paints the paywall and the welcome.
+    /// Amber night for the funnel. The look they just saved paints the paywall and the welcome.
     private func applyPalette(for step: OnboardingStep) {
         switch step {
         case .look, .trialReminder, .paywall, .welcome:
@@ -283,7 +284,6 @@ struct SplashView: View {
                         .accessibilityHint("Restores your subscription from the App Store")
 
                         #if DEBUG
-                        debugSkipToFeedButton
                         debugMarketingButtons
                         #endif
                     }
@@ -336,23 +336,6 @@ struct SplashView: View {
     }
 
     #if DEBUG
-    private var debugSkipToFeedButton: some View {
-        Button {
-            Haptics.medium()
-            // Keep the debug shortcut representative of a true first-run account: it opens
-            // the real feed without demo vocabulary or watch history.
-            app.purchases.activateDebugBypass()
-            app.completeOnboarding(seedDemo: false)
-        } label: {
-            Label("DEBUG · Skip setup & paywall", systemImage: "forward.fill")
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .background(Color.jojoOrange.opacity(0.88), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-        .accessibilityHint("Opens the real feed with the debug paywall bypass")
-    }
-
     private var debugMarketingButtons: some View {
         VStack(spacing: Spacing.s) {
             Text("DEBUG")

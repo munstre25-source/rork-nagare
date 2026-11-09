@@ -103,7 +103,7 @@ struct ClipStageView: View {
     private func expandedVideoSize(in size: CGSize) -> CGSize {
         if isCompactLandscape(size) {
             // Reserve room only for visible controls and the separate words column.
-            let controlsHeight: CGFloat = showsTheaterControls ? playbackControlsHeight + 8 : 0
+            let controlsHeight: CGFloat = playbackControlsHeight + 8
             let maxHeight = max(0, size.height - controlsHeight - 26)
             let wordsWidth = showsShortsCaptions ? wordsColumnWidth(in: size.width) + 14 : 0
             let width = min(max(0, size.width - wordsWidth - 24), maxHeight * resolvedAspect, 1100)
@@ -112,7 +112,9 @@ struct ClipStageView: View {
         return LandscapeTheaterGeometry.make(
             in: size,
             preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
-            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
+            // Keep this space reserved while the controls fade so the video and karaoke
+            // never jump when the learner taps the maximized player.
+            controlsHeight: playbackControlsHeight,
             videoAspect: resolvedAspect
         ).videoSize
     }
@@ -393,14 +395,15 @@ struct ClipStageView: View {
 
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
-                        .frame(width: wordsWidth, height: max(0, stageSize.height - 26 - (showsTheaterControls ? playbackControlsHeight + 8 : 0)))
+                        .frame(width: wordsWidth, height: max(0, stageSize.height - 34 - playbackControlsHeight))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
-            if showsTheaterControls {
-                playbackControls(player: player, sourceMark: "YouTube")
-            }
+            playbackControls(player: player, sourceMark: "YouTube")
+                .opacity(showsTheaterControls ? 1 : 0)
+                .allowsHitTesting(showsTheaterControls)
+                .accessibilityHidden(!showsTheaterControls)
         }
         .padding(.horizontal, 12)
         .padding(.top, 16)
@@ -419,7 +422,7 @@ struct ClipStageView: View {
         let theater = LandscapeTheaterGeometry.make(
             in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
             preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
-            controlsHeight: showsTheaterControls ? playbackControlsHeight : 0,
+            controlsHeight: maximized ? playbackControlsHeight : 0,
             videoAspect: resolvedAspect
         )
         return VStack(spacing: 0) {
@@ -481,11 +484,6 @@ struct ClipStageView: View {
             .layoutPriority(1)
 
             if maximized {
-                if showsTheaterControls {
-                    playbackControls(player: player, sourceMark: "YouTube")
-                        .padding(.horizontal, 12)
-                        .padding(.top, LandscapeTheaterGeometry.spacing)
-                }
                 if showsShortsCaptions {
                     Group {
                         if resolvedAspect < 1 {
@@ -498,6 +496,12 @@ struct ClipStageView: View {
                         .frame(height: theater.captionHeight)
                         .padding(.top, LandscapeTheaterGeometry.spacing)
                 }
+                playbackControls(player: player, sourceMark: "YouTube")
+                    .padding(.horizontal, 12)
+                    .padding(.top, LandscapeTheaterGeometry.spacing)
+                    .opacity(showsTheaterControls ? 1 : 0)
+                    .allowsHitTesting(showsTheaterControls)
+                    .accessibilityHidden(!showsTheaterControls)
                 Spacer(minLength: 0)
             } else {
                 if immersiveFeed {
@@ -552,18 +556,18 @@ struct ClipStageView: View {
         let focus = videoExpanded
         let captionsOn = showsShortsCaptions
         let karaokeBelow = captionsOn && !focus
-        // Normal: the picture takes the top ~62% and the karaoke reads underneath (Kiku).
-        // Focus or subtitles off: the picture owns the whole page.
-        let belowHeight: CGFloat = karaokeBelow
-            ? min(max(size.height * 0.36, 210), max(210, karaokeReadingHeight * 0.95), size.height * 0.48)
-            : 0
-        let videoHeight = max(0, size.height - belowHeight)
+        let layout = ShortsFeedGeometry.make(
+            in: size,
+            preferredCaptionHeight: karaokeReadingHeight,
+            captionsVisible: captionsOn,
+            focused: focus
+        )
+        let videoHeight = layout.videoHeight
         let bandHeight = focus && captionsOn
             ? ShortsStageGeometry.make(in: CGSize(width: size.width, height: videoHeight),
                                        preferredCaptionHeight: karaokeReadingHeight,
                                        controlsHeight: 0).captionHeight
             : 0
-        let headerTop = watchChromeHidden || focus ? 10 : topInset + 6
         let railHidden = focus && watchChromeHidden
 
         return VStack(spacing: 0) {
@@ -587,27 +591,11 @@ struct ClipStageView: View {
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
-                // Title slides up into the header's place once the header fades.
-                ShortsHeader(clip: clip)
-                    .padding(.leading, 12)
-                    .padding(.trailing, 64)
-                    .padding(.top, headerTop)
-                    .frame(width: size.width, height: videoHeight, alignment: .top)
-                    .opacity(isPopupHere ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: headerTop)
-                    .allowsHitTesting(false)
-
                 if focus && captionsOn && bandHeight > 0 {
                     shortsKaraokeBand(player: player, width: size.width, height: bandHeight)
                 }
 
                 if !isPopupHere {
-                    ShortsBottomBar(clip: clip, player: player)
-                        .padding(.bottom, focus && captionsOn ? bandHeight : 0)
-                        .frame(width: size.width)
-                        .opacity(railHidden ? 0 : 1)
-                        .allowsHitTesting(!railHidden)
-
                     ShortsRail(
                         clip: clip,
                         player: player,
@@ -617,7 +605,7 @@ struct ClipStageView: View {
                         onPresentationChange: onTheaterPresentationChange
                     )
                     .padding(.trailing, 8)
-                    .padding(.bottom, (focus && captionsOn ? bandHeight : 0) + 52)
+                    .padding(.bottom, (focus && captionsOn ? bandHeight : 0) + 8)
                     .frame(width: size.width, height: videoHeight, alignment: .bottomTrailing)
                     .opacity(railHidden ? 0 : 1)
                     .allowsHitTesting(!railHidden)
@@ -634,10 +622,17 @@ struct ClipStageView: View {
                     .coachTarget(.transcript, active: isCoachPage)
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .padding(.horizontal, 14)
-                    .padding(.top, 10)
-                    .frame(width: size.width, height: belowHeight, alignment: .top)
+                    .padding(.top, 14)
+                    .frame(width: size.width, height: layout.karaokeHeight, alignment: .top)
                     .clipped()
             }
+
+            ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "Shorts", showsSourceMark: false)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .frame(width: size.width, height: layout.footerHeight)
+                .opacity(railHidden ? 0 : 1)
+                .accessibilityHidden(railHidden)
         }
         .frame(width: size.width, height: size.height, alignment: .top)
         .background(Color.watchBackground)
@@ -648,7 +643,13 @@ struct ClipStageView: View {
     private func playbackControls(player: (any ClipPlayer)?, sourceMark: String) -> some View {
         VStack(spacing: 2) {
             theaterControls(player: player)
-            ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: sourceMark)
+            ShortsFooter(
+                clip: clip,
+                player: player,
+                onPicture: false,
+                sourceMark: sourceMark,
+                showsSourceMark: false
+            )
         }
         .padding(.vertical, 4)
         .fixedSize(horizontal: false, vertical: true)
@@ -681,6 +682,7 @@ struct ClipStageView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .coachTarget(.transcript, active: isCoachPage)
             .modifier(TranscriptTopReader(top: $transcriptTop))
+            .modifier(MaximizedKaraokeReadability())
     }
 
     private func shortsKaraoke(
@@ -694,6 +696,7 @@ struct ClipStageView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .modifier(TranscriptTopReader(top: $transcriptTop))
+            .modifier(MaximizedKaraokeReadability())
     }
 
     /// Three-line karaoke on a soft bottom scrim so portrait footage shows through the band.
@@ -783,28 +786,34 @@ struct ClipStageView: View {
     private var popupLayer: some View {
         GeometryReader { geo in
             let stageHeight = geo.size.height
-            let dockY = transcriptTop > 40
-                ? max(12, transcriptTop - 8)
-                : stageHeight * 0.42
+            let grow = 1 + max(0, popupTextSize - 1) * 0.12
+            let cardHeight = min(390 * grow, stageHeight * 0.58)
+            let middleHeight = min(220 * grow, stageHeight * 0.30)
+            let preferredTop = transcriptTop > 40
+                ? transcriptTop - 24
+                : stageHeight * 0.18
+            let cardTop = min(
+                max(12, preferredTop),
+                max(12, stageHeight - cardHeight - 12)
+            )
             ZStack(alignment: .top) {
                 Color.black.opacity(0.05)
                     .contentShape(Rectangle())
                     .onTapGesture { dismiss() }
                     .accessibilityHidden(true)
-                let grow = 1 + max(0, popupTextSize - 1) * 0.12
                 TapPopupCard(
                     compact: true,
-                    scrollableMiddleHeight: min(120 * grow, stageHeight * 0.22)
+                    scrollableMiddleHeight: middleHeight
                 )
                 .modifier(OptionalTypeSize(index: popupTextSize))
-                .frame(maxWidth: 390)
-                .frame(maxHeight: min(220 * grow, stageHeight * 0.42), alignment: .top)
+                .frame(maxWidth: 430)
+                .frame(maxHeight: cardHeight, alignment: .top)
                 .coachTarget(.popupCard, active: isCoachPage)
-                .padding(.top, min(dockY, stageHeight * 0.55))
+                .padding(.top, cardTop)
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
@@ -812,6 +821,35 @@ struct ClipStageView: View {
         withAnimation(Motion.popupSpring) {
             lookup.dismiss()
         }
+    }
+}
+
+/// Kiku's maximized player separates picture and words with a cool halo. The veil
+/// stays subtle and at the panel's top edge so it improves contrast without tinting
+/// the whole transcript or changing the learner's mastery colours.
+private struct MaximizedKaraokeReadability: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                LinearGradient(
+                    stops: [
+                        .init(color: Color(hex: "#4A8DFF").opacity(0.24), location: 0),
+                        .init(color: Color(hex: "#1B4E9B").opacity(0.12), location: 0.42),
+                        .init(color: .clear, location: 1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 72)
+                .blendMode(.screen)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            }
+            .shadow(
+                color: Color(hex: "#397DFF").opacity(0.32),
+                radius: 18,
+                y: -8
+            )
     }
 }
 

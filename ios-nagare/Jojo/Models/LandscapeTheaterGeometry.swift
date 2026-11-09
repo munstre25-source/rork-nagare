@@ -65,6 +65,47 @@ nonisolated struct ShortsStageGeometry {
     }
 }
 
+/// Default portrait-feed stack: video, karaoke, then the playback clock at the bottom.
+/// Keeping the clock in its own footer prevents it from sitting between the picture and words.
+nonisolated struct ShortsFeedGeometry {
+    let videoHeight: CGFloat
+    let karaokeHeight: CGFloat
+    let footerHeight: CGFloat
+
+    static func make(
+        in size: CGSize,
+        preferredCaptionHeight: CGFloat,
+        captionsVisible: Bool,
+        focused: Bool,
+        footerHeight: CGFloat = 34
+    ) -> Self {
+        let height = max(0, size.height)
+        let footer = min(max(0, footerHeight), height)
+        guard captionsVisible, !focused else {
+            return Self(videoHeight: max(0, height - footer), karaokeHeight: 0, footerHeight: footer)
+        }
+
+        // Match Kiku's lower reading well: retain enough room for complete subtitle rows,
+        // but begin it slightly lower than the old 36%-high panel. The footer is included
+        // in the lower-area budget, so adding the clock never steals space unexpectedly.
+        let previousLowerArea = min(
+            max(height * 0.36, 210),
+            max(210, preferredCaptionHeight * 0.95),
+            height * 0.48
+        )
+        let lowerArea = min(
+            max(footer + 160, previousLowerArea - 8),
+            height * 0.48
+        )
+        let karaoke = max(0, lowerArea - footer)
+        return Self(
+            videoHeight: max(0, height - lowerArea),
+            karaokeHeight: karaoke,
+            footerHeight: footer
+        )
+    }
+}
+
 /// At most three complete subtitle lines that fit inside a karaoke band or reading well.
 nonisolated struct KaraokeReadingWindow {
     static let maxLines = 3

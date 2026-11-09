@@ -103,7 +103,7 @@ struct OnboardingTitle: View {
                 + Text(after)
                     .foregroundStyle(palette.title)
             )
-            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+            .font(.system(size: 29, weight: .bold, design: .rounded))
             .fixedSize(horizontal: false, vertical: true)
             .overlay(alignment: .bottomLeading) {
                 // Approximate underline under the accent word by measuring relative position.
@@ -122,7 +122,7 @@ struct OnboardingTitle: View {
             }
         } else {
             Text(title)
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .font(.system(size: 29, weight: .bold, design: .rounded))
                 .foregroundStyle(palette.title)
                 .fixedSize(horizontal: false, vertical: true)
         }

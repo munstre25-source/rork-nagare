@@ -8,7 +8,7 @@ import {
   tryIncrementExplainRate,
   tryIncrementGeminiUsage,
 } from "../_shared/limits.ts";
-import { geminiGenerateJson, parseJsonObject } from "../_shared/gemini.ts";
+import { GeminiError, geminiGenerateJson, parseJsonObject } from "../_shared/gemini.ts";
 import { sanitizeContext, sanitizeLookup } from "../_shared/explain.ts";
 import {
   assertAppUserIdBinding,
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         model: geminiModelExplain(),
         system: askSystem(language),
         user: `Word: ${word}\nSentence: ${sentence || "(none)"}\nQuestion: ${question}`,
-        timeoutMs: 12_000,
+        timeoutMs: 18_000,
       });
       const raw = parseJsonObject(viaGemini.text);
       const answer = typeof raw.answer === "string" ? raw.answer.trim().slice(0, MAX_ANSWER) : "";
@@ -228,9 +228,22 @@ Deno.serve(async (req) => {
     return jsonResponse(payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";
+    if (err instanceof GeminiError) {
+      console.error(JSON.stringify({
+        event: "explain_word_ai_failed",
+        status: err.status,
+        error: err.name,
+        detail: message.slice(0, 180),
+      }));
+      return err.status === 429
+        ? errorResponse(429, "Jojo AI limit reached")
+        : errorResponse(503, "Jojo AI temporarily unavailable");
+    }
     if (message.startsWith("Missing required env")) {
+      console.error(JSON.stringify({ event: "explain_word_misconfigured", error: message.slice(0, 180) }));
       return errorResponse(500, "Server misconfigured");
     }
+    console.error(JSON.stringify({ event: "explain_word_failed", error: message.slice(0, 180) }));
     return errorResponse(500, "Explain failed");
   }
 });

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The floating tap-to-understand card. Follows the light or dark page and the selected accent.
 struct TapPopupCard: View {
-    /// Feed / Kiku-style: smaller card so the video stays visible around it.
+    /// Feed / Kiku-style: a substantial overlay card with its detail tabs kept in view.
     var compact: Bool = false
     /// Feed mode: the middle of the card (sentence meaning, tabs) scrolls inside this
     /// height cap while the word header and the "How well do you know it?" footer stay
@@ -49,7 +49,7 @@ struct TapPopupCard: View {
         }
     }
 
-    /// Feed card: ~200pt — word, one gloss, grammar note. Tabs open on demand.
+    /// Feed card: large word header, definition panel and persistent tab content.
     private func compactBody(selection: WordLookupController.Selection, explanation: WordExplanation) -> some View {
         let gloss = explanation.displayDefinitions(mode: app.profile.dictionary).first
             ?? explanation.definitions.first
@@ -80,20 +80,20 @@ struct TapPopupCard: View {
 
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(explanation.word)
-                            .font(JojoFont.jp(26, bold: true, relativeTo: .title2))
+                            .font(JojoFont.jp(30, bold: true, relativeTo: .title))
                             .foregroundStyle(ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.55)
                             .textGlow(LearningInk.selected, level: app.profile.glow)
                         if app.profile.furiganaMode.showsAny, !explanation.readings.isEmpty {
                             Text(explanation.readings.joined(separator: ", "))
-                                .font(JojoFont.jp(13, relativeTo: .caption))
+                                .font(JojoFont.jp(15, relativeTo: .subheadline))
                                 .foregroundStyle(inkSoft)
                                 .lineLimit(1)
                         }
                         if app.profile.showRomaji, !explanation.romaji.isEmpty {
                             Text(explanation.romaji)
-                                .font(.caption2.weight(.semibold))
+                                .font(.caption.weight(.semibold))
                                 .foregroundStyle(inkSoft.opacity(0.85))
                                 .lineLimit(1)
                         }
@@ -149,6 +149,10 @@ struct TapPopupCard: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(chip, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 missingDefinitionStatus
             }
@@ -167,32 +171,41 @@ struct TapPopupCard: View {
                 .buttonStyle(.plain)
             }
 
-            // Extra detail only when the learner asks — keeps the first view tiny.
-            if lookup.tab != .dictionary || showAllDefinitions {
-                let middle = VStack(alignment: .leading, spacing: 8) {
-                    pitchChip(for: selection.token)
-                    conjugationStrip(for: selection.token)
-                    switch lookup.tab {
-                    case .dictionary:
-                        compactDictionaryTab(explanation, primaryGloss: gloss)
-                    case .ai:
-                        aiTab(selection: selection, explanation: explanation)
-                    case .flashcard:
-                        flashcardTab(selection: selection, explanation: explanation)
-                        paintRow(selection: selection)
-                    case .examples:
-                        examplesTab
-                    }
+            let middle = VStack(alignment: .leading, spacing: 8) {
+                pitchChip(for: selection.token)
+                conjugationStrip(for: selection.token)
+                switch lookup.tab {
+                case .dictionary:
+                    compactDictionaryTab(explanation, primaryGloss: gloss)
+                case .ai:
+                    aiTab(selection: selection, explanation: explanation)
+                case .flashcard:
+                    flashcardTab(selection: selection, explanation: explanation)
+                    paintRow(selection: selection)
+                case .examples:
+                    examplesTab
                 }
-                if let cap = scrollableMiddleHeight {
+            }
+            if let cap = scrollableMiddleHeight {
+                ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
-                        middle
+                        VStack(alignment: .leading, spacing: 0) {
+                            middle
+                            Color.clear
+                                .frame(height: 1)
+                                .id("popup-middle-bottom")
+                        }
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { middleNaturalHeight = $0 }
                     }
-                    .frame(height: middleNaturalHeight.map { min($0, cap) } ?? min(120, cap))
-                } else {
-                    middle
+                    .frame(height: middleNaturalHeight.map { min($0, cap) } ?? min(180, cap))
+                    .onChange(of: lookup.askThread.count) { _, _ in
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo("popup-middle-bottom", anchor: .bottom)
+                        }
+                    }
                 }
+            } else {
+                middle
             }
 
             HStack(spacing: 4) {

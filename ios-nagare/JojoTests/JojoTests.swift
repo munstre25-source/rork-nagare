@@ -119,6 +119,12 @@ struct JojoTests {
         #expect(app.profile.subtitleDisplay == LearningMode.beginner.display)
     }
 
+    @Test func newProfilesDefaultToAmber() {
+        let profile = UserProfile()
+        #expect(profile.theme == .amber)
+        #expect(profile.accentTheme == AccentTheme.amber.rawValue)
+    }
+
     @Test func additiveSubtitleDefaultsPreserveExistingProfiles() {
         let profile = UserProfile()
         profile.subtitles = .japanese
@@ -439,6 +445,30 @@ struct JojoTests {
         }
     }
 
+    @Test func shortsFeedPlacesPlaybackFooterAfterALowerUnclippedKaraokeWell() {
+        for size in [CGSize(width: 393, height: 650), CGSize(width: 430, height: 800)] {
+            let layout = ShortsFeedGeometry.make(
+                in: size,
+                preferredCaptionHeight: 320,
+                captionsVisible: true,
+                focused: false
+            )
+            #expect(layout.videoHeight > 0)
+            #expect(layout.karaokeHeight >= 160)
+            #expect(layout.footerHeight > 0)
+            #expect(abs(layout.videoHeight + layout.karaokeHeight + layout.footerHeight - size.height) < 0.01)
+
+            let focused = ShortsFeedGeometry.make(
+                in: size,
+                preferredCaptionHeight: 320,
+                captionsVisible: true,
+                focused: true
+            )
+            #expect(focused.karaokeHeight == 0)
+            #expect(abs(focused.videoHeight + focused.footerHeight - size.height) < 0.01)
+        }
+    }
+
     @Test func karaokeFollowsOnlyWordsOutsideTheVisibleReadingArea() {
         let anchor = KaraokeWordAnchor(clipID: "test", lineIndex: 0, tokenIndex: 2)
         let visible = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 20, width: 80, height: 64))
@@ -700,6 +730,19 @@ struct JojoTests {
         #expect(throws: SupabaseError.self) {
             try SupabaseAPI.decodePublishedPage(Data(#"[{"id":"broken","title":12}]"#.utf8))
         }
+    }
+
+    @Test func askJojoFailuresProduceActionableFeedback() {
+        #expect(
+            WordExplainService.askFailureMessage(
+                SupabaseError.function(403, "Active subscription required")
+            ).contains("Jojo Pro")
+        )
+        #expect(
+            WordExplainService.askFailureMessage(
+                SupabaseError.function(429, "Jojo AI limit reached")
+            ).contains("limit")
+        )
     }
 
     private func makeWord(_ key: String, state: SRSState, due: Date, seen: Int) -> SavedWord {

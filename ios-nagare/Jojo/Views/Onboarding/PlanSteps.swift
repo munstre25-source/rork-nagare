@@ -238,13 +238,6 @@ struct AcquisitionStepView: View {
                     .buttonStyle(PressableStyle())
                     .disabled(task != nil)
                 }
-                Button("Skip") {
-                    track("onboarding_acquisition_skipped")
-                    onContinue()
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.white.opacity(0.7))
-                .frame(minHeight: 44)
             }
             .padding(.horizontal, Spacing.l)
             .padding(.vertical, Spacing.l)
@@ -374,18 +367,11 @@ struct StudyWindowStepView: View {
                 .padding(.horizontal, Spacing.l)
                 .padding(.top, Spacing.l)
             }
-            VStack(spacing: Spacing.xs) {
-                Button(isAsking ? "One moment…" : "Remind me \(window.plural)") { commit(enable: true) }
-                    .buttonStyle(PrimaryButtonStyle(isEnabled: !isAsking))
-                    .disabled(isAsking)
-                Button("Not now") { commit(enable: false) }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.white.opacity(0.7))
-                    .frame(minHeight: 44)
-                    .disabled(isAsking)
-            }
-            .padding(.horizontal, Spacing.l)
-            .padding(.bottom, Spacing.s)
+            Button(isAsking ? "One moment…" : "Remind me \(window.plural)") { commit() }
+                .buttonStyle(PrimaryButtonStyle(isEnabled: !isAsking))
+                .disabled(isAsking)
+                .padding(.horizontal, Spacing.l)
+                .padding(.bottom, Spacing.s)
         }
         .onAppear { window = StudyWindow(rawValue: reminderHour) ?? .evening }
     }
@@ -420,16 +406,10 @@ struct StudyWindowStepView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func commit(enable: Bool) {
+    private func commit() {
         Haptics.light()
         reminderHour = window.rawValue
         app.profile.notificationsAsked = true
-        guard enable else {
-            app.save()
-            track("onboarding_notifications_answer", props: ["granted": "0", "skipped": "1", "hour": String(window.rawValue)])
-            onContinue()
-            return
-        }
         isAsking = true
         Task {
             await app.setReminders(true)
@@ -775,10 +755,6 @@ struct TrialReminderStepView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle(isEnabled: !isAsking))
                     .disabled(isAsking)
-                    Button("Continue without") { finish() }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.7))
-                        .frame(minHeight: 44)
                 }
             }
         }

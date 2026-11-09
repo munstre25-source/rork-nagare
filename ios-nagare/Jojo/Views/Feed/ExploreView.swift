@@ -7,6 +7,7 @@ struct ExploreView: View {
     var favoritesOnlyStart: Bool = false
     /// Shown first. The marketing walkthrough uses this so the two local clips are the ones on screen.
     var leadingClips: [Clip] = []
+    var initialFilters = ExploreFilters()
     let onPlay: (Clip, Int?, [Clip]) -> Void
 
     @Environment(AppModel.self) private var app
@@ -14,6 +15,7 @@ struct ExploreView: View {
     @State private var favoritesOnly: Bool = false
     @State private var showFilters = false
     @State private var appeared: Bool = false
+    @State private var loadedInitialFilters = false
 
     private var filtered: [Clip] {
         let base = app.personalized(app.studyLibrary.filter(matchesFilters))
@@ -28,19 +30,11 @@ struct ExploreView: View {
     }
 
     private func matches(_ clip: Clip, _ f: ExploreFilters) -> Bool {
-        let selectedDifficulty = lockedDifficulty ?? f.difficulty
         guard (lockedCategories.isEmpty || lockedCategories.contains(clip.categoryKind)),
-              selectedDifficulty == nil || clip.difficultyKind == selectedDifficulty,
-              f.topic == nil || clip.categoryKind == f.topic,
-              f.source == nil || clip.categoryKind.sourceType == f.source,
               !favoritesOnly || app.isFavorite(clip.id) else { return false }
-        switch f.watched {
-        case .any: break
-        case .watched: guard app.profile.finishedClipIds.contains(clip.id) else { return false }
-        case .unwatched: guard !app.profile.finishedClipIds.contains(clip.id) else { return false }
-        }
-        if let grammar = f.grammar, !grammar.matches(clip) { return false }
-        return true
+        var effective = f
+        if let lockedDifficulty { effective.difficulty = lockedDifficulty }
+        return effective.matches(clip, finishedClipIds: app.profile.finishedClipIds)
     }
 
     private var hasActiveFilters: Bool {
@@ -86,6 +80,10 @@ struct ExploreView: View {
         }
         .scrollIndicators(.hidden)
         .onAppear {
+            if !loadedInitialFilters {
+                filterState = initialFilters
+                loadedInitialFilters = true
+            }
             if favoritesOnlyStart { favoritesOnly = true }
             if let lockedDifficulty { filterState.difficulty = lockedDifficulty }
             withAnimation { appeared = true }

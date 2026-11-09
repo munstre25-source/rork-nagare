@@ -3,6 +3,7 @@ import Foundation
 nonisolated enum SupabaseError: Error {
     case notConfigured
     case http(Int)
+    case function(Int, String?)
     case invalidResponse
 }
 
@@ -16,11 +17,12 @@ nonisolated struct SupabaseAPI: Sendable {
         anonKey: Secrets.supabaseAnonKey
     )
 
-    /// Session budget for Gemini word explanations. Local dictionary still answers first.
+    /// OpenRouter can legitimately use most of the Edge Function's model timeout.
+    /// Leave enough transport headroom for the function to return its response.
     private static let explainSession: URLSession = {
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 12
-        config.timeoutIntervalForResource = 12
+        config.timeoutIntervalForRequest = 25
+        config.timeoutIntervalForResource = 25
         config.waitsForConnectivity = false
         return URLSession(configuration: config)
     }()
@@ -52,7 +54,11 @@ nonisolated struct SupabaseAPI: Sendable {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await Self.explainSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw SupabaseError.invalidResponse }
-        guard (200..<300).contains(http.statusCode) else { throw SupabaseError.http(http.statusCode) }
+        guard (200..<300).contains(http.statusCode) else {
+            struct ErrorPayload: Decodable { let error: String? }
+            let detail = try? JSONDecoder().decode(ErrorPayload.self, from: data).error
+            throw SupabaseError.function(http.statusCode, detail)
+        }
         return data
     }
 

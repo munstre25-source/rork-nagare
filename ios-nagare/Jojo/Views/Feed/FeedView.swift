@@ -148,6 +148,7 @@ struct FeedView: View {
         // (a swipe down brings it back as a shortcut).
         .onChange(of: videoExpanded) { _, expanded in
             if !expanded { maximizeNavShown = false }
+            if expanded { revealWatchChrome() }
             syncDock()
             bumpPageHeightEpoch()
         }
@@ -481,10 +482,14 @@ struct FeedView: View {
             if let clip = clips.first(where: { $0.id == id }) {
                         ClipStageView(
                             clip: clip,
-                            showsChannelRow: true,
+                            // Video and channel metadata live in the info sheet, keeping the
+                            // watch surface clear like the Kiku reference.
+                            showsChannelRow: false,
                             immersiveFeed: true,
                             videoExpanded: videoExpanded,
-                            showsTheaterControls: maximizeNavShown,
+                            // Player controls follow tap-to-reveal and auto-hide independently
+                            // from the swipe-down navigation dock.
+                            showsTheaterControls: videoExpanded && watchChromeVisible,
                             onTheaterPresentationChange: { theaterOptionsPresented = $0 },
                             onToggleVideoSize: {
                                 Haptics.selection()

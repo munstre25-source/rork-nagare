@@ -26,7 +26,7 @@ enum JojoPalette {
     private static let themeKey = "jojo.accent"
     private static let schemeKey = "jojo.scheme"
 
-    static var theme: AccentTheme = .sakura
+    static var theme: AccentTheme = .amber
     static var scheme: JojoScheme = .dark
 
     static func activate(theme: AccentTheme, scheme: JojoScheme) {
@@ -36,9 +36,9 @@ enum JojoPalette {
         UserDefaults.standard.set(scheme.rawValue, forKey: schemeKey)
     }
 
-    /// Onboarding always paints sakura on the night page.
+    /// New learners begin with the warm Amber identity; they can still pick Sakura later.
     static func activateOnboarding() {
-        activate(theme: .sakura, scheme: .dark)
+        activate(theme: .amber, scheme: .dark)
     }
 
     /// A color for the accent and appearance that are active right now.

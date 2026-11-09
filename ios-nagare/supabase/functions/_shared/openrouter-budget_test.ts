@@ -89,16 +89,21 @@ Deno.test("uncertain request cost conservatively consumes the reservation", asyn
   });
 });
 
-Deno.test("word explanations use the direct Gemini key before OpenRouter by default", async () => {
+Deno.test("word explanations use the OpenRouter Gemini key by default", async () => {
   const hosts: string[] = [];
-  await run((url) => {
+  await run((url, body) => {
+    if (url.includes("openrouter_reserve_lookup_budget")) return json(reservation);
+    if (url.includes("openrouter_settle_budget")) {
+      assertEquals(body.p_cost, 0.001);
+      return json(0.001);
+    }
     hosts.push(new URL(url).host);
-    return json({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] });
+    return json({ choices: [{ message: { content: '{"ok":true}' } }], usage: { cost: 0.001 } });
   }, async () => {
     Deno.env.set("GEMINI_API_KEY", "test-google");
     Deno.env.delete("TEXT_AI_PROVIDER_ORDER");
     assertEquals((await call()).text, '{"ok":true}');
-    assertEquals(hosts, ["generativelanguage.googleapis.com"]);
+    assertEquals(hosts, ["openrouter.ai"]);
   });
 });
 

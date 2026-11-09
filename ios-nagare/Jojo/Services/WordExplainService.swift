@@ -17,6 +17,11 @@ nonisolated struct ContextOutcome: Sendable {
     let newCache: CachePayload?
 }
 
+nonisolated enum AskOutcome: Sendable, Equatable {
+    case answer(String)
+    case failure(String)
+}
+
 /// Stats for measuring live-call cost per user per day.
 nonisolated struct LiveCallStats: Sendable {
     let todayCount: Int
@@ -107,24 +112,29 @@ actor WordExplainService {
         }
     }
 
-    /// Ask Jojo: one free-form question about a word in its sentence. Returns nil when
-    /// offline, unsubscribed or rate-limited so the card can show a calm retry.
-    func ask(token: Token, sentence: String, question: String, appUserId: String) async -> String? {
+    /// Ask Jojo: one free-form question about a word in its sentence. Failures carry
+    /// actionable learner-facing feedback rather than disappearing behind a generic retry.
+    func ask(token: Token, sentence: String, question: String, appUserId: String) async -> AskOutcome {
         let normalized = question.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalized.isEmpty, api.isConfigured else { return nil }
+        guard !normalized.isEmpty else { return .failure("Type a question for Jojo first.") }
+        guard api.isConfigured else {
+            return .failure("Ask Jojo isn't configured in this build yet.")
+        }
         let key = "ask|\(token.dictionaryForm)|\(JapaneseText.sentenceHash(sentence))|\(normalized.lowercased())"
-        if let cached = memoryCache[key], let answer = Self.decodeAnswer(cached) { return answer }
+        if let cached = memoryCache[key], let answer = Self.decodeAnswer(cached) { return .answer(answer) }
         let started = Date()
         do {
             let data = try await api.explainWord(kind: "ask", word: token.dictionaryForm, sentence: sentence,
                                                  appUserId: appUserId, question: String(normalized.prefix(200)))
             logCall(started: started, status: "ok")
-            guard let answer = Self.decodeAnswer(data) else { return nil }
+            guard let answer = Self.decodeAnswer(data) else {
+                return .failure("Jojo returned an empty explanation. Please try that question again.")
+            }
             memoryCache[key] = data
-            return answer
+            return .answer(answer)
         } catch {
             logCall(started: started, status: statusLabel(error))
-            return nil
+            return .failure(Self.askFailureMessage(error))
         }
     }
 
@@ -154,8 +164,38 @@ actor WordExplainService {
         )
     }
 
+    nonisolated static func askFailureMessage(_ error: Error) -> String {
+        let code: Int?
+        let detail: String?
+        switch error {
+        case SupabaseError.function(let status, let message):
+            code = status
+            detail = message
+        case SupabaseError.http(let status):
+            code = status
+            detail = nil
+        default:
+            code = nil
+            detail = nil
+        }
+        if code == 403 || detail?.localizedCaseInsensitiveContains("subscription") == true {
+            return "Ask Jojo needs an active Jojo Pro subscription."
+        }
+        if code == 429 {
+            return "Jojo has reached the explanation limit for now. Please try again a little later."
+        }
+        if let urlError = error as? URLError, urlError.code == .timedOut {
+            return "Jojo took too long to reply. Please try again."
+        }
+        if let code, code >= 500 {
+            return "Jojo's AI is temporarily unavailable. Please try again shortly."
+        }
+        return "Jojo couldn't connect. Check your connection and try again."
+    }
+
     private func statusLabel(_ error: Error) -> String {
         if case SupabaseError.http(let code) = error { return "http\(code)" }
+        if case SupabaseError.function(let code, _) = error { return "http\(code)" }
         if let urlError = error as? URLError { return urlError.code == .timedOut ? "timeout" : "network" }
         return "error"
     }
