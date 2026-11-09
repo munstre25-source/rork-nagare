@@ -375,7 +375,7 @@ struct SettingsSectionsCard: View {
                             set: { app.setHideDailyGoalBar(!$0) }
                            ))
             Divider().padding(.leading, 52)
-            settingsToggle(symbol: "eye.slash", title: "Fade controls while watching",
+            settingsToggle(symbol: "eye.slash", title: "Dim controls while watching",
                            isOn: Binding(
                             get: { app.profile.fadeWatchChrome },
                             set: { app.setFadeWatchChrome($0) }

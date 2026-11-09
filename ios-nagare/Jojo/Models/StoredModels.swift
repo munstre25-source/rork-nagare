@@ -96,7 +96,7 @@ final class UserProfile {
     var subtitleSetupCompleted: Bool = false
     var dictionaryMode: String = DictionaryMode.english.rawValue
     var hideDailyGoalBar: Bool = false
-    /// While a clip is playing, the tab capsule and For You / Explore switch fade until the next touch.
+    /// While a clip is playing, persistent navigation and progress settle to a quiet opacity until the next touch.
     var fadeWatchChrome: Bool = true
     var autoAdvanceEnabled: Bool = true
     /// A short pause after the video or quick check before the next page scrolls up.

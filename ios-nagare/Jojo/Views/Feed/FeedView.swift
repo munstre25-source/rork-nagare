@@ -18,7 +18,8 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
-    // One full-screen clip per page. Feed controls overlay the video; maximize hides them.
+    // One full-screen clip per page. Shorts keep quiet ambient chrome; landscape theater
+    // uses its dedicated playback controls.
     @State private var videoExpanded: Bool = false
     /// Maximize shortcut: a swipe down brings the navigation dock back over the theater;
     /// a swipe up tucks it away again — no need to minimize first.
@@ -62,10 +63,10 @@ struct FeedView: View {
                     if abs(height - headerHeight) > 0.5 { headerHeight = height }
                 }
                 .background(alignment: .top) { headerBackdrop }
-                .frame(height: videoExpanded ? 0 : nil, alignment: .top)
+                .frame(height: hidesHeaderForTheater ? 0 : nil, alignment: .top)
                 .clipped()
-                .opacity(videoExpanded ? 0 : 1)
-                .allowsHitTesting(!videoExpanded)
+                .opacity(hidesHeaderForTheater ? 0 : 1)
+                .allowsHitTesting(!hidesHeaderForTheater)
                 .zIndex(1)
 
             if let celebration {
@@ -77,8 +78,12 @@ struct FeedView: View {
                         try? await Task.sleep(for: .seconds(3.2))
                         guard !Task.isCancelled, self.celebration?.id == celebration.id else { return }
                         withAnimation(.snappy) { self.celebration = nil }
+                        scheduleWatchChromeHide()
                     }
-                    .onTapGesture { withAnimation(.snappy) { self.celebration = nil } }
+                    .onTapGesture {
+                        withAnimation(.snappy) { self.celebration = nil }
+                        scheduleWatchChromeHide()
+                    }
             }
 
             if quickChecksEnabled, let quizClip {
@@ -171,6 +176,11 @@ struct FeedView: View {
         .onChange(of: app.currentStreak) { _, _ in checkAchievements() }
         .onChange(of: goalCompletionVisible) { _, visible in
             if visible { showWatchChrome() } else { scheduleWatchChromeHide() }
+        }
+        .onChange(of: app.cameBackToast?.id) { _, toastId in
+            // Actionable alerts get a brief full-strength moment; ordinary feed chrome
+            // returns to its quiet resting opacity after the alert is gone.
+            if toastId != nil { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
         .onChange(of: theaterOptionsPresented) { _, presented in
             if presented { chromeHideTask?.cancel() } else { scheduleWatchChromeHide() }
@@ -325,6 +335,7 @@ struct FeedView: View {
     private var headerStack: some View {
         VStack(spacing: 0) {
             header
+                .opacity(navigationChromeOpacity)
             VStack(spacing: 0) {
                 if !focusMode {
                     ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
@@ -343,9 +354,30 @@ struct FeedView: View {
                     )
                 }
             }
-            .opacity(watchChromeVisible ? 1 : 0)
-            .allowsHitTesting(watchChromeVisible)
+            .opacity(statusChromeOpacity)
         }
+    }
+
+    /// Playback settles persistent controls instead of removing them. Shorts need the
+    /// lightest treatment because this chrome sits directly over the picture; landscape
+    /// clips have a solid header band and can remain a little stronger.
+    private var navigationChromeOpacity: Double {
+        guard !watchChromeVisible else { return 1 }
+        return currentClip?.isPortraitVideo == true ? 0.30 : 0.48
+    }
+
+    /// Progress and resume notices stay discoverable and tappable without competing with
+    /// karaoke. Important, time-limited toasts temporarily restore everything to full strength.
+    private var statusChromeOpacity: Double {
+        guard !watchChromeVisible else { return 1 }
+        return currentClip?.isPortraitVideo == true ? 0.20 : 0.36
+    }
+
+    /// A landscape theater keeps its clean, dedicated playback chrome. A maximized Short
+    /// keeps the ambient header over the picture so For You, Explore, and progress never
+    /// vanish completely.
+    private var hidesHeaderForTheater: Bool {
+        videoExpanded && currentClip?.isPortraitVideo != true
     }
 
     @ViewBuilder
@@ -358,7 +390,7 @@ struct FeedView: View {
             .padding(.bottom, -36)
             .ignoresSafeArea(edges: .top)
             .allowsHitTesting(false)
-            .opacity(watchChromeVisible ? 1 : 0.6)
+            .opacity(watchChromeVisible ? 1 : 0.42)
         } else {
             Color.watchBackground
                 .ignoresSafeArea(edges: .top)
@@ -401,6 +433,9 @@ struct FeedView: View {
     private func celebrate(_ item: FeedCelebration) {
         guard !focusMode, isActiveTab, !lookup.isPresented else { return }
         if item.kind == .goal { Haptics.success() } else { Haptics.medium() }
+        // Goals and achievements are short-lived and deserve one clear moment before the
+        // ambient playback fade resumes.
+        showWatchChrome()
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { celebration = item }
     }
 
