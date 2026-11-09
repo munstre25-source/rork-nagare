@@ -184,6 +184,10 @@ struct PaywallView: View {
         let selected = plan == choice
         let price = purchases.priceText(package) ?? "—"
         let period = purchases.periodSuffix(package) ?? (choice == .yearly ? "year" : "month")
+        let trialDays = choice == .yearly ? purchases.trialLengthDays(package) : nil
+        let trialBadge = trialDays.map { days in
+            "\(days)-\(days == 1 ? "DAY" : "DAYS") FREE"
+        }
         return Button {
             Haptics.selection()
             userSelectedPlan = true
@@ -203,7 +207,7 @@ struct PaywallView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if choice == .yearly {
-                    Text(!purchases.trialText(purchases.yearly).isEmpty ? "FREE TRIAL" : (saveBadge ?? "BEST VALUE"))
+                    Text(trialBadge ?? (saveBadge ?? "BEST VALUE"))
                         .font(.caption2.weight(.heavy))
                         .foregroundStyle(Color.sakuraPink)
                 } else {

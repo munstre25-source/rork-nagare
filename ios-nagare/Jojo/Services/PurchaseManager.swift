@@ -352,7 +352,7 @@ final class PurchaseManager {
         let value = period.value
         switch period.unit {
         case .day: return "\(value)-day free trial"
-        case .week: return value == 1 ? "1-week free trial" : "\(value)-week free trial"
+        case .week: return "\(value * 7)-day free trial"
         case .month: return value == 1 ? "1-month free trial" : "\(value)-month free trial"
         case .year: return value == 1 ? "1-year free trial" : "\(value)-year free trial"
         @unknown default: return "Free trial"

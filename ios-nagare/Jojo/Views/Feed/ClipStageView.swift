@@ -490,6 +490,13 @@ struct ClipStageView: View {
             // Picture keeps its budget when subtitle aids grow; karaoke scrolls inside its well.
             .layoutPriority(1)
 
+            if maximized && !clip.isPortraitVideo {
+                landscapePlaybackFooter(player: player)
+                    .frame(width: videoWidth)
+                    .opacity(showsTheaterControls ? 1 : 0)
+                    .accessibilityHidden(!showsTheaterControls)
+            }
+
             if maximized {
                 if showsShortsCaptions {
                     Group {
@@ -503,12 +510,21 @@ struct ClipStageView: View {
                         .frame(height: theater.captionHeight)
                         .padding(.top, LandscapeTheaterGeometry.spacing)
                 }
-                playbackControls(player: player, sourceMark: "YouTube")
-                    .padding(.horizontal, 12)
-                    .padding(.top, LandscapeTheaterGeometry.spacing)
-                    .opacity(showsTheaterControls ? 1 : 0)
-                    .allowsHitTesting(showsTheaterControls)
-                    .accessibilityHidden(!showsTheaterControls)
+                if clip.isPortraitVideo {
+                    playbackControls(player: player, sourceMark: "YouTube")
+                        .padding(.horizontal, 12)
+                        .padding(.top, LandscapeTheaterGeometry.spacing)
+                        .opacity(showsTheaterControls ? 1 : 0)
+                        .allowsHitTesting(showsTheaterControls)
+                        .accessibilityHidden(!showsTheaterControls)
+                } else {
+                    landscapePlaybackControls(player: player)
+                        .padding(.horizontal, 12)
+                        .padding(.top, LandscapeTheaterGeometry.spacing)
+                        .opacity(showsTheaterControls ? 1 : 0)
+                        .allowsHitTesting(showsTheaterControls)
+                        .accessibilityHidden(!showsTheaterControls)
+                }
                 Spacer(minLength: 0)
             } else {
                 if immersiveFeed {
@@ -670,8 +686,9 @@ struct ClipStageView: View {
         }
     }
 
-    /// Landscape immersion keeps the clock directly below the picture. Portrait continues
-    /// to use `playbackControls`, where its existing control/timer stack remains unchanged.
+    /// Landscape-video immersion keeps the clock directly below the picture in either
+    /// device orientation. Explicit portrait-video guards preserve the original combined
+    /// control/timer stack if that layout ever enters the maximized path.
     private func landscapePlaybackFooter(player: (any ClipPlayer)?) -> some View {
         ShortsFooter(
             clip: clip,

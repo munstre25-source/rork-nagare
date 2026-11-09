@@ -710,6 +710,12 @@ struct TrialReminderStepView: View {
     @State private var ring = false
     @State private var isAsking = false
 
+    private var trialDays: Int {
+        app.purchases.trialLengthDays(app.purchases.yearly) ?? 7
+    }
+
+    private var reminderDay: Int { max(1, trialDays - 1) }
+
     var body: some View {
         VStack(spacing: Spacing.l) {
             Spacer(minLength: 0)
@@ -733,9 +739,9 @@ struct TrialReminderStepView: View {
             HStack(spacing: 0) {
                 milestone("Today", "Full access", active: true)
                 connector
-                milestone("Day 2", "Reminder", active: false)
+                milestone("Day \(reminderDay)", "Reminder", active: false)
                 connector
-                milestone("Day 3", "Trial ends", active: false)
+                milestone("Day \(trialDays)", "Trial ends", active: false)
             }
             .padding(.top, Spacing.s)
             Spacer(minLength: 0)

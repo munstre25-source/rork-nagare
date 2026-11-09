@@ -161,8 +161,8 @@ enum NotificationService {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [atRiskId])
     }
 
-    /// Reminder one day before a free trial ends (default: 3-day yearly trial → fire after 2 days).
-    static func scheduleTrialReminder(trialDays: Int = 3) {
+    /// Reminder one day before a free trial ends (default: 7-day yearly trial → fire after 6 days).
+    static func scheduleTrialReminder(trialDays: Int = 7) {
         guard trialDays > 1 else { return }
         let expiration = Date().addingTimeInterval(TimeInterval(trialDays) * 86_400)
         scheduleTrialReminder(endingAt: expiration)
