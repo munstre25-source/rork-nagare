@@ -14,7 +14,7 @@ struct RootView: View {
                 // Returning user whose subscription lapsed: hard paywall, no tabs.
                 ZStack {
                     JojoBrandBackground(scene: .templeDusk, showsHills: false)
-                    PaywallView(allowsDebugBypass: DebugFlags.allowPaywallBypass) {}
+                    PaywallView {}
                         .frame(maxWidth: 560)
                 }
                 .environment(\.brandSurface, .night)
