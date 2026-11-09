@@ -18,8 +18,7 @@ struct FeedView: View {
     @State private var quizClip: Clip?
     @State private var shadowingClip: Clip?
     @State private var pendingLoopLine: Int?
-    // One full-screen clip per page. Shorts keep quiet ambient chrome; landscape theater
-    // uses its dedicated playback controls.
+    // One full-screen clip per page. Feed controls overlay the video; maximize hides them.
     @State private var videoExpanded: Bool = false
     /// Maximize shortcut: a swipe down brings the navigation dock back over the theater;
     /// a swipe up tucks it away again — no need to minimize first.
@@ -63,10 +62,10 @@ struct FeedView: View {
                     if abs(height - headerHeight) > 0.5 { headerHeight = height }
                 }
                 .background(alignment: .top) { headerBackdrop }
-                .frame(height: hidesHeaderForTheater ? 0 : nil, alignment: .top)
+                .frame(height: videoExpanded ? 0 : nil, alignment: .top)
                 .clipped()
-                .opacity(hidesHeaderForTheater ? 0 : 1)
-                .allowsHitTesting(!hidesHeaderForTheater)
+                .opacity(videoExpanded ? 0 : 1)
+                .allowsHitTesting(!videoExpanded)
                 .zIndex(1)
 
             if let celebration {
@@ -361,13 +360,6 @@ struct FeedView: View {
     private var statusChromeOpacity: Double {
         guard !watchChromeVisible else { return 1 }
         return currentClip?.isPortraitVideo == true ? 0.20 : 0.36
-    }
-
-    /// A landscape theater keeps its clean, dedicated playback chrome. A maximized Short
-    /// keeps the ambient header over the picture so For You, Explore, and progress never
-    /// vanish completely.
-    private var hidesHeaderForTheater: Bool {
-        videoExpanded && currentClip?.isPortraitVideo != true
     }
 
     @ViewBuilder
