@@ -1,0 +1,2546 @@
+{
+  "date": "2026-11-09",
+  "initialPublishedClips": 570,
+  "initialLineTimedClips": 211,
+  "livePublishedClips": 570,
+  "liveWordTimedClips": 408,
+  "liveClipsWithLineTiming": 162,
+  "repairedClips": 49,
+  "repairedLines": 248,
+  "pendingClips": 162,
+  "pendingReasons": {
+    "complete_source_audio_missing": 148,
+    "alignment_or_transcript_review": 14
+  },
+  "paidInferenceCalls": 0,
+  "repairs": [
+    {
+      "id": "cap-4IWDMUuyZ5U-1605",
+      "videoId": "4IWDMUuyZ5U",
+      "sourceStartSec": 1605.602,
+      "durationSec": 16.766,
+      "wordTimedLines": 7,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-4IWDMUuyZ5U-1935",
+      "videoId": "4IWDMUuyZ5U",
+      "sourceStartSec": 1935.568,
+      "durationSec": 19.686,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-4IWDMUuyZ5U-2251",
+      "videoId": "4IWDMUuyZ5U",
+      "sourceStartSec": 2251.768,
+      "durationSec": 16.032,
+      "wordTimedLines": 6,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-4IWDMUuyZ5U-307",
+      "videoId": "4IWDMUuyZ5U",
+      "sourceStartSec": 307.57,
+      "durationSec": 19.65,
+      "wordTimedLines": 7,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-4IWDMUuyZ5U-640",
+      "videoId": "4IWDMUuyZ5U",
+      "sourceStartSec": 640.241,
+      "durationSec": 18.127,
+      "wordTimedLines": 7,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-6xJfcoEaf3k-0",
+      "videoId": "6xJfcoEaf3k",
+      "sourceStartSec": 0.58,
+      "durationSec": 17.16,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-forced-alignment"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-1230",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 1230.72,
+      "durationSec": 18.56,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-1540",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 1540.52,
+      "durationSec": 18.569,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-1774",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 1774.673,
+      "durationSec": 20.687,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-265",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 265.4,
+      "durationSec": 29.411,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-30",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 30.759,
+      "durationSec": 27.32,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-541",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 541.659,
+      "durationSec": 18.941,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-B0wGTz638-A-923",
+      "videoId": "B0wGTz638-A",
+      "sourceStartSec": 923.279,
+      "durationSec": 27.441,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-159",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 159.599,
+      "durationSec": 27.321,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-416",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 416.126,
+      "durationSec": 29.753,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-548",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 548.24,
+      "durationSec": 24.88,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-674",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 674.12,
+      "durationSec": 23.399,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-889",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 889.6,
+      "durationSec": 26.08,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-C3oPjuudXas-629",
+      "videoId": "C3oPjuudXas",
+      "sourceStartSec": 629.295,
+      "durationSec": 42.918,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-forced-alignment"
+      ]
+    },
+    {
+      "id": "cap-C3oPjuudXas-951",
+      "videoId": "C3oPjuudXas",
+      "sourceStartSec": 951.992,
+      "durationSec": 31.198,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-0",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 0.12,
+      "durationSec": 25.36,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-1029",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 1029.6,
+      "durationSec": 25.64,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-108",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 108.04,
+      "durationSec": 19.359,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-367",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 367.68,
+      "durationSec": 36.259,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-771",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 771.079,
+      "durationSec": 21.801,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-912",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 912.04,
+      "durationSec": 33,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-D53XrHaS80g-176",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 176.708,
+      "durationSec": 22.25,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-D53XrHaS80g-356",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 356.458,
+      "durationSec": 11.583,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-D53XrHaS80g-501",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 501.291,
+      "durationSec": 19,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-D53XrHaS80g-711",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 711.291,
+      "durationSec": 17.375,
+      "wordTimedLines": 6,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FerhHlgUn7U-849",
+      "videoId": "FerhHlgUn7U",
+      "sourceStartSec": 849.42,
+      "durationSec": 18.4,
+      "wordTimedLines": 6,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-0",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 0.76,
+      "durationSec": 29.24,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-139",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 139.519,
+      "durationSec": 31.881,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-257",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 257.68,
+      "durationSec": 33.04,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-433",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 433.56,
+      "durationSec": 28.96,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-549",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 549.959,
+      "durationSec": 26.961,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-FpKMLVs9el4-923",
+      "videoId": "FpKMLVs9el4",
+      "sourceStartSec": 923.92,
+      "durationSec": 24.409,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-H_p-Hti878g-20",
+      "videoId": "H_p-Hti878g",
+      "sourceStartSec": 20.916,
+      "durationSec": 20,
+      "wordTimedLines": 10,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-H_p-Hti878g-60",
+      "videoId": "H_p-Hti878g",
+      "sourceStartSec": 60.583,
+      "durationSec": 18.75,
+      "wordTimedLines": 13,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-H_p-Hti878g-79",
+      "videoId": "H_p-Hti878g",
+      "sourceStartSec": 79.791,
+      "durationSec": 18.959,
+      "wordTimedLines": 12,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-HhU77sPJLmY-1142",
+      "videoId": "HhU77sPJLmY",
+      "sourceStartSec": 1142.952,
+      "durationSec": 16.043,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-HhU77sPJLmY-784",
+      "videoId": "HhU77sPJLmY",
+      "sourceStartSec": 784.422,
+      "durationSec": 18.77,
+      "wordTimedLines": 9,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-ijh0hq5k2hs-214",
+      "videoId": "ijh0hq5k2hs",
+      "sourceStartSec": 214.27,
+      "durationSec": 20.58,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-ijh0hq5k2hs-427",
+      "videoId": "ijh0hq5k2hs",
+      "sourceStartSec": 427.274,
+      "durationSec": 17.186,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-iny_YVuvdo4-0",
+      "videoId": "iny_YVuvdo4",
+      "sourceStartSec": 0,
+      "durationSec": 16.75,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-iny_YVuvdo4-364",
+      "videoId": "iny_YVuvdo4",
+      "sourceStartSec": 364.52,
+      "durationSec": 18.97,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-iny_YVuvdo4-690",
+      "videoId": "iny_YVuvdo4",
+      "sourceStartSec": 690,
+      "durationSec": 17.73,
+      "wordTimedLines": 5,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-125",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 125.886,
+      "durationSec": 15.619,
+      "wordTimedLines": 6,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-141",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 141.505,
+      "durationSec": 15.913,
+      "wordTimedLines": 4,
+      "methods": [
+        "local-attention-dtw"
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "id": "cap-9-wnqXnESRQ-21",
+      "videoId": "9-wnqXnESRQ",
+      "sourceStartSec": 21.199,
+      "durationSec": 21.753,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-9-wnqXnESRQ-43",
+      "videoId": "9-wnqXnESRQ",
+      "sourceStartSec": 43.024,
+      "durationSec": 54.279,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-9-wnqXnESRQ-97",
+      "videoId": "9-wnqXnESRQ",
+      "sourceStartSec": 97.527,
+      "durationSec": 22.71,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-9sgdQO087vo-630",
+      "videoId": "9sgdQO087vo",
+      "sourceStartSec": 630.51,
+      "durationSec": 17.03,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-0",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 0.76,
+      "durationSec": 31.639,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[1]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[1]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "line[5]: DTW audio context exceeded"
+        }
+      ]
+    },
+    {
+      "id": "cap-C1aVVkDRpm0-263",
+      "videoId": "C1aVVkDRpm0",
+      "sourceStartSec": 263.28,
+      "durationSec": 28.6,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[1]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "line[3]: DTW audio context exceeded"
+        }
+      ]
+    },
+    {
+      "id": "cap-C3oPjuudXas-1060",
+      "videoId": "C3oPjuudXas",
+      "sourceStartSec": 1060.392,
+      "durationSec": 15.057,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-CHJe2Hy5Iqs-596",
+      "videoId": "CHJe2Hy5Iqs",
+      "sourceStartSec": 596.279,
+      "durationSec": 31.352,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[2]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[2]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "At least one published subtitle line could not be corroborated against speech"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "At least one published subtitle line could not be corroborated against speech"
+        }
+      ]
+    },
+    {
+      "id": "cap-D53XrHaS80g-650",
+      "videoId": "D53XrHaS80g",
+      "sourceStartSec": 650.625,
+      "durationSec": 18.041,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: No speech in alignment phrase"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-0",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 0,
+      "durationSec": 16.6,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-1016",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 1016.79,
+      "durationSec": 17.74,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-1549",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 1549.8,
+      "durationSec": 17.21,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-2014",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 2014.66,
+      "durationSec": 29.92,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-2493",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 2493.28,
+      "durationSec": 16.13,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-2941",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 2941.33,
+      "durationSec": 18.37,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-3439",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 3439.1,
+      "durationSec": 15.9,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-MmvaYPjogwQ-528",
+      "videoId": "MmvaYPjogwQ",
+      "sourceStartSec": 528.09,
+      "durationSec": 17.07,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-121",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 121.798,
+      "durationSec": 19.561,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-162",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 162.046,
+      "durationSec": 17.806,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-229",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 229.831,
+      "durationSec": 18.699,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-287",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 287.769,
+      "durationSec": 18.847,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-326",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 326.041,
+      "durationSec": 18.426,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-365",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 365.534,
+      "durationSec": 19.638,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-6",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 6.505,
+      "durationSec": 36.717,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-NHKKXdc9En8-82",
+      "videoId": "NHKKXdc9En8",
+      "sourceStartSec": 82.815,
+      "durationSec": 18.963,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-0",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 0,
+      "durationSec": 18.05,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-1005",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 1005.29,
+      "durationSec": 15.57,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-1204",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 1204.57,
+      "durationSec": 10.79,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-162",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 162.44,
+      "durationSec": 17.51,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-349",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 349.26,
+      "durationSec": 17.12,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-511",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 511.02,
+      "durationSec": 19.57,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-683",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 683.32,
+      "durationSec": 14.666,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-Nrw4OjzCxsg-840",
+      "videoId": "Nrw4OjzCxsg",
+      "sourceStartSec": 840.1,
+      "durationSec": 18.49,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-0",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 0,
+      "durationSec": 14.41,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-1115",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 1115.51,
+      "durationSec": 18.76,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-1394",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 1394.37,
+      "durationSec": 18.31,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-1663",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 1663.07,
+      "durationSec": 19.99,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-1950",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 1950.31,
+      "durationSec": 13.19,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-283",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 283.71,
+      "durationSec": 14.91,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-548",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 548.45,
+      "durationSec": 19.7,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-OfYUq8MfH5Y-830",
+      "videoId": "OfYUq8MfH5Y",
+      "sourceStartSec": 830,
+      "durationSec": 17.46,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-175",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 175.42,
+      "durationSec": 23.12,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-267",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 267.12,
+      "durationSec": 21.36,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-323",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 323.5,
+      "durationSec": 21.18,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-384",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 384.74,
+      "durationSec": 30.28,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-483",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 483.74,
+      "durationSec": 27.76,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-553",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 553.82,
+      "durationSec": 21.94,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-6",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 6.36,
+      "durationSec": 18.68,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-TLcyStZMQ-o-85",
+      "videoId": "TLcyStZMQ-o",
+      "sourceStartSec": 85.4,
+      "durationSec": 24.1,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-1077",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 1077.041,
+      "durationSec": 19.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-1238",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 1238.25,
+      "durationSec": 18.75,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-1333",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 1333.916,
+      "durationSec": 19.125,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-174",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 174.708,
+      "durationSec": 20.417,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-339",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 339.833,
+      "durationSec": 18.542,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-445",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 445.333,
+      "durationSec": 23.417,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-665",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 665.5,
+      "durationSec": 14.708,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-UP-ZdioMP2Y-815",
+      "videoId": "UP-ZdioMP2Y",
+      "sourceStartSec": 815.708,
+      "durationSec": 16.083,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-0",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 0.001,
+      "durationSec": 37.954,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-1058",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 1058.561,
+      "durationSec": 23.609,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-172",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 172.72,
+      "durationSec": 17.237,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-278",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 278.61,
+      "durationSec": 15.672,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-468",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 468.449,
+      "durationSec": 18.335,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-608",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 608.12,
+      "durationSec": 17.651,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-703",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 703.54,
+      "durationSec": 18.29,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-W1NtnGiXQVo-870",
+      "videoId": "W1NtnGiXQVo",
+      "sourceStartSec": 870.51,
+      "durationSec": 33.519,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-130",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 130.505,
+      "durationSec": 18.644,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-150",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 150.817,
+      "durationSec": 19.644,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-171",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 171.212,
+      "durationSec": 17.977,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[2]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[1]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-189",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 189.314,
+      "durationSec": 15.724,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-29",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 29.571,
+      "durationSec": 42.626,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[1]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[2]: Collapsed or overlapping word timing needs review"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-72",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 72.447,
+      "durationSec": 19.77,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-8",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 8.133,
+      "durationSec": 16.474,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[0]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[0]: DTW audio context exceeded"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-iHd7eWUXuLU-92",
+      "videoId": "iHd7eWUXuLU",
+      "sourceStartSec": 92.425,
+      "durationSec": 19.061,
+      "reason": "alignment_or_transcript_review",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "line[1]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "line[9]: Collapsed or overlapping word timing needs review"
+        },
+        {
+          "worker": "anchor-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        },
+        {
+          "worker": "anchor-full-summary.json",
+          "status": "held",
+          "reason": "Cached source speech differs from the published transcript"
+        }
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-157",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 157.418,
+      "durationSec": 19.194,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-176",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 176.612,
+      "durationSec": 18.317,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-32",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 32.447,
+      "durationSec": 19.603,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-52",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 52.05,
+      "durationSec": 18.384,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-klcLPmGMmI8-70",
+      "videoId": "klcLPmGMmI8",
+      "sourceStartSec": 70.434,
+      "durationSec": 19.651,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "qwen/summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "cap-oY0TnSozK7k-162",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 162.16,
+      "durationSec": 17.1,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-220",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 220.34,
+      "durationSec": 17.24,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-300",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 300.92,
+      "durationSec": 16.68,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-389",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 389.2,
+      "durationSec": 23.34,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-449",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 449.66,
+      "durationSec": 18.06,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-505",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 505.14,
+      "durationSec": 15.26,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-8",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 8.96,
+      "durationSec": 32.48,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-oY0TnSozK7k-87",
+      "videoId": "oY0TnSozK7k",
+      "sourceStartSec": 87.68,
+      "durationSec": 27.72,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-157",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 157.125,
+      "durationSec": 19.041,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-19",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 19.583,
+      "durationSec": 18.042,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-281",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 281.166,
+      "durationSec": 23.209,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-440",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 440.333,
+      "durationSec": 19.667,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-602",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 602.625,
+      "durationSec": 44.416,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-693",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 693.208,
+      "durationSec": 18.833,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-774",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 774.875,
+      "durationSec": 19.333,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rKSDGz9iAgU-96",
+      "videoId": "rKSDGz9iAgU",
+      "sourceStartSec": 96.208,
+      "durationSec": 16.417,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rgC7fyTx1nI-112",
+      "videoId": "rgC7fyTx1nI",
+      "sourceStartSec": 112.62,
+      "durationSec": 19.506,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rgC7fyTx1nI-33",
+      "videoId": "rgC7fyTx1nI",
+      "sourceStartSec": 33.471,
+      "durationSec": 17.745,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-rgC7fyTx1nI-71",
+      "videoId": "rgC7fyTx1nI",
+      "sourceStartSec": 71.66,
+      "durationSec": 19.537,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-190",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 190.166,
+      "durationSec": 15.375,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-246",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 246.458,
+      "durationSec": 19.042,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-390",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 390.75,
+      "durationSec": 15.333,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-461",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 461.375,
+      "durationSec": 19.875,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-54",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 54.75,
+      "durationSec": 18.166,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-555",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 555.958,
+      "durationSec": 17.417,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-653",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 653.958,
+      "durationSec": 26.042,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-wAciGWokkwY-779",
+      "videoId": "wAciGWokkwY",
+      "sourceStartSec": 779.041,
+      "durationSec": 7.75,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-0",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 0.68,
+      "durationSec": 29.999,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-201",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 201.08,
+      "durationSec": 24.64,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-278",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 278.639,
+      "durationSec": 23.761,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-376",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 376.199,
+      "durationSec": 27.601,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-463",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 463.599,
+      "durationSec": 23.361,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-582",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 582.64,
+      "durationSec": 22.439,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-660",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 660.44,
+      "durationSec": 25.44,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-xLrIsx_-BJM-88",
+      "videoId": "xLrIsx_-BJM",
+      "sourceStartSec": 88.159,
+      "durationSec": 34.161,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-0",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 0.28,
+      "durationSec": 17.359,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-175",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 175.28,
+      "durationSec": 18.915,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-304",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 304.44,
+      "durationSec": 23.64,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-416",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 416.479,
+      "durationSec": 12.748,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-535",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 535.312,
+      "durationSec": 30.016,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-741",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 741.92,
+      "durationSec": 16.505,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-857",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 857.92,
+      "durationSec": 22.08,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "cap-yvaLrHoNpPY-990",
+      "videoId": "yvaLrHoNpPY",
+      "sourceStartSec": 990.959,
+      "durationSec": 20.68,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "counting-kuma-03",
+      "videoId": "GINghDX1-VQ",
+      "sourceStartSec": 0,
+      "durationSec": 18.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "harajuku-street-02",
+      "videoId": "7XgJ81N8svY",
+      "sourceStartSec": 0,
+      "durationSec": 26.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "hoshizora-academy-07",
+      "videoId": "pbb2DE9x2yg",
+      "sourceStartSec": 0,
+      "durationSec": 22.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-0FJvvV6uGJ0-33-59",
+      "videoId": "0FJvvV6uGJ0",
+      "sourceStartSec": 33.5,
+      "durationSec": 25.7,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-0qITlsOy4LU-0-12",
+      "videoId": "0qITlsOy4LU",
+      "sourceStartSec": 0,
+      "durationSec": 12.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-6bAtb5gwX1Y-5-45",
+      "videoId": "6bAtb5gwX1Y",
+      "sourceStartSec": 0,
+      "durationSec": 43.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-7kk3VajdeaM-0-13",
+      "videoId": "7kk3VajdeaM",
+      "sourceStartSec": 0,
+      "durationSec": 13.9,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-CW0juiwikkQ-43-63",
+      "videoId": "CW0juiwikkQ",
+      "sourceStartSec": 43.8,
+      "durationSec": 20,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-MDtiDGr_-GY-3-17",
+      "videoId": "MDtiDGr_-GY",
+      "sourceStartSec": 3.99,
+      "durationSec": 13.79,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-Njk2kfY4irI-40-54",
+      "videoId": "Njk2kfY4irI",
+      "sourceStartSec": 40.5,
+      "durationSec": 13.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-Y7kYPuCduwk-0-21",
+      "videoId": "Y7kYPuCduwk",
+      "sourceStartSec": 0,
+      "durationSec": 21,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-ZFcKi6dxHmA-0-39",
+      "videoId": "ZFcKi6dxHmA",
+      "sourceStartSec": 0,
+      "durationSec": 39.6,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-_8b_ERSJ6_Q-5-45",
+      "videoId": "_8b_ERSJ6_Q",
+      "sourceStartSec": 0,
+      "durationSec": 41.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-aglOdAXsKEQ-6-30",
+      "videoId": "aglOdAXsKEQ",
+      "sourceStartSec": 6.7,
+      "durationSec": 23.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-bPqxKdMdXMA-0-19",
+      "videoId": "bPqxKdMdXMA",
+      "sourceStartSec": 0,
+      "durationSec": 19.8,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-butabara-steam",
+      "videoId": "UP2qvbhbuuU",
+      "sourceStartSec": 0,
+      "durationSec": 24,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-fOfIHF2JjI8-18-30",
+      "videoId": "fOfIHF2JjI8",
+      "sourceStartSec": 18.5,
+      "durationSec": 12.1,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-0-13",
+      "videoId": "hDfAn3KfBjk",
+      "sourceStartSec": 0,
+      "durationSec": 13.6,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-hDfAn3KfBjk-13-30",
+      "videoId": "hDfAn3KfBjk",
+      "sourceStartSec": 13.4,
+      "durationSec": 17.4,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-hYLf9yxkDBE-4-28",
+      "videoId": "hYLf9yxkDBE",
+      "sourceStartSec": 4.95,
+      "durationSec": 23.75,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-kR8YoH2mOZ8-28-44",
+      "videoId": "kR8YoH2mOZ8",
+      "sourceStartSec": 28.6,
+      "durationSec": 15.6,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-kids-aisatsu",
+      "videoId": "Px0yvMoeRro",
+      "sourceStartSec": 0,
+      "durationSec": 23.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-komeda-order",
+      "videoId": "YtvaKiCj84M",
+      "sourceStartSec": 0,
+      "durationSec": 18,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-konbini-sayaka",
+      "videoId": "goM53XUkblA",
+      "sourceStartSec": 0,
+      "durationSec": 17.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-mYHK1JNOAiM-30-52",
+      "videoId": "mYHK1JNOAiM",
+      "sourceStartSec": 30.8,
+      "durationSec": 22,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-oN4DNLhbzUE-32-42",
+      "videoId": "oN4DNLhbzUE",
+      "sourceStartSec": 32.8,
+      "durationSec": 9.3,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-pd-5GK2JdQk-5-45",
+      "videoId": "pd-5GK2JdQk",
+      "sourceStartSec": 0,
+      "durationSec": 44.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": []
+    },
+    {
+      "id": "immersion-r34OGOpTOs0-5-45",
+      "videoId": "r34OGOpTOs0",
+      "sourceStartSec": 0,
+      "durationSec": 34.5,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-rXF2YFvMxKY-32-58",
+      "videoId": "rXF2YFvMxKY",
+      "sourceStartSec": 32.5,
+      "durationSec": 26,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-vtuber-faucet",
+      "videoId": "sDeMwZYV6CE",
+      "sourceStartSec": 0,
+      "durationSec": 18,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-y3issC4ELx4-5-32",
+      "videoId": "y3issC4ELx4",
+      "sourceStartSec": 0,
+      "durationSec": 31.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "immersion-yLB0JwdA_ek-0-10",
+      "videoId": "yLB0JwdA_ek",
+      "sourceStartSec": 0,
+      "durationSec": 10.1,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "kissa-stories-01",
+      "videoId": "m4yJzEGcHgk",
+      "sourceStartSec": 0,
+      "durationSec": 24.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "kitsune-yuki-stream-01",
+      "videoId": "0ZYJkcNHFNY",
+      "sourceStartSec": 0,
+      "durationSec": 22.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "konbini-diaries-01",
+      "videoId": "nACwMFy3BIE",
+      "sourceStartSec": 0,
+      "durationSec": 24.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "piyo-picnic-01",
+      "videoId": "gmTLiz1n5Gs",
+      "sourceStartSec": 0,
+      "durationSec": 22.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "quiz-showdown-11",
+      "videoId": "rgXw4VWQKOw",
+      "sourceStartSec": 0,
+      "durationSec": 30.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "ramen-road-trip-03",
+      "videoId": "YOBPp4m5MQQ",
+      "sourceStartSec": 0,
+      "durationSec": 28.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "speedrun-commentary-02",
+      "videoId": "z-4E2ii8zWE",
+      "sourceStartSec": 0,
+      "durationSec": 34.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "tsukimi-rin-zatsudan-05",
+      "videoId": "4YmjVPjA8To",
+      "sourceStartSec": 0,
+      "durationSec": 32.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    },
+    {
+      "id": "words-that-matter-04",
+      "videoId": "2uuaak0kXOg",
+      "sourceStartSec": 0,
+      "durationSec": 36.0,
+      "reason": "complete_source_audio_missing",
+      "attempts": [
+        {
+          "worker": "whisper-summary.json",
+          "status": "held",
+          "reason": "DownloadError"
+        }
+      ]
+    }
+  ],
+  "sourceAudioProbes": [
+    {
+      "videoId": "MmvaYPjogwQ",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] MmvaYPjogwQ: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    },
+    {
+      "videoId": "NHKKXdc9En8",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] NHKKXdc9En8: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    },
+    {
+      "videoId": "Nrw4OjzCxsg",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] Nrw4OjzCxsg: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    },
+    {
+      "videoId": "OfYUq8MfH5Y",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] OfYUq8MfH5Y: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    },
+    {
+      "videoId": "TLcyStZMQ-o",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] TLcyStZMQ-o: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    },
+    {
+      "videoId": "UP-ZdioMP2Y",
+      "windows": 8,
+      "status": "source_unavailable",
+      "reason": "ERROR: [youtube] UP-ZdioMP2Y: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication. See  [link]  for how to manually p"
+    }
+  ],
+  "newSources": {
+    "shortlistedVideos": 37,
+    "shortlistedChannels": 20,
+    "attemptedVideos": 29,
+    "signInChallenges": 29,
+    "readyForReview": 0,
+    "publicationMetadataStatus": "quotaExceeded",
+    "newLiveClipIds": [],
+    "candidates": [
+      {
+        "video_id": "2DNz5hPBva0",
+        "channel_id": "UC8oF7jmQsKbMVrCv5LrP32w",
+        "channel_name": "HIRO BEAUTY CHANNEL",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "3yJlEgBHkEU",
+        "channel_id": "UC8oF7jmQsKbMVrCv5LrP32w",
+        "channel_name": "HIRO BEAUTY CHANNEL",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "OsYllaplP9g",
+        "channel_id": "UCQ_MqAw18jFTlBB-f8BP7dw",
+        "channel_name": "QuizKnock",
+        "duration_sec": 23,
+        "category": "learning"
+      },
+      {
+        "video_id": "dLHqgYkpQ0g",
+        "channel_id": "UCQ_MqAw18jFTlBB-f8BP7dw",
+        "channel_name": "QuizKnock",
+        "duration_sec": 23,
+        "category": "learning"
+      },
+      {
+        "video_id": "HH2K9FKfdbE",
+        "channel_id": "UCLizOnUQUuR0FW58PP-ZACA",
+        "channel_name": "日テレ鉄道部",
+        "duration_sec": 24,
+        "category": "learning"
+      },
+      {
+        "video_id": "Ih_Yix6xyCc",
+        "channel_id": "UCLizOnUQUuR0FW58PP-ZACA",
+        "channel_name": "日テレ鉄道部",
+        "duration_sec": 24,
+        "category": "learning"
+      },
+      {
+        "video_id": "0vZ2ij5BYUo",
+        "channel_id": "UCcp_YooUiD6Xqmh9Ahzr98A",
+        "channel_name": "くつずれデイズ",
+        "duration_sec": 26,
+        "category": "anime"
+      },
+      {
+        "video_id": "BnX_-otbyf8",
+        "channel_id": "UCcp_YooUiD6Xqmh9Ahzr98A",
+        "channel_name": "くつずれデイズ",
+        "duration_sec": 29,
+        "category": "anime"
+      },
+      {
+        "video_id": "2tmVPtDgmds",
+        "channel_id": "UCHp2CjGch4haKgEK_p6G0CA",
+        "channel_name": "RENIX - 株式会社レニクス",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "G9i8sGYhWXU",
+        "channel_id": "UCHp2CjGch4haKgEK_p6G0CA",
+        "channel_name": "RENIX - 株式会社レニクス",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "H3lW3S5ZL7k",
+        "channel_id": "UCoXoprkB2QcK_qyI-47qRCQ",
+        "channel_name": "末路ちゃんねる",
+        "duration_sec": 23,
+        "category": "drama"
+      },
+      {
+        "video_id": "CjuEMVtvFX0",
+        "channel_id": "UCpcomS0d8QgGdMBdDZZqsVw",
+        "channel_name": "みるめんカップル",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "Ir1KMXwuRyA",
+        "channel_id": "UCpcomS0d8QgGdMBdDZZqsVw",
+        "channel_name": "みるめんカップル",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "2ilSFw65qPQ",
+        "channel_id": "UC63RBLpvf-SYXZ31m5cBzPg",
+        "channel_name": "ATTSUN TV",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "3n_XgrBhrW8",
+        "channel_id": "UC63RBLpvf-SYXZ31m5cBzPg",
+        "channel_name": "ATTSUN TV",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "BhFrRDr8iDQ",
+        "channel_id": "UCsRRzwiGpo5U580FpH_ZEaw",
+        "channel_name": "SAGIRIX",
+        "duration_sec": 23,
+        "category": "interview"
+      },
+      {
+        "video_id": "O6gliLEnjUk",
+        "channel_id": "UCsRRzwiGpo5U580FpH_ZEaw",
+        "channel_name": "SAGIRIX",
+        "duration_sec": 23,
+        "category": "interview"
+      },
+      {
+        "video_id": "06gbFT7-Sgs",
+        "channel_id": "UClBtnHciLNPPBAP-mlJ2fAg",
+        "channel_name": "慈円ヒルズ",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "4C3uViZ7WM8",
+        "channel_id": "UClBtnHciLNPPBAP-mlJ2fAg",
+        "channel_name": "慈円ヒルズ",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "3VXbXE-_kdI",
+        "channel_id": "UC2kbd8gXj5fdfmta-Gp_kFw",
+        "channel_name": "チェリー東大 /あきぴで",
+        "duration_sec": 23,
+        "category": "learning"
+      },
+      {
+        "video_id": "FroYwLOw6U8",
+        "channel_id": "UC2kbd8gXj5fdfmta-Gp_kFw",
+        "channel_name": "チェリー東大 /あきぴで",
+        "duration_sec": 23,
+        "category": "learning"
+      },
+      {
+        "video_id": "02JZXPYQyNI",
+        "channel_id": "UCbikEJtfgTM3v0CFA8EV1mQ",
+        "channel_name": "やんばるゼミ",
+        "duration_sec": 23,
+        "category": "drama"
+      },
+      {
+        "video_id": "0FS2E3mDpOA",
+        "channel_id": "UCbikEJtfgTM3v0CFA8EV1mQ",
+        "channel_name": "やんばるゼミ",
+        "duration_sec": 23,
+        "category": "drama"
+      },
+      {
+        "video_id": "MPHW5oy0IHM",
+        "channel_id": "UCvJRQoc4vZ9f8cxF-N7bdCA",
+        "channel_name": "フェルちゃんねる",
+        "duration_sec": 34,
+        "category": "learning"
+      },
+      {
+        "video_id": "5nCKvycpnM0",
+        "channel_id": "UCwVpSzeulUnd-W0jZwnmXYg",
+        "channel_name": "HikakinClipTV",
+        "duration_sec": 19,
+        "category": "variety"
+      },
+      {
+        "video_id": "8z3tOVEHFHw",
+        "channel_id": "UCsKuQ6cd8No46NLwPB9X3eg",
+        "channel_name": "株式会社オープンリーチ",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "BOgc70SgdMM",
+        "channel_id": "UCsKuQ6cd8No46NLwPB9X3eg",
+        "channel_name": "株式会社オープンリーチ",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "F27H4sijzRg",
+        "channel_id": "UCLKNp-ua37bAXkkPJRD-mfQ",
+        "channel_name": "GQ JAPAN",
+        "duration_sec": 23,
+        "category": "interview"
+      },
+      {
+        "video_id": "NArOlh5G21c",
+        "channel_id": "UCLKNp-ua37bAXkkPJRD-mfQ",
+        "channel_name": "GQ JAPAN",
+        "duration_sec": 23,
+        "category": "interview"
+      },
+      {
+        "video_id": "NTTK5RLgfys",
+        "channel_id": "UC7Z6YolTODcT5kXnhT7B4Jg",
+        "channel_name": "えだまめロン",
+        "duration_sec": 24,
+        "category": "gaming"
+      },
+      {
+        "video_id": "MJuz1QjaPgk",
+        "channel_id": "UC7Z6YolTODcT5kXnhT7B4Jg",
+        "channel_name": "えだまめロン",
+        "duration_sec": 25,
+        "category": "gaming"
+      },
+      {
+        "video_id": "a4-NG4HHY0k",
+        "channel_id": "UCm-PWt_mRAB875s2iIHaacw",
+        "channel_name": "Lyssie ASMR",
+        "duration_sec": 45,
+        "category": "variety"
+      },
+      {
+        "video_id": "7iUC908By90",
+        "channel_id": "UCm-PWt_mRAB875s2iIHaacw",
+        "channel_name": "Lyssie ASMR",
+        "duration_sec": 82,
+        "category": "variety"
+      },
+      {
+        "video_id": "7LNQDoxW1e4",
+        "channel_id": "UC1nepUBVx3uMHhmX9egSyQA",
+        "channel_name": "放課後アオハル学園",
+        "duration_sec": 23,
+        "category": "drama"
+      },
+      {
+        "video_id": "ImSU48wGB0w",
+        "channel_id": "UC1nepUBVx3uMHhmX9egSyQA",
+        "channel_name": "放課後アオハル学園",
+        "duration_sec": 23,
+        "category": "drama"
+      },
+      {
+        "video_id": "GhE1rQnXUw0",
+        "channel_id": "UCANyMr_4QDf7RBhqiTbwnBw",
+        "channel_name": "あおちゃんねる",
+        "duration_sec": 23,
+        "category": "variety"
+      },
+      {
+        "video_id": "X9PTPqVnJeo",
+        "channel_id": "UCANyMr_4QDf7RBhqiTbwnBw",
+        "channel_name": "あおちゃんねる",
+        "duration_sec": 23,
+        "category": "variety"
+      }
+    ]
+  },
+  "deployedReviewCatalog": true,
+  "punctuationMigration": "20261109000811"
+}
