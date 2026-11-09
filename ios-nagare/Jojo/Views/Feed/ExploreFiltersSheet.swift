@@ -87,7 +87,10 @@ nonisolated struct ExploreFilters: Equatable, Sendable {
         [difficulty != nil, grammar != nil, topic != nil, source != nil, watched != .any].filter { $0 }.count
     }
 
-    func matches(_ clip: Clip, finishedClipIds: Set<String>) -> Bool {
+    func matches<FinishedIDs: Collection>(
+        _ clip: Clip,
+        finishedClipIds: FinishedIDs
+    ) -> Bool where FinishedIDs.Element == String {
         guard difficulty == nil || clip.difficultyKind == difficulty,
               topic == nil || clip.categoryKind == topic,
               source == nil || clip.categoryKind.sourceType == source else { return false }
