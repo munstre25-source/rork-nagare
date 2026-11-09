@@ -103,20 +103,15 @@ struct FeedView: View {
                     CameBackToast(
                         surface: toast.surface,
                         gloss: toast.gloss,
-                        onReview: {
-                            app.dismissCameBackToast()
-                            app.pendingDeepLink = .review
-                        },
-                        onDismiss: { withAnimation(.snappy) { app.dismissCameBackToast() } }
+                        onReview: { dismissCameBackAlert(openReview: true) },
+                        onDismiss: { dismissCameBackAlert(openReview: false) }
                     )
                     .padding(.top, 8)
                     Spacer()
                 }
                 .zIndex(3)
                 .task(id: toast.id) {
-                    try? await Task.sleep(for: .seconds(4.5))
-                    guard !Task.isCancelled, app.cameBackToast?.id == toast.id else { return }
-                    withAnimation(.snappy) { app.dismissCameBackToast() }
+                    await presentCameBackAlert(toast)
                 }
             }
 
@@ -176,11 +171,6 @@ struct FeedView: View {
         .onChange(of: app.currentStreak) { _, _ in checkAchievements() }
         .onChange(of: goalCompletionVisible) { _, visible in
             if visible { showWatchChrome() } else { scheduleWatchChromeHide() }
-        }
-        .onChange(of: app.cameBackToast?.id) { _, toastId in
-            // Actionable alerts get a brief full-strength moment; ordinary feed chrome
-            // returns to its quiet resting opacity after the alert is gone.
-            if toastId != nil { showWatchChrome() } else { scheduleWatchChromeHide() }
         }
         .onChange(of: theaterOptionsPresented) { _, presented in
             if presented { chromeHideTask?.cancel() } else { scheduleWatchChromeHide() }
@@ -437,6 +427,19 @@ struct FeedView: View {
         // ambient playback fade resumes.
         showWatchChrome()
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { celebration = item }
+    }
+
+    private func presentCameBackAlert(_ toast: CameBackPayload) async {
+        showWatchChrome()
+        try? await Task.sleep(for: .seconds(4.5))
+        guard !Task.isCancelled, app.cameBackToast?.id == toast.id else { return }
+        dismissCameBackAlert(openReview: false)
+    }
+
+    private func dismissCameBackAlert(openReview: Bool) {
+        withAnimation(.snappy) { app.dismissCameBackToast() }
+        if openReview { app.pendingDeepLink = .review }
+        scheduleWatchChromeHide()
     }
 
     /// Achievements are computed from progress; we only remember which ones were announced.
