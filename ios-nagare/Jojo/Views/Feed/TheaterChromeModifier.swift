@@ -8,6 +8,7 @@ struct TheaterChromeModifier: ViewModifier {
     var blocked: Bool
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var interaction = 0
+    @State private var isLandscapeViewport = false
 
     private struct IdleState: Hashable {
         var expanded: Bool
@@ -23,7 +24,10 @@ struct TheaterChromeModifier: ViewModifier {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 28).onEnded { value in
                     guard expanded else { return }
-                    if value.translation.height > 48 {
+                    if isLandscapeViewport {
+                        withAnimation(.easeInOut(duration: 0.2)) { visible = true }
+                        interaction += 1
+                    } else if value.translation.height > 48 {
                         withAnimation(.easeInOut(duration: 0.2)) { visible = true }
                         interaction += 1
                     } else if value.translation.height < -48 {
@@ -31,7 +35,17 @@ struct TheaterChromeModifier: ViewModifier {
                     }
                 }
             )
-            .simultaneousGesture(TapGesture().onEnded { interaction += 1 })
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    if expanded && isLandscapeViewport {
+                        withAnimation(.easeInOut(duration: 0.2)) { visible = true }
+                    }
+                    interaction += 1
+                }
+            )
+            .onGeometryChange(for: Bool.self) { proxy in
+                proxy.size.width > proxy.size.height
+            } action: { isLandscapeViewport = $0 }
             .onChange(of: expanded) { _, _ in visible = false }
             .task(id: IdleState(expanded: expanded, visible: visible, playing: playing,
                                 blocked: blocked, voiceOver: voiceOverEnabled, interaction: interaction)) {

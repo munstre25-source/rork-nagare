@@ -26,6 +26,7 @@ struct FeedView: View {
     @State private var theaterOptionsPresented = false
     @State private var goalCompletionVisible = false
     @State private var headerHeight: CGFloat = 96
+    @State private var portraitProgressHeight: CGFloat = 42
     @State private var celebration: FeedCelebration?
     @AppStorage(PlayerPrefs.focusModeKey) private var focusMode = false
     @AppStorage("jojo.seenAchievements") private var seenAchievements = ""
@@ -319,32 +320,52 @@ struct FeedView: View {
         return clips.first { $0.id == currentId }
     }
 
-    /// Navigation stays directly below the safe area; progress and resume details
-    /// sit under it and fade with the watch chrome (opacity only, never height).
+    /// Portrait Shorts reserve a solid strip for progress above the picture. The mode
+    /// switch then floats over the top of the video and can fade without moving the pager.
     private var headerStack: some View {
         VStack(spacing: 0) {
-            header
-                .opacity(navigationChromeOpacity)
-            VStack(spacing: 0) {
-                if !focusMode {
-                    ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
-                }
-                if showResumeChip, let resumeSnapshot {
-                    ResumeChip(
-                        title: resumeSnapshot.title,
-                        channel: resumeSnapshot.channel,
-                        time: resumeSnapshot.time,
-                        onResume: { resumeFromSnapshot() },
-                        onDismiss: {
-                            showResumeChip = false
-                            ResumePlaybackStore.clear()
-                            self.resumeSnapshot = nil
-                        }
-                    )
-                }
+            if currentClip?.isPortraitVideo == true {
+                statusHeader
+                header
+                    .opacity(navigationChromeOpacity)
+            } else {
+                header
+                    .opacity(navigationChromeOpacity)
+                statusHeader
             }
-            .opacity(statusChromeOpacity)
         }
+    }
+
+    private var statusHeader: some View {
+        VStack(spacing: 0) {
+            if !focusMode {
+                ProgressStrip(dueWords: dueReviewKeys.count, onReview: openDueReview)
+            }
+            if showResumeChip, let resumeSnapshot {
+                ResumeChip(
+                    title: resumeSnapshot.title,
+                    channel: resumeSnapshot.channel,
+                    time: resumeSnapshot.time,
+                    onResume: { resumeFromSnapshot() },
+                    onDismiss: {
+                        showResumeChip = false
+                        ResumePlaybackStore.clear()
+                        self.resumeSnapshot = nil
+                    }
+                )
+            }
+        }
+        .opacity(statusChromeOpacity)
+        .background(Color.watchBackground.ignoresSafeArea(edges: .top))
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            if height.isFinite, height > 0, abs(height - portraitProgressHeight) > 0.5 {
+                portraitProgressHeight = height
+            }
+        }
+    }
+
+    private var portraitProgressInset: CGFloat {
+        (!focusMode || (showResumeChip && resumeSnapshot != nil)) ? portraitProgressHeight : 0
     }
 
     /// Playback settles persistent controls instead of removing them. Shorts need the
@@ -379,7 +400,7 @@ struct FeedView: View {
         }
     }
 
-    /// Feed navigation just below the status bar, above progress and the video.
+    /// Feed navigation: beneath progress on portrait Shorts, above it on wide clips.
     private var header: some View {
         HStack(spacing: 0) {
             Button {
@@ -550,7 +571,9 @@ struct FeedView: View {
                                 advance()
                             },
                             reportsCoachAnchors: true,
-                            topInset: videoExpanded ? 0 : headerHeight
+                            topInset: videoExpanded
+                                ? 0
+                                : (clip.isPortraitVideo ? portraitProgressInset : headerHeight)
                         )
                         .background(Color.watchBackground)
                         // Opaque mask so the next page cannot show through rounded corners.
