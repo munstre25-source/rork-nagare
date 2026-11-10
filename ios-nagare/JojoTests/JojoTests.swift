@@ -595,6 +595,13 @@ struct JojoTests {
         #expect(app.localWordExplanation(for: token, sentence: "")?.definitions == ["persisted meaning"])
     }
 
+    @Test func askCacheKeyCanonicalizesCosmeticQuestionDifferences() {
+        let token = Token(surface: "食べた", romaji: "tabeta", start: 0, end: 1, pos: "verb", baseForm: "食べる")
+        let first = WordExplainService.askKey(for: token, sentence: "もう食べた。", question: " Why this form? ")
+        let second = WordExplainService.askKey(for: token, sentence: "もう食べた。", question: "why   this form.")
+        #expect(first == second)
+    }
+
     @Test func desuNeHasABundledOfflineMeaning() throws {
         let app = try makeApp()
         let token = Token(surface: "ですね", romaji: "desu ne", start: 0, end: 1, pos: "expression")

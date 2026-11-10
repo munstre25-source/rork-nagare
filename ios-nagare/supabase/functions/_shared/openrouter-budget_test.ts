@@ -22,7 +22,12 @@ async function run(
     names.forEach((key, i) => previous[i] === undefined ? Deno.env.delete(key) : Deno.env.set(key, previous[i]!));
   }
 }
-const call = () => geminiGenerateJson({ model: "google/gemini-3.8-flash", system: "test", user: "test" });
+const call = (maxOutputTokens?: number) => geminiGenerateJson({
+  model: "google/gemini-3.8-flash",
+  system: "test",
+  user: "test",
+  maxOutputTokens,
+});
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 
 Deno.test("denied reservation makes no paid-provider request or failover", async () => {
@@ -62,6 +67,19 @@ Deno.test("successful provider call settles actual cost rather than its full hol
   }, async () => {
     assertEquals((await call()).text, '{"ok":true}');
     assertEquals(costs, [0.012]);
+  });
+});
+
+Deno.test("text calls honor a smaller output-token ceiling", async () => {
+  let providerBody: Record<string, unknown> | undefined;
+  await run((url, body) => {
+    if (url.includes("openrouter_reserve_lookup_budget")) return json(reservation);
+    if (url.includes("openrouter_settle_budget")) return json(0.001);
+    providerBody = body;
+    return json({ choices: [{ message: { content: '{"ok":true}' } }], usage: { cost: 0.001 } });
+  }, async () => {
+    await call(512);
+    assertEquals(providerBody?.max_tokens, 512);
   });
 });
 

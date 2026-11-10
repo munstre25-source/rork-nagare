@@ -1,7 +1,7 @@
 import Foundation
 
 /// A cache entry the caller should persist into SwiftData.
-nonisolated struct CachePayload: Sendable {
+nonisolated struct CachePayload: Sendable, Equatable {
     let key: String
     let kind: String
     let data: Data
@@ -18,7 +18,7 @@ nonisolated struct ContextOutcome: Sendable {
 }
 
 nonisolated enum AskOutcome: Sendable, Equatable {
-    case answer(String)
+    case answer(String, CachePayload?)
     case failure(String)
 }
 
@@ -35,6 +35,9 @@ actor WordExplainService {
     private let api: SupabaseAPI
     private let lexicon: LocalLexicon
     private var memoryCache: [String: Data] = [:]
+    /// Actor reentrancy can otherwise start the same paid request twice while the first
+    /// caller is awaiting URLSession. Every identical key shares one task.
+    private var inFlight: [String: Task<Data, Error>] = [:]
     private static let logKey = "nagare.explain.calllog"
 
     init(api: SupabaseAPI, lexicon: LocalLexicon) {
@@ -60,6 +63,16 @@ actor WordExplainService {
         "context|\(token.dictionaryForm)|\(JapaneseText.sentenceHash(sentence))"
     }
 
+    static func askKey(for token: Token, sentence: String, question: String) -> String {
+        let collapsed = question
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        let canonical = collapsed.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        return "ask|\(token.dictionaryForm)|\(JapaneseText.sentenceHash(sentence))|\(canonical)"
+    }
+
     func lookup(token: Token, sentence: String, appUserId: String) async -> LookupOutcome {
         if let instant = lexicon.instantExplanation(for: token), instant.hasMeaning {
             return LookupOutcome(explanation: instant, newCache: nil)
@@ -73,7 +86,13 @@ actor WordExplainService {
         }
         let started = Date()
         do {
-            let data = try await api.explainWord(kind: "lookup", word: token.dictionaryForm, sentence: sentence, appUserId: appUserId)
+            let data = try await remoteData(
+                key: key,
+                kind: "lookup",
+                word: token.dictionaryForm,
+                sentence: sentence,
+                appUserId: appUserId
+            )
             logCall(started: started, status: "ok")
             guard let decoded = Self.decodeLookup(data, token: token, source: .live) else {
                 return LookupOutcome(explanation: .fallback(for: token), newCache: nil)
@@ -98,7 +117,13 @@ actor WordExplainService {
         guard api.isConfigured else { return ContextOutcome(context: fallback, newCache: nil) }
         let started = Date()
         do {
-            let data = try await api.explainWord(kind: "context", word: token.dictionaryForm, sentence: sentence, appUserId: appUserId)
+            let data = try await remoteData(
+                key: key,
+                kind: "context",
+                word: token.dictionaryForm,
+                sentence: sentence,
+                appUserId: appUserId
+            )
             logCall(started: started, status: "ok")
             guard let decoded = try? JSONDecoder().decode(ContextExplanation.self, from: data),
                   !decoded.contextualExplanation.isEmpty else {
@@ -117,25 +142,57 @@ actor WordExplainService {
     func ask(token: Token, sentence: String, question: String, appUserId: String) async -> AskOutcome {
         let normalized = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return .failure("Type a question for Jojo first.") }
+        let key = Self.askKey(for: token, sentence: sentence, question: normalized)
+        if let cached = memoryCache[key], let answer = Self.decodeAnswer(cached) {
+            return .answer(answer, nil)
+        }
         guard api.isConfigured else {
             return .failure("Ask Jojo isn't configured in this build yet.")
         }
-        let key = "ask|\(token.dictionaryForm)|\(JapaneseText.sentenceHash(sentence))|\(normalized.lowercased())"
-        if let cached = memoryCache[key], let answer = Self.decodeAnswer(cached) { return .answer(answer) }
         let started = Date()
         do {
-            let data = try await api.explainWord(kind: "ask", word: token.dictionaryForm, sentence: sentence,
-                                                 appUserId: appUserId, question: String(normalized.prefix(200)))
+            let data = try await remoteData(
+                key: key,
+                kind: "ask",
+                word: token.dictionaryForm,
+                sentence: sentence,
+                appUserId: appUserId,
+                question: String(normalized.prefix(160))
+            )
             logCall(started: started, status: "ok")
             guard let answer = Self.decodeAnswer(data) else {
                 return .failure("Jojo returned an empty explanation. Please try that question again.")
             }
             memoryCache[key] = data
-            return .answer(answer)
+            return .answer(answer, CachePayload(key: key, kind: "ask", data: data))
         } catch {
             logCall(started: started, status: statusLabel(error))
             return .failure(Self.askFailureMessage(error))
         }
+    }
+
+    private func remoteData(
+        key: String,
+        kind: String,
+        word: String,
+        sentence: String,
+        appUserId: String,
+        question: String? = nil
+    ) async throws -> Data {
+        if let existing = inFlight[key] { return try await existing.value }
+        let api = self.api
+        let task = Task {
+            try await api.explainWord(
+                kind: kind,
+                word: word,
+                sentence: sentence,
+                appUserId: appUserId,
+                question: question
+            )
+        }
+        inFlight[key] = task
+        defer { inFlight[key] = nil }
+        return try await task.value
     }
 
     nonisolated private static func decodeAnswer(_ data: Data) -> String? {

@@ -227,8 +227,8 @@ Optional limit / version envs:
 
 | Name | Default | Purpose |
 |------|---------|---------|
-| `EXPLAIN_LOOKUP_DAILY_LIMIT` | `80` | Per-user lookup calls / UTC day |
-| `EXPLAIN_CONTEXT_DAILY_LIMIT` | `40` | Per-user context calls / UTC day |
+| `EXPLAIN_LOOKUP_DAILY_LIMIT` | `60` | Per-user lookup calls / UTC day |
+| `EXPLAIN_CONTEXT_DAILY_LIMIT` | `20` | Per-user context and Ask Jojo calls / UTC day |
 | `GEMINI_GLOBAL_DAILY_CAP` | `2000` | Global Gemini calls / UTC day |
 | `YOUTUBE_QUOTA_DAILY_CAP` | `8000` | YouTube quota units / UTC day |
 | `REVENUECAT_CACHE_TTL_SEC` | `300` | Entitlement cache TTL (positive and negative) |

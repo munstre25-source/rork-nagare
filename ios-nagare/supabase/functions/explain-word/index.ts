@@ -23,14 +23,16 @@ type Body = {
   question?: string;
 };
 
-const MAX_QUESTION = 200;
-const MAX_ANSWER = 900;
+const MAX_WORD = 80;
+const MAX_SENTENCE = 600;
+const MAX_QUESTION = 160;
+const MAX_ANSWER = 600;
 
 function askSystem(language: "ja" | "ko"): string {
   const name = language === "ko" ? "Korean" : "Japanese";
   return `You are Jojo, a warm, concise ${name} tutor inside a video app. Respond with a single JSON object only.
 Keys: answer (string).
-Answer the learner's question about the given word in the given sentence in at most 4 short English sentences. Include ${name} only when it helps, with readings in parentheses. Stay on topic: if the question is not about ${name} language, politely steer back to the word. No markdown.`;
+Answer the learner's question about the given word in the given sentence in at most 3 short English sentences. Include ${name} only when it helps, with readings in parentheses. Stay on topic: if the question is not about ${name} language, politely steer back to the word. No markdown.`;
 }
 
 function lookupSystem(language: "ja" | "ko"): string {
@@ -39,10 +41,10 @@ function lookupSystem(language: "ja" | "ko"): string {
     ? "readings (string[] Revised Romanization)"
     : "readings (string[] kana)";
   const jaGloss = language === "ko"
-    ? "ja_definitions (string[] Korean-to-Korean glosses, 1-5, short dictionary style)"
-    : "ja_definitions (string[] Japanese-to-Japanese glosses, 1-5, short 国語辞典 style)";
+    ? "ja_definitions (string[] Korean-to-Korean glosses, 1-3, short dictionary style)"
+    : "ja_definitions (string[] Japanese-to-Japanese glosses, 1-3, short 国語辞典 style)";
   return `You are a ${name} language tutor for learners. Respond with a single JSON object only.
-Keys: word (string), ${reading}, romaji (string), pos (string), conjugation_class (string|null), definitions (string[] English glosses, 1-5), ${jaGloss}, formality_note (string|null), audio_hint (string|null).
+Keys: word (string), ${reading}, romaji (string), pos (string), conjugation_class (string|null), definitions (string[] English glosses, 1-3), ${jaGloss}, formality_note (string|null), audio_hint (string|null).
 Keep definitions short. No markdown.`;
 }
 
@@ -50,9 +52,9 @@ function contextSystem(language: "ja" | "ko"): string {
   const name = language === "ko" ? "Korean" : "Japanese";
   return `You are a ${name} language tutor. Respond with a single JSON object only.
 Keys: contextual_explanation (string), examples (string[]), related_words (string[]).
-contextual_explanation is 2-3 short English sentences about THIS sentence only. Start with "In this sentence, 「word」 (reading) means ...". Then say what the speaker is doing with the word. Do not list dictionary senses.
-examples: exactly 2 short, distinct ${name} sentences that use the word the same way, each followed by " — " and an English translation. Neither may repeat the supplied sentence.
-related_words: up to 4 short ${name} words (synonym, polite form, or same family).
+contextual_explanation is 1-2 short English sentences about THIS sentence only. Start with "In this sentence, 「word」 (reading) means ...". Then briefly say what the speaker is doing with the word. Do not list dictionary senses.
+examples: exactly 1 short ${name} sentence that uses the word the same way, followed by " — " and an English translation. It may not repeat the supplied sentence.
+related_words: up to 3 short ${name} words (synonym, polite form, or same family).
 No markdown.`;
 }
 
@@ -89,8 +91,12 @@ Deno.serve(async (req) => {
       ? body.question.trim().replace(/\s+/g, " ").slice(0, MAX_QUESTION)
       : "";
     if (kind === "ask" && !question) return errorResponse(400, "question is required");
-    const word = typeof body.word === "string" ? body.word.trim() : "";
-    const sentence = typeof body.sentence === "string" ? body.sentence : "";
+    const word = typeof body.word === "string"
+      ? body.word.trim().replace(/\s+/g, " ").slice(0, MAX_WORD)
+      : "";
+    const sentence = typeof body.sentence === "string"
+      ? body.sentence.trim().replace(/\s+/g, " ").slice(0, MAX_SENTENCE)
+      : "";
     if (!kind || !word) return errorResponse(400, "kind and word are required");
 
     const supabase = serviceClient();
@@ -113,13 +119,14 @@ Deno.serve(async (req) => {
 
     const version = promptVersion();
 
-    // Ask Jojo: free-form follow-up about one word. Shares the context bucket and the
-    // global Gemini cap, and caches identical questions so repeats cost nothing.
+    // Ask Jojo: free-form follow-up about one word. It shares the tighter context
+    // allowance and caches identical questions so repeats cost nothing.
     if (kind === "ask") {
+      const cacheQuestion = question.toLowerCase().replace(/[\s\p{P}]+$/gu, "");
       const { cacheKey, sentenceHash } = await buildCacheKey(
         "context",
         word,
-        `${sentence}\n?${question.toLowerCase()}`,
+        `${sentence}\n?${cacheQuestion}`,
         `${version}|ask`,
         true,
         language,
@@ -141,6 +148,7 @@ Deno.serve(async (req) => {
         system: askSystem(language),
         user: `Word: ${word}\nSentence: ${sentence || "(none)"}\nQuestion: ${question}`,
         timeoutMs: 18_000,
+        maxOutputTokens: 512,
       });
       const raw = parseJsonObject(viaGemini.text);
       const answer = typeof raw.answer === "string" ? raw.answer.trim().slice(0, MAX_ANSWER) : "";
@@ -199,6 +207,7 @@ Deno.serve(async (req) => {
       system,
       user: userPrompt,
       timeoutMs: 10_000,
+      maxOutputTokens: kind === "lookup" ? 900 : 700,
     });
     const text = viaGemini.text;
     const usedModel = viaGemini.model;

@@ -45,6 +45,8 @@ type GeminiCall = {
   system: string;
   user: string;
   timeoutMs: number;
+  /** Hard output ceiling for small text tasks. Video analysis keeps its larger default. */
+  maxOutputTokens?: number;
   youtube?: {
     url: string;
     startSec: number;
@@ -193,6 +195,11 @@ function normalizeSlug(model: string): string {
   return model.includes("/") ? model : `google/${model}`;
 }
 
+function outputTokenLimit(opts: GeminiCall, fallback: number): number {
+  if (opts.youtube || opts.maxOutputTokens === undefined) return fallback;
+  return Math.max(128, Math.min(4096, Math.floor(opts.maxOutputTokens)));
+}
+
 /** Gemini 3+ only accepts thinking levels; 2.x accepts token budgets. */
 function isGemini3OrLater(model: string): boolean {
   const match = model.match(/gemini-(\d+)/);
@@ -238,7 +245,7 @@ async function callOpenRouter(apiKey: string, opts: GeminiCall): Promise<GeminiJ
         model,
         temperature: 0.2,
         // Per-token timings, readings and meanings for dense Shorts exceed 8k tokens (2026-11-03: 25k-char replies cut mid-object).
-        max_tokens: opts.youtube ? 32768 : 4096,
+        max_tokens: outputTokenLimit(opts, opts.youtube ? 32768 : 4096),
         response_format: { type: "json_object" },
         reasoning: { effort: opts.youtube ? "low" : "minimal", exclude: true },
         usage: { include: true },
@@ -310,7 +317,7 @@ async function callGoogleGemini(apiKey: string, opts: GeminiCall): Promise<Gemin
           temperature: 0.2,
           responseMimeType: "application/json",
           // Video reviews return one object per line; short clips still truncate under the default.
-          maxOutputTokens: opts.youtube ? 32768 : 8192,
+          maxOutputTokens: outputTokenLimit(opts, opts.youtube ? 32768 : 8192),
           thinkingConfig: isGemini3OrLater(model)
             ? { thinkingLevel: "low" }
             : { thinkingBudget: opts.youtube ? 1024 : 0 },
@@ -337,12 +344,14 @@ export async function geminiGenerateJson(opts: {
   system: string;
   user: string;
   timeoutMs?: number;
+  maxOutputTokens?: number;
 }): Promise<GeminiJsonResult> {
   return await callGemini({
     model: opts.model,
     system: opts.system,
     user: opts.user,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    maxOutputTokens: opts.maxOutputTokens,
   });
 }
 

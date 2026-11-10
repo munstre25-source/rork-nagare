@@ -8,8 +8,8 @@ export async function tryIncrementExplainRate(
   kind: "lookup" | "context",
 ): Promise<boolean> {
   const limit = kind === "lookup"
-    ? envInt("EXPLAIN_LOOKUP_DAILY_LIMIT", 80)
-    : envInt("EXPLAIN_CONTEXT_DAILY_LIMIT", 40);
+    ? envInt("EXPLAIN_LOOKUP_DAILY_LIMIT", 60)
+    : envInt("EXPLAIN_CONTEXT_DAILY_LIMIT", 20);
   const { data, error } = await supabase.rpc("increment_explain_rate", {
     p_app_user_id: appUserId,
     p_day_utc: utcDayString(),

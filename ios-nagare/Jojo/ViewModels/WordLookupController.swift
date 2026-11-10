@@ -117,7 +117,8 @@ final class WordLookupController {
             track("word_tapped", props: ["word": token.surface, "count": String(occurrenceCount)])
         }
 
-        // Context / Examples stay offline until the learner opens that tab (saves AI credits).
+        // Context starts offline. Only the Examples tab upgrades it remotely; Ask Jojo
+        // spends a call only after the learner actually sends a question.
         if context == nil {
             context = Self.offlineContext(for: newSelection, app: app)
         }
@@ -162,8 +163,9 @@ final class WordLookupController {
                 app.rememberContext(fallback.contextualExplanation, token: selection.token, preferExisting: true)
             }
         }
-        // Only spend a network call when the Examples or AI tab is active.
-        guard tab == .examples || tab == .ai else { return }
+        // Ask Jojo already makes a focused request when the learner sends a question.
+        // Do not spend a second context call merely for opening that tab.
+        guard tab == .examples else { return }
         guard context?.isFallback != false else { return }
         if offlineOnly || previewOnly { return }
         isLoadingContext = true
@@ -182,12 +184,13 @@ final class WordLookupController {
         }
     }
 
-    /// Sends one Ask Jojo question. At most 6 questions per word keep Gemini spend small.
+    /// Sends one Ask Jojo question. A small per-word cap complements persistent caching
+    /// and the backend daily limit without silently swallowing feedback.
     func ask(_ question: String, app: AppModel) {
         let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let selection, !trimmed.isEmpty, !isAsking else { return }
-        guard askThread.filter(\.fromLearner).count < 6 else {
-            askThread.append(AskMessage(fromLearner: false, text: "That's a lot of questions for one word! Tap another word and keep exploring.", failed: true))
+        guard askThread.filter(\.fromLearner).count < 4 else {
+            askThread.append(AskMessage(fromLearner: false, text: "You've reached four questions for this word. Try its examples or tap another word to keep exploring.", failed: true))
             return
         }
         askThread.append(AskMessage(fromLearner: true, text: trimmed))
@@ -199,12 +202,13 @@ final class WordLookupController {
         let service = app.explainService
         let userId = app.purchases.appUserId
         track("ask_jojo", props: ["word": selection.token.surface])
-        askTask = Task { [weak self] in
+        askTask = Task { [weak self, weak app] in
             let outcome = await service.ask(token: selection.token, sentence: selection.sentence, question: trimmed, appUserId: userId)
             guard let self, !Task.isCancelled, self.selection == selection else { return }
             self.isAsking = false
             switch outcome {
-            case .answer(let answer):
+            case .answer(let answer, let newCache):
+                app?.persistCache(newCache)
                 self.askThread.append(AskMessage(fromLearner: false, text: answer))
                 Haptics.light()
             case .failure(let message):
