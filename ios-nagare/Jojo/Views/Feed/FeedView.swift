@@ -20,6 +20,8 @@ struct FeedView: View {
     @State private var pendingLoopLine: Int?
     // One full-screen clip per page. Feed controls overlay the video; maximize hides them.
     @State private var videoExpanded: Bool = false
+    @AppStorage(PlayerPrefs.immersionKaraokeStyleKey) private var immersionStyle = ""
+    @State private var showImmersionStyleChoice = false
     /// Maximize shortcut: a swipe down brings the navigation dock back over the theater;
     /// a swipe up tucks it away again — no need to minimize first.
     @State private var maximizeNavShown: Bool = false
@@ -144,16 +146,17 @@ struct FeedView: View {
             loadResumeChip()
             startGuidedTourSoon()
         }
-        // Maximized hands the whole screen to the video, so the floating dock steps away too
-        // (a swipe down brings it back as a shortcut).
+        // Immersion keeps the main tab bar hidden independently of playback chrome.
         .onChange(of: videoExpanded) { _, expanded in
             if !expanded { maximizeNavShown = false }
-            if expanded { revealWatchChrome() }
+            if expanded {
+                revealWatchChrome()
+                showImmersionStyleChoice = immersionStyle.isEmpty
+            }
             syncDock()
             bumpPageHeightEpoch()
         }
         .onChange(of: maximizeNavShown) { _, shown in
-            syncDock()
             bumpPageHeightEpoch()
             if shown { revealWatchChrome() }
         }
@@ -279,6 +282,12 @@ struct FeedView: View {
         }
         .onChange(of: coordinator.player?.isPlaying ?? false) { _, playing in
             if playing { scheduleWatchChromeHide() } else { showWatchChrome() }
+        }
+        .alert("Choose your immersion karaoke", isPresented: $showImmersionStyleChoice) {
+            Button("Keep Classic") { immersionStyle = ImmersionKaraokeStyle.classic.rawValue }
+            Button("Use Amber Contrast") { immersionStyle = ImmersionKaraokeStyle.amber.rawValue }
+        } message: {
+            Text("Classic keeps the current word styling. Amber Contrast puts charcoal behind the text and marks the spoken word with warm amber and a white outline. You can change this in Player settings.")
         }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(
@@ -586,13 +595,12 @@ struct FeedView: View {
         .clipped()
     }
 
-    /// The dock hides while the theater owns the screen, and returns for the swipe-down
-    /// shortcut so navigation is always one gesture away without minimizing.
+    /// The dock returns when the learner exits immersion.
     private func syncDock() {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            app.hidesMainTabBar = videoExpanded && isActiveTab && !maximizeNavShown
+            app.hidesMainTabBar = videoExpanded && isActiveTab
         }
     }
 

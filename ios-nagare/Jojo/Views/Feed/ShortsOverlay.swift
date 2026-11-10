@@ -24,7 +24,7 @@ struct ShortsHeader: View {
     }
 }
 
-/// Right-hand Shorts rail over the picture: speed, like, bookmark, CC, gear, info, size.
+/// Right-hand Shorts rail over the picture: speed, like, bookmark, info, CC, gear, size.
 struct ShortsRail: View {
     let clip: Clip
     let player: (any ClipPlayer)?
@@ -80,16 +80,16 @@ struct ShortsRail: View {
                 withAnimation(.snappy) { _ = app.toggleFavorite(clip.id) }
             }
 
-            SubtitlesToggleButton(tint: .white, activeTint: .videoControlAccent, size: 18, width: 42, onPicture: true)
+            if let onInfo {
+                railButton("info.circle", tint: .white, label: "Clip info", action: onInfo)
+            }
+
+            SubtitlesToggleButton(tint: .white, activeTint: Color(hex: "#FFB020"), size: 18, width: 42, onPicture: true)
                 .frame(height: 42)
 
             PlayerSettingsButton(clip: clip, player: player, tint: .white, size: 18, width: 42,
                                  onPicture: true, onPresentationChange: onPresentationChange)
                 .frame(height: 42)
-
-            if let onInfo {
-                railButton("info.circle", tint: .white, label: "Clip info", action: onInfo)
-            }
 
             if let onToggleSize {
                 railButton(expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",

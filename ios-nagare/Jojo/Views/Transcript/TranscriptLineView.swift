@@ -22,10 +22,14 @@ struct TranscriptLineView: View {
     /// The playhead is inside this line (live transcript only).
     var isSpokenLine: Bool = false
     var onReport: (() -> Void)?
+    var sentenceMenuPlayer: (any ClipPlayer)? = nil
+    var karaokeTime: Double? = nil
+    var measuresKaraokeRows = false
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.karaokeOnPicture) private var onPicture
+    @Environment(\.amberImmersionKaraoke) private var amberImmersionKaraoke
 
     @State private var translationRevealed = false
 
@@ -34,8 +38,60 @@ struct TranscriptLineView: View {
         return app.profile.subtitleDisplay
     }
 
+    private func sentenceMenu(line: Line, player: any ClipPlayer) -> some View {
+        let start = max(0, line.start)
+        let end = min(player.duration, line.end)
+        let range = start.isFinite && end.isFinite && end > start ? start...end : nil
+        let isLooping = range != nil && player.loopRange == range
+
+        return Menu {
+            if line.tokens.contains(where: \.tappable) {
+                Button("Save words from this sentence", systemImage: "rectangle.stack.badge.plus") {
+                    if app.saveLine(clip: clip, lineIndex: lineIndex) > 0 { Haptics.success() }
+                }
+            }
+            Section("Karaoke display") {
+                Toggle("Furigana", isOn: Binding(
+                    get: { app.profile.furiganaMode != .off },
+                    set: { app.setFuriganaMode($0 ? .on : .off) }
+                ))
+                Toggle("Romaji", isOn: Binding(
+                    get: { app.profile.showRomaji },
+                    set: { app.setShowRomaji($0) }
+                ))
+                Toggle("English translation", isOn: Binding(
+                    get: { app.profile.subtitleDisplay.english != .hidden },
+                    set: { app.setEnglishVisibility($0 ? .shown : .hidden) }
+                ))
+            }
+            if let range {
+                Button(isLooping ? "Stop looping sentence" : "Loop sentence", systemImage: "repeat") {
+                    Haptics.selection()
+                    if player.loopRange == range {
+                        player.setLoop(nil)
+                    } else {
+                        player.setLoop(range)
+                        player.seek(to: range.lowerBound)
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .rotationEffect(.degrees(90))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(onPicture ? Color.white : Color.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Sentence options")
+        .accessibilityHint(line.text)
+    }
+
     var body: some View {
         if let line = clip.lines[safe: lineIndex] {
+            let wordTiming = amberImmersionKaraoke && karaokeTime != nil && line.hasWordTiming
+            HStack(alignment: .top, spacing: 2) {
             VStack(alignment: .leading, spacing: forceDenseAids ? Spacing.s : Spacing.m) {
                 if display.japanese {
                     // Feed: wider word gaps so furigana/romaji stay tied to their surface.
@@ -55,6 +111,7 @@ struct TranscriptLineView: View {
                                     tapEnabled: display.tapWords,
                                     minimalStyling: display.minimalJapanese,
                                     stablePlaybackHighlight: respectsProfileDisplay,
+                                    playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
                                     onTap: {
                                         withAnimation(Motion.popupSpring) {
                                             lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
@@ -74,6 +131,14 @@ struct TranscriptLineView: View {
                             }
                             .id(KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index))
                             .background {
+                                if measuresKaraokeRows {
+                                    GeometryReader { geometry in
+                                        Color.clear.preference(
+                                            key: KaraokeRowFrames.self,
+                                            value: [lineIndex: [geometry.frame(in: .named(KaraokeRowsSpace(index: lineIndex)))]]
+                                        )
+                                    }
+                                }
                                 if respectsProfileDisplay, spokenTokenIndex == index {
                                     GeometryReader { geometry in
                                         Color.clear.preference(
@@ -88,6 +153,7 @@ struct TranscriptLineView: View {
                             }
                         }
                     }
+                    .coordinateSpace(name: KaraokeRowsSpace(index: lineIndex))
                 }
                 if showsTranslation && !line.translation.isEmpty && display.english != .hidden {
                     if display.english == .shown || translationRevealed {
@@ -155,6 +221,12 @@ struct TranscriptLineView: View {
                         }
                     }
                 }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let player = sentenceMenuPlayer,
+               line.tokens.contains(where: { !$0.isPunctuation && !$0.surface.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+                sentenceMenu(line: line, player: player)
+            }
             }
             .padding(raisedCard ? Spacing.m : 0)
             .padding(.leading, showsLineTools || !line.hasWordTiming ? 10 : 0)

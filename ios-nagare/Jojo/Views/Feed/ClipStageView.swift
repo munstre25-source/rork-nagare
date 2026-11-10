@@ -41,11 +41,17 @@ struct ClipStageView: View {
     @State private var wordSavedHint: String?
     /// CC removes every subtitle layer on every clip until it is turned back on.
     @AppStorage(PlayerPrefs.subtitlesHiddenKey) private var subtitlesHidden = false
+    @AppStorage(PlayerPrefs.immersionKaraokeStyleKey) private var immersionStyle = ""
     @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeTextSize: Double = 1
     @AppStorage(PlayerPrefs.popupTextSizeKey) private var popupTextSize: Double = 1
     private var showsShortsCaptions: Bool { !subtitlesHidden }
     /// Three wrapped Japanese rows plus readings, translation, and panel padding.
     @ScaledMetric(relativeTo: .body) private var karaokeReadingHeight: CGFloat = 320
+    @ScaledMetric(relativeTo: .body) private var landscapeKaraokeHeight: CGFloat = 200
+
+    private var theaterReadingHeight: CGFloat {
+        clip.isPortraitVideo ? karaokeReadingHeight : landscapeKaraokeHeight
+    }
     @State private var playbackControlsHeight: CGFloat = 88
     @State private var channelRowHeight: CGFloat = 48
     @State private var actionRowHeight: CGFloat = 56
@@ -93,7 +99,7 @@ struct ClipStageView: View {
             return CGSize(width: width, height: width * 9 / 16)
         }
         return RestingFeedGeometry.make(
-            in: size, preferredCaptionHeight: karaokeReadingHeight,
+            in: size, preferredCaptionHeight: theaterReadingHeight,
             channelHeight: showsChannelRow ? channelRowHeight : 0,
             controlsHeight: actionRowHeight
         ).videoSize
@@ -113,7 +119,7 @@ struct ClipStageView: View {
         }
         return LandscapeTheaterGeometry.make(
             in: size,
-            preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
+            preferredCaptionHeight: showsShortsCaptions ? theaterReadingHeight : 0,
             // Keep this space reserved while the controls fade so the video and karaoke
             // never jump when the learner taps the maximized player.
             controlsHeight: playbackControlsHeight,
@@ -154,7 +160,7 @@ struct ClipStageView: View {
                     // player layer and crash UIKit.
                     let resting = RestingFeedGeometry.make(
                         in: geo.size,
-                        preferredCaptionHeight: karaokeReadingHeight,
+                        preferredCaptionHeight: theaterReadingHeight,
                         channelHeight: showsChannelRow ? channelRowHeight : 0,
                         controlsHeight: actionRowHeight
                     )
@@ -361,6 +367,7 @@ struct ClipStageView: View {
                     }
                 }
                     .frame(width: wordsWidth, alignment: .top)
+                    .frame(maxHeight: immersiveFeed && !clip.isPortraitVideo ? min(landscapeKaraokeHeight, stageSize.height * 0.58) : nil, alignment: .top)
                     .frame(maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -406,7 +413,8 @@ struct ClipStageView: View {
                         SubtitlesOffPill()
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity)
+                .frame(height: min(landscapeKaraokeHeight, contentHeight * 0.58), alignment: .top)
 
                 landscapePlaybackFooter(player: player)
                     .opacity(showsTheaterControls ? 1 : 0)
@@ -443,7 +451,7 @@ struct ClipStageView: View {
     ) -> some View {
         let theater = LandscapeTheaterGeometry.make(
             in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
-            preferredCaptionHeight: showsShortsCaptions ? karaokeReadingHeight : 0,
+            preferredCaptionHeight: showsShortsCaptions ? theaterReadingHeight : 0,
             controlsHeight: maximized ? playbackControlsHeight : 0,
             videoAspect: resolvedAspect
         )
@@ -560,8 +568,7 @@ struct ClipStageView: View {
                     }
                 }
 
-                // Karaoke starts right under the controls and owns every remaining point:
-                // no dead gap above it, and no fixed well that cuts lines at the dock.
+                // Start the reading window directly under the controls.
                 Color.clear.frame(height: immersiveFeed ? 6 : 10)
 
                 Group {
@@ -575,6 +582,7 @@ struct ClipStageView: View {
                     }
                 }
                     .frame(width: columnWidth)
+                    .frame(maxHeight: immersiveFeed && !clip.isPortraitVideo ? restingCaptionHeight : nil, alignment: .top)
                     .frame(
                         maxWidth: .infinity,
                         maxHeight: usesFlexibleVideo || immersiveFeed ? .infinity : nil,
@@ -833,9 +841,12 @@ struct ClipStageView: View {
                 },
                 windowMode: immersiveFeed,
                 showsLineTools: showsLineTools,
-                onPicture: onPicture
+                onPicture: onPicture,
+                sentenceMenuPlayer: immersiveFeed && coordinator.activeClipId == clip.id ? player : nil,
+                landscapeReadingWindow: immersiveFeed && !clip.isPortraitVideo
             )
             .modifier(OptionalTypeSize(index: immersiveFeed ? karaokeTextSize : 1))
+            .environment(\.amberImmersionKaraoke, videoExpanded && immersionStyle == ImmersionKaraokeStyle.amber.rawValue)
         }
     }
 
@@ -1229,6 +1240,8 @@ struct TranscriptSection: View {
     var windowMode: Bool = false
     var showsLineTools: Bool = true
     var onPicture: Bool = false
+    var sentenceMenuPlayer: (any ClipPlayer)? = nil
+    var landscapeReadingWindow = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -1246,7 +1259,9 @@ struct TranscriptSection: View {
             onReportLine: onReportLine,
             windowMode: windowMode,
             showsLineTools: showsLineTools,
-            onPicture: onPicture
+            onPicture: onPicture,
+            sentenceMenuPlayer: sentenceMenuPlayer,
+            landscapeReadingWindow: landscapeReadingWindow
         )
     }
 }

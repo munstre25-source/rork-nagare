@@ -1,5 +1,16 @@
 import SwiftUI
 
+private struct AmberImmersionKaraokeKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var amberImmersionKaraoke: Bool {
+        get { self[AmberImmersionKaraokeKey.self] }
+        set { self[AmberImmersionKaraokeKey.self] = newValue }
+    }
+}
+
 /// Visual state of a transcript word.
 nonisolated enum TokenVisualState: Sendable {
     case normal, spoken, selected
@@ -22,17 +33,22 @@ struct TokenView: View {
     /// Full immersion keeps the Japanese quiet while retaining the spoken cursor and lookup.
     var minimalStyling: Bool = false
     var stablePlaybackHighlight: Bool = false
+    var playbackCompleted: Bool = false
     let onTap: () -> Void
 
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
     @Environment(\.karaokeOnPicture) private var onPicture
+    @Environment(\.amberImmersionKaraoke) private var amberImmersionKaraoke
     // JojoFont.jp applies Dynamic Type; its input must be the unscaled base size.
     // Regular weight (not Bold) keeps karaoke neat like immersion reference screens.
     private static let furiganaSize: CGFloat = 9
     private static let wordSize: CGFloat = 22
     @ScaledMetric(relativeTo: .caption2) private var romajiSize: CGFloat = 10
     @State private var tapBounce: Bool = false
+
+    private var contrastWord: Bool { amberImmersionKaraoke && !token.isPunctuation }
+    private var readingShadow: Color { contrastWord ? .black.opacity(0.85) : .clear }
 
     var body: some View {
         if token.tappable && tapEnabled {
@@ -67,6 +83,7 @@ struct TokenView: View {
                 Text(token.romaji.isEmpty ? " " : token.romaji)
                     .font(.system(size: romajiSize, weight: .regular))
                     .foregroundStyle(readingColor.opacity(onPicture ? 0.78 : 0.85))
+                    .shadow(color: readingShadow, radius: 2, y: 1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
@@ -105,6 +122,7 @@ struct TokenView: View {
                         Text(segment.reading ?? " ")
                             .font(JojoFont.jp(Self.furiganaSize, relativeTo: .caption2))
                             .foregroundStyle(readingColor)
+                            .shadow(color: readingShadow, radius: 2, y: 1)
                             .multilineTextAlignment(.center)
                             // Let long readings wrap within a constrained token rather
                             // than truncating them at the karaoke panel's edge.
@@ -132,6 +150,10 @@ struct TokenView: View {
 
     @ViewBuilder
     private var wordBackground: some View {
+        if contrastWord {
+            RoundedRectangle(cornerRadius: 7)
+                .fill(state == .spoken ? Color(hex: "#F4A340") : Color(hex: "#252525").opacity(0.84))
+        } else {
         switch state {
         case .selected:
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -150,10 +172,17 @@ struct TokenView: View {
                     .fill(LearningInk.mastery(mastery).opacity(0.12))
             }
         }
+        }
     }
 
     @ViewBuilder
     private var spokenOutline: some View {
+        if contrastWord {
+            if state == .spoken || state == .selected {
+                RoundedRectangle(cornerRadius: 7)
+                    .strokeBorder(state == .spoken ? Color.white : LearningInk.selected, lineWidth: 1.5)
+            }
+        } else {
         switch state {
         case .spoken:
             Group {
@@ -179,12 +208,15 @@ struct TokenView: View {
                     .strokeBorder(LearningInk.easy, lineWidth: 1.6)
             }
         }
+        }
     }
 
     @ViewBuilder
     private var underline: some View {
         // Underlines carry POS when still New; mastery ink otherwise. Hidden under boxes / known.
-        if minimalStyling, state == .spoken {
+        if contrastWord {
+            EmptyView()
+        } else if minimalStyling, state == .spoken {
             Capsule()
                 .fill(LearningInk.spoken)
                 .frame(height: 2)
@@ -200,6 +232,9 @@ struct TokenView: View {
     }
 
     private var japaneseColor: Color {
+        if contrastWord {
+            return state == .spoken ? Color(hex: "#191919") : Color.white.opacity(playbackCompleted ? 0.8 : 1)
+        }
         switch state {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
@@ -211,6 +246,7 @@ struct TokenView: View {
     }
 
     private var readingColor: Color {
+        if contrastWord { return .white }
         switch state {
         case .spoken: return LearningInk.spoken.opacity(0.9)
         case .selected: return LearningInk.selected.opacity(0.9)
@@ -223,6 +259,7 @@ struct TokenView: View {
     }
 
     private var activeGlowLevel: GlowLevel {
+        if contrastWord { return .off }
         switch state {
         case .spoken, .selected: return app.profile.glow
         case .normal: return pulse ? app.profile.glow : .off

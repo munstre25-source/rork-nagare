@@ -21,13 +21,17 @@ struct LiveTranscriptPanel: View {
     var showsLineTools: Bool = true
     /// Portrait shorts: clear plate so a bottom gradient can show through the words.
     var onPicture: Bool = false
+    var sentenceMenuPlayer: (any ClipPlayer)? = nil
+    var landscapeReadingWindow = false
 
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var spokenNamespace
     @State private var lastEvaluatedWord: KaraokeWordAnchor?
     @State private var sentenceScrollUntil: Date = .distantPast
+    @State private var transcriptBrowseUntil: Date = .distantPast
     @State private var measuredHeights: [Int: CGFloat] = [:]
+    @State private var rowMetrics: [Int: KaraokeRowMetrics] = [:]
 
     var body: some View {
         Group {
@@ -63,25 +67,38 @@ struct LiveTranscriptPanel: View {
         .environment(\.karaokeOnPicture, onPicture)
     }
 
-    /// At most three complete lines that fit the reading well. Scroll only when the current
-    /// line alone is taller than the viewport so a spoken word can stay fully visible.
+    /// Landscape budgets actual wrapped rows. An oversized sentence gets its own scroll viewport.
     private var feedTranscript: some View {
         GeometryReader { viewport in
             let spacing = Spacing.m
+            let availableHeight = max(0, viewport.size.height - topPad - 8)
             let window = KaraokeReadingWindow.indices(
                 current: currentLine,
                 lineCount: clip.lines.count,
                 heights: measuredHeights,
                 spacing: spacing,
-                viewportHeight: max(0, viewport.size.height - topPad - 8)
+                viewportHeight: availableHeight,
+                visualRows: landscapeReadingWindow ? rowMetrics.mapValues(\.count) : nil
             )
             let currentAlone = window == [clampedCurrentLine]
             let currentHeight = measuredHeights[clampedCurrentLine] ?? 0
-            let needsWordScroll = currentAlone && currentHeight > viewport.size.height + 0.5
+            let metrics = landscapeReadingWindow ? rowMetrics[clampedCurrentLine] : nil
+            let exceedsRows = (metrics?.count ?? 0) > KaraokeReadingWindow.maxLines
+            let needsWordScroll = currentAlone && (exceedsRows || currentHeight > availableHeight + 0.5)
+            let windowHeight = window.reduce(CGFloat.zero) { $0 + (measuredHeights[$1] ?? 0) }
+                + CGFloat(max(0, window.count - 1)) * spacing
+            let scrollHeight: CGFloat = {
+                if exceedsRows {
+                    return min(viewport.size.height, (metrics?.threeRowHeight ?? availableHeight) + topPad)
+                }
+                guard landscapeReadingWindow, currentHeight > 0 else { return viewport.size.height }
+                return min(viewport.size.height, windowHeight + topPad + Spacing.s)
+            }()
 
             Group {
-                if needsWordScroll {
-                    scrollingCurrentLine(in: viewport.size)
+                if landscapeReadingWindow || needsWordScroll {
+                    scrollingCurrentLine(in: CGSize(width: viewport.size.width, height: scrollHeight))
+                        .frame(height: scrollHeight)
                 } else {
                     staticWindow(window, spacing: spacing)
                 }
@@ -98,13 +115,22 @@ struct LiveTranscriptPanel: View {
             }
             .onChange(of: clip.id) { _, _ in
                 measuredHeights = [:]
+                rowMetrics = [:]
                 lastEvaluatedWord = nil
+                transcriptBrowseUntil = .distantPast
+            }
+            .onPreferenceChange(KaraokeRowFrames.self) { frames in
+                guard landscapeReadingWindow else { return }
+                let next = rowMetrics.merging(frames.mapValues(KaraokeRowMetrics.init)) { _, updated in updated }
+                if next != rowMetrics { rowMetrics = next }
             }
         }
         .background {
             if !onPicture {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.bgSurfaceDark)
+                    .fill(landscapeReadingWindow
+                          ? Color.adaptive(light: "#FFFFFF", dark: "#202020")
+                          : Color.bgSurfaceDark)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: onPicture ? 0 : Radius.card, style: .continuous))
@@ -137,19 +163,31 @@ struct LiveTranscriptPanel: View {
 
     private func scrollingCurrentLine(in size: CGSize) -> some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                windowLine(clampedCurrentLine)
-                    .padding(.horizontal, Spacing.m)
-                    .padding(.top, topPad)
-                    .padding(.bottom, Spacing.s)
-                    .id(clampedCurrentLine)
+            ScrollView(.vertical, showsIndicators: landscapeReadingWindow) {
+                LazyVStack(alignment: .leading, spacing: Spacing.m) {
+                    ForEach(landscapeReadingWindow ? Array(clip.lines.indices) : [clampedCurrentLine], id: \.self) { index in
+                        windowLine(index)
+                            .padding(.horizontal, Spacing.m)
+                            .id(index)
+                    }
+                }
+                .padding(.top, topPad)
+                .padding(.bottom, Spacing.s)
             }
             .clipped()
             .coordinateSpace(name: KaraokeWordAnchor.spaceName(for: clip.id))
             .scrollBounceBehavior(.basedOnSize)
             .scrollDisabled(lookup.isPresented)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 6).onChanged { value in
+                    guard landscapeReadingWindow,
+                          abs(value.translation.height) > abs(value.translation.width) else { return }
+                    transcriptBrowseUntil = isPlaying ? .now.addingTimeInterval(4) : .distantFuture
+                }
+            )
             .onPreferenceChange(KaraokeWordGeometryPreference.self) { geometry in
                 guard !lookup.isPresented, let geometry,
+                      Date.now >= transcriptBrowseUntil,
                       geometry.anchor.clipID == clip.id,
                       geometry.anchor.lineIndex == clampedCurrentLine,
                       geometry.anchor.tokenIndex == spokenToken,
@@ -167,13 +205,21 @@ struct LiveTranscriptPanel: View {
                 }
             }
             .onChange(of: currentLine) { _, _ in
-                guard !lookup.isPresented else { return }
+                guard !lookup.isPresented, Date.now >= transcriptBrowseUntil else { return }
+                follow(clampedCurrentLine, proxy: proxy)
+            }
+            .onChange(of: isPlaying) { _, playing in
+                guard landscapeReadingWindow, playing, !lookup.isPresented,
+                      transcriptBrowseUntil == .distantFuture else { return }
+                transcriptBrowseUntil = .distantPast
                 follow(clampedCurrentLine, proxy: proxy)
             }
             .onChange(of: lookup.isPresented) { _, presented in
-                if !presented { follow(clampedCurrentLine, proxy: proxy) }
+                if !presented, Date.now >= transcriptBrowseUntil { follow(clampedCurrentLine, proxy: proxy) }
             }
-            .onChange(of: size.height) { _, _ in proxy.scrollTo(clampedCurrentLine, anchor: .top) }
+            .onChange(of: size.height) { _, _ in
+                if Date.now >= transcriptBrowseUntil { proxy.scrollTo(clampedCurrentLine, anchor: .top) }
+            }
             .onAppear { proxy.scrollTo(clampedCurrentLine, anchor: .top) }
         }
     }
@@ -214,8 +260,17 @@ struct LiveTranscriptPanel: View {
             raisedCard: false,
             showsLineTools: showsLineTools,
             isSpokenLine: isPlayingLine(index),
-            onReport: { onReportLine?(index) }
+            onReport: { onReportLine?(index) },
+            sentenceMenuPlayer: sentenceMenuPlayer,
+            karaokeTime: currentTime,
+            measuresKaraokeRows: landscapeReadingWindow
         )
+        .background {
+            if landscapeReadingWindow && index == clampedCurrentLine {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#292929"))
+            }
+        }
         .id(index)
     }
 
@@ -260,6 +315,43 @@ struct LiveTranscriptPanel: View {
 
     private var visibleLines: [Int] {
         onlyCurrentLine ? [currentLine] : Array(clip.lines.indices)
+    }
+}
+
+nonisolated struct KaraokeRowsSpace: Hashable {
+    let index: Int
+}
+
+nonisolated struct KaraokeRowFrames: PreferenceKey {
+    static let defaultValue: [Int: [CGRect]] = [:]
+
+    static func reduce(value: inout [Int: [CGRect]], nextValue: () -> [Int: [CGRect]]) {
+        value.merge(nextValue(), uniquingKeysWith: +)
+    }
+}
+
+private struct KaraokeRowMetrics: Equatable {
+    let count: Int
+    let threeRowHeight: CGFloat
+
+    init(_ frames: [CGRect]) {
+        var rows: [CGRect] = []
+        for frame in frames.sorted(by: { $0.minY < $1.minY }) {
+            if let last = rows.last, abs(last.minY - frame.minY) < 0.5 {
+                rows[rows.count - 1] = last.union(frame)
+            } else {
+                rows.append(frame)
+            }
+        }
+        count = rows.count
+        let limit = KaraokeReadingWindow.maxLines
+        if rows.count > limit {
+            threeRowHeight = (0...(rows.count - limit)).map { first in
+                rows[first + limit - 1].maxY - rows[first].minY
+            }.min() ?? 0
+        } else {
+            threeRowHeight = rows.last?.maxY ?? 0
+        }
     }
 }
 

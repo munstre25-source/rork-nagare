@@ -8,7 +8,44 @@ nonisolated enum VocabSection: String, CaseIterable, Sendable, Hashable {
 
 nonisolated enum VocabSort: String, CaseIterable, Sendable {
     case recent = "Recently added"
+    case oldest = "Oldest first"
+    case alphabetical = "By reading"
     case frequent = "Most seen"
+    case easiest = "Easiest JLPT first"
+    case due = "Due soonest"
+
+    static let levels = ["N5", "N4", "N3", "N2", "N1"]
+}
+
+private enum VocabReviewFilter: String, CaseIterable {
+    case all = "Any status"
+    case due = "Due now"
+    case unreviewed = "Never reviewed"
+    case inProgress = "In progress"
+
+    func matches(_ word: SavedWord, now: Date) -> Bool {
+        switch self {
+        case .all: true
+        case .due: word.isDueForReview(at: now)
+        case .unreviewed: word.lastReviewedAt == nil
+        case .inProgress: word.lastReviewedAt != nil && word.state != .known
+        }
+    }
+}
+
+private enum VocabSavedFilter: String, CaseIterable {
+    case all = "Any time"
+    case week = "Past 7 days"
+    case month = "Past 30 days"
+    case older = "Over 30 days ago"
+
+    func matches(_ date: Date, now: Date) -> Bool {
+        let calendar = Calendar.current
+        let days = self == .week ? 7 : 30
+        guard self != .all,
+              let cutoff = calendar.date(byAdding: .day, value: -days, to: now) else { return true }
+        return self == .older ? date < cutoff : date >= cutoff
+    }
 }
 
 /// Vocab tab: Review | All Words. Follows system light/dark.
@@ -23,6 +60,8 @@ struct VocabView: View {
     @State private var posFilter: StudyPosFilter = .all
     @State private var sourceChannel: String?
     @State private var stateFilter: SRSState?
+    @State private var reviewFilter: VocabReviewFilter = .all
+    @State private var savedFilter: VocabSavedFilter = .all
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showDeckBuilder: Bool = false
     @State private var showFilters: Bool = false
@@ -45,13 +84,38 @@ struct VocabView: View {
                     || word.jaDefinitions.contains { $0.localizedStandardContains(q) }
             }
         }
-        if let jlpt { result = result.filter { $0.jlpt == jlpt } }
+        if let jlpt {
+            result = result.filter { word in
+                jlpt == "Ungraded" ? !VocabSort.levels.contains(word.jlpt ?? "") : word.jlpt == jlpt
+            }
+        }
         if let stateFilter { result = result.filter { $0.state == stateFilter } }
         if posFilter != .all { result = result.filter { posFilter.matches($0.pos) } }
         if let sourceChannel {
             result = result.filter { app.clip(id: $0.contextClipId)?.channelName == sourceChannel }
         }
-        if sort == .frequent { result.sort { $0.occurrenceCount > $1.occurrenceCount } }
+        let now = Date()
+        if reviewFilter == .due { _ = app.reviewAvailabilityRevision }
+        result = result.filter { reviewFilter.matches($0, now: now) && savedFilter.matches($0.addedAt, now: now) }
+        switch sort {
+        case .recent: break
+        case .oldest: result.sort { $0.addedAt < $1.addedAt }
+        case .alphabetical:
+            result.sort {
+                let lhs = JapaneseText.hiragana($0.primaryReading.isEmpty ? $0.surface : $0.primaryReading)
+                let rhs = JapaneseText.hiragana($1.primaryReading.isEmpty ? $1.surface : $1.primaryReading)
+                return lhs.compare(rhs, locale: Locale(identifier: "ja")) == .orderedAscending
+            }
+        case .frequent: result.sort { $0.occurrenceCount > $1.occurrenceCount }
+        case .easiest:
+            let levels = VocabSort.levels
+            result.sort { (levels.firstIndex(of: $0.jlpt ?? "") ?? levels.count) < (levels.firstIndex(of: $1.jlpt ?? "") ?? levels.count) }
+        case .due:
+            result.sort {
+                if ($0.state == .known) != ($1.state == .known) { return $0.state != .known }
+                return $0.dueAt < $1.dueAt
+            }
+        }
         return result
     }
 
@@ -60,7 +124,10 @@ struct VocabView: View {
         return ReviewQueue.due(in: words)
     }
 
-    private var hasFilters: Bool { jlpt != nil || posFilter != .all || sourceChannel != nil || stateFilter != nil }
+    private var hasFilters: Bool {
+        jlpt != nil || posFilter != .all || sourceChannel != nil || stateFilter != nil
+            || reviewFilter != .all || savedFilter != .all
+    }
 
     private var channels: [String] {
         Array(Set(words.compactMap { app.clip(id: $0.contextClipId)?.channelName })).sorted()
@@ -117,6 +184,8 @@ struct VocabView: View {
                                 posFilter = .all
                                 sourceChannel = nil
                                 stateFilter = nil
+                                reviewFilter = .all
+                                savedFilter = .all
                             }
                             .font(.caption.weight(.semibold))
                             .frame(minHeight: 44)
@@ -177,7 +246,10 @@ struct VocabView: View {
                 posFilter: $posFilter,
                 sourceChannel: $sourceChannel,
                 stateFilter: $stateFilter,
+                reviewFilter: $reviewFilter,
+                savedFilter: $savedFilter,
                 channels: channels,
+                resultCount: filtered.count,
                 onNewDeck: { buildDeckAfterFilters = true }
             )
             .presentationDetents([.medium, .large])
@@ -584,6 +656,9 @@ struct VocabView: View {
         jlpt = nil
         posFilter = .all
         sourceChannel = nil
+        stateFilter = nil
+        reviewFilter = .all
+        savedFilter = .all
         let pool = ReviewQueue.session(in: words)
         startReview(pool, title: ReviewQueue.label(for: pool))
     }
@@ -812,49 +887,70 @@ private struct VocabFilterSheet: View {
     @Binding var posFilter: StudyPosFilter
     @Binding var sourceChannel: String?
     @Binding var stateFilter: SRSState?
+    @Binding var reviewFilter: VocabReviewFilter
+    @Binding var savedFilter: VocabSavedFilter
     let channels: [String]
+    let resultCount: Int
     let onNewDeck: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Sort") {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.l) {
+                filterGroup("Sort") {
                     ForEach(VocabSort.allCases, id: \.self) { option in
                         choice(option.rawValue, selected: sort == option) { sort = option }
                     }
                 }
-                Section("JLPT") {
+                filterGroup("Study status") {
+                    ForEach(VocabReviewFilter.allCases, id: \.self) { option in
+                        choice(option.rawValue, selected: reviewFilter == option) { reviewFilter = option }
+                    }
+                }
+                filterGroup("Saved") {
+                    ForEach(VocabSavedFilter.allCases, id: \.self) { option in
+                        choice(option.rawValue, selected: savedFilter == option) { savedFilter = option }
+                    }
+                }
+                filterGroup("JLPT") {
                     choice("Any level", selected: jlpt == nil) { jlpt = nil }
-                    ForEach(["N5", "N4", "N3", "N2", "N1"], id: \.self) { level in
+                    ForEach(VocabSort.levels + ["Ungraded"], id: \.self) { level in
                         choice(level, selected: jlpt == level) { jlpt = level }
                     }
                 }
-                Section("Progress") {
+                filterGroup("Familiarity") {
                     choice("Any stage", selected: stateFilter == nil) { stateFilter = nil }
                     ForEach(SRSState.allCases, id: \.self) { state in
                         choice(state.title, selected: stateFilter == state) { stateFilter = state }
                     }
                 }
-                Section("Word type") {
+                filterGroup("Word type") {
                     ForEach(StudyPosFilter.allCases) { filter in
                         choice(filter.title, selected: posFilter == filter) { posFilter = filter }
                     }
                 }
-                Section("Source") {
+                filterGroup("Source") {
                     choice("Any source", selected: sourceChannel == nil) { sourceChannel = nil }
                     ForEach(channels, id: \.self) { channel in
                         choice(channel, selected: sourceChannel == channel) { sourceChannel = channel }
                     }
                 }
-                Section {
-                    Button("New custom deck") {
-                        dismiss()
-                        onNewDeck()
-                    }
+                Button("New custom deck") {
+                    onNewDeck()
+                    dismiss()
                 }
+                }
+                .padding(Spacing.l)
             }
-            .navigationTitle("Filter")
+            .safeAreaInset(edge: .bottom) {
+                Button("Show results (\(resultCount))") { dismiss() }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .padding(Spacing.m)
+                    .background(Color.canvas)
+            }
+            .background(Color.canvas)
+            .navigationTitle("Refine your words")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -864,22 +960,40 @@ private struct VocabFilterSheet: View {
                         posFilter = .all
                         sourceChannel = nil
                         stateFilter = nil
+                        reviewFilter = .all
+                        savedFilter = .all
                     }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
                 }
             }
         }
     }
+    private func filterGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            Text(title)
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Spacing.s)], spacing: Spacing.s) {
+                content()
+            }
+        }
+    }
+
     private func choice(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
-                Text(title).foregroundStyle(.primary)
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
                 Spacer()
                 if selected { Image(systemName: "checkmark").foregroundStyle(Color.studyAccent) }
             }
+            .padding(.horizontal, Spacing.m)
+            .frame(minHeight: 44)
+            .background(selected ? Color.studyAccent.opacity(0.15) : Color.card, in: .capsule)
+            .contentShape(.capsule)
         }
+        .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 

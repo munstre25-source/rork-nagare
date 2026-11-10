@@ -22,7 +22,6 @@ struct RootView: View {
                 .transition(.opacity)
             } else {
                 MainTabView()
-                    .id("\(app.profile.accentTheme)-\(app.profile.appearanceMode)-\(app.paletteEpoch)")
                     .transition(.opacity)
             }
         }
@@ -101,12 +100,11 @@ struct MainTabView: View {
         .tint(Color.designOrange)
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            // Feed focus may fade its video controls, but navigation stays available.
-            // Only explicit maximize or a pushed screen hides the dock.
+        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 0) {
+            // Reserve the capsule's height so the last transcript line and scrubber
+            // can sit fully above it. Only the capsule itself paints a background.
             if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount, onFeedTap: openDefaultFeed)
-                    .background(Color.canvas.ignoresSafeArea(edges: .bottom))
             }
         }
         .preferredColorScheme(app.profile.scheme.colorScheme)
@@ -316,22 +314,20 @@ struct JojoDock: View {
                 badge
             }
             dockItem(.feed, title: "Feed", symbol: nil, hint: "Return to your For You feed") {
-                JojoBrandIcon(size: 38)
+                JojoBrandIcon(size: 32)
                     .opacity(selection == .feed ? 1 : 0.85)
                     .accessibilityHidden(true)
             }
             dockItem(.profile, title: "Profile", symbol: "person", hint: "Progress and settings") { EmptyView() }
         }
         .padding(.horizontal, 8)
-        .padding(.top, 4)
-        .padding(.bottom, 4)
+        .padding(.vertical, 3)
         .background {
-            Capsule().fill(Color.canvas)
+            Capsule().fill(.regularMaterial)
                 .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
                 .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
         }
         .padding(.bottom, 6)
-        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
     }
 
@@ -378,14 +374,14 @@ struct JojoDock: View {
                     }
                     icon()
                 }
-                .frame(height: 40)
+                .frame(height: 34)
                 Text(title)
                     .font(.system(size: 11, weight: .semibold))
                     .dynamicTypeSize(...DynamicTypeSize.xLarge)
                     .foregroundStyle(tint)
                     .lineLimit(1)
             }
-            .frame(minWidth: 84, minHeight: 48)
+            .frame(minWidth: 72, minHeight: 48)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

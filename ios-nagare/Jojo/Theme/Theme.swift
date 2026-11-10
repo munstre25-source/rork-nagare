@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Observation
 
 extension UIColor {
     /// Creates a color from a `#RRGGBB` hex string.
@@ -26,12 +27,19 @@ enum JojoPalette {
     private static let themeKey = "jojo.accent"
     private static let schemeKey = "jojo.scheme"
 
-    static var theme: AccentTheme = .amber
-    static var scheme: JojoScheme = .dark
+    @Observable
+    private final class PaletteState {
+        var theme: AccentTheme = .amber
+        var scheme: JojoScheme = .dark
+    }
+
+    private static let state = PaletteState()
+    static var theme: AccentTheme { state.theme }
+    static var scheme: JojoScheme { state.scheme }
 
     static func activate(theme: AccentTheme, scheme: JojoScheme) {
-        self.theme = theme
-        self.scheme = scheme
+        state.theme = theme
+        state.scheme = scheme
         UserDefaults.standard.set(theme.rawValue, forKey: themeKey)
         UserDefaults.standard.set(scheme.rawValue, forKey: schemeKey)
     }

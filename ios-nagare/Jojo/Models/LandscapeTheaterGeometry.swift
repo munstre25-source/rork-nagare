@@ -22,7 +22,8 @@ nonisolated struct LandscapeTheaterGeometry {
         // viewports retain a usable picture and let the transcript scroll vertically.
         let videoFloor = min(120, height * 0.25)
         let readingRoom = max(0, height - controls - topPad - 24 - videoFloor)
-        let captionReserve = min(max(0, preferredCaptionHeight), readingRoom)
+        let captionLimit = portraitVideo ? readingRoom : min(readingRoom, height * 0.36)
+        let captionReserve = min(max(0, preferredCaptionHeight), captionLimit)
         let gaps = spacing * CGFloat((captionReserve > 0 ? 1 : 0) + (controls > 0 ? 1 : 0))
         let available = max(0, height - captionReserve - controls - gaps - topPad)
         // Portrait phones: use the full stage width so maximize actually enlarges the picture.
@@ -36,11 +37,8 @@ nonisolated struct LandscapeTheaterGeometry {
             ? topPad
             : max(topPad, height * 0.34 - video.height / 2)
         let videoTop = min(preferredTop, latestTop)
-        let captions = captionReserve > 0
-            ? (portraitVideo ? captionReserve : max(0, height - 12 - videoTop - video.height - controls - gaps))
-            : 0
         return Self(videoSize: video, videoTop: videoTop,
-                    captionHeight: captions, controlsHeight: controls)
+                    captionHeight: captionReserve, controlsHeight: controls)
     }
 }
 
@@ -118,7 +116,8 @@ nonisolated struct KaraokeReadingWindow {
         lineCount: Int,
         heights: [Int: CGFloat],
         spacing: CGFloat,
-        viewportHeight: CGFloat
+        viewportHeight: CGFloat,
+        visualRows: [Int: Int]? = nil
     ) -> [Int] {
         guard lineCount > 0 else { return [] }
         let currentIndex = min(max(0, current), lineCount - 1)
@@ -134,8 +133,13 @@ nonisolated struct KaraokeReadingWindow {
 
         var chosen = [currentIndex]
         var used = currentHeight
+        var usedRows = visualRows?[currentIndex] ?? maxLines
         var next = currentIndex + 1
         while chosen.count < maxLines, next < lineCount, let nextHeight = height(of: next) {
+            if let visualRows {
+                guard let nextRows = visualRows[next], usedRows + nextRows <= maxLines else { break }
+                usedRows += nextRows
+            }
             let needed = used + spacing + nextHeight
             guard needed <= viewportHeight + 0.5 else { break }
             chosen.append(next)

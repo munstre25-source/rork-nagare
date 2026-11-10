@@ -22,8 +22,6 @@ nonisolated enum DeepLink: String, Equatable, Sendable {
 final class AppModel {
     static let firstReviewDelay: TimeInterval = 10 * 60
     let container: ModelContainer
-    /// Bumped after a marketing demo restores the user's accent, so the open tabs re-resolve colors.
-    var paletteEpoch: Int = 0
     let purchases: PurchaseManager
     let lexicon: LocalLexicon
     let explainService: WordExplainService
@@ -1769,14 +1767,12 @@ final class AppModel {
     func setTheme(_ theme: AccentTheme) {
         profile.theme = theme
         JojoPalette.activate(theme: theme, scheme: profile.scheme)
-        paletteEpoch += 1
         save()
     }
 
     func setScheme(_ scheme: JojoScheme) {
         profile.scheme = scheme
         JojoPalette.activate(theme: profile.theme, scheme: scheme)
-        paletteEpoch += 1
         save()
     }
 
@@ -1788,7 +1784,6 @@ final class AppModel {
     /// Puts the saved theme back after a Sakura-only marketing demo.
     func restorePalette() {
         JojoPalette.activate(theme: profile.theme, scheme: profile.scheme)
-        paletteEpoch += 1
     }
 
     func completeSubtitleSetup() {

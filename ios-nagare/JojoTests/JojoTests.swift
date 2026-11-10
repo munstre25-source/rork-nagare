@@ -320,8 +320,8 @@ struct JojoTests {
         #expect(layout.videoTop == 88)
         #expect(abs(layout.videoSize.width / layout.videoSize.height - 16.0 / 9) < 0.001)
         #expect(layout.videoSize.width == size.width)
-        #expect(layout.captionHeight > 220)
-        #expect(abs(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight - (size.height - 12)) < 0.01)
+        #expect(layout.captionHeight == 220)
+        #expect(layout.videoTop + layout.videoSize.height + 6 + layout.captionHeight < size.height - 12)
     }
 
     @Test func shortsKeepReadingAreaAndVideoWithinTheFeedViewport() {
@@ -392,6 +392,14 @@ struct JojoTests {
         #expect(hidden.videoHeight > shown.videoHeight)
     }
 
+    @Test func landscapeKaraokeCountsWrappedRowsBeforeAddingAnotherSentence() {
+        let heights: [Int: CGFloat] = [0: 80, 1: 40, 2: 40]
+        let window = KaraokeReadingWindow.indices(current: 0, lineCount: 3, heights: heights,
+                                                   spacing: 8, viewportHeight: 300,
+                                                   visualRows: [0: 2, 1: 1, 2: 1])
+        #expect(window == [0, 1])
+    }
+
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
         for size in [CGSize(width: 320, height: 480), CGSize(width: 393, height: 650),
                      CGSize(width: 430, height: 820), CGSize(width: 768, height: 900)] {
@@ -406,9 +414,8 @@ struct JojoTests {
                     let contentBottom = layout.videoTop + layout.videoSize.height + layout.captionHeight
                         + layout.controlsHeight + gaps
                     #expect(contentBottom <= size.height - 12 + 0.01)
-                    if captionHeight > 0 {
-                        #expect(abs(contentBottom - (size.height - 12)) < 0.01)
-                    }
+                    #expect(layout.captionHeight <= captionHeight)
+                    #expect(layout.captionHeight <= size.height * 0.36)
                 }
             }
         }

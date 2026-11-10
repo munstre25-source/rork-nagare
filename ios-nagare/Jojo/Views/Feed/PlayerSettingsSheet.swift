@@ -7,6 +7,7 @@ enum PlayerPrefs {
     static let jlptLevelKey = "jojo.jlptLevel"
     static let karaokeTextSizeKey = "jojo.karaokeTextSize"
     static let popupTextSizeKey = "jojo.popupTextSize"
+    static let immersionKaraokeStyleKey = "jojo.immersionKaraokeStyle"
 
     /// Five steps from compact to large. Index 1 is the system default.
     static let sizes: [DynamicTypeSize] = [.medium, .large, .xLarge, .xxLarge, .xxxLarge]
@@ -15,6 +16,13 @@ enum PlayerPrefs {
     static func typeSize(_ index: Double) -> DynamicTypeSize {
         sizes[min(max(0, Int(index.rounded())), sizes.count - 1)]
     }
+}
+
+nonisolated enum ImmersionKaraokeStyle: String, CaseIterable, Identifiable {
+    case classic = "Classic"
+    case amber = "Amber Contrast"
+
+    var id: Self { self }
 }
 
 /// JLPT picker steps. The feed itself filters by the three reading bands.
@@ -62,6 +70,7 @@ struct PlayerSettingsSheet: View {
     @AppStorage(PlayerPrefs.jlptLevelKey) private var storedLevel = ""
     @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeSize: Double = 1
     @AppStorage(PlayerPrefs.popupTextSizeKey) private var popupSize: Double = 1
+    @AppStorage(PlayerPrefs.immersionKaraokeStyleKey) private var immersionStyle = ""
 
     @State private var pendingLevel: JLPTStep?
     @State private var correctionLine: Int?
@@ -77,6 +86,16 @@ struct PlayerSettingsSheet: View {
             Form {
                 levelSection
                 subtitlesSection
+                Section("Immersion karaoke") {
+                    Picker("Word style", selection: Binding(
+                        get: { ImmersionKaraokeStyle(rawValue: immersionStyle) ?? .classic },
+                        set: { immersionStyle = $0.rawValue }
+                    )) {
+                        ForEach(ImmersionKaraokeStyle.allCases) { style in
+                            Text(style.rawValue).tag(style)
+                        }
+                    }
+                }
                 sizeSection
                 playbackSection
                 reportSection
@@ -373,6 +392,7 @@ struct SubtitlesToggleButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(subtitlesHidden ? "Show subtitles" : "Hide subtitles")
+        .accessibilityValue(subtitlesHidden ? "Off" : "On")
     }
 }
 

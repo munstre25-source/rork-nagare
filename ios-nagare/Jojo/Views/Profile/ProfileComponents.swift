@@ -128,11 +128,30 @@ struct ProfileAchievement: Identifiable, Equatable {
     let symbol: String
     let unlocked: Bool
     let progress: Double
+    let value: Int
+    let target: Int
+
+    var category: String {
+        switch id {
+        case "streak-3", "streak-7", "streak-30": "Streak"
+        case "minutes-60", "minutes-600": "Watch time"
+        default: "Vocabulary"
+        }
+    }
+
+    var unit: String {
+        switch category {
+        case "Streak": "days"
+        case "Watch time": "minutes"
+        default: "words"
+        }
+    }
 
     static func all(streak: Int, words: Int, known: Int, minutes: Int) -> [ProfileAchievement] {
         func make(_ id: String, _ title: String, _ detail: String, _ symbol: String, value: Int, target: Int) -> ProfileAchievement {
             ProfileAchievement(id: id, title: title, detail: detail, symbol: symbol,
-                               unlocked: value >= target, progress: min(1, Double(value) / Double(max(target, 1))))
+                               unlocked: value >= target, progress: min(1, Double(value) / Double(max(target, 1))),
+                               value: value, target: target)
         }
         return [
             make("first-word", "First catch", "Save your first word", "sparkle", value: words, target: 1),
@@ -191,7 +210,14 @@ struct AchievementsSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 16)], spacing: 22) {
-                    ForEach(achievements) { AchievementBadge(item: $0) }
+                    ForEach(achievements) { item in
+                        NavigationLink {
+                            AchievementDetailView(item: item)
+                        } label: {
+                            AchievementBadge(item: item)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(20)
             }
@@ -204,5 +230,55 @@ struct AchievementsSheet: View {
                 }
             }
         }
+    }
+}
+
+struct AchievementDetailView: View {
+    let item: ProfileAchievement
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Spacing.l) {
+                Image(systemName: item.symbol)
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundStyle(Color.studyAccent)
+                    .frame(width: 90, height: 90)
+                    .background(Color.studyAccent.opacity(0.12), in: .circle)
+                    .accessibilityHidden(true)
+                VStack(spacing: Spacing.s) {
+                    Text(item.title).font(.title.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    Text(item.category).font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.studyAccent)
+                    Text(item.detail).foregroundStyle(.secondary)
+                }
+                Label(item.unlocked ? "Unlocked" : "Locked",
+                      systemImage: item.unlocked ? "checkmark.seal.fill" : "lock.fill")
+                    .font(.subheadline.weight(.semibold))
+                VStack(alignment: .leading, spacing: Spacing.s) {
+                    ProgressView(value: item.progress) {
+                        Text("Progress")
+                    } currentValueLabel: {
+                        Text("\(min(item.value, item.target)) of \(item.target) \(item.unit)")
+                            .monospacedDigit()
+                    }
+                    .tint(Color.studyAccent)
+                    if !item.unlocked {
+                        Text("Remaining · \(item.target - item.value) \(item.unit)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(Spacing.l)
+                .cardStyle()
+            }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 440)
+            .padding(Spacing.l)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Color.canvas.ignoresSafeArea())
+        .navigationTitle("Achievement")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

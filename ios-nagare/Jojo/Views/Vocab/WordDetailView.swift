@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Detail for a saved word: readings, definitions, context, SRS status, jump to clip.
 struct WordDetailView: View {
-    let word: SavedWord
+    @Bindable var word: SavedWord
     @Environment(AppModel.self) private var app
     @State private var playing: Clip?
     @State private var showSearch: Bool = false
@@ -13,6 +13,15 @@ struct WordDetailView: View {
     @State private var reinforcing: [(clip: Clip, line: Int)] = []
 
     private var clip: Clip? { app.clip(id: word.contextClipId) }
+
+    private var exampleLines: [Line] {
+        var seen: Set<String> = []
+        let original = clip?.lines[safe: word.contextLineIndex]
+        let related = reinforcing.compactMap { $0.clip.lines[safe: $0.line] }
+        return ([original].compactMap { $0 } + related).filter {
+            !$0.text.isEmpty && seen.insert($0.text).inserted
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -93,7 +102,44 @@ struct WordDetailView: View {
                         }
                     }
                 }
-                SectionTitle("Progress")
+                Button {
+                    showSearch = true
+                } label: {
+                    Label("Find more videos", systemImage: "headphones")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+
+                if !exampleLines.isEmpty {
+                    SectionTitle("Example sentences")
+                    VStack(spacing: Spacing.s) {
+                        ForEach(exampleLines, id: \.text) { line in
+                            NavigationLink {
+                                exampleDetail(line)
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: Spacing.s) {
+                                        Text(line.text).font(JojoFont.jp(16, relativeTo: .body))
+                                        Text(line.translation).font(.subheadline).foregroundStyle(.secondary)
+                                    }
+                                    .multilineTextAlignment(.leading)
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(Color.studyAccent)
+                                }
+                                .padding(Spacing.m)
+                                .background(Color.card, in: .rect(cornerRadius: Radius.card))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                SectionTitle("My notes")
+                TextField("Add a note about this word", text: $word.personalNote, axis: .vertical)
+                    .lineLimit(3...8)
+                    .padding(Spacing.m)
+                    .background(Color.card, in: .rect(cornerRadius: Radius.card))
+                    .accessibilityLabel("Personal word notes")
+
+                SectionTitle("Review stats")
                 VStack(spacing: 0) {
                     LabeledContent("Status", value: word.state.rawValue.capitalized)
                         .padding(Spacing.m)
@@ -103,16 +149,15 @@ struct WordDetailView: View {
                     Divider()
                     LabeledContent("Added", value: word.addedAt.formatted(date: .abbreviated, time: .omitted))
                         .padding(Spacing.m)
+                    Divider()
+                    LabeledContent("Last reviewed", value: word.lastReviewedAt?.formatted(date: .abbreviated, time: .omitted) ?? "Never")
+                        .padding(Spacing.m)
+                    Divider()
+                    LabeledContent("Times seen", value: word.occurrenceCount.formatted())
+                        .padding(Spacing.m)
                 }
                 .background(Color.card, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Color.cardStroke))
-
-                Button {
-                    showSearch = true
-                } label: {
-                    Label("Hear it in other clips", systemImage: "headphones")
-                }
-                .buttonStyle(PrimaryButtonStyle())
 
                 Button(role: .destructive) {
                     confirmRemove = true
@@ -133,7 +178,10 @@ struct WordDetailView: View {
             app.hidesMainTabBar = true
             reinforcing = app.clipsReinforcing(wordKey: word.key, excluding: word.contextClipId)
         }
-        .onDisappear { app.hidesMainTabBar = false }
+        .onDisappear {
+            app.save()
+            app.hidesMainTabBar = false
+        }
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, startLine: playingLine, loopLine: true)
         }
@@ -155,6 +203,30 @@ struct WordDetailView: View {
         .sheet(isPresented: $showSearch) {
             SearchView(initialQuery: word.surface, initialScope: .sentences)
         }
+    }
+
+    private func exampleDetail(_ line: Line) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.l) {
+                HighlightedSentence(sentence: line.text, target: word.contextSurface.isEmpty ? word.surface : word.contextSurface)
+                    .font(JojoFont.jp(24, relativeTo: .title2))
+                    .accessibilityAddTraits(.isHeader)
+                Text(line.translation)
+                    .foregroundStyle(.secondary)
+                Button {
+                    SpeechService.shared.speak(line.text)
+                } label: {
+                    Label("Listen to sentence", systemImage: "speaker.wave.2")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.l)
+        }
+        .background(Color.canvas.ignoresSafeArea())
+        .navigationTitle("Example sentence")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 

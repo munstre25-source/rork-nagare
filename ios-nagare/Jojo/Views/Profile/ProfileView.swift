@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 /// Progress at a glance: streak, words, time, activity and achievements. Settings live behind the gear.
 struct ProfileView: View {
@@ -13,6 +14,10 @@ struct ProfileView: View {
     @State private var showHelp = false
     @State private var showLibrary = false
     @State private var showAchievements = false
+    @State private var selectedAchievement: ProfileAchievement?
+    @State private var showFounderContact = false
+    @State private var copiedFounderEmail = false
+    private let founderEmail = "ralpayer@outlook.com"
     var onGiveFeedback: (() -> Void)? = nil
     var onAcquisitionSurvey: (() -> Void)? = nil
     var tabBarHidden: Binding<Bool> = .constant(false)
@@ -107,6 +112,18 @@ struct ProfileView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(item: $selectedAchievement) { item in
+            NavigationStack {
+                AchievementDetailView(item: item)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { selectedAchievement = nil }
+                        }
+                    }
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showFounderContact) { founderContact }
     }
 
     private var topBar: some View {
@@ -183,8 +200,13 @@ struct ProfileView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
                     ForEach(achievements.sorted { $0.unlocked && !$1.unlocked }) { item in
-                        AchievementBadge(item: item)
-                            .frame(width: 92)
+                        Button {
+                            selectedAchievement = item
+                        } label: {
+                            AchievementBadge(item: item)
+                                .frame(width: 92)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -209,12 +231,49 @@ struct ProfileView: View {
             }
             Divider().padding(.leading, 52)
             SettingsRow(symbol: "envelope", title: "Contact the founder") {
-                if let mail = URL(string: "mailto:\(StoreConstants.supportEmail)?subject=Hi%20from%20Jojo") {
-                    openURL(mail)
-                }
+                copiedFounderEmail = false
+                showFounderContact = true
             }
         }
         .cardStyle()
+    }
+
+    private var founderContact: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.l) {
+                    Text("Tell me what’s working, report a bug, or suggest something you’d like to see in Jojo.")
+                        .foregroundStyle(.secondary)
+                    LabeledContent("Email", value: founderEmail)
+                    Button {
+                        if let mail = URL(string: "mailto:\(founderEmail)?subject=Hi%20from%20Jojo") {
+                            openURL(mail)
+                        }
+                    } label: {
+                        Label("Write an email", systemImage: "envelope")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    Button {
+                        UIPasteboard.general.string = founderEmail
+                        copiedFounderEmail = true
+                    } label: {
+                        Label(copiedFounderEmail ? "Email copied" : "Copy email address",
+                              systemImage: copiedFounderEmail ? "checkmark" : "doc.on.doc")
+                    }
+                }
+                .padding(Spacing.l)
+            }
+            .background(Color.canvas)
+            .navigationTitle("Contact the founder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { showFounderContact = false }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 
     private var watchText: String {
