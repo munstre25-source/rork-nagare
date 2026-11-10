@@ -23,6 +23,9 @@ struct LiveTranscriptPanel: View {
     var onPicture: Bool = false
     var sentenceMenuPlayer: (any ClipPlayer)? = nil
     var landscapeReadingWindow = false
+    var portraitReadingPlate = false
+
+    private var usesReadingPlate: Bool { landscapeReadingWindow || portraitReadingPlate }
 
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -128,7 +131,7 @@ struct LiveTranscriptPanel: View {
         .background {
             if !onPicture {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(landscapeReadingWindow
+                    .fill(usesReadingPlate
                           ? Color.adaptive(light: "#FFFFFF", dark: "#202020")
                           : Color.bgSurfaceDark)
             }
@@ -266,7 +269,7 @@ struct LiveTranscriptPanel: View {
             measuresKaraokeRows: landscapeReadingWindow
         )
         .background {
-            if landscapeReadingWindow && index == clampedCurrentLine {
+            if usesReadingPlate && index == clampedCurrentLine {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.adaptive(light: "#F7F7F7", dark: "#292929"))
             }
