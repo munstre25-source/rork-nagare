@@ -77,7 +77,11 @@ struct ImmersivePlayerScreen: View {
                         Haptics.selection()
                         withAnimation(.easeInOut(duration: 0.25)) { videoExpanded = false }
                     } label: {
-                        Label("Normal size", systemImage: "arrow.down.right.and.arrow.up.left")
+                        Label {
+                            Text("Normal size")
+                        } icon: {
+                            VideoSizeGlyph(expanded: true, size: 18)
+                        }
                     }
                 }
                 .font(.caption.weight(.bold))

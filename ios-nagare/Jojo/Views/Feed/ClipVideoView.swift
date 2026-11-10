@@ -287,7 +287,7 @@ struct ClipVideoView: View {
                 openFeatureRequest()
             }
             if !compactChrome, let onFullscreen {
-                RailButton(systemImage: "arrow.up.left.and.arrow.down.right", label: "Fullscreen", action: onFullscreen)
+                RailButton(systemImage: "viewfinder", label: "Fullscreen", action: onFullscreen)
             }
         }
         .padding(.trailing, Spacing.s)
@@ -348,7 +348,7 @@ struct ClipVideoView: View {
                     .accessibilityLabel(player?.loopRange != nil ? "Stop looping line" : "Loop current line")
                     if let onFullscreen {
                         Button(action: onFullscreen) {
-                            ControlIcon(systemImage: "arrow.up.left.and.arrow.down.right", tint: .white)
+                            ControlIcon(systemImage: "viewfinder", tint: .white)
                         }
                         .accessibilityLabel("Fullscreen")
                     }

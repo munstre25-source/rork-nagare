@@ -1014,8 +1014,17 @@ private struct TheaterPlaybackControls: View {
             .accessibilityLabel("More playback options")
 
             if let onMinimize {
-                control(expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                        label: expanded ? "Normal video size" : "Maximize video", action: onMinimize)
+                Button {
+                    Haptics.selection()
+                    onMinimize()
+                } label: {
+                    VideoSizeGlyph(expanded: expanded, size: 18)
+                        .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(expanded ? "Normal video size" : "Maximize video")
             }
         }
         .fixedSize(horizontal: !vertical, vertical: vertical)
@@ -1056,17 +1065,10 @@ struct VideoSizeBox: View {
             Haptics.selection()
             action()
         }) {
-            Image(systemName: expanded
-                  ? "arrow.down.right.and.arrow.up.left"
-                  : "arrow.up.left.and.arrow.down.right")
-                .font(.system(size: 13, weight: .bold))
+            VideoSizeGlyph(expanded: expanded, size: 21)
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
                 .background(Color.videoControlBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.85), lineWidth: 1.6)
-                )
         }
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
@@ -1076,6 +1078,33 @@ struct VideoSizeBox: View {
                 ? "Returns the video to its usual size, with the words underneath"
                 : "Enlarges the video while keeping the karaoke underneath"
         )
+    }
+}
+
+struct VideoSizeGlyph: View {
+    let expanded: Bool
+    let size: CGFloat
+
+    var body: some View {
+        if expanded {
+            Path { path in
+                for x in [-1.0, 1.0] {
+                    for y in [-1.0, 1.0] {
+                        let center = size / 2
+                        let elbow = CGPoint(x: center + CGFloat(x) * size * 0.17,
+                                            y: center + CGFloat(y) * size * 0.17)
+                        path.move(to: CGPoint(x: elbow.x, y: center + CGFloat(y) * size * 0.43))
+                        path.addLine(to: elbow)
+                        path.addLine(to: CGPoint(x: center + CGFloat(x) * size * 0.43, y: elbow.y))
+                    }
+                }
+            }
+            .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+            .frame(width: size, height: size)
+        } else {
+            Image(systemName: "viewfinder")
+                .font(.system(size: size, weight: .semibold))
+        }
     }
 }
 

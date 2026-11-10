@@ -171,7 +171,7 @@ struct SearchView: View {
             }
             if scope == .all || scope == .sentences, !sentenceHits.isEmpty {
                 resultSection(
-                    title: "Available clips (\(sentenceHits.count))",
+                    title: "Available clips",
                     expanded: showAllSentences,
                     canExpand: sentenceHits.count > 8,
                     expandTitle: "See all clips"
@@ -242,7 +242,7 @@ struct SearchView: View {
         case .loaded:
             if !hits.isEmpty {
                 resultSection(
-                    title: "More clips (\(hits.count))",
+                    title: "More clips",
                     expanded: true,
                     canExpand: false,
                     expandTitle: ""
@@ -420,9 +420,8 @@ struct SearchView: View {
         if scope == .all || scope == .words, !wordHits.isEmpty {
             parts.append(wordHits.count == 1 ? "1 word" : "\(wordHits.count) words")
         }
-        if scope == .all || scope == .sentences {
-            let count = Set((sentenceHits + (remoteHits ?? [])).map(\.id)).count
-            if count > 0 { parts.append(count == 1 ? "1 clip" : "\(count) clips") }
+        if (scope == .all || scope == .sentences), !sentenceHits.isEmpty || !(remoteHits ?? []).isEmpty {
+            parts.append("Matching clips")
         }
         if scope == .all || scope == .grammar, !grammarHits.isEmpty {
             parts.append(grammarHits.count == 1 ? "1 grammar point" : "\(grammarHits.count) grammar")

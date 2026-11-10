@@ -88,7 +88,7 @@ struct ClipInfoSheet: View {
                             dismiss()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onFullscreen() }
                         } label: {
-                            Label("Open focused player", systemImage: "arrow.up.left.and.arrow.down.right")
+                            Label("Open focused player", systemImage: "viewfinder")
                         }
                     }
                 }

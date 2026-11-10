@@ -260,7 +260,7 @@ struct ExploreFiltersSheet: View {
             .frame(minWidth: 88, minHeight: 56)
             .disabled(draft.activeCount == (lockedDifficulty == nil ? 0 : 1))
 
-            Button(resultCount == 0 ? "No clips on this route" : "Explore \(resultCount) clip\(resultCount == 1 ? "" : "s")") {
+            Button("Apply") {
                 Haptics.medium()
                 filters = draft
                 dismiss()
@@ -268,8 +268,6 @@ struct ExploreFiltersSheet: View {
             }
             .buttonStyle(PrimaryButtonStyle(isEnabled: resultCount > 0))
             .disabled(resultCount == 0)
-            .contentTransition(.numericText())
-            .animation(.snappy, value: resultCount)
         }
         .padding(.horizontal, Spacing.l)
         .padding(.vertical, Spacing.s)

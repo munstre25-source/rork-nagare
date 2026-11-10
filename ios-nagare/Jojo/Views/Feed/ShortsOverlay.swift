@@ -92,8 +92,9 @@ struct ShortsRail: View {
                 .frame(height: 42)
 
             if let onToggleSize {
-                railButton(expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                           tint: .white, label: expanded ? "Normal video size" : "Focus on the video") {
+                railButton("viewfinder",
+                           tint: .white, label: expanded ? "Normal video size" : "Focus on the video",
+                           sizeState: expanded) {
                     onToggleSize()
                 }
             }
@@ -101,13 +102,20 @@ struct ShortsRail: View {
         .shadow(color: .black.opacity(0.4), radius: 6, y: 1)
     }
 
-    private func railButton(_ system: String, tint: Color, label: String, action: @escaping () -> Void) -> some View {
+    private func railButton(_ system: String, tint: Color, label: String,
+                            sizeState: Bool? = nil, action: @escaping () -> Void) -> some View {
         Button {
             Haptics.selection()
             action()
         } label: {
-            Image(systemName: system)
-                .font(.system(size: 18, weight: .semibold))
+            Group {
+                if let sizeState {
+                    VideoSizeGlyph(expanded: sizeState, size: 18)
+                } else {
+                    Image(systemName: system)
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
                 .foregroundStyle(tint)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 42, height: 42)

@@ -259,7 +259,7 @@ struct ExploreHomeView: View {
                 Button {
                     path.append(ExploreBrowseRoute.results)
                 } label: {
-                    Label("Show \(matchingExploreClipCount) matching clips", systemImage: "play.rectangle.fill")
+                    Label("Show matching clips", systemImage: "play.rectangle.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.designOrangeDeep)
                         .frame(maxWidth: .infinity, minHeight: 46)
@@ -290,12 +290,6 @@ struct ExploreHomeView: View {
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.cardStroke))
         }
         .buttonStyle(PressableStyle())
-    }
-
-    private var matchingExploreClipCount: Int {
-        app.studyLibrary.filter {
-            exploreFilters.matches($0, finishedClipIds: app.profile.finishedClipIds)
-        }.count
     }
 
     private var searchEntry: some View {
