@@ -145,17 +145,21 @@ final class AppModel {
     // MARK: Persistence
 
     func save() {
+        do {
+            try persistChanges()
+        } catch {
+            print("[AppModel] save failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func persistChanges() throws {
         let touchedWords = context.hasChanges
             ? (context.insertedModelsArray + context.changedModelsArray).compactMap { $0 as? SavedWord }
             : []
         let deletedWordKeys = context.hasChanges
             ? context.deletedModelsArray.compactMap { ($0 as? SavedWord)?.key }
             : []
-        do {
-            try context.save()
-        } catch {
-            print("[AppModel] save failed: \(error.localizedDescription)")
-        }
+        try context.save()
         mirrorVocabChanges(touched: touchedWords, deletedKeys: deletedWordKeys)
         WidgetSnapshotPublisher.publish(from: self)
     }
@@ -1105,7 +1109,7 @@ final class AppModel {
         apply(mark, to: word)
     }
 
-    private func apply(_ mark: SRSState, to word: SavedWord) {
+    private func apply(_ mark: SRSState, to word: SavedWord, fromImport: Bool = false) {
         switch mark {
         case .known:
             word.state = .known
@@ -1128,11 +1132,76 @@ final class AppModel {
             word.intervalStepIndex = 0
             word.dueAt = Date().addingTimeInterval(Self.firstReviewDelay)
         }
-        word.lastReviewedAt = Date()
+        if fromImport { return }
         wordStates[word.key] = word.state
+        word.lastReviewedAt = Date()
         save()
         refreshFirstReviewReminder()
         scheduleReviewAvailabilityRefresh()
+    }
+
+    /// Imports plain Japanese headwords using the bundled dictionary.
+    func importKnownWords(_ surfaces: [String]) throws -> (added: Int, updated: Int, unmatched: Int) {
+        let saved = try context.fetch(FetchDescriptor<SavedWord>())
+        let bySurface = Dictionary(grouping: saved, by: \.surface)
+        var byKey = Dictionary(saved.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
+        var inserted: [SavedWord] = []
+        var previous: [(word: SavedWord, state: SRSState, step: Int, due: Date)] = []
+        var added = 0
+        var updated = 0
+        var unmatched = 0
+        for surface in surfaces {
+            if let existing = bySurface[surface] {
+                for word in existing where word.state != .known {
+                    previous.append((word, word.state, word.intervalStepIndex, word.dueAt))
+                    apply(.known, to: word, fromImport: true)
+                    updated += 1
+                }
+                continue
+            }
+            guard let entry = lexicon.entry(for: surface) else {
+                unmatched += 1
+                continue
+            }
+            let key = SavedWord.makeKey(surface: entry.surface, reading: entry.readings.first ?? "")
+            if let word = byKey[key] {
+                if word.state != .known {
+                    previous.append((word, word.state, word.intervalStepIndex, word.dueAt))
+                    apply(.known, to: word, fromImport: true)
+                    updated += 1
+                }
+                continue
+            }
+            let word = SavedWord(key: key, surface: entry.surface, readings: entry.readings,
+                                 romaji: entry.romaji, pos: entry.pos, conjugationClass: entry.conjugationClass,
+                                 jlpt: entry.jlpt, definitions: entry.definitions, jaDefinitions: entry.jaDefinitions)
+            context.insert(word)
+            inserted.append(word)
+            byKey[key] = word
+            apply(.known, to: word, fromImport: true)
+            added += 1
+        }
+        if added + updated > 0 {
+            do {
+                try persistChanges()
+            } catch {
+                for item in previous {
+                    item.word.state = item.state
+                    item.word.intervalStepIndex = item.step
+                    item.word.dueAt = item.due
+                }
+                for word in inserted { context.delete(word) }
+                throw error
+            }
+            for word in inserted {
+                lookedUpKeys.insert(word.key)
+                wordStates[word.key] = word.state
+            }
+            for item in previous { wordStates[item.word.key] = item.word.state }
+            refreshFirstReviewReminder()
+            scheduleReviewAvailabilityRefresh()
+        }
+        return (added, updated, unmatched)
     }
 
     /// Due cards the learner actually meets, most-seen first.

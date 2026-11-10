@@ -7,12 +7,20 @@ struct WordDetailView: View {
     @State private var playing: Clip?
     @State private var showSearch: Bool = false
     @State private var confirmRemove: Bool = false
+    @State private var selectedKanji: String?
     @Environment(\.dismiss) private var dismiss
 
     @State private var playingLine: Int = 0
     @State private var reinforcing: [(clip: Clip, line: Int)] = []
 
     private var clip: Clip? { app.clip(id: word.contextClipId) }
+
+    private var kanji: [String] {
+        var seen: Set<String> = []
+        return word.surface.map(String.init).filter {
+            $0.range(of: #"\p{Han}"#, options: .regularExpression) != nil && seen.insert($0).inserted
+        }
+    }
 
     private var exampleLines: [Line] {
         var seen: Set<String> = []
@@ -37,6 +45,23 @@ struct WordDetailView: View {
                     showFurigana: app.profile.showFurigana,
                     showRomaji: app.profile.showRomaji
                 )
+                if !kanji.isEmpty {
+                    SectionTitle("Kanji in this word")
+                    FlowLayout {
+                        ForEach(kanji, id: \.self) { character in
+                            Button {
+                                selectedKanji = character
+                            } label: {
+                                Text(character)
+                                    .font(JojoFont.jp(22, relativeTo: .title3))
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Shows dictionary examples")
+                        }
+                    }
+                }
                 SectionTitle("Definition")
                 VStack(spacing: Spacing.s) {
                     ForEach(Array(word.displayDefinitions(mode: app.profile.dictionary).enumerated()), id: \.offset) { index, def in
@@ -141,6 +166,10 @@ struct WordDetailView: View {
 
                 SectionTitle("Review stats")
                 VStack(spacing: 0) {
+                    Toggle("Prioritize in review", isOn: $word.isReviewPriority)
+                        .tint(Color.studyAccent)
+                        .padding(Spacing.m)
+                    Divider()
                     LabeledContent("Status", value: word.state.rawValue.capitalized)
                         .padding(Spacing.m)
                     Divider()
@@ -203,6 +232,9 @@ struct WordDetailView: View {
         .sheet(isPresented: $showSearch) {
             SearchView(initialQuery: word.surface, initialScope: .sentences)
         }
+        .sheet(isPresented: Binding(get: { selectedKanji != nil }, set: { if !$0 { selectedKanji = nil } })) {
+            if let selectedKanji { KanjiExamplesSheet(character: selectedKanji) }
+        }
     }
 
     private func exampleDetail(_ line: Line) -> some View {
@@ -227,6 +259,52 @@ struct WordDetailView: View {
         .navigationTitle("Example sentence")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+private struct KanjiExamplesSheet: View {
+    let character: String
+    @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+
+    private var examples: [DictionaryEntry] {
+        var seen: Set<String> = []
+        return Array(app.lexicon.entries.values
+            .filter { $0.surface.contains(character) }
+            .sorted {
+                if $0.surface.count != $1.surface.count { return $0.surface.count < $1.surface.count }
+                return $0.surface < $1.surface
+            }
+            .filter { seen.insert($0.surface).inserted }
+            .prefix(12))
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if examples.isEmpty {
+                    Text("No examples in the offline dictionary.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(examples, id: \.surface) { entry in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.surface).font(JojoFont.jp(21, relativeTo: .title3))
+                        if !entry.readings.isEmpty {
+                            Text(entry.readings.joined(separator: " · ")).foregroundStyle(.secondary)
+                        }
+                        Text((entry.definitions.first ?? entry.jaDefinitions.first) ?? "")
+                            .font(.subheadline)
+                    }
+                }
+            }
+            .navigationTitle("Kanji · \(character)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

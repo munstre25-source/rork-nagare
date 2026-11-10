@@ -42,6 +42,7 @@ struct LearningSettingsCard: View {
     @AppStorage("jojo.reminderHour") private var reminderHour = 19
     @State private var pendingLevel: JLPTStep?
     @State private var tutorialReset = false
+    @State private var showKnownWordImport = false
 
     private var level: JLPTStep {
         JLPTStep(rawValue: storedLevel) ?? JLPTStep.fallback(for: app.profile.readingLevel)
@@ -166,6 +167,14 @@ struct LearningSettingsCard: View {
             divider
 
             header("Backup & export")
+            Button {
+                showKnownWordImport = true
+            } label: {
+                rowLabel("square.and.arrow.down", "Import known words", value: nil)
+            }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $showKnownWordImport) { KnownWordImportSheet() }
+            divider
             ShareLink(item: exportCSV, preview: SharePreview("Jojo words.csv")) {
                 rowLabel("square.and.arrow.up", "Export words (CSV)", value: "\(words.count)")
             }
@@ -290,6 +299,56 @@ struct LearningSettingsCard: View {
             return "\(word.surface)\t\(back.replacingOccurrences(of: "\t", with: " "))"
         }
         .joined(separator: "\n")
+    }
+}
+
+private struct KnownWordImportSheet: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var result: String?
+
+    private var headwords: [String] {
+        var seen: Set<String> = []
+        return text.split(whereSeparator: \.isNewline).compactMap { line in
+            let headword = line.prefix(while: { $0 != "\t" })
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .precomposedStringWithCompatibilityMapping
+            return headword.isEmpty || !seen.insert(headword).inserted ? nil : headword
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 160)
+                        .accessibilityLabel("Japanese headwords")
+                } header: {
+                    Text("Word list")
+                } footer: {
+                    Text("Paste up to 500 Japanese headwords, one per line. For tab-separated lists, put the Japanese word first.")
+                }
+                if let result { Text(result).font(.subheadline) }
+                Button("Import as known") {
+                    do {
+                        let counts = try app.importKnownWords(headwords)
+                        result = "Added \(counts.added) · Marked known \(counts.updated) · No dictionary match \(counts.unmatched)"
+                    } catch {
+                        result = "Couldn’t save the import. Please try again."
+                    }
+                }
+                .disabled(headwords.isEmpty || headwords.count > 500)
+            }
+            .navigationTitle("Import known words")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

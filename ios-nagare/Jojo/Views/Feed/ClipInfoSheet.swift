@@ -11,6 +11,17 @@ struct ClipInfoSheet: View {
     @State private var showSpeaking = false
     @State private var showTranscriptReport = false
 
+    private var continuationURL: URL? {
+        guard let url = clip.youtubeURL else { return nil }
+        let end = (clip.sourceStartSec ?? 0) + clip.durationSec
+        guard end.isFinite, end >= 1, end < Double(Int.max),
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        components.queryItems = (components.queryItems ?? []) + [
+            URLQueryItem(name: "t", value: "\(Int(end))s")
+        ]
+        return components.url
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -125,6 +136,13 @@ struct ClipInfoSheet: View {
                 }
 
                 Section {
+                    if let continuationURL {
+                        Button {
+                            openURL(continuationURL)
+                        } label: {
+                            Label("Continue from the end of this clip", systemImage: "play.circle")
+                        }
+                    }
                     if let url = clip.youtubeURL {
                         Button {
                             openURL(url)

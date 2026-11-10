@@ -20,6 +20,7 @@ enum ReviewQueue {
     }
 
     private static func prioritized(_ lhs: SavedWord, _ rhs: SavedWord) -> Bool {
+        if lhs.isReviewPriority != rhs.isReviewPriority { return lhs.isReviewPriority }
         if lhs.occurrenceCount != rhs.occurrenceCount { return lhs.occurrenceCount > rhs.occurrenceCount }
         if lhs.dueAt != rhs.dueAt { return lhs.dueAt < rhs.dueAt }
         return lhs.key < rhs.key

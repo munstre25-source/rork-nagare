@@ -47,6 +47,7 @@ final class SavedWord {
     /// How the word works in the sentence it was found in. Empty until a tap explains it.
     var contextNote: String = ""
     var personalNote: String = ""
+    var isReviewPriority = false
     var contextSurface: String = ""
     var contextClipId: String = ""
     var contextLineIndex: Int = 0

@@ -12,6 +12,7 @@ struct FeedbackBoardView: View {
     @State private var posts: [FeedbackPost] = []
     @State private var sort: BoardSort = .top
     @State private var search = ""
+    @State private var category = "all"
     @State private var failed = false
     @State private var isLoading = true
     @State private var isLoadingMore = false
@@ -35,12 +36,17 @@ struct FeedbackBoardView: View {
         }
     }
 
+    private var visiblePosts: [FeedbackPost] {
+        category == "all" ? posts : posts.filter { $0.category.lowercased() == category }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
                     header
                     OrangePillBar(items: BoardSort.allCases, selection: $sort, title: \.title)
+                    OrangePillBar(items: ["all", "bug", "feature", "general"], selection: $category, title: { $0.capitalized })
                     content
                 }
                 .padding(.horizontal, 20)
@@ -63,7 +69,7 @@ struct FeedbackBoardView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                Button("Post a request") { showComposer = true }
+                Button("Give feedback") { showComposer = true }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
@@ -182,15 +188,16 @@ struct FeedbackBoardView: View {
                     .tint(Color.studyAccent)
             }
             .padding(.top, 12)
-        } else if posts.isEmpty {
+        } else if visiblePosts.isEmpty && !hasMore {
             ContentUnavailableView {
-                Label(search.isEmpty ? "No requests yet" : "No matches", systemImage: search.isEmpty ? "lightbulb" : "magnifyingglass")
+                Label(search.isEmpty && category == "all" ? "No requests yet" : "No matches",
+                      systemImage: search.isEmpty ? "lightbulb" : "magnifyingglass")
             } description: {
                 Text(search.isEmpty ? "Be the first to ask for something." : "Try a different word, or post it as a new request.")
             }
             .padding(.top, 12)
         } else {
-            ForEach(posts) { post in
+            ForEach(visiblePosts) { post in
                 FeedbackPostRow(
                     post: post,
                     onOpen: { selected = post },
@@ -212,7 +219,9 @@ struct FeedbackBoardView: View {
                     }
                     Spacer()
                 }
-                .onAppear { Task { await loadMore() } }
+                .onAppear {
+                    if category == "all" { Task { await loadMore() } }
+                }
             }
         }
     }
@@ -469,7 +478,7 @@ private struct FeedbackPostScreen: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(post.voted ? "Remove upvote" : "Upvote")
 
-                Text("Comments")
+                Text("Comments (\(comments.count))")
                     .font(.headline)
                 if comments.isEmpty {
                     Text("No comments yet.")
@@ -504,23 +513,34 @@ private struct FeedbackPostScreen: View {
                         .background(Color.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
-                Text("Be kind. Offensive language, links and personal details are blocked.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("Write a comment…", text: $draft, axis: .vertical)
-                    .lineLimit(2...5)
-                    .padding(12)
-                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                if let errorText {
-                    Text(errorText).font(.footnote).foregroundStyle(.red)
-                }
-                Button(isSending ? "Sending…" : "Comment") {
-                    Task { await send() }
-                }
-                .buttonStyle(PrimaryButtonStyle(isEnabled: canSend))
-                .disabled(!canSend)
             }
             .padding(20)
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                if let errorText { Text(errorText).font(.footnote).foregroundStyle(.red) }
+                HStack(alignment: .bottom, spacing: 8) {
+                    TextField("Write a comment…", text: $draft, axis: .vertical)
+                        .lineLimit(1...4)
+                        .padding(12)
+                        .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12))
+                        .accessibilityHint("Keep comments kind and leave out links and personal details")
+                    Button {
+                        Task { await send() }
+                    } label: {
+                        Group {
+                            if isSending { ProgressView() }
+                            else { Image(systemName: "paperplane.fill") }
+                        }
+                        .frame(width: 44, height: 44)
+                    }
+                    .disabled(!canSend)
+                    .accessibilityLabel("Send comment")
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .background(Color.studyPage)
         }
         .background(Color.studyPage.ignoresSafeArea())
         .navigationTitle("Feedback")
