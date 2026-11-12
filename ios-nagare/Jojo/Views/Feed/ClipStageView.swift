@@ -921,7 +921,8 @@ private struct TheaterPlaybackControls: View {
                     }
                     .scrollBounceBehavior(.basedOnSize)
                 }
-                .frame(width: 48, maxHeight: .infinity)
+                .frame(width: 48)
+                .frame(maxHeight: .infinity)
             } else {
                 ViewThatFits(in: .horizontal) {
                     controls(compact: false)

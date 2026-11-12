@@ -28,7 +28,7 @@ enum JojoPalette {
     private static let schemeKey = "jojo.scheme"
 
     @Observable
-    private final class PaletteState {
+    fileprivate final class PaletteState {
         var theme: AccentTheme = .amber
         var scheme: JojoScheme = .dark
     }
