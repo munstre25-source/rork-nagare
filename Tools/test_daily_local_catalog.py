@@ -5,10 +5,61 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from daily_local_catalog import publish_batch, run
+from daily_local_catalog import prepare_public_audio, publish_batch, run
 
 
 class DailyLocalCatalogTests(unittest.TestCase):
+    def test_public_audio_attempt_creates_reviewable_draft_without_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            video = dict(video_id="abcdefghijk", category="learning",
+                         status="awaiting_authorized_audio")
+            args = SimpleNamespace(
+                public_audio_attempts=1, public_audio_cache=None,
+                model_directory=root, device="cpu",
+            )
+            result = dict(newDraftsReady=0, published=0, paidInferenceCalls=0)
+
+            def local_alignment(*_args, **_kwargs):
+                (root / "drafts").mkdir()
+                (root / "drafts/summary.json").write_text(
+                    json.dumps([dict(video_id="abcdefghijk", status="ready_for_review")])
+                )
+
+            with patch("daily_local_catalog.subprocess.run", side_effect=local_alignment) as worker:
+                status = prepare_public_audio(args, root, [video], result)
+            self.assertEqual(status, "drafts_ready_for_review")
+            self.assertEqual(result["newDraftsReady"], 1)
+            self.assertEqual(result["published"], 0)
+            self.assertEqual(video["status"], "ready_for_review")
+            self.assertNotIn("--authorized-media", worker.call_args.args[0])
+
+    def test_public_audio_category_selects_only_requested_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = SimpleNamespace(
+                public_audio_attempts=1, public_audio_category="podcast",
+                public_audio_cache=None, model_directory=root, device="cpu",
+            )
+            queue = [
+                dict(video_id="abcdefghijk", category="learning",
+                     status="awaiting_authorized_audio"),
+                dict(video_id="bcdefghijkl", category="podcast",
+                     status="awaiting_authorized_audio"),
+            ]
+
+            def local_alignment(*_args, **_kwargs):
+                (root / "drafts").mkdir()
+                (root / "drafts/summary.json").write_text(
+                    json.dumps([dict(video_id="bcdefghijkl", status="held")])
+                )
+
+            result = dict(newDraftsReady=0, published=0)
+            with patch("daily_local_catalog.subprocess.run", side_effect=local_alignment):
+                prepare_public_audio(args, root, queue, result)
+            selected = json.loads((root / "public-candidates.json").read_text())
+            self.assertEqual([v["video_id"] for v in selected], ["bcdefghijkl"])
+
     def test_empty_inbox_seeds_source_queue_without_loading_credentials(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

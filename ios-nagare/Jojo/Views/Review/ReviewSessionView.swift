@@ -13,6 +13,7 @@ struct ReviewSessionView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var allWords: [SavedWord]
     @State private var queue: [String] = []
     @State private var total: Int = 0
@@ -24,6 +25,7 @@ struct ReviewSessionView: View {
     @State private var revealed: Bool = false
     @State private var flipAngle: Double = 0
     @State private var showGoodPulse: Bool = false
+    @State private var flashcardStudySegmentStartedAt: Date?
 
     private var current: SavedWord? {
         guard let key = queue.first else { return nil }
@@ -86,6 +88,7 @@ struct ReviewSessionView: View {
         .animation(Motion.cardFlip, value: revealed)
         .onAppear {
             app.isReviewSessionActive = true
+            resumeFlashcardStudyTimer()
             guard queue.isEmpty, !isFinished else { return }
             let available = Set(allWords.map(\.key))
             var seen = Set<String>()
@@ -95,8 +98,17 @@ struct ReviewSessionView: View {
             track("review_started", props: ["count": String(total)])
         }
         .onDisappear {
+            pauseFlashcardStudyTimer()
             app.isReviewSessionActive = false
             app.lastReviewEndedAt = Date()
+        }
+        .onChange(of: playing?.id) { _, clipId in
+            if clipId == nil { resumeFlashcardStudyTimer() }
+            else { pauseFlashcardStudyTimer() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { resumeFlashcardStudyTimer() }
+            else { pauseFlashcardStudyTimer() }
         }
         .onChange(of: allWords.map(\.key)) { _, keys in
             let available = Set(keys)
@@ -112,6 +124,17 @@ struct ReviewSessionView: View {
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, startLine: current?.contextLineIndex, loopLine: true)
         }
+    }
+
+    private func resumeFlashcardStudyTimer() {
+        guard scenePhase == .active, playing == nil, flashcardStudySegmentStartedAt == nil else { return }
+        flashcardStudySegmentStartedAt = Date()
+    }
+
+    private func pauseFlashcardStudyTimer() {
+        guard let startedAt = flashcardStudySegmentStartedAt else { return }
+        flashcardStudySegmentStartedAt = nil
+        app.addFlashcardStudy(seconds: Date().timeIntervalSince(startedAt))
     }
 
     private var topBar: some View {

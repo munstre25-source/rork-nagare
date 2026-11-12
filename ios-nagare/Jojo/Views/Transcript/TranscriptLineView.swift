@@ -24,6 +24,7 @@ struct TranscriptLineView: View {
     var onReport: (() -> Void)?
     var sentenceMenuPlayer: (any ClipPlayer)? = nil
     var karaokeTime: Double? = nil
+    var lightPaper: Bool = false
     var measuresKaraokeRows = false
 
     @Environment(AppModel.self) private var app
@@ -111,6 +112,7 @@ struct TranscriptLineView: View {
                                     tapEnabled: display.tapWords,
                                     minimalStyling: display.minimalJapanese,
                                     stablePlaybackHighlight: respectsProfileDisplay,
+                                    lightPaper: lightPaper,
                                     playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
                                     onTap: {
                                         withAnimation(Motion.popupSpring) {
@@ -160,7 +162,7 @@ struct TranscriptLineView: View {
                         Text(line.translation)
                             .font(forceDenseAids || raisedCard ? Font.footnote : Font.subheadline)
                             .fontWeight(.regular)
-                            .foregroundStyle(LearningInk.english(onPicture: onPicture).opacity(onPicture ? 0.92 : 1))
+                            .foregroundStyle((lightPaper ? Color(hex: "#454545") : LearningInk.english(onPicture: onPicture)).opacity(onPicture ? 0.92 : 1))
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)

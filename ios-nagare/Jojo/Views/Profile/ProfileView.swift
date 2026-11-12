@@ -11,6 +11,7 @@ struct ProfileView: View {
     @Query private var words: [SavedWord]
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showSettings = false
+    @State private var showStreak = false
     @State private var showHelp = false
     @State private var showLibrary = false
     @State private var showAchievements = false
@@ -63,7 +64,9 @@ struct ProfileView: View {
                         Spacer(minLength: 0)
                     }
                     HStack(spacing: 10) {
-                        ProfileStat(symbol: "flame.fill", tint: .designOrange, value: "\(app.currentStreak)", caption: "day streak")
+                        ProfileStat(symbol: "flame.fill", tint: .designOrange, value: "\(app.currentStreak)", caption: "day streak") {
+                            showStreak = true
+                        }
                         ProfileStat(symbol: "character.book.closed.fill", tint: .sakuraPink, value: "\(words.count)", caption: "words")
                         ProfileStat(symbol: "clock.fill", tint: .designOrangeDeep, value: watchText, caption: "watched")
                     }
@@ -104,6 +107,7 @@ struct ProfileView: View {
                 SettingsView(onGiveFeedback: onGiveFeedback, onAcquisitionSurvey: onAcquisitionSurvey)
             }
             .navigationDestination(isPresented: $showHelp) { HelpView(onGiveFeedback: onGiveFeedback) }
+            .navigationDestination(isPresented: $showStreak) { StreakView() }
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
         .sheet(isPresented: $showLibrary) { LibraryView(presentedModally: true) }

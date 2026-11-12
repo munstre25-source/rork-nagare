@@ -12,61 +12,51 @@ The three Supabase migrations below are already applied and recorded on project 
 
 Preserve simulator-agent changes before pulling; do not use a hard reset or force push.
 
-~~~sh
+\~\~\~sh
 git switch main
 git pull --ff-only
 xcodebuild -resolvePackageDependencies -project ios-nagare/Jojo.xcodeproj -scheme Jojo
 xcodebuild -showdestinations -project ios-nagare/Jojo.xcodeproj -scheme Jojo
 # Choose an available iOS Simulator UDID from the preceding output:
-xcodebuild -project ios-nagare/Jojo.xcodeproj -scheme Jojo \
-  -destination 'platform=iOS Simulator,id=<SIMULATOR_UDID>' test
-~~~
+xcodebuild -project ios-nagare/Jojo.xcodeproj -scheme Jojo \\
+  -destination 'platform=iOS Simulator,id=<SIMULATOR\_UDID>' test
+\~\~\~
 
 The project uses filesystem-synchronized source groups; new Swift files are included automatically. Use the existing public client configuration workflow. Never put service-role/admin tokens or AI provider keys in the app.
 
 ## Onboarding and first feed
 
-- Fresh onboarding must persist motivation, liked/passed interests, reading level and goal. Rapid swipes record one answer per card; leaving the level screen cancels delayed continuation.
-- Compare beginner Anime with advanced Podcasts. Interest ranking cannot bypass the saved level gate. Missing inventory must not be invented or mislabeled.
-- Level selection initializes Beginner / Guided / Full Immersion help for new profiles. Later display changes remain independent of difficulty and invoke no AI.
-- The Welcome clip must be first in For You and survive the handoff/relaunch while eligible.
-- Normal DEBUG onboarding/bypass uses the personal feed rather than forced showcase clips. No demo vocabulary/watch history is seeded by default; explicit marketing demos remain separate.
-- Profile goal/level changes refresh upcoming recommendations while preserving the current watch.
-- Exact retired clip IDs leave the local cache on sync even if another excerpt of the same video remains live.
-- Podcasts are a separate interest/category. Adult lessons and podcasts must not become Kids for easy vocabulary or slow speech.
-
-## Quiet subtitle controls
-
-The permanent horizontal learning-mode/aid strip has been replaced with a small one-time karaoke invitation. It appears only on the active clip after the guided tour, and disappears after dismissing it or closing subtitle setup. The acknowledgement is stored on the local profile; existing display choices remain intact.
-
-The existing captions icon opens a native, swipe-dismissable Subtitle help tray. Profile → Subtitles & reading → Subtitle help opens the same tray. Modes, furigana, romaji, English visibility, word tapping and subtitle languages all use the existing persisted setters. The tray is medium height by default and can expand for the full form.
-
-No Supabase migration is required for this UI update. UserProfile adds a defaulted local subtitleSetupCompleted Boolean; verify an existing install upgrades without losing its preferences.
-
-Simulator checks: complete/skip the guided tour; see the hint only on the active clip; close it and relaunch; reopen via captions and Profile; verify all controls, Custom mode, swipe dismissal, Shorts/landscape and large Dynamic Type. Confirm changing modes does not seek or replace the clip. Swift syntax checks passed for changed views/models; AppModel has only the same parser limitation present before this patch. Xcode build and device UI verification remain required.
+* Fresh onboarding must persist motivation, liked/passed interests, reading level and goal. Rapid swipes record one answer per card; leaving the level screen cancels delayed continuation.
+* Compare beginner Anime with advanced Podcasts. Interest ranking cannot bypass the saved level gate. Missing inventory must not be invented or mislabeled.
+* Level selection initializes Beginner / Guided / Full Immersion help for new profiles. Later display changes remain independent of difficulty and invoke no AI.
+* The Welcome clip must be first in For You and survive the handoff/relaunch while eligible.
+* Normal DEBUG onboarding/bypass uses the personal feed rather than forced showcase clips. No demo vocabulary/watch history is seeded by default; explicit marketing demos remain separate.
+* Profile goal/level changes refresh upcoming recommendations while preserving the current watch.
+* Exact retired clip IDs leave the local cache on sync even if another excerpt of the same video remains live.
+* Podcasts are a separate interest/category. Adult lessons and podcasts must not become Kids for easy vocabulary or slow speech.
 
 ## Annual-first paywall
 
 The native annual-first comparison is now canonical; a RevenueCat remote template no longer silently replaces it. RevenueCat still supplies the assigned current offering (default fallback), packages, localized prices, trial eligibility, purchases/restores and entitlement state. Customer Center remains available.
 
-- Annual starts selected and is the primary recommended offer. Explicit monthly selection must survive asynchronous product loading.
-- **Annual CTA: Start Free Trial** for verified annual-trial eligibility. **Monthly CTA: Continue**. Unknown/ineligible annual users see Continue rather than an unavailable free-trial promise.
-- Full billed annual total is most prominent. Monthly equivalent, percentage and currency savings compare actual same-currency prices over exactly one year versus twelve monthly payments.
-- Hide discount claims for missing currencies/periods or annual pricing that is not cheaper. Percentages never round up. No fabricated Most Popular claim or sale price is used.
-- CTA stays visible while scrolling. Test small iPhone, iPad, landscape and large Dynamic Type; cards should expand without clipping.
-- Test annual-only/monthly-only, delayed/missing products, load failure, eligible/ineligible/unknown trials, purchase cancellation/pending, restore with/without entitlement and a successful sandbox purchase.
-- Plan selection is disabled during purchase/restore. Analytics/reminders must use the package actually purchased.
-- StoreConstants expects monthly/yearly packages and nagare_learn_japanese_pro entitlement. The local StoreKit annual fixture is documented as a three-day trial; live StoreKit terms are authoritative.
-- For paywall QA use a non-subscribed test install with RevenueCat configured. Stored DEBUG bypass or a cached entitlement can skip it. Missing RevenueCat config intentionally enables debug bypass. Do not change release eligibility or hardcode prices to force screenshots.
-- New native regression tests cover savings, currencies, periods, no discount, JPY, onboarding and level gating. Run them on macOS.
+* Annual starts selected and is the primary recommended offer. Explicit monthly selection must survive asynchronous product loading.
+* **Annual CTA: Start Free Trial** for verified annual-trial eligibility. **Monthly CTA: Continue**. Unknown/ineligible annual users see Continue rather than an unavailable free-trial promise.
+* Full billed annual total is most prominent. Monthly equivalent, percentage and currency savings compare actual same-currency prices over exactly one year versus twelve monthly payments.
+* Hide discount claims for missing currencies/periods or annual pricing that is not cheaper. Percentages never round up. No fabricated Most Popular claim or sale price is used.
+* CTA stays visible while scrolling. Test small iPhone, iPad, landscape and large Dynamic Type; cards should expand without clipping.
+* Test annual-only/monthly-only, delayed/missing products, load failure, eligible/ineligible/unknown trials, purchase cancellation/pending, restore with/without entitlement and a successful sandbox purchase.
+* Plan selection is disabled during purchase/restore. Analytics/reminders must use the package actually purchased.
+* StoreConstants expects monthly/yearly packages and nagare\_learn\_japanese\_pro entitlement. The local StoreKit annual fixture is documented as a three-day trial; live StoreKit terms are authoritative.
+* For paywall QA use a non-subscribed test install with RevenueCat configured. Stored DEBUG bypass or a cached entitlement can skip it. Missing RevenueCat config intentionally enables debug bypass. Do not change release eligibility or hardcode prices to force screenshots.
+* New native regression tests cover savings, currencies, periods, no discount, JPY, onboarding and level gating. Run them on macOS.
 
 ## Applied Supabase migrations
 
 Already applied and recorded, in dependency order:
 
-1. 20261101170000_production_analytics.sql — test/legacy/production separation, production-only KPIs and service-only playback reporting.
-2. 20261102000539_catalog_pipeline_quality_gate.sql — private attempts/history/source registry, paginated metrics, integrity seal and publication guard.
-3. 20261102003637_catalog_content_classification.sql — Podcast category, policy 3 content/audience proof, authoritative channel metadata and guarded category updates.
+1. 20261101170000\_production\_analytics.sql — test/legacy/production separation, production-only KPIs and service-only playback reporting.
+2. 20261102000539\_catalog\_pipeline\_quality\_gate.sql — private attempts/history/source registry, paginated metrics, integrity seal and publication guard.
+3. 20261102003637\_catalog\_content\_classification.sql — Podcast category, policy 3 content/audience proof, authoritative channel metadata and guarded category updates.
 
 Older schema features were bootstrapped with incomplete migration-history bookkeeping. An old version missing from history does not prove its schema is missing. Do not replay all older migrations to reconcile that history.
 
@@ -86,11 +76,12 @@ Complete requested channel/video states: reports/catalog-release-2026-11-02.md a
 
 ## Validation completed here
 
-- 44 shared backend tests passed; all Edge Function entrypoints type-check.
-- Next production build and Pipeline browser checks: navigation, metrics, filtering/search, pagination, refresh errors, light theme and mobile overflow.
-- Rolled-back service-role tests rejected missing approval, edited translations, shifted bounds, wrong categories and burned-in English; history transitions worked.
-- Rolled-back analytics fixtures proved test activity is excluded and production activity counts.
-- Exact comparison of 193 existing clips / 1,209 lines preserved Japanese tokens/readings/meanings, indexes, line/token times, offsets, durations and existing publication flags.
-- Security advisors ran. Existing project warnings remain; new pipeline tables have RLS and service-only access.
+* 44 shared backend tests passed; all Edge Function entrypoints type-check.
+* Next production build and Pipeline browser checks: navigation, metrics, filtering/search, pagination, refresh errors, light theme and mobile overflow.
+* Rolled-back service-role tests rejected missing approval, edited translations, shifted bounds, wrong categories and burned-in English; history transitions worked.
+* Rolled-back analytics fixtures proved test activity is excluded and production activity counts.
+* Exact comparison of 193 existing clips / 1,209 lines preserved Japanese tokens/readings/meanings, indexes, line/token times, offsets, durations and existing publication flags.
+* Security advisors ran. Existing project warnings remain; new pipeline tables have RLS and service-only access.
 
 Native compilation, real StoreKit UI/purchase flows and device playback require the macOS simulator agent. Do not claim those passed until run.
+

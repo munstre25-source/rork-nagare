@@ -166,7 +166,10 @@ struct ClipQueueScreen: View {
             blocked: lookup.isPresented || theaterOptionsPresented || infoClip != nil
         ))
         .onAppear {
-            coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
+            coordinator.onWatchTick = { [weak app, weak coordinator] seconds in
+                guard let app, let id = coordinator?.activeClipId else { return }
+                app.addWatch(seconds: seconds, clipId: id)
+            }
             coordinator.onFinished = { [weak app, weak coordinator] in
                 guard !loopPlayback, let id = coordinator?.activeClipId else { return }
                 app?.markClipFinished(id)

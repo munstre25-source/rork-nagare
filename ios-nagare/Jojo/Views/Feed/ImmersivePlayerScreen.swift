@@ -51,7 +51,7 @@ struct ImmersivePlayerScreen: View {
         .environment(\.colorScheme, .dark)
         .preferredColorScheme(.dark)
         .onAppear {
-            coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds) }
+            coordinator.onWatchTick = { [weak app] seconds in app?.addWatch(seconds: seconds, clipId: clip.id) }
             coordinator.onFinished = { [weak app] in
                 guard !loopLine else { return }
                 app?.markClipFinished(clip.id)

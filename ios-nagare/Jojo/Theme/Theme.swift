@@ -94,6 +94,8 @@ extension Color {
     /// Raised chrome under the transcript / feed cards. White in light, near-black in dark.
     static let bgSurfaceDark = Color.adaptive(light: "#FFFFFF", dark: "#121212")
     static let bgElevatedDark = Color.adaptive(light: "#FFFFFF", dark: "#1C1C1E")
+    /// Reading paper stays light across appearance modes so karaoke ink remains legible.
+    static let karaokePaper = Color.adaptive(light: "#FFFFFF", dark: "#EEEEEE")
     static let hairlineDark = Color.adaptive(light: "#E5E5EA", dark: "#2A2A2A")
     /// App page background — cream in light; night indigo (Sakura) or warm black (Amber) in dark.
     static var canvas: Color { JojoPalette.color(

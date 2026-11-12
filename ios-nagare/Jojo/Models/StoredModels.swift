@@ -59,6 +59,12 @@ final class UserProfile {
     var dailyVocabularyGoal: Int = 10
     var streak: Int = 0
     var watchLogData: Data?
+    /// Per-day study time and counts shown by the streak calendar.
+    var streakActivityData: Data?
+    /// When detailed streak activity began being recorded on this install.
+    var streakDetailsTrackingStartedAt: Date?
+    /// Local minute-of-day when a streak day rolls over (0 = midnight).
+    var streakDayStartMinutes: Int = 0
     var remindersEnabled: Bool = false
     var notificationsAsked: Bool = false
     var favoriteClipIds: [String] = []

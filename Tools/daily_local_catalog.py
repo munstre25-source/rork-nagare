@@ -2,6 +2,7 @@
 """Prepare and publish explicitly reviewed local catalog work without hosted inference."""
 
 import argparse
+import datetime
 import fcntl
 import hashlib
 import json
@@ -17,7 +18,7 @@ from publish_reviewed_local import reviewed_clip
 from repair_word_timing_catalog import ROOT, configuration, request_json
 from repair_word_timing_local import maintenance_headers
 
-DEFAULT_REPORT = ROOT / "ios-nagare/reports/live-word-timing-repair-20261109.json"
+DEFAULT_REPORT = ROOT / "ios-nagare/reports/archive-queue-20261110.json"
 PUBLISH_BATCH_SIZE = 5
 QUOTA_REASONS = ("quotaExceeded", "dailyLimitExceeded")
 
@@ -97,6 +98,8 @@ def publish_batch(base, headers, clips, candidates):
 
 def write_source_queue(root, candidates, media, live_videos, reviews):
     reviewed = {row["videoId"] for row in reviews}
+    attempts_path = root / "public-audio-attempts.json"
+    attempts = json.loads(attempts_path.read_text()) if attempts_path.exists() else {}
     queue = []
     for vid, candidate in candidates.items():
         if vid in live_videos:
@@ -104,6 +107,10 @@ def write_source_queue(root, candidates, media, live_videos, reviews):
         status = "awaiting_authorized_audio"
         if vid in reviewed:
             status = "reviewed"
+        elif attempts.get(vid, {}).get("status") == "ready_for_review":
+            status = "ready_for_review"
+        elif attempts.get(vid, {}).get("date") == datetime.datetime.now(datetime.timezone.utc).date().isoformat():
+            status = "audio_or_alignment_held"
         elif media is not None and vid in media:
             try:
                 media.file_path(vid)
@@ -114,6 +121,75 @@ def write_source_queue(root, candidates, media, live_videos, reviews):
         queue.append({**candidate, "status": status})
     write_json(root / "source-queue.json", queue)
     return queue
+
+
+def prepare_public_audio(args, root, queue, result):
+    """Try free source audio for new candidates; never publish generated drafts."""
+    count = getattr(args, "public_audio_attempts", 0)
+    if not count:
+        return None
+    attempts_path = root / "public-audio-attempts.json"
+    attempts = json.loads(attempts_path.read_text()) if attempts_path.exists() else {}
+    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    selected = [
+        video for video in queue
+        if video["status"] == "awaiting_authorized_audio"
+        and (
+            not getattr(args, "public_audio_category", None)
+            or video["category"] == args.public_audio_category
+        )
+        and attempts.get(video["video_id"], {}).get("status") != "ready_for_review"
+        and attempts.get(video["video_id"], {}).get("date") != today
+    ]
+    selected.sort(key=lambda video: video["video_id"] in attempts)
+    selected = selected[:count]
+    if not selected:
+        return "public_audio_queue_exhausted"
+    write_json(root / "public-candidates.json", selected)
+    write_json(
+        root / "public-held.json",
+        [dict(video_id=video["video_id"], status="held") for video in selected],
+    )
+    drafts = root / "drafts"
+    cache = getattr(args, "public_audio_cache", None) or root / "audio"
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "Tools/repair_held_catalog.py"),
+            "--candidates", str(root / "public-candidates.json"),
+            "--held-report", str(root / "public-held.json"),
+            "--media-directory", str(cache),
+            "--report-directory", str(drafts),
+            "--whisper-model", str(args.model_directory / "jojo-whisper-turbo-model"),
+            "--translation-model", str(args.model_directory / "jojo-ja-en-model"),
+            "--device", args.device,
+            "--resegment", "--salvage-excerpt",
+            "--per-channel", str(count),
+            "--limit", str(count),
+        ],
+        check=True,
+    )
+    summaries = json.loads((drafts / "summary.json").read_text())
+    by_id = {row["video_id"]: row for row in summaries}
+    for video in selected:
+        row = by_id.get(video["video_id"])
+        if row is None:
+            continue
+        status = row["status"]
+        attempts[video["video_id"]] = dict(
+            date=today, status=status, reason=row.get("reason", "")
+        )
+        if status == "ready_for_review":
+            result["newDraftsReady"] += 1
+            video["status"] = "ready_for_review"
+        else:
+            video["status"] = "audio_or_alignment_held"
+    write_json(attempts_path, attempts)
+    write_json(root / "source-queue.json", queue)
+    result["queuedReadyForReview"] = sum(
+        video["status"] == "ready_for_review" for video in queue
+    )
+    return "drafts_ready_for_review" if result["newDraftsReady"] else "public_audio_held"
 
 
 def publish_reviews(
@@ -191,8 +267,14 @@ def run(args):
     live_videos = {c["video_id"] for c in live}
     queue = write_source_queue(root, candidates, media, live_videos, reviews)
     result["queuedSources"] = len(queue)
-    if (media is None or not media.entries) and not reviews:
-        return dict(result, status="waiting_for_authorized_media_or_review")
+    result["queuedReadyForReview"] = sum(
+        video["status"] == "ready_for_review" for video in queue
+    )
+    if (media is None or not media.entries) and not reviews and not getattr(args, "public_audio_attempts", 0):
+        waiting = "waiting_for_review" if any(
+            video["status"] == "ready_for_review" for video in queue
+        ) else "waiting_for_authorized_media_or_review"
+        return dict(result, status=waiting)
     limit = args.limit or None
     live_line_ids = {c["id"] for c in live if c["timing_mode"] != "word"}
     proofs = root / "timing-proofs"
@@ -322,7 +404,8 @@ def run(args):
                     result["newDraftsReady"] += row["status"] == "ready_for_review"
             write_json(attempts_path, attempts)
 
-    return dict(result, status=status)
+    public_status = prepare_public_audio(args, root, queue, result)
+    return dict(result, status=status if status == "youtube_quota_exhausted" else public_status or status)
 
 
 def main():
@@ -338,10 +421,16 @@ def main():
         help="Maximum items per stage. Use 0 to drain the eligible queue",
     )
     parser.add_argument("--publish-reviewed", action="store_true")
+    parser.add_argument(
+        "--public-audio-attempts", type=int, default=0,
+        help="Try this many unattempted queued sources with the free local audio pipeline; drafts still require review",
+    )
+    parser.add_argument("--public-audio-cache", type=Path)
+    parser.add_argument("--public-audio-category", help="Only try queued public audio from this category")
     parser.add_argument("--use-existing-vault", action="store_true")
     args = parser.parse_args()
-    if args.limit < 0:
-        parser.error("--limit must be nonnegative")
+    if args.limit < 0 or args.public_audio_attempts < 0:
+        parser.error("--limit and --public-audio-attempts must be nonnegative")
     args.state.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (args.state / "run.lock").open("a") as lock:
         try:

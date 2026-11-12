@@ -45,6 +45,9 @@ struct FeedView: View {
     @State private var programmaticClipChange: Bool = false
     @State private var autoAdvanceTask: Task<Void, Never>?
     @State private var autoScrollTargetId: String?
+    @State private var isHandlingFeedTail = false
+    @State private var isRefreshingFeedTail = false
+    @State private var lastFeedTailRefreshAt = Date.distantPast
     /// Bumped whenever page height may change so the pager can re-pin the current clip.
     @State private var pageHeightEpoch: Int = 0
     @Environment(\.scenePhase) private var scenePhase
@@ -151,7 +154,7 @@ struct FeedView: View {
             if !expanded { maximizeNavShown = false }
             if expanded {
                 revealWatchChrome()
-                showImmersionStyleChoice = immersionStyle.isEmpty
+                showImmersionStyleChoice = currentClip?.isPortraitVideo == true && immersionStyle.isEmpty
             }
             syncDock()
             bumpPageHeightEpoch()
@@ -333,15 +336,8 @@ struct FeedView: View {
     /// switch then floats over the top of the video and can fade without moving the pager.
     private var headerStack: some View {
         VStack(spacing: 0) {
-            if currentClip?.isPortraitVideo == true {
-                statusHeader
-                header
-                    .opacity(navigationChromeOpacity)
-            } else {
-                header
-                    .opacity(navigationChromeOpacity)
-                statusHeader
-            }
+            statusHeader
+            header.opacity(navigationChromeOpacity)
         }
     }
 
@@ -364,6 +360,7 @@ struct FeedView: View {
                 )
             }
         }
+        .frame(maxWidth: .infinity)
         .opacity(statusChromeOpacity)
         .background(Color.watchBackground.ignoresSafeArea(edges: .top))
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
@@ -439,7 +436,7 @@ struct FeedView: View {
             .accessibilityLabel("Search clips by word")
         }
         .padding(.horizontal, 8)
-        .padding(.bottom, 2)
+        .frame(height: 44)
     }
 
     private func celebrate(_ item: FeedCelebration) {
@@ -537,7 +534,8 @@ struct FeedView: View {
         ClipPager(
             ids: clips.map(\.id),
             currentId: $currentId,
-            isDisabled: lookup.isPresented || quizClip != nil
+            isDisabled: lookup.isPresented || quizClip != nil,
+            onAdvancePastEnd: { continueFeedAtTail() }
         ) { id in
             if let clip = clips.first(where: { $0.id == id }) {
                         ClipStageView(
@@ -595,6 +593,28 @@ struct FeedView: View {
         .clipped()
     }
 
+    private func refreshForYouFeed(advanceFrom clipId: String? = nil) {
+        guard !isRefreshingFeedTail else { return }
+        isRefreshingFeedTail = true
+        Task { @MainActor in
+            await app.refreshRemoteClips(force: true)
+            if let clipId {
+                let ranked = app.forYouClips
+                let nextVideos = ranked.filter { $0.id != clipId && $0.hasPlayableVideo }
+                if let current = ranked.first(where: { $0.id == clipId }) ?? clips.first(where: { $0.id == clipId }),
+                   let next = nextVideos.first {
+                    clips = [current] + ranked.filter { $0.id != current.id }
+                    programmaticClipChange = true
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.92)) { currentId = next.id }
+                    preloadUpcoming()
+                }
+            } else {
+                reloadClips()
+            }
+            isRefreshingFeedTail = false
+        }
+    }
+
     /// The dock returns when the learner exits immersion.
     private func syncDock() {
         var transaction = Transaction()
@@ -611,9 +631,9 @@ struct FeedView: View {
     private func setup() {
         let playback = coordinator
         coordinator.onWatchTick = { [weak app, weak playback] seconds in
-            app?.addWatch(seconds: seconds)
             guard let app, let playback, let player = playback.player else { return }
             let clip = player.clip
+            app.addWatch(seconds: seconds, clipId: clip.id)
             if Int(player.currentTime) % 8 == 0 {
                 playback.persistResumePoint()
             }
@@ -636,6 +656,7 @@ struct FeedView: View {
         if clips.isEmpty {
             reloadClips()
             openPendingClip()
+            if clips.isEmpty { refreshForYouFeed() }
         }
         resumeIfPossible()
     }
@@ -767,11 +788,48 @@ struct FeedView: View {
     /// One smooth page turn — TikTok-style. No second hard snap after the animation.
     private func advance() {
         guard let id = currentId, let index = clips.firstIndex(where: { $0.id == id }) else { return }
-        guard let next = clips[safe: index + 1] else { return }
+        guard let next = clips[safe: index + 1] else {
+            continueFeedAtTail()
+            return
+        }
         programmaticClipChange = true
         autoScrollTargetId = nil
         withAnimation(.spring(response: 0.38, dampingFraction: 0.92)) {
             currentId = next.id
+        }
+    }
+
+    /// Refresh the catalog at the end of the loaded queue, then cycle through all playable
+    /// For You videos so the next swipe still has another video when the catalog is unchanged.
+    private func continueFeedAtTail() {
+        guard !isHandlingFeedTail, !isRefreshingFeedTail else { return }
+        isHandlingFeedTail = true
+        defer { isHandlingFeedTail = false }
+
+        guard let currentId,
+              let current = app.forYouClips.first(where: { $0.id == currentId })
+                ?? clips.first(where: { $0.id == currentId }) else { return }
+
+        let nextVideos = app.forYouClips.filter { $0.hasPlayableVideo && $0.id != currentId }
+        guard let next = nextVideos.first else {
+            refreshForYouFeed(advanceFrom: currentId)
+            return
+        }
+
+        // Keep the current page mounted, then cycle through the complete playable feed;
+        // rankedStudyClips places Shorts first and other formats after them.
+        clips = [current] + nextVideos
+        programmaticClipChange = true
+        autoScrollTargetId = nil
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.92)) {
+            currentId = next.id
+        }
+        preloadUpcoming()
+
+        // Start catalog refresh after the immediate next page is already available.
+        if Date.now.timeIntervalSince(lastFeedTailRefreshAt) >= 45 {
+            lastFeedTailRefreshAt = .now
+            Task { await app.refreshRemoteClips(force: true) }
         }
     }
 

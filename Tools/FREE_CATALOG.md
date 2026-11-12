@@ -74,8 +74,28 @@ in a local state directory. Each run records unpublished candidates in `source-q
   --state "$HOME/.local/state/jojo-catalog" --publish-reviewed --use-existing-vault
 ```
 
-Use `--report` to replace the initial manifest of timing holds and new-channel
-candidates. The local runtime and pinned model files from the existing free
+To prepare drafts from the cached candidate inventory without creator media files,
+run with `--public-audio-attempts N --device cuda --model-directory /tmp` (or
+`--device cpu`). The runner rotates past sources already attempted that UTC day,
+uses the existing public-audio extraction and local Whisper pipeline, and
+stores successful drafts in `state/drafts`. Source access, Japanese speech and
+alignment can still fail. This option never publishes an unreviewed draft.
+Use `--public-audio-category podcast` (or another catalog category) to focus a
+batch on an underserved category.
+Review Japanese and English against the source, then put exact review snapshots
+in `state/reviews.json` and rerun with `--publish-reviewed --use-existing-vault`.
+The installed NVIDIA CUDA libraries may need to be on `LD_LIBRARY_PATH` for
+GPU runs; the CPU option does not need them.
+
+The default report now contains 1,000 balanced candidates from the saved
+expanded archive, spanning 79 verified channels and nine categories, including
+newly verified podcast and kids sources. Rebuild
+it with `Tools/build_archive_queue.py` when fresh archive checkpoints are
+available. That command reads cached metadata, the resolved source category
+list, and explicitly categorized draft batches. It skips channels without a
+reviewed category; it does not infer one from a title. The queue still requires
+real audio and language review before anything can publish. Use `--report` to
+point the runner at a newer report. The local runtime and pinned model files from the existing free
 pipeline must be installed on the machine that runs the job. Pass
 `--model-directory` when the model folders are outside `/tmp`. The optional
 Vault flag uses the existing maintenance credential in memory when a reviewed

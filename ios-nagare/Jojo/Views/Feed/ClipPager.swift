@@ -12,6 +12,8 @@ struct ClipPager<Page: View>: View {
     @Binding var currentId: String?
     /// While true (dictionary card, quick check), swipes are ignored and pages stay put.
     var isDisabled: Bool = false
+    /// Called when the learner swipes past the last loaded page.
+    var onAdvancePastEnd: () -> Void = {}
     @ViewBuilder let page: (String) -> Page
 
     @State private var drag = PagerDrag()
@@ -106,6 +108,8 @@ struct ClipPager<Page: View>: View {
                 var target = index
                 if (moved < -pageHeight * 0.2 || predicted < -pageHeight * 0.5), index < ids.count - 1 {
                     target = index + 1
+                } else if (moved < -pageHeight * 0.2 || predicted < -pageHeight * 0.5), index == ids.count - 1 {
+                    onAdvancePastEnd()
                 } else if (moved > pageHeight * 0.2 || predicted > pageHeight * 0.5), index > 0 {
                     target = index - 1
                 }

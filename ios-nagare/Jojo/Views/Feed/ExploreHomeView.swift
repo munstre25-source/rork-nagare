@@ -33,27 +33,29 @@ struct ExploreHomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack(spacing: 0) {
-                        Color.clear.frame(width: 44, height: 44)
-                        Spacer(minLength: 0)
-                        CenteredModeSwitch(
-                            forYouSelected: false,
-                            onForYou: onOpenFeed,
-                            onExplore: {}
-                        )
-                        Spacer(minLength: 0)
-                        Button {
-                            path.append(LearningPath.jlpt)
-                        } label: {
-                            Image(systemName: "map")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 44, height: 44)
+                    VStack(spacing: 0) {
+                        StudySessionClock(running: scenePhase == .active)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(spacing: 0) {
+                            Color.clear.frame(width: 44, height: 44)
+                            Spacer(minLength: 0)
+                            CenteredModeSwitch(
+                                forYouSelected: false,
+                                onForYou: onOpenFeed,
+                                onExplore: {}
+                            )
+                            Spacer(minLength: 0)
+                            Button {
+                                path.append(LearningPath.jlpt)
+                            } label: {
+                                Image(systemName: "map")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 44, height: 44)
+                            }
+                            .accessibilityLabel("My Path")
                         }
-                        .accessibilityLabel("My Path")
                     }
-                    StudySessionClock(running: scenePhase == .active)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     if !app.profile.hideDailyGoalBar {
                         DailyGoalBar()
                     }

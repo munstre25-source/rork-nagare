@@ -105,6 +105,7 @@ struct MainTabView: View {
             // can sit fully above it. Only the capsule itself paints a background.
             if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount, onFeedTap: openDefaultFeed)
+                    .offset(y: tab == .feed ? 16 : 0)
             }
         }
         .preferredColorScheme(app.profile.scheme.colorScheme)

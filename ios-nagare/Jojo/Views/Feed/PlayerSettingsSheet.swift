@@ -8,6 +8,7 @@ enum PlayerPrefs {
     static let karaokeTextSizeKey = "jojo.karaokeTextSize"
     static let popupTextSizeKey = "jojo.popupTextSize"
     static let immersionKaraokeStyleKey = "jojo.immersionKaraokeStyle"
+    static let immersionTextPaletteKey = "jojo.immersionTextPalette"
 
     /// Five steps from compact to large. Index 1 is the system default.
     static let sizes: [DynamicTypeSize] = [.medium, .large, .xLarge, .xxLarge, .xxxLarge]
@@ -23,6 +24,30 @@ nonisolated enum ImmersionKaraokeStyle: String, CaseIterable, Identifiable {
     case amber = "Amber Contrast"
 
     var id: Self { self }
+}
+
+nonisolated enum ImmersionTextPalette: String, CaseIterable, Identifiable {
+    case warmAmber = "Warm Amber"
+    case sakuraPink = "Sakura Pink"
+    case softCoral = "Soft Coral"
+    case deepPlum = "Deep Plum"
+    case forestTeal = "Forest Teal"
+    case graphite = "Graphite"
+
+    var id: Self { self }
+
+    var hex: String {
+        switch self {
+        case .warmAmber: "#F4A340"
+        case .sakuraPink: "#BE3F72"
+        case .softCoral: "#E77E6A"
+        case .deepPlum: "#72458E"
+        case .forestTeal: "#26796F"
+        case .graphite: "#343A43"
+        }
+    }
+
+    var usesDarkInk: Bool { self == .warmAmber || self == .softCoral }
 }
 
 /// JLPT picker steps. The feed itself filters by the three reading bands.
@@ -71,6 +96,7 @@ struct PlayerSettingsSheet: View {
     @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeSize: Double = 1
     @AppStorage(PlayerPrefs.popupTextSizeKey) private var popupSize: Double = 1
     @AppStorage(PlayerPrefs.immersionKaraokeStyleKey) private var immersionStyle = ""
+    @AppStorage(PlayerPrefs.immersionTextPaletteKey) private var immersionTextPalette = ImmersionTextPalette.warmAmber.rawValue
 
     @State private var pendingLevel: JLPTStep?
     @State private var correctionLine: Int?
@@ -93,6 +119,59 @@ struct PlayerSettingsSheet: View {
                     )) {
                         ForEach(ImmersionKaraokeStyle.allCases) { style in
                             Text(style.rawValue).tag(style)
+                        }
+                    }
+                }
+                if clip.isPortraitVideo {
+                    Section("Portrait immersion word color") {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                            ForEach(ImmersionTextPalette.allCases) { palette in
+                                Button {
+                                    Haptics.selection()
+                                    immersionTextPalette = palette.rawValue
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(palette.rawValue)
+                                            .font(.caption.weight(.semibold))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
+                                        HStack(spacing: 4) {
+                                            ForEach(["魚", "を", "ボトル"], id: \.self) { sample in
+                                                Text(sample)
+                                                    .font(.system(size: sample == "ボトル" ? 11 : 13, weight: .bold))
+                                                    .foregroundStyle(palette.usesDarkInk ? Color(hex: "#191919") : .white)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.65)
+                                                    .frame(maxWidth: .infinity, minHeight: 28)
+                                                    .background(Color(hex: palette.hex), in: RoundedRectangle(cornerRadius: 6))
+                                            }
+                                        }
+                                        HStack {
+                                            Text(palette.hex)
+                                                .font(.caption2.monospaced())
+                                                .foregroundStyle(.secondary)
+                                            Spacer(minLength: 0)
+                                            if immersionTextPalette == palette.rawValue {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .font(.caption)
+                                                    .foregroundStyle(Color.designOrange)
+                                            }
+                                        }
+                                    }
+                                    .padding(10)
+                                    .background(Color.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .strokeBorder(
+                                                immersionTextPalette == palette.rawValue ? Color.designOrange : Color.clear,
+                                                lineWidth: 1.5
+                                            )
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(palette.rawValue), \(palette.hex)")
+                                .accessibilityAddTraits(immersionTextPalette == palette.rawValue ? .isSelected : [])
+                            }
                         }
                     }
                 }

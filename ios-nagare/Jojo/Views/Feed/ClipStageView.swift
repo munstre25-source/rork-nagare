@@ -107,22 +107,12 @@ struct ClipStageView: View {
 
     /// Maximize uses the largest 16:9 frame that fits the whole feed viewport without cropping.
     private func expandedVideoSize(in size: CGSize) -> CGSize {
-        if isCompactLandscape(size) {
-            // Landscape immersion reserves a stable karaoke/timer column and a slim
-            // playback rail. Neither appears or disappears from layout as chrome fades.
-            let maxHeight = max(0, size.height - 26)
-            let wordsWidth = wordsColumnWidth(in: size.width) + 14
-            let sideControlsWidth: CGFloat = 52
-            let availableWidth = max(0, size.width - wordsWidth - sideControlsWidth - 52)
-            let width = min(availableWidth, maxHeight * resolvedAspect, 1100)
-            return CGSize(width: width, height: width / resolvedAspect)
-        }
         return LandscapeTheaterGeometry.make(
             in: size,
             preferredCaptionHeight: showsShortsCaptions ? theaterReadingHeight : 0,
             // Keep this space reserved while the controls fade so the video and karaoke
             // never jump when the learner taps the maximized player.
-            controlsHeight: playbackControlsHeight,
+            controlsHeight: clip.isPortraitVideo ? playbackControlsHeight : actionRowHeight,
             videoAspect: resolvedAspect
         ).videoSize
     }
@@ -261,15 +251,7 @@ struct ClipStageView: View {
     ) -> some View {
         let maximized = showsMaximizedLandscape
         return Group {
-            if maximized && isCompactLandscape(stageSize) {
-                maximizedLandscapeStage(
-                    player: player,
-                    videoWidth: videoWidth,
-                    videoHeight: videoHeight,
-                    stageSize: stageSize ?? .zero,
-                    columnWidth: columnWidth
-                )
-            } else if !maximized && isCompactLandscape(stageSize) {
+            if !maximized && isCompactLandscape(stageSize) {
                 compactLandscapeStage(
                     player: player,
                     videoWidth: videoWidth,
@@ -376,8 +358,8 @@ struct ClipStageView: View {
         .padding(.bottom, 6)
     }
 
-    /// Wide-screen theater: picture left, karaoke with its timer beside it, and a slim
-    /// vertical control rail at the far edge. Portrait immersion uses its separate path.
+    /// Wide-screen theater keeps the same playback row under the picture as the default feed,
+    /// with the karaoke in the adjacent reading column.
     private func maximizedLandscapeStage(
         player: (any ClipPlayer)?,
         videoWidth: CGFloat?,
@@ -386,48 +368,51 @@ struct ClipStageView: View {
         columnWidth: CGFloat?
     ) -> some View {
         let wordsWidth = wordsColumnWidth(in: stageSize.width)
-        let contentHeight = max(0, stageSize.height - 26)
         return HStack(alignment: .center, spacing: 12) {
-            ClipVideoView(
-                clip: clip,
-                player: player,
-                showsControls: false,
-                showsRail: false,
-                compactChrome: true,
-                onActivate: onActivate,
-                onFullscreen: onFullscreen,
-                fitsFrame: true,
-                watchChromeHidden: watchChromeHidden,
-                onRevealWatchChrome: onRevealWatchChrome,
-                onSkip: onSkip
-            )
-            .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
-            .coachTarget(.video, active: isCoachPage)
-            .modifier(FrameBottomReader(bottom: $videoBottom))
-
             VStack(spacing: 6) {
-                Group {
-                    if showsShortsCaptions {
-                        theaterKaraoke(player: player)
-                    } else {
-                        SubtitlesOffPill()
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: min(landscapeKaraokeHeight, contentHeight * 0.58), alignment: .top)
+                ClipVideoView(
+                    clip: clip,
+                    player: player,
+                    showsControls: false,
+                    showsRail: false,
+                    compactChrome: true,
+                    onActivate: onActivate,
+                    onFullscreen: onFullscreen,
+                    fitsFrame: true,
+                    watchChromeHidden: watchChromeHidden,
+                    onRevealWatchChrome: onRevealWatchChrome,
+                    onSkip: onSkip
+                )
+                .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
+                .coachTarget(.video, active: isCoachPage)
+                .modifier(FrameBottomReader(bottom: $videoBottom))
 
-                landscapePlaybackFooter(player: player)
-                    .opacity(showsTheaterControls ? 1 : 0)
-                    .allowsHitTesting(showsTheaterControls)
-                    .accessibilityHidden(!showsTheaterControls)
-            }
-            .frame(width: wordsWidth, height: contentHeight)
-
-            landscapePlaybackControls(player: player)
-                .frame(width: 52, height: contentHeight)
+                ClipActionRow(
+                    clip: clip,
+                    player: player,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing,
+                    videoExpanded: true,
+                    onToggleVideoSize: nil
+                )
                 .opacity(showsTheaterControls ? 1 : 0)
                 .allowsHitTesting(showsTheaterControls)
                 .accessibilityHidden(!showsTheaterControls)
+            }
+            .frame(width: max(0, stageSize.width - wordsWidth - 36))
+
+            Group {
+                if showsShortsCaptions {
+                    theaterKaraoke(player: player)
+                } else {
+                    SubtitlesOffPill()
+                }
+            }
+            .frame(width: wordsWidth, alignment: .top)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(Color.karaokePaper)
+            .coachTarget(.transcript, active: isCoachPage)
+            .modifier(TranscriptTopReader(top: $transcriptTop))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .padding(.horizontal, 12)
@@ -449,10 +434,12 @@ struct ClipStageView: View {
         maximized: Bool,
         restingCaptionHeight: CGFloat? = nil
     ) -> some View {
+        let layoutSize = stageSize ?? CGSize(width: videoWidth ?? 360, height: 640)
+        let usesLandscapeActionRow = maximized && !clip.isPortraitVideo
         let theater = LandscapeTheaterGeometry.make(
-            in: stageSize ?? CGSize(width: videoWidth ?? 360, height: 640),
+            in: layoutSize,
             preferredCaptionHeight: showsShortsCaptions ? theaterReadingHeight : 0,
-            controlsHeight: maximized ? playbackControlsHeight : 0,
+            controlsHeight: maximized ? (usesLandscapeActionRow ? actionRowHeight : playbackControlsHeight) : 0,
             videoAspect: resolvedAspect
         )
         return VStack(spacing: 0) {
@@ -483,7 +470,7 @@ struct ClipStageView: View {
 
             // Video: the max/min box sits on the frame's bottom-trailing corner while resting.
             // The video keeps its position in this tree in both sizes so the player never reattaches.
-            ZStack(alignment: .bottomTrailing) {
+            let picture = ZStack(alignment: .bottomTrailing) {
                 ClipVideoView(
                     clip: clip,
                     player: player,
@@ -509,14 +496,22 @@ struct ClipStageView: View {
             }
             .coachTarget(.video, active: isCoachPage)
             .modifier(FrameBottomReader(bottom: $videoBottom))
-            .frame(maxWidth: .infinity)
+            picture.frame(maxWidth: .infinity)
             // Picture keeps its budget when subtitle aids grow; karaoke scrolls inside its well.
             .layoutPriority(1)
 
-            if maximized && !clip.isPortraitVideo {
-                landscapePlaybackFooter(player: player)
+            if usesLandscapeActionRow {
+                ClipActionRow(
+                    clip: clip,
+                    player: player,
+                    onInfo: onInfo,
+                    onShadowing: onShadowing,
+                    videoExpanded: true,
+                    onToggleVideoSize: nil
+                )
                     .frame(width: videoWidth)
                     .opacity(showsTheaterControls ? 1 : 0)
+                    .allowsHitTesting(showsTheaterControls)
                     .accessibilityHidden(!showsTheaterControls)
             }
 
@@ -530,18 +525,12 @@ struct ClipStageView: View {
                         }
                     }
                         .padding(.horizontal, 16)
-                        .frame(height: theater.captionHeight)
+                        .frame(maxHeight: usesLandscapeActionRow ? .infinity : theater.captionHeight)
                         .padding(.top, LandscapeTheaterGeometry.spacing)
+                        .background(showsShortsCaptions ? Color.karaokePaper : Color.clear)
                 }
                 if clip.isPortraitVideo {
                     playbackControls(player: player, sourceMark: "YouTube")
-                        .padding(.horizontal, 12)
-                        .padding(.top, LandscapeTheaterGeometry.spacing)
-                        .opacity(showsTheaterControls ? 1 : 0)
-                        .allowsHitTesting(showsTheaterControls)
-                        .accessibilityHidden(!showsTheaterControls)
-                } else {
-                    landscapePlaybackControls(player: player)
                         .padding(.horizontal, 12)
                         .padding(.top, LandscapeTheaterGeometry.spacing)
                         .opacity(showsTheaterControls ? 1 : 0)
@@ -637,6 +626,19 @@ struct ClipStageView: View {
                 .background(Color.bgPlayer)
                 .coachTarget(.video, active: isCoachPage)
 
+                // YouTube fills unused portrait-video space with a blurred duplicate.
+                // Mask just those side gutters in the regular Shorts feed.
+                if karaokeBelow {
+                    let pictureWidth = min(size.width, videoHeight * 9 / 16)
+                    HStack(spacing: 0) {
+                        Color.black
+                        Color.clear.frame(width: pictureWidth)
+                        Color.black
+                    }
+                    .frame(width: size.width, height: videoHeight)
+                    .allowsHitTesting(false)
+                }
+
                 if focus && captionsOn && bandHeight > 0 {
                     shortsKaraokeBand(player: player, width: size.width, height: bandHeight)
                 }
@@ -651,7 +653,7 @@ struct ClipStageView: View {
                         onPresentationChange: onTheaterPresentationChange
                     )
                     .padding(.trailing, 8)
-                    .padding(.bottom, (focus && captionsOn ? bandHeight : 0) + 8)
+                    .padding(.bottom, focus && captionsOn ? max(0, bandHeight - 96) + 8 : 8)
                     .frame(width: size.width, height: videoHeight, alignment: .bottomTrailing)
                     .opacity(railHidden ? 0 : 1)
                     .allowsHitTesting(!railHidden)
@@ -664,21 +666,30 @@ struct ClipStageView: View {
             .modifier(FrameBottomReader(bottom: $videoBottom))
 
             if karaokeBelow {
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "Shorts", showsSourceMark: false)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .frame(width: size.width, height: layout.footerHeight)
+                    .accessibilityHidden(railHidden)
+
                 transcript(player: player, showsLearningControls: false, showsLineTools: false)
                     .coachTarget(.transcript, active: isCoachPage)
                     .modifier(TranscriptTopReader(top: $transcriptTop))
                     .padding(.horizontal, 14)
                     .padding(.top, 14)
                     .frame(width: size.width, height: layout.karaokeHeight, alignment: .top)
+                    .background(Color.karaokePaper)
                     .clipped()
             }
 
-            ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "Shorts", showsSourceMark: false)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .frame(width: size.width, height: layout.footerHeight)
-                .opacity(railHidden ? 0 : 1)
-                .accessibilityHidden(railHidden)
+            if !karaokeBelow {
+                ShortsFooter(clip: clip, player: player, onPicture: false, sourceMark: "Shorts", showsSourceMark: false)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .frame(width: size.width, height: layout.footerHeight)
+                    .opacity(railHidden ? 0 : 1)
+                    .accessibilityHidden(railHidden)
+            }
         }
         .frame(width: size.width, height: size.height, alignment: .top)
         .background(Color.watchBackground)
@@ -707,27 +718,6 @@ struct ClipStageView: View {
                 playbackControlsHeight = height
             }
         }
-    }
-
-    /// In portrait device orientation, a landscape video's clock remains directly below
-    /// the picture. True landscape immersion places this same footer below the karaoke.
-    private func landscapePlaybackFooter(player: (any ClipPlayer)?) -> some View {
-        ShortsFooter(
-            clip: clip,
-            player: player,
-            onPicture: false,
-            sourceMark: "YouTube",
-            showsSourceMark: false
-        )
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(Color.bgSurfaceDark)
-    }
-
-    private func landscapePlaybackControls(player: (any ClipPlayer)?) -> some View {
-        theaterControls(player: player, vertical: true)
-            .padding(.horizontal, 2)
-            .background(Color.bgSurfaceDark)
     }
 
     private func theaterControls(player: (any ClipPlayer)?, vertical: Bool = false) -> some View {
@@ -770,10 +760,11 @@ struct ClipStageView: View {
     /// when the next sentence is shorter or longer.
     private func shortsKaraokeBand(player: (any ClipPlayer)?, width: CGFloat, height: CGFloat) -> some View {
         transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
-            .frame(width: max(0, width - 28), height: max(0, height - 12), alignment: .top)
+            .frame(width: max(0, width - 76), height: max(0, height - 12), alignment: .top)
             .padding(.bottom, 12)
             .padding(.top, 36)
-            .frame(width: width)
+            .padding(.leading, 14)
+            .frame(width: width, alignment: .leading)
             .background(
                 LinearGradient(
                     stops: [
@@ -821,6 +812,7 @@ struct ClipStageView: View {
         showsLineTools: Bool = false,
         onPicture: Bool = false
     ) -> some View {
+        let usesPortraitImmersionTextSettings = immersiveFeed && clip.isPortraitVideo && videoExpanded
         VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
                 SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
@@ -846,8 +838,11 @@ struct ClipStageView: View {
                 landscapeReadingWindow: immersiveFeed && !clip.isPortraitVideo,
                 portraitReadingPlate: immersiveFeed && clip.isPortraitVideo && !videoExpanded && !onPicture
             )
-            .modifier(OptionalTypeSize(index: immersiveFeed ? karaokeTextSize : 1))
-            .environment(\.amberImmersionKaraoke, videoExpanded && immersionStyle == ImmersionKaraokeStyle.amber.rawValue)
+            .modifier(OptionalTypeSize(index: usesPortraitImmersionTextSettings ? karaokeTextSize : 1))
+            .environment(
+                \.amberImmersionKaraoke,
+                usesPortraitImmersionTextSettings && immersionStyle == ImmersionKaraokeStyle.amber.rawValue
+            )
         }
     }
 

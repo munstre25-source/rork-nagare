@@ -34,12 +34,14 @@ struct TokenView: View {
     var minimalStyling: Bool = false
     var stablePlaybackHighlight: Bool = false
     var playbackCompleted: Bool = false
+    var lightPaper: Bool = false
     let onTap: () -> Void
 
     @Environment(AppModel.self) private var app
     @Environment(\.spokenTokenNamespace) private var spokenNamespace
     @Environment(\.karaokeOnPicture) private var onPicture
     @Environment(\.amberImmersionKaraoke) private var amberImmersionKaraoke
+    @AppStorage(PlayerPrefs.immersionTextPaletteKey) private var immersionTextPalette = ImmersionTextPalette.warmAmber.rawValue
     // JojoFont.jp applies Dynamic Type; its input must be the unscaled base size.
     // Regular weight (not Bold) keeps karaoke neat like immersion reference screens.
     private static let furiganaSize: CGFloat = 9
@@ -48,6 +50,10 @@ struct TokenView: View {
     @State private var tapBounce: Bool = false
 
     private var contrastWord: Bool { amberImmersionKaraoke && !token.isPunctuation }
+    private var picturePalette: ImmersionTextPalette? {
+        guard onPicture else { return nil }
+        return ImmersionTextPalette(rawValue: immersionTextPalette) ?? .warmAmber
+    }
     private var readingShadow: Color { contrastWord ? .black.opacity(0.85) : .clear }
 
     var body: some View {
@@ -150,7 +156,10 @@ struct TokenView: View {
 
     @ViewBuilder
     private var wordBackground: some View {
-        if contrastWord {
+        if let picturePalette, token.tappable {
+            RoundedRectangle(cornerRadius: 7)
+                .fill(Color(hex: picturePalette.hex))
+        } else if contrastWord {
             RoundedRectangle(cornerRadius: 7)
                 .fill(state == .spoken ? Color(hex: "#F4A340") : Color(hex: "#252525").opacity(0.84))
         } else {
@@ -177,7 +186,10 @@ struct TokenView: View {
 
     @ViewBuilder
     private var spokenOutline: some View {
-        if contrastWord {
+        if picturePalette != nil, token.tappable, (state == .spoken || state == .selected) {
+            RoundedRectangle(cornerRadius: 7)
+                .strokeBorder(Color.white, lineWidth: 1.5)
+        } else if contrastWord {
             if state == .spoken || state == .selected {
                 RoundedRectangle(cornerRadius: 7)
                     .strokeBorder(state == .spoken ? Color.white : LearningInk.selected, lineWidth: 1.5)
@@ -232,6 +244,9 @@ struct TokenView: View {
     }
 
     private var japaneseColor: Color {
+        if let picturePalette, token.tappable {
+            return picturePalette.usesDarkInk ? Color(hex: "#191919") : .white
+        }
         if contrastWord {
             return state == .spoken ? Color(hex: "#191919") : Color.white.opacity(playbackCompleted ? 0.8 : 1)
         }
@@ -239,6 +254,7 @@ struct TokenView: View {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
         case .normal:
+            if lightPaper && !token.tappable { return Color(hex: "#292929") }
             guard token.tappable && !minimalStyling else { return LearningInk.japanese(onPicture: onPicture) }
             // Mastery wall stays on paper; portrait bands keep white so bright footage stays readable.
             return onPicture ? LearningInk.japanese(onPicture: true) : LearningInk.mastery(mastery)
@@ -246,11 +262,15 @@ struct TokenView: View {
     }
 
     private var readingColor: Color {
+        if let picturePalette, token.tappable {
+            return picturePalette.usesDarkInk ? Color.black.opacity(0.58) : Color.white.opacity(0.72)
+        }
         if contrastWord { return .white }
         switch state {
-        case .spoken: return LearningInk.spoken.opacity(0.9)
-        case .selected: return LearningInk.selected.opacity(0.9)
+        case .spoken: return (lightPaper ? Color(hex: "#16834A") : LearningInk.spoken).opacity(0.9)
+        case .selected: return (lightPaper ? Color(hex: "#B45B00") : LearningInk.selected).opacity(0.9)
         case .normal:
+            if lightPaper { return Color(hex: "#777777") }
             if !onPicture, token.tappable, let mastery, mastery != .new {
                 return LearningInk.mastery(mastery).opacity(0.75)
             }

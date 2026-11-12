@@ -9,6 +9,34 @@ nonisolated struct DayMinutes: Identifiable, Sendable {
     var id: Date { date }
 }
 
+nonisolated struct StreakDayActivity: Codable, Sendable {
+    var videoSeconds: Double = 0
+    var flashcardSeconds: Double = 0
+    var streakFreezeSeconds: Double = 0
+    var clipsFinished: Int = 0
+    var cardsReviewed: Int = 0
+    var wordsSaved: Int = 0
+    var watchedClipIds: [String] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case videoSeconds, flashcardSeconds, streakFreezeSeconds, clipsFinished
+        case cardsReviewed, wordsSaved, watchedClipIds
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        videoSeconds = try values.decodeIfPresent(Double.self, forKey: .videoSeconds) ?? 0
+        flashcardSeconds = try values.decodeIfPresent(Double.self, forKey: .flashcardSeconds) ?? 0
+        streakFreezeSeconds = try values.decodeIfPresent(Double.self, forKey: .streakFreezeSeconds) ?? 0
+        clipsFinished = try values.decodeIfPresent(Int.self, forKey: .clipsFinished) ?? 0
+        cardsReviewed = try values.decodeIfPresent(Int.self, forKey: .cardsReviewed) ?? 0
+        wordsSaved = try values.decodeIfPresent(Int.self, forKey: .wordsSaved) ?? 0
+        watchedClipIds = try values.decodeIfPresent([String].self, forKey: .watchedClipIds) ?? []
+    }
+}
+
 /// Destinations opened from the home-screen widget or `jojo://` URLs.
 nonisolated enum DeepLink: String, Equatable, Sendable {
     case feed
@@ -37,6 +65,7 @@ final class AppModel {
     /// Latest mark for each saved word, so the transcript can show known and familiar words without a fetch per token.
     private(set) var wordStates: [String: SRSState] = [:]
     private(set) var watchLog: [String: Double] = [:]
+    private(set) var streakActivity: [String: StreakDayActivity] = [:]
     /// Increments when the daily goal is reached; the Feed observes it to play the trophy animation.
     private(set) var goalCelebrationCount: Int = 0
     /// Increments when a watch, skip, save, or favorite should reshape the upcoming feed.
@@ -124,6 +153,32 @@ final class AppModel {
         }
         if let data = profile.watchLogData, let log = try? JSONDecoder().decode([String: Double].self, from: data) {
             watchLog = log
+        }
+        if let data = profile.streakActivityData,
+           let activity = try? JSONDecoder().decode([String: StreakDayActivity].self, from: data) {
+            streakActivity = activity
+        } else {
+            // Preserve historical watch totals on their original calendar dates. We cannot
+            // infer which side of a custom rollover those old, aggregated seconds belong to.
+            streakActivity = watchLog.mapValues { seconds in
+                var activity = StreakDayActivity()
+                activity.videoSeconds = seconds
+                return activity
+            }
+        }
+        for (key, seconds) in watchLog where seconds > 0 {
+            var activity = streakActivity[key] ?? StreakDayActivity()
+            if activity.videoSeconds == 0 { activity.videoSeconds = seconds }
+            streakActivity[key] = activity
+        }
+        if profile.streakDetailsTrackingStartedAt == nil {
+            profile.streakDetailsTrackingStartedAt = Date()
+        }
+        profile.streakActivityData = try? JSONEncoder().encode(streakActivity)
+        if UserDefaults.standard.object(forKey: "jojo.streakDayStartMinutes") == nil {
+            UserDefaults.standard.set(profile.streakDayStartMinutes, forKey: "jojo.streakDayStartMinutes")
+        } else {
+            profile.streakDayStartMinutes = UserDefaults.standard.integer(forKey: "jojo.streakDayStartMinutes")
         }
         migrateAppearanceIfNeeded()
         personalClips = immersion.readyClips.map { lexiconEnriched($0) }
@@ -403,12 +458,12 @@ final class AppModel {
         }
     }
 
-    func refreshRemoteClips() async {
+    func refreshRemoteClips(force: Bool = false) async {
         // Avoid overlapping feed-tail and timer refreshes while remaining responsive
         // when users return to For You or reach the end of their current queue.
         let minimumInterval: TimeInterval = clips.count > 500 ? 15 * 60 : 45
         guard !isRefreshingRemoteClips,
-              Date().timeIntervalSince(lastRemoteClipRefreshAt) >= minimumInterval else { return }
+              force || Date().timeIntervalSince(lastRemoteClipRefreshAt) >= minimumInterval else { return }
         isRefreshingRemoteClips = true
         defer { isRefreshingRemoteClips = false }
         lastRemoteClipRefreshAt = .now
@@ -536,9 +591,17 @@ final class AppModel {
 
     /// For You. Onboarding is the cold start. After that, the next clips cluster around
     /// what this person finished, saved, favorited, or skipped. The promised first clip stays
-    /// at the top until they've actually watched.
+    /// at the top until they've actually watched. Shorts rank first regardless of duration,
+    /// with other playable videos available after the Shorts portion of the feed.
     var forYouClips: [Clip] {
-        var ordered = rankedStudyClips()
+        var ordered = rankedStudyClips().filter(\.hasPlayableVideo)
+        if ordered.isEmpty {
+            // If level/category preferences temporarily filter every candidate, fall back
+            // to the playable catalog so For You still has a video to show.
+            let playable = studyLibrary.filter(\.hasPlayableVideo)
+            ordered = spreadSimilar(playable.filter(\.isPortraitVideo))
+                + spreadSimilar(playable.filter { !$0.isPortraitVideo })
+        }
         if shouldPinFirstClip,
            let first = profile.firstClipId,
            let index = ordered.firstIndex(where: { $0.id == first }),
@@ -550,7 +613,7 @@ final class AppModel {
 
     /// Writes the current best clip onto the profile so a relaunch opens the same personal feed.
     func assignFirstClip(preservingExisting: Bool = false) {
-        let ranked = rankedStudyClips()
+        let ranked = forYouClips
         if preservingExisting, let first = profile.firstClipId, ranked.contains(where: { $0.id == first }) { return }
         let id = ranked.first?.id
         guard profile.firstClipId != id else { return }
@@ -667,8 +730,10 @@ final class AppModel {
         let wanted = liked.union(motivated)
         let level = profile.readingLevel.difficulty.rank
 
-        let withoutPasses = studyLibrary.filter { !disliked.contains($0.categoryKind) }
-        let base = withoutPasses.isEmpty ? studyLibrary : withoutPasses
+        let playable = studyLibrary.filter(\.hasPlayableVideo)
+        let source = playable.isEmpty ? studyLibrary : playable
+        let withoutPasses = source.filter { !disliked.contains($0.categoryKind) }
+        let base = withoutPasses.isEmpty ? source : withoutPasses
         // Interest boosts rank eligible clips; they must never bypass the learner's level gate.
         let pool = profile.gateContentByLevel
             ? base.filter { $0.difficultyKind.rank <= level + 1 }
@@ -718,6 +783,8 @@ final class AppModel {
             if profile.favoriteClipIds.contains(clip.id) { s += 28 }
             if likedIds.contains(clip.id) { s -= 80 }
             s -= abs(Double(clip.difficultyKind.rank) - targetLevel) * 8
+            // Prefer vertical Shorts regardless of duration; some Shorts run longer than a minute.
+            if clip.isPortraitVideo { s += 32 }
             s += durationFitScore(for: clip.durationSec, level: profile.readingLevel)
             s += savedVocabularyFitScore(for: clip)
             if clip.hasVerifiedTranscript { s += 4 }
@@ -732,7 +799,10 @@ final class AppModel {
             s += feedTieBreak(clip.id)
             return s
         }
-        return spreadSimilar(pool.sorted { score($0) > score($1) })
+        let ranked = pool.sorted { score($0) > score($1) }
+        let shorts = spreadSimilar(ranked.filter(\.isPortraitVideo))
+        let wideVideos = spreadSimilar(ranked.filter { !$0.isPortraitVideo })
+        return shorts + wideVideos
     }
 
     /// Clip length is a gentle preference, never an eligibility rule: complete, teachable
@@ -1069,6 +1139,7 @@ final class AppModel {
         wordStates[key] = word.state
         if isNew {
             noteWeeklyWordSaved()
+            updateStreakActivity(for: Date()) { $0.wordsSaved += 1 }
             noteFirstSessionTap()
             if persist { experiencePrompt.noteFlashcardAction() }
         }
@@ -1435,25 +1506,29 @@ final class AppModel {
         }
     }
 
-    /// If yesterday was missed but the day before was active, consume one freeze.
+    /// If yesterday's streak day was missed but the day before was active, consume one freeze.
     @discardableResult
     private func applyStreakFreezeIfNeeded() -> Bool {
         guard profile.streakFreezeRemaining > 0, profile.streakFreezeUsedDay.isEmpty else { return false }
         let calendar = Calendar.current
-        let today = Date()
+        let startMinutes = UserDefaults.standard.integer(forKey: "jojo.streakDayStartMinutes")
+        let logicalToday = calendar.date(byAdding: .minute, value: -startMinutes, to: Date()) ?? Date()
+        let today = calendar.startOfDay(for: logicalToday)
         guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today),
               let dayBefore = calendar.date(byAdding: .day, value: -2, to: today) else { return false }
-        let todayKey = Self.dayKey(today)
         let yKey = Self.dayKey(yesterday)
         let beforeKey = Self.dayKey(dayBefore)
         // Only freeze when today hasn't started and yesterday is empty but the streak was alive.
-        guard (watchLog[todayKey] ?? 0) < 60,
-              (watchLog[yKey] ?? 0) < 60,
-              (watchLog[beforeKey] ?? 0) >= 60 else { return false }
-        watchLog[yKey] = 60
+        guard studySeconds(for: today) < 60,
+              studySeconds(for: yesterday) < 60,
+              studySeconds(for: dayBefore) >= 60 else { return false }
+        var patched = streakActivity[yKey] ?? StreakDayActivity()
+        patched.streakFreezeSeconds = max(patched.streakFreezeSeconds, 60)
+        streakActivity[yKey] = patched
         profile.streakFreezeRemaining = 0
         profile.streakFreezeUsedDay = yKey
-        persistWatchLog()
+        profile.streakActivityData = try? JSONEncoder().encode(streakActivity)
+        save()
         track("streak_freeze_used", props: ["day": yKey])
         return true
     }
@@ -1688,6 +1763,7 @@ final class AppModel {
         experiencePrompt.noteFlashcardAction()
         ensureWeeklyStatsBucket()
         profile.weeklyReviewCount += 1
+        updateStreakActivity(for: Date()) { $0.cardsReviewed += 1 }
         save()
         reviewAvailabilityRevision += 1
         refreshAllReminders()
@@ -1699,6 +1775,53 @@ final class AppModel {
     static func dayKey(_ date: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    private static func streakDayKey(_ date: Date) -> String {
+        let startMinutes = UserDefaults.standard.integer(forKey: "jojo.streakDayStartMinutes")
+        let adjustedDate = Calendar.current.date(byAdding: .minute, value: -startMinutes, to: date) ?? date
+        return dayKey(adjustedDate)
+    }
+
+    func setStreakDayStartMinutes(_ minutes: Int) {
+        let value = min(1439, max(0, minutes))
+        profile.streakDayStartMinutes = value
+        UserDefaults.standard.set(value, forKey: "jojo.streakDayStartMinutes")
+        profile.streak = currentStreak
+        save()
+    }
+
+    func activity(for date: Date) -> StreakDayActivity {
+        streakActivity[Self.dayKey(date)] ?? StreakDayActivity()
+    }
+
+    func studySeconds(for date: Date) -> Double {
+        let key = Self.dayKey(date)
+        if let activity = streakActivity[key] {
+            let trackedSeconds = activity.videoSeconds + activity.flashcardSeconds + activity.streakFreezeSeconds
+            if trackedSeconds > 0 { return trackedSeconds }
+        }
+        return watchLog[key] ?? 0
+    }
+
+    func addFlashcardStudy(seconds: Double) {
+        guard seconds.isFinite, seconds > 0 else { return }
+        updateStreakActivity(for: Date()) { $0.flashcardSeconds += seconds }
+        profile.streakActivityData = try? JSONEncoder().encode(streakActivity)
+        profile.streak = currentStreak
+        save()
+    }
+
+    private func updateStreakActivity(
+        for date: Date,
+        persist: Bool = true,
+        change: (inout StreakDayActivity) -> Void
+    ) {
+        let key = Self.streakDayKey(date)
+        var activity = streakActivity[key] ?? StreakDayActivity()
+        change(&activity)
+        streakActivity[key] = activity
+        if persist { profile.streakActivityData = try? JSONEncoder().encode(streakActivity) }
     }
 
     var todayWatchedSeconds: Double { watchLog[Self.dayKey(Date())] ?? 0 }
@@ -1730,13 +1853,20 @@ final class AppModel {
         }
     }
 
-    func addWatch(seconds: Double) {
+    func addWatch(seconds: Double, clipId: String? = nil) {
         // Watching counts as active use even without touches.
         SessionTracker.shared.noteActivity()
         GuidanceCenter.shared.noteWatched(seconds: seconds)
-        let key = Self.dayKey(Date())
+        let now = Date()
+        let key = Self.dayKey(now)
         let wasReached = isGoalReached
         watchLog[key, default: 0] += seconds
+        updateStreakActivity(for: now, persist: false) { activity in
+            activity.videoSeconds += seconds
+            if let clipId, !activity.watchedClipIds.contains(clipId) {
+                activity.watchedClipIds.append(clipId)
+            }
+        }
         unsavedWatchSeconds += seconds
         if !wasReached, isGoalReached, profile.lastGoalCelebratedDay != key {
             profile.lastGoalCelebratedDay = key
@@ -1754,21 +1884,25 @@ final class AppModel {
     func persistWatchLog() {
         unsavedWatchSeconds = 0
         profile.watchLogData = try? JSONEncoder().encode(watchLog)
+        profile.streakActivityData = try? JSONEncoder().encode(streakActivity)
         profile.streak = currentStreak
         save()
     }
 
-    /// Consecutive days with at least one minute watched, ending today (or yesterday if today isn't started).
+    /// Consecutive streak days with at least one minute of tracked study, ending today
+    /// (or yesterday if today's custom rollover window hasn't started).
     /// A once-per-week soft freeze can patch a single missed day into the watch log via `refreshStreakFreezeIfNeeded()`.
     var currentStreak: Int {
         let calendar = Calendar.current
-        var day = Date()
-        if (watchLog[Self.dayKey(day)] ?? 0) < 60 {
+        let startMinutes = UserDefaults.standard.integer(forKey: "jojo.streakDayStartMinutes")
+        let logicalNow = calendar.date(byAdding: .minute, value: -startMinutes, to: Date()) ?? Date()
+        var day = calendar.startOfDay(for: logicalNow)
+        if studySeconds(for: day) < 60 {
             guard let yesterday = calendar.date(byAdding: .day, value: -1, to: day) else { return 0 }
             day = yesterday
         }
         var streak = 0
-        while (watchLog[Self.dayKey(day)] ?? 0) >= 60 {
+        while studySeconds(for: day) >= 60 {
             streak += 1
             guard let previous = calendar.date(byAdding: .day, value: -1, to: day) else { break }
             day = previous
@@ -2259,6 +2393,9 @@ final class AppModel {
         ((try? context.fetch(FetchDescriptor<SavedWord>())) ?? []).forEach { context.delete($0) }
         ((try? context.fetch(FetchDescriptor<CustomDeck>())) ?? []).forEach { context.delete($0) }
         watchLog = [:]
+        streakActivity = [:]
+        profile.streakActivityData = nil
+        profile.streakDetailsTrackingStartedAt = Date()
         profile.favoriteClipIds = []
         profile.likedClipIds = []
         profile.watchLaterClipIds = []
@@ -2294,6 +2431,7 @@ final class AppModel {
         ((try? context.fetch(FetchDescriptor<RemoteClip>())) ?? []).forEach { context.delete($0) }
 
         watchLog = [:]
+        streakActivity = [:]
         lookedUpKeys = []
         wordStates = [:]
         pendingFeedClipId = nil
@@ -2309,6 +2447,7 @@ final class AppModel {
         defaults.removeObject(forKey: "nagare.local.anon.id")
         defaults.removeObject(forKey: "nagare.analytics.log")
         defaults.removeObject(forKey: "nagare.explain.calllog")
+        defaults.removeObject(forKey: "jojo.streakDayStartMinutes")
         defaults.removeObject(forKey: "jojo.acquisitionPromptDismissed")
         defaults.removeObject(forKey: InsightsService.pendingAcquisitionKey)
         experiencePrompt.reset()

@@ -8,7 +8,12 @@ nonisolated struct LandscapeTheaterGeometry {
     let controlsHeight: CGFloat
     static let spacing: CGFloat = 6
 
-    static func make(in size: CGSize, preferredCaptionHeight: CGFloat, controlsHeight: CGFloat, videoAspect: CGFloat = 16 / 9) -> Self {
+    static func make(
+        in size: CGSize,
+        preferredCaptionHeight: CGFloat,
+        controlsHeight: CGFloat,
+        videoAspect: CGFloat = 16 / 9
+    ) -> Self {
         let height = max(0, size.height)
         let widthAvailable = max(0, size.width)
         let isPortrait = height >= widthAvailable
@@ -33,9 +38,16 @@ nonisolated struct LandscapeTheaterGeometry {
         let video = CGSize(width: width, height: width / aspect)
         let latestTop = max(0, height - 12 - video.height - captionReserve - controls - gaps)
         // Leave breathing room above the maximized picture; keep captions inside the viewport.
-        let preferredTop = isPortrait
-            ? topPad
-            : max(topPad, height * 0.34 - video.height / 2)
+        let preferredTop: CGFloat
+        if isPortrait && !portraitVideo {
+            // On a portrait screen, keep a wide video just above center and leave
+            // the lower portion of the page for its separate karaoke panel.
+            preferredTop = max(topPad, height * 0.42 - video.height / 2)
+        } else if isPortrait {
+            preferredTop = topPad
+        } else {
+            preferredTop = max(topPad, height * 0.34 - video.height / 2)
+        }
         let videoTop = min(preferredTop, latestTop)
         return Self(videoSize: video, videoTop: videoTop,
                     captionHeight: captionReserve, controlsHeight: controls)

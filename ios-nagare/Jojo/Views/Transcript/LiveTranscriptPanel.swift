@@ -68,6 +68,7 @@ struct LiveTranscriptPanel: View {
         .background(windowMode || onPicture ? Color.clear : Color.bgSurfaceDark)
         .environment(\.spokenTokenNamespace, windowMode ? nil : spokenNamespace)
         .environment(\.karaokeOnPicture, onPicture)
+        .environment(\.colorScheme, usesReadingPlate && JojoPalette.scheme == .dark ? .light : JojoPalette.scheme.colorScheme)
     }
 
     /// Landscape budgets actual wrapped rows. An oversized sentence gets its own scroll viewport.
@@ -131,9 +132,7 @@ struct LiveTranscriptPanel: View {
         .background {
             if !onPicture {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(usesReadingPlate
-                          ? Color.adaptive(light: "#FFFFFF", dark: "#202020")
-                          : Color.bgSurfaceDark)
+                    .fill(usesReadingPlate ? Color.karaokePaper : Color.bgSurfaceDark)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: onPicture ? 0 : Radius.card, style: .continuous))
@@ -266,12 +265,13 @@ struct LiveTranscriptPanel: View {
             onReport: { onReportLine?(index) },
             sentenceMenuPlayer: sentenceMenuPlayer,
             karaokeTime: currentTime,
+            lightPaper: usesReadingPlate && JojoPalette.scheme == .dark,
             measuresKaraokeRows: landscapeReadingWindow
         )
         .background {
             if usesReadingPlate && index == clampedCurrentLine {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#292929"))
+                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#E2E2E2"))
             }
         }
         .id(index)

@@ -6,9 +6,10 @@ struct ProfileStat: View {
     let tint: Color
     let value: String
     let caption: String
+    var action: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let content = VStack(alignment: .leading, spacing: 6) {
             Image(systemName: symbol)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(tint)
@@ -27,6 +28,13 @@ struct ProfileStat: View {
         .padding(12)
         .cardStyle()
         .accessibilityElement(children: .combine)
+        if let action {
+            Button(action: action) { content }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens your streak calendar and activity details")
+        } else {
+            content
+        }
     }
 }
 
