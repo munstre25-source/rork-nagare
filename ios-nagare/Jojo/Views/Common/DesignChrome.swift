@@ -15,19 +15,19 @@ struct CenteredModeSwitch: View {
     }
 
     private func mode(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        let isNavigationTarget = !selected
+        let isActive = selected
         return Button {
             Haptics.selection()
             action()
         } label: {
             VStack(spacing: 4) {
                 Text(title)
-                    .font(.subheadline.weight(isNavigationTarget ? .semibold : .regular))
-                    .foregroundStyle(isNavigationTarget ? Color.primary : Color.secondary)
+                    .font(.subheadline.weight(isActive ? .semibold : .regular))
+                    .foregroundStyle(isActive ? Color.primary : Color.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Capsule()
-                    .fill(isNavigationTarget ? Color.sakuraPink : Color.clear)
+                    .fill(isActive ? Color.sakuraPink : Color.clear)
                     .frame(width: 36, height: 3)
             }
             .frame(minHeight: 44)

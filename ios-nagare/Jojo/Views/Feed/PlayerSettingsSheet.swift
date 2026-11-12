@@ -122,7 +122,8 @@ struct PlayerSettingsSheet: View {
                         }
                     }
                 }
-                if clip.isPortraitVideo {
+                if clip.isPortraitVideo,
+                   ImmersionKaraokeStyle(rawValue: immersionStyle) == .amber {
                     Section("Portrait immersion word color") {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                             ForEach(ImmersionTextPalette.allCases) { palette in

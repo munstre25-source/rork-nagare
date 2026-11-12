@@ -98,14 +98,9 @@ nonisolated struct ShortsFeedGeometry {
         // Match Kiku's lower reading well: retain enough room for complete subtitle rows,
         // but begin it slightly lower than the old 36%-high panel. The footer is included
         // in the lower-area budget, so adding the clock never steals space unexpectedly.
-        let previousLowerArea = min(
-            max(height * 0.36, 210),
-            max(210, preferredCaptionHeight * 0.95),
-            height * 0.48
-        )
         let lowerArea = min(
-            max(footer + 160, previousLowerArea - 8),
-            height * 0.48
+            max(footer + 200, height * 0.48, preferredCaptionHeight * 1.1),
+            height * 0.56
         )
         let karaoke = max(0, lowerArea - footer)
         return Self(
@@ -116,13 +111,13 @@ nonisolated struct ShortsFeedGeometry {
     }
 }
 
-/// At most three complete subtitle lines that fit inside a karaoke band or reading well.
+/// A three-position reading window: previous sentence, timed sentence, upcoming sentence.
 nonisolated struct KaraokeReadingWindow {
     static let maxLines = 3
 
-    /// Indices into `clip.lines`, in ascending order. The current line always comes first, so
-    /// it sits at the same spot on every sentence; the following lines fill what is left.
-    /// A finished line is never kept above it (that pushed the current line up and down).
+    /// Indices into `clip.lines`, in ascending order. When the measured lines fit, keep the
+    /// previous sentence above the active sentence and the next one below it. That gives the
+    /// learner a stable three-sentence reading window instead of pinning the active line to top.
     static func indices(
         current: Int,
         lineCount: Int,
@@ -143,22 +138,37 @@ nonisolated struct KaraokeReadingWindow {
         // not a clipped bundle of unknown heights.
         guard let currentHeight = height(of: currentIndex) else { return [currentIndex] }
 
-        var chosen = [currentIndex]
-        var used = currentHeight
-        var usedRows = visualRows?[currentIndex] ?? maxLines
-        var next = currentIndex + 1
-        while chosen.count < maxLines, next < lineCount, let nextHeight = height(of: next) {
-            if let visualRows {
-                guard let nextRows = visualRows[next], usedRows + nextRows <= maxLines else { break }
-                usedRows += nextRows
+        func fits(_ indices: [Int]) -> Bool {
+            guard indices.count <= maxLines else { return false }
+            var total: CGFloat = CGFloat(max(0, indices.count - 1)) * spacing
+            var rows = 0
+            for index in indices {
+                let isBoundarySpacer = index < 0 || index >= lineCount
+                guard let lineHeight = height(of: index) ?? (isBoundarySpacer ? currentHeight : nil) else {
+                    return false
+                }
+                total += lineHeight
+                if let visualRows {
+                    guard let lineRows = visualRows[index] ?? (isBoundarySpacer ? 0 : nil) else { return false }
+                    rows += lineRows
+                }
             }
-            let needed = used + spacing + nextHeight
-            guard needed <= viewportHeight + 0.5 else { break }
-            chosen.append(next)
-            used = needed
-            next += 1
+            return total <= viewportHeight + 0.5 && (visualRows == nil || rows <= maxLines)
         }
-        return chosen
+
+        let previous = currentIndex > 0 ? currentIndex - 1 : -1
+        let next = currentIndex + 1 < lineCount ? currentIndex + 1 : lineCount
+        if fits([previous, currentIndex, next]) {
+            return [previous, currentIndex, next]
+        }
+
+        // Keep the active sentence centered whenever either neighboring pair fits.
+        let previousPairFits = fits([previous, currentIndex])
+        let nextPairFits = fits([currentIndex, next])
+        if previousPairFits { return [previous, currentIndex, lineCount] }
+        if nextPairFits { return [-1, currentIndex, next] }
+
+        return [-1, currentIndex, lineCount]
     }
 }
 

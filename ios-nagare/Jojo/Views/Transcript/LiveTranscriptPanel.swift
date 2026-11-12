@@ -100,7 +100,8 @@ struct LiveTranscriptPanel: View {
                 viewportHeight: availableHeight,
                 visualRows: landscapeReadingWindow ? rowMetrics.mapValues(\.count) : nil
             )
-            let currentAlone = window == [clampedCurrentLine]
+            let visibleSentenceIndices = window.filter { clip.lines.indices.contains($0) }
+            let currentAlone = visibleSentenceIndices == [clampedCurrentLine]
             let currentHeight = measuredHeights[clampedCurrentLine] ?? 0
             let metrics = landscapeReadingWindow ? rowMetrics[clampedCurrentLine] : nil
             let exceedsRows = (metrics?.count ?? 0) > KaraokeReadingWindow.maxLines
@@ -116,13 +117,14 @@ struct LiveTranscriptPanel: View {
             }()
 
             Group {
-                if landscapeReadingWindow || needsWordScroll {
+                if needsWordScroll {
                     scrollingCurrentLine(in: CGSize(width: viewport.size.width, height: scrollHeight))
                         .frame(height: scrollHeight)
                 } else {
                     staticWindow(window, spacing: spacing)
                 }
             }
+            .animation(reduceMotion ? nil : .smooth(duration: 0.34), value: window)
             // Top-anchored everywhere: the current line keeps one fixed position.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             // Let the last karaoke line dissolve into the dock / video scrim instead of
@@ -174,12 +176,22 @@ struct LiveTranscriptPanel: View {
     private func staticWindow(_ indices: [Int], spacing: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: spacing) {
             ForEach(indices, id: \.self) { index in
-                windowLine(index)
-                    .padding(.horizontal, Spacing.m)
+                Group {
+                    if clip.lines.indices.contains(index) {
+                        windowLine(index)
+                            .transition(.opacity)
+                    } else {
+                        Color.clear
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .padding(.horizontal, Spacing.m)
             }
         }
         .padding(.top, topPad)
         .padding(.bottom, Spacing.s)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity, alignment: .leading)
         // Keep the next/previous candidates mounted offscreen so heights stay warm for
         // the window calculator without painting into the next feed page.
@@ -193,7 +205,7 @@ struct LiveTranscriptPanel: View {
             ScrollView(.vertical, showsIndicators: landscapeReadingWindow) {
                 LazyVStack(alignment: .leading, spacing: Spacing.m) {
                     ForEach(landscapeReadingWindow ? Array(clip.lines.indices) : [clampedCurrentLine], id: \.self) { index in
-                        windowLine(index)
+                        windowLine(index, fadesUpcoming: false)
                             .padding(.horizontal, Spacing.m)
                             .id(index)
                     }
@@ -251,10 +263,10 @@ struct LiveTranscriptPanel: View {
         }
     }
 
-    /// Measure the following lines at the real panel width so the window can grow when they fit.
+    /// Measure adjacent lines at the real panel width so the centered window can grow when they fit.
     @ViewBuilder
     private func measureNeighbors(of visible: [Int]) -> some View {
-        let neighbors = (1..<KaraokeReadingWindow.maxLines).map { clampedCurrentLine + $0 }
+        let neighbors = (-1..<KaraokeReadingWindow.maxLines).map { clampedCurrentLine + $0 }
             .filter { clip.lines.indices.contains($0) && !visible.contains($0) }
         if !neighbors.isEmpty {
             VStack(spacing: 0) {
@@ -272,8 +284,8 @@ struct LiveTranscriptPanel: View {
         }
     }
 
-    private func windowLine(_ index: Int) -> some View {
-        TranscriptLineView(
+    private func windowLine(_ index: Int, fadesUpcoming: Bool = true) -> some View {
+        let line = TranscriptLineView(
             clip: clip,
             lineIndex: index,
             spokenTokenIndex: index == clampedCurrentLine ? spokenToken : nil,
@@ -293,10 +305,21 @@ struct LiveTranscriptPanel: View {
             lightPaper: usesReadingPlate && JojoPalette.scheme == .light,
             measuresKaraokeRows: landscapeReadingWindow
         )
-        .background {
-            if usesReadingPlate && index == clampedCurrentLine {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#292929"))
+        return Group {
+            if fadesUpcoming && index > clampedCurrentLine {
+                line.mask {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black.opacity(0.78), location: 0.48),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            } else {
+                line
             }
         }
         .id(index)

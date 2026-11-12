@@ -57,7 +57,9 @@ struct TokenView: View {
         return token.tappable || (forceWordTaps && hasText && !token.isPunctuation)
     }
     private var picturePalette: ImmersionTextPalette? {
-        guard onPicture else { return nil }
+        // Preserve the original portrait immersion in Classic: words remain unboxed
+        // with their familiar underline/cursor styling. Palettes belong to Amber Contrast.
+        guard onPicture, amberImmersionKaraoke else { return nil }
         return ImmersionTextPalette(rawValue: immersionTextPalette) ?? .warmAmber
     }
     private var readingShadow: Color { contrastWord ? .black.opacity(0.85) : .clear }

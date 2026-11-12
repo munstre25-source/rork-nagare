@@ -837,7 +837,7 @@ struct ClipStageView: View {
                 sentenceMenuPlayer: immersiveFeed && coordinator.activeClipId == clip.id ? player : nil,
                 landscapeReadingWindow: immersiveFeed && !clip.isPortraitVideo,
                 portraitReadingPlate: immersiveFeed && clip.isPortraitVideo && !videoExpanded && !onPicture,
-                fadesTopLines: videoExpanded
+                fadesTopLines: videoExpanded && !clip.isPortraitVideo
             )
             .modifier(OptionalTypeSize(index: usesPortraitImmersionTextSettings ? karaokeTextSize : 1))
             .environment(
