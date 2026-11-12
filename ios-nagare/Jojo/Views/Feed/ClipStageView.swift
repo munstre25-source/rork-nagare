@@ -813,7 +813,7 @@ struct ClipStageView: View {
         onPicture: Bool = false
     ) -> some View {
         let usesPortraitImmersionTextSettings = immersiveFeed && clip.isPortraitVideo && videoExpanded
-        VStack(spacing: Spacing.s) {
+        return VStack(spacing: Spacing.s) {
             if immersiveFeed && showsLearningControls {
                 SubtitleLearningControls(isActive: coordinator.activeClipId == clip.id && !isPopupHere)
             }
