@@ -102,10 +102,17 @@ struct MainTabView: View {
         .toolbarBackground(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 0) {
             // Reserve the capsule's height so the last transcript line and scrubber
-            // can sit fully above it. Only the capsule itself paints a background.
+            // can sit fully above it. On For You, continue the karaoke paper behind
+            // the floating dock so its bottom edge does not end in a black seam.
             if !app.hidesMainTabBar {
                 JojoDock(selection: $tab, vocabBadge: dueVocabNotificationCount, onFeedTap: openDefaultFeed)
                     .offset(y: tab == .feed ? 16 : 0)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        if tab == .feed && !showingExplore {
+                            Color.karaokePaper.ignoresSafeArea(edges: .bottom)
+                        }
+                    }
             }
         }
         .preferredColorScheme(app.profile.scheme.colorScheme)

@@ -109,6 +109,7 @@ struct TranscriptLineView: View {
                                 showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
                                 showRomaji: display.romaji,
                                 tapEnabled: display.tapWords,
+                                forceWordTaps: display.tapWords,
                                 minimalStyling: display.minimalJapanese,
                                 stablePlaybackHighlight: respectsProfileDisplay,
                                 lightPaper: lightPaper,
@@ -323,6 +324,7 @@ private struct KaraokeTokenCell: View {
     let showFurigana: Bool
     let showRomaji: Bool
     let tapEnabled: Bool
+    let forceWordTaps: Bool
     let minimalStyling: Bool
     let stablePlaybackHighlight: Bool
     let lightPaper: Bool
@@ -349,6 +351,7 @@ private struct KaraokeTokenCell: View {
                 showFurigana: showFurigana,
                 showRomaji: showRomaji,
                 tapEnabled: tapEnabled,
+                forceWordTaps: forceWordTaps,
                 minimalStyling: minimalStyling,
                 stablePlaybackHighlight: stablePlaybackHighlight,
                 playbackCompleted: playbackCompleted,

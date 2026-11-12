@@ -42,6 +42,8 @@ struct ProfileStat: View {
 struct ActivityHeatmap: View {
     let log: [String: Double]
     let goalMinutes: Int
+    var studySecondsForDay: ((Date) -> Double)? = nil
+    var onSelectDay: ((Date) -> Void)? = nil
     private let weeks = 15
 
     private struct Day: Identifiable {
@@ -60,7 +62,8 @@ struct ActivityHeatmap: View {
             (0..<7).map { day -> Day? in
                 guard let date = calendar.date(byAdding: .day, value: week * 7 + day, to: start),
                       date <= today else { return nil }
-                return Day(date: date, minutes: (log[AppModel.dayKey(date)] ?? 0) / 60)
+                let seconds = studySecondsForDay?(date) ?? log[AppModel.dayKey(date), default: 0]
+                return Day(date: date, minutes: seconds / 60)
             }
         }
     }
@@ -80,7 +83,7 @@ struct ActivityHeatmap: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("Activity").font(.headline)
                 Spacer()
-                Text("\(activeDays) active days")
+                Text(activeDays == 1 ? "1 active day" : "\(activeDays) active days")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -92,15 +95,24 @@ struct ActivityHeatmap: View {
                         VStack(spacing: gap) {
                             ForEach(0..<7, id: \.self) { index in
                                 if let day = column[index] {
-                                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                        .fill(color(for: day.minutes))
-                                        .frame(width: cell, height: cell)
-                                        .overlay {
-                                            if Calendar.current.isDateInToday(day.date) {
-                                                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                                    .strokeBorder(Color.sakuraPink, lineWidth: 1.5)
+                                    Button {
+                                        Haptics.selection()
+                                        onSelectDay?(day.date)
+                                    } label: {
+                                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                            .fill(color(for: day.minutes))
+                                            .frame(width: cell, height: cell)
+                                            .overlay {
+                                                if Calendar.current.isDateInToday(day.date) {
+                                                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                                        .strokeBorder(Color.designOrange, lineWidth: 1.5)
+                                                }
                                             }
-                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
+                                    .accessibilityValue(day.minutes >= 1 ? "\(Int(day.minutes)) minutes studied" : "No study recorded")
+                                    .accessibilityHint("Opens the streak calendar for this day")
                                 } else {
                                     Color.clear.frame(width: cell, height: cell)
                                 }
@@ -123,8 +135,7 @@ struct ActivityHeatmap: View {
         }
         .padding(Spacing.l)
         .cardStyle()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Activity: \(activeDays) active days in the last \(weeks) weeks")
+        .accessibilityElement(children: .contain)
     }
 }
 

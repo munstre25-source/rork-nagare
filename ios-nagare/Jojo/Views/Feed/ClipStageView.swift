@@ -836,7 +836,8 @@ struct ClipStageView: View {
                 onPicture: onPicture,
                 sentenceMenuPlayer: immersiveFeed && coordinator.activeClipId == clip.id ? player : nil,
                 landscapeReadingWindow: immersiveFeed && !clip.isPortraitVideo,
-                portraitReadingPlate: immersiveFeed && clip.isPortraitVideo && !videoExpanded && !onPicture
+                portraitReadingPlate: immersiveFeed && clip.isPortraitVideo && !videoExpanded && !onPicture,
+                fadesTopLines: videoExpanded
             )
             .modifier(OptionalTypeSize(index: usesPortraitImmersionTextSettings ? karaokeTextSize : 1))
             .environment(
@@ -1269,6 +1270,7 @@ struct TranscriptSection: View {
     var sentenceMenuPlayer: (any ClipPlayer)? = nil
     var landscapeReadingWindow = false
     var portraitReadingPlate = false
+    var fadesTopLines = false
 
     var body: some View {
         LiveTranscriptPanel(
@@ -1289,7 +1291,8 @@ struct TranscriptSection: View {
             onPicture: onPicture,
             sentenceMenuPlayer: sentenceMenuPlayer,
             landscapeReadingWindow: landscapeReadingWindow,
-            portraitReadingPlate: portraitReadingPlate
+            portraitReadingPlate: portraitReadingPlate,
+            fadesTopLines: fadesTopLines
         )
     }
 }

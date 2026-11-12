@@ -12,6 +12,7 @@ struct ProfileView: View {
     @State private var reviewSession: ReviewSessionConfig?
     @State private var showSettings = false
     @State private var showStreak = false
+    @State private var selectedStreakDate: Date?
     @State private var showHelp = false
     @State private var showLibrary = false
     @State private var showAchievements = false
@@ -71,7 +72,15 @@ struct ProfileView: View {
                         ProfileStat(symbol: "clock.fill", tint: .designOrangeDeep, value: watchText, caption: "watched")
                     }
                     hero
-                    ActivityHeatmap(log: app.watchLog, goalMinutes: app.profile.dailyGoalMinutes)
+                    ActivityHeatmap(
+                        log: app.watchLog,
+                        goalMinutes: app.profile.dailyGoalMinutes,
+                        studySecondsForDay: { app.studySeconds(for: $0) },
+                        onSelectDay: { date in
+                            selectedStreakDate = date
+                            showStreak = true
+                        }
+                    )
                     achievementsCard
                     mastery
                     reviewButton
@@ -107,7 +116,7 @@ struct ProfileView: View {
                 SettingsView(onGiveFeedback: onGiveFeedback, onAcquisitionSurvey: onAcquisitionSurvey)
             }
             .navigationDestination(isPresented: $showHelp) { HelpView(onGiveFeedback: onGiveFeedback) }
-            .navigationDestination(isPresented: $showStreak) { StreakView() }
+            .navigationDestination(isPresented: $showStreak) { StreakView(initialDate: selectedStreakDate) }
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
         .sheet(isPresented: $showLibrary) { LibraryView(presentedModally: true) }

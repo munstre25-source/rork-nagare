@@ -287,10 +287,10 @@ struct FeedView: View {
             if playing { scheduleWatchChromeHide() } else { showWatchChrome() }
         }
         .alert("Choose your immersion karaoke", isPresented: $showImmersionStyleChoice) {
-            Button("Keep Classic") { immersionStyle = ImmersionKaraokeStyle.classic.rawValue }
+            Button("Classic (Default)") { immersionStyle = ImmersionKaraokeStyle.classic.rawValue }
             Button("Use Amber Contrast") { immersionStyle = ImmersionKaraokeStyle.amber.rawValue }
         } message: {
-            Text("Classic keeps the current word styling. Amber Contrast puts charcoal behind the text and marks the spoken word with warm amber and a white outline. You can change this in Player settings.")
+            Text("Classic keeps the original portrait karaoke text over the video. Amber Contrast is an optional style that adds charcoal word tiles and marks the spoken word in warm amber. You can change this in Player settings.")
         }
         .sheet(item: $infoClip) { clip in
             ClipInfoSheet(

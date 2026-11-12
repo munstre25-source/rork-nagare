@@ -30,6 +30,8 @@ struct TokenView: View {
     var showFurigana: Bool = true
     var showRomaji: Bool = true
     var tapEnabled: Bool = true
+    /// Feed karaoke keeps word lookup available even when profile-wide taps are disabled.
+    var forceWordTaps: Bool = false
     /// Full immersion keeps the Japanese quiet while retaining the spoken cursor and lookup.
     var minimalStyling: Bool = false
     var stablePlaybackHighlight: Bool = false
@@ -50,6 +52,10 @@ struct TokenView: View {
     @State private var tapBounce: Bool = false
 
     private var contrastWord: Bool { amberImmersionKaraoke && !token.isPunctuation }
+    private var isTappable: Bool {
+        let hasText = !token.surface.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return token.tappable || (forceWordTaps && hasText && !token.isPunctuation)
+    }
     private var picturePalette: ImmersionTextPalette? {
         guard onPicture else { return nil }
         return ImmersionTextPalette(rawValue: immersionTextPalette) ?? .warmAmber
@@ -57,7 +63,7 @@ struct TokenView: View {
     private var readingShadow: Color { contrastWord ? .black.opacity(0.85) : .clear }
 
     var body: some View {
-        if token.tappable && tapEnabled {
+        if isTappable && tapEnabled {
             Button {
                 withAnimation(Motion.tapBounce) { tapBounce = true }
                 onTap()
@@ -79,7 +85,7 @@ struct TokenView: View {
     private var content: some View {
         VStack(spacing: 1) {
             rubyRow
-                .padding(.horizontal, token.tappable ? 5 : 0)
+                .padding(.horizontal, isTappable ? 5 : 0)
                 .padding(.vertical, 1)
                 .background { wordBackground }
                 .overlay { spokenOutline }
@@ -94,7 +100,7 @@ struct TokenView: View {
                     .minimumScaleFactor(0.6)
             }
         }
-        .frame(minWidth: token.tappable ? 40 : 8, minHeight: 40)
+        .frame(minWidth: isTappable ? 40 : 8, minHeight: 40)
         .contentShape(Rectangle())
         // Feed karaoke keeps size stable; only the green outline marks the spoken word.
         .scaleEffect(pulse || tapBounce || (!stablePlaybackHighlight && state == .spoken) ? 1.04 : 1)
@@ -151,12 +157,12 @@ struct TokenView: View {
     private var mastery: SRSState? {
         if let familiarity { return familiarity }
         if isLookedUp { return .learning }
-        return token.tappable ? .new : nil
+        return isTappable ? .new : nil
     }
 
     @ViewBuilder
     private var wordBackground: some View {
-        if let picturePalette, token.tappable {
+        if let picturePalette, isTappable {
             RoundedRectangle(cornerRadius: 7)
                 .fill(Color(hex: picturePalette.hex))
         } else if contrastWord {
@@ -186,7 +192,7 @@ struct TokenView: View {
 
     @ViewBuilder
     private var spokenOutline: some View {
-        if picturePalette != nil, token.tappable, (state == .spoken || state == .selected) {
+        if picturePalette != nil, isTappable, (state == .spoken || state == .selected) {
             RoundedRectangle(cornerRadius: 7)
                 .strokeBorder(Color.white, lineWidth: 1.5)
         } else if contrastWord {
@@ -234,7 +240,7 @@ struct TokenView: View {
                 .frame(height: 2)
                 .padding(.horizontal, 3)
                 .offset(y: 2)
-        } else if !minimalStyling, token.tappable, state == .normal, mastery != .known, mastery != .easy {
+        } else if !minimalStyling, isTappable, state == .normal, mastery != .known, mastery != .easy {
             Capsule()
                 .fill(underlineColor)
                 .frame(height: 2)
@@ -244,7 +250,7 @@ struct TokenView: View {
     }
 
     private var japaneseColor: Color {
-        if let picturePalette, token.tappable {
+        if let picturePalette, isTappable {
             return picturePalette.usesDarkInk ? Color(hex: "#191919") : .white
         }
         if contrastWord {
@@ -254,15 +260,15 @@ struct TokenView: View {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
         case .normal:
-            if lightPaper && !token.tappable { return Color(hex: "#292929") }
-            guard token.tappable && !minimalStyling else { return LearningInk.japanese(onPicture: onPicture) }
+            if lightPaper && !isTappable { return Color(hex: "#292929") }
+            guard isTappable && !minimalStyling else { return LearningInk.japanese(onPicture: onPicture) }
             // Mastery wall stays on paper; portrait bands keep white so bright footage stays readable.
             return onPicture ? LearningInk.japanese(onPicture: true) : LearningInk.mastery(mastery)
         }
     }
 
     private var readingColor: Color {
-        if let picturePalette, token.tappable {
+        if let picturePalette, isTappable {
             return picturePalette.usesDarkInk ? Color.black.opacity(0.58) : Color.white.opacity(0.72)
         }
         if contrastWord { return .white }
@@ -271,7 +277,7 @@ struct TokenView: View {
         case .selected: return (lightPaper ? Color(hex: "#B45B00") : LearningInk.selected).opacity(0.9)
         case .normal:
             if lightPaper { return Color(hex: "#777777") }
-            if !onPicture, token.tappable, let mastery, mastery != .new {
+            if !onPicture, isTappable, let mastery, mastery != .new {
                 return LearningInk.mastery(mastery).opacity(0.75)
             }
             return LearningInk.furigana(onPicture: onPicture)

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct StreakView: View {
+    var initialDate: Date? = nil
     @Environment(AppModel.self) private var app
     @Query private var words: [SavedWord]
     @Environment(\.colorScheme) private var colorScheme
@@ -120,9 +121,9 @@ struct StreakView: View {
                 .presentationDragIndicator(.visible)
         }
         .onAppear {
-            let today = effectiveToday
-            displayedMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
-            selectedDate = calendar.startOfDay(for: today)
+            let date = initialDate ?? effectiveToday
+            displayedMonth = calendar.dateInterval(of: .month, for: date)?.start ?? date
+            selectedDate = calendar.startOfDay(for: date)
         }
         .onChange(of: startMinutes) { _, _ in
             let today = effectiveToday

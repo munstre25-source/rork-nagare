@@ -24,8 +24,25 @@ struct LiveTranscriptPanel: View {
     var sentenceMenuPlayer: (any ClipPlayer)? = nil
     var landscapeReadingWindow = false
     var portraitReadingPlate = false
+    var fadesTopLines = false
 
     private var usesReadingPlate: Bool { landscapeReadingWindow || portraitReadingPlate }
+    private var karaokeFadeStops: [Gradient.Stop] {
+        if fadesTopLines {
+            return [
+                .init(color: .clear, location: 0),
+                .init(color: .black.opacity(0.35), location: 0.08),
+                .init(color: .black, location: 0.2),
+                .init(color: .black, location: 0.68),
+                .init(color: .clear, location: 1)
+            ]
+        }
+        return [
+            .init(color: .black, location: 0),
+            .init(color: .black, location: 0.68),
+            .init(color: .clear, location: 1)
+        ]
+    }
 
     @Environment(WordLookupController.self) private var lookup
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -68,7 +85,6 @@ struct LiveTranscriptPanel: View {
         .background(windowMode || onPicture ? Color.clear : Color.bgSurfaceDark)
         .environment(\.spokenTokenNamespace, windowMode ? nil : spokenNamespace)
         .environment(\.karaokeOnPicture, onPicture)
-        .environment(\.colorScheme, usesReadingPlate && JojoPalette.scheme == .dark ? .light : JojoPalette.scheme.colorScheme)
     }
 
     /// Landscape budgets actual wrapped rows. An oversized sentence gets its own scroll viewport.
@@ -109,6 +125,15 @@ struct LiveTranscriptPanel: View {
             }
             // Top-anchored everywhere: the current line keeps one fixed position.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // Let the last karaoke line dissolve into the dock / video scrim instead of
+            // ending at a hard clipped edge. The panel background remains fully painted.
+            .mask {
+                LinearGradient(
+                    stops: karaokeFadeStops,
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
             .onPreferenceChange(KaraokeLineHeightPreference.self) { heights in
                 guard !heights.isEmpty else { return }
                 var next = measuredHeights
@@ -265,13 +290,13 @@ struct LiveTranscriptPanel: View {
             onReport: { onReportLine?(index) },
             sentenceMenuPlayer: sentenceMenuPlayer,
             karaokeTime: currentTime,
-            lightPaper: usesReadingPlate && JojoPalette.scheme == .dark,
+            lightPaper: usesReadingPlate && JojoPalette.scheme == .light,
             measuresKaraokeRows: landscapeReadingWindow
         )
         .background {
             if usesReadingPlate && index == clampedCurrentLine {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#E2E2E2"))
+                    .fill(Color.adaptive(light: "#F7F7F7", dark: "#292929"))
             }
         }
         .id(index)
