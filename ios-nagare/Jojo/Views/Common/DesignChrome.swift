@@ -16,7 +16,7 @@ struct CenteredModeSwitch: View {
 
     private func mode(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         let isNavigationTarget = !selected
-        Button {
+        return Button {
             Haptics.selection()
             action()
         } label: {
