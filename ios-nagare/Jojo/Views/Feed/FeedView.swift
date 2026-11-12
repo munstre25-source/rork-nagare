@@ -822,7 +822,7 @@ struct FeedView: View {
         programmaticClipChange = true
         autoScrollTargetId = nil
         withAnimation(.spring(response: 0.38, dampingFraction: 0.92)) {
-            currentId = next.id
+            self.currentId = next.id
         }
         preloadUpcoming()
 
