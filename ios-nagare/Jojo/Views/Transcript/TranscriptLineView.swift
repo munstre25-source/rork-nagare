@@ -98,61 +98,33 @@ struct TranscriptLineView: View {
                     // Feed: wider word gaps so furigana/romaji stay tied to their surface.
                     FlowLayout(spacing: forceDenseAids ? 6 : 4, lineSpacing: forceDenseAids ? 14 : 12) {
                         ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
-                            VStack(spacing: 1) {
-                                TokenView(
-                                    token: token,
-                                    state: state(for: index),
-                                    isLookedUp: app.isLookedUp(token),
-                                    familiarity: app.wordState(for: token),
-                                    highlight: highlightSurface.map { matches(token, $0) } ?? false,
-                                    pulse: isPulsing && pulseTokenIndex == index,
-                                    tooltip: pulseTokenIndex == index ? tooltip : nil,
-                                    showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
-                                    showRomaji: display.romaji,
-                                    tapEnabled: display.tapWords,
-                                    minimalStyling: display.minimalJapanese,
-                                    stablePlaybackHighlight: respectsProfileDisplay,
-                                    lightPaper: lightPaper,
-                                    playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
-                                    onTap: {
-                                        withAnimation(Motion.popupSpring) {
-                                            lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
-                                        }
-                                    }
-                                )
-                                // Beginner: a tiny gloss under the spoken or selected word only —
-                                // never reserves empty space for other tokens.
-                                if showsInlineGloss, let gloss = inlineGloss(for: token, index: index) {
-                                    Text(gloss)
-                                        .font(.caption2.weight(.medium))
-                                        .foregroundStyle(LearningInk.english)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.7)
-                                        .frame(maxWidth: 120)
-                                }
-                            }
-                            .id(KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index))
-                            .background {
-                                if measuresKaraokeRows {
-                                    GeometryReader { geometry in
-                                        Color.clear.preference(
-                                            key: KaraokeRowFrames.self,
-                                            value: [lineIndex: [geometry.frame(in: .named(KaraokeRowsSpace(index: lineIndex)))]]
-                                        )
+                            KaraokeTokenCell(
+                                token: token,
+                                state: state(for: index),
+                                isLookedUp: app.isLookedUp(token),
+                                familiarity: app.wordState(for: token),
+                                highlight: highlightSurface.map { matches(token, $0) } ?? false,
+                                pulse: isPulsing && pulseTokenIndex == index,
+                                tooltip: pulseTokenIndex == index ? tooltip : nil,
+                                showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
+                                showRomaji: display.romaji,
+                                tapEnabled: display.tapWords,
+                                minimalStyling: display.minimalJapanese,
+                                stablePlaybackHighlight: respectsProfileDisplay,
+                                lightPaper: lightPaper,
+                                playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
+                                gloss: showsInlineGloss ? inlineGloss(for: token, index: index) : nil,
+                                anchor: KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index),
+                                measuresRowFrames: measuresKaraokeRows,
+                                rowLineIndex: lineIndex,
+                                tracksWordFrame: respectsProfileDisplay && spokenTokenIndex == index,
+                                anchorClipID: clip.id,
+                                onTap: {
+                                    withAnimation(Motion.popupSpring) {
+                                        lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
                                     }
                                 }
-                                if respectsProfileDisplay, spokenTokenIndex == index {
-                                    GeometryReader { geometry in
-                                        Color.clear.preference(
-                                            key: KaraokeWordGeometryPreference.self,
-                                            value: KaraokeWordGeometry(
-                                                anchor: KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index),
-                                                frame: geometry.frame(in: .named(KaraokeWordAnchor.spaceName(for: clip.id)))
-                                            )
-                                        )
-                                    }
-                                }
-                            }
+                            )
                         }
                     }
                     .coordinateSpace(name: KaraokeRowsSpace(index: lineIndex))
@@ -318,5 +290,96 @@ struct TranscriptLineView: View {
             return grammar.meaning
         }
         return token.definitions.first
+    }
+}
+
+/// Reports one karaoke row's frame through the `KaraokeRowFrames` preference.
+/// Its own small view type so the enclosing line body type-checks quickly.
+private struct KaraokeRowFrameReader: View {
+    let lineIndex: Int
+
+    var body: some View {
+        GeometryReader { geometry in
+            let rowFrame = geometry.frame(in: .named(KaraokeRowsSpace(index: lineIndex)))
+            Color.clear.preference(
+                key: KaraokeRowFrames.self,
+                value: [lineIndex: [rowFrame]]
+            )
+        }
+    }
+}
+
+/// One karaoke token plus its optional inline gloss and frame reporting.
+/// A dedicated view type with explicit properties keeps the transcript line's
+/// body inside the compiler's type-checking budget.
+private struct KaraokeTokenCell: View {
+    let token: Token
+    let state: TokenVisualState
+    let isLookedUp: Bool
+    let familiarity: SRSState?
+    let highlight: Bool
+    let pulse: Bool
+    let tooltip: String?
+    let showFurigana: Bool
+    let showRomaji: Bool
+    let tapEnabled: Bool
+    let minimalStyling: Bool
+    let stablePlaybackHighlight: Bool
+    let lightPaper: Bool
+    let playbackCompleted: Bool
+    /// Beginner-only gloss under the spoken or selected word; nil reserves no space.
+    let gloss: String?
+    let anchor: KaraokeWordAnchor
+    let measuresRowFrames: Bool
+    let rowLineIndex: Int
+    let tracksWordFrame: Bool
+    let anchorClipID: String
+    let onTap: () -> Void
+
+    var body: some View {
+        VStack(spacing: 1) {
+            TokenView(
+                token: token,
+                state: state,
+                isLookedUp: isLookedUp,
+                familiarity: familiarity,
+                highlight: highlight,
+                pulse: pulse,
+                tooltip: tooltip,
+                showFurigana: showFurigana,
+                showRomaji: showRomaji,
+                tapEnabled: tapEnabled,
+                minimalStyling: minimalStyling,
+                stablePlaybackHighlight: stablePlaybackHighlight,
+                playbackCompleted: playbackCompleted,
+                lightPaper: lightPaper,
+                onTap: onTap
+            )
+            if let gloss {
+                Text(gloss)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(LearningInk.english)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: 120)
+            }
+        }
+        .id(anchor)
+        .background {
+            if measuresRowFrames {
+                KaraokeRowFrameReader(lineIndex: rowLineIndex)
+            }
+            if tracksWordFrame {
+                GeometryReader { geometry in
+                    Color.clear.preference(
+                        key: KaraokeWordGeometryPreference.self,
+                        value: KaraokeWordGeometry(
+                            anchor: anchor,
+                            frame: geometry.frame(in: .named(KaraokeWordAnchor.spaceName(for: anchorClipID)))
+                        )
+                    )
+                }
+            }
+        }
     }
 }
