@@ -36,7 +36,6 @@ struct SettingsView: View {
 struct LearningSettingsCard: View {
     @Environment(AppModel.self) private var app
     @Query(sort: \SavedWord.addedAt, order: .reverse) private var words: [SavedWord]
-    @AppStorage(PlayerPrefs.subtitlesHiddenKey) private var subtitlesHidden = false
     @AppStorage(PlayerPrefs.focusModeKey) private var focusMode = false
     @AppStorage(PlayerPrefs.jlptLevelKey) private var storedLevel = ""
     @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeSize: Double = 1
@@ -109,9 +108,6 @@ struct LearningSettingsCard: View {
             divider
 
             header("Display")
-            toggle("captions.bubble", "Subtitles while watching",
-                   Binding(get: { !subtitlesHidden }, set: { subtitlesHidden = !$0 }))
-            divider
             toggle("moon.circle", "Focus mode", $focusMode)
             Text("Hides the goal strip and celebration pop-ups in the feed.")
                 .font(.caption)

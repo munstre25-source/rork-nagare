@@ -382,6 +382,7 @@ struct JojoTests {
                 #expect(layout.captionHeight <= 320)
                 #expect(layout.videoHeight > 0)
                 #expect(layout.videoHeight + controls + 6 <= layout.cardSize.height + 0.01)
+                #expect(layout.captionHeight >= 220)
                 // The band sits on the picture; it must not exceed the video height.
                 #expect(layout.captionHeight <= layout.videoHeight)
             }
@@ -415,14 +416,6 @@ struct JojoTests {
         #expect(hidden.captionHeight >= shown.captionHeight)
         #expect(hidden.captionHeight > 0)
         #expect(hidden.videoHeight > shown.videoHeight)
-    }
-
-    @Test func landscapeKaraokeKeepsPreviousActiveAndUpcomingSlotsDespiteWrapping() {
-        let heights: [Int: CGFloat] = [0: 80, 1: 40, 2: 40]
-        let window = KaraokeReadingWindow.indices(current: 0, lineCount: 3, heights: heights,
-                                                   spacing: 8, viewportHeight: 300,
-                                                   visualRows: [0: 2, 1: 1, 2: 1])
-        #expect(window == [-1, 0, 1])
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
@@ -513,19 +506,6 @@ struct JojoTests {
         }
     }
 
-    @Test func karaokeFollowsOnlyWordsOutsideTheVisibleReadingArea() {
-        let anchor = KaraokeWordAnchor(clipID: "test", lineIndex: 0, tokenIndex: 2)
-        let visible = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 20, width: 80, height: 64))
-        #expect(visible.followEdge(viewportHeight: 320) == nil)
-        let below = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 290, width: 80, height: 64))
-        #expect(below.followEdge(viewportHeight: 320) == .bottom)
-        let above = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: -12, width: 80, height: 64))
-        #expect(above.followEdge(viewportHeight: 320) == .top)
-        #expect(visible.followEdge(viewportHeight: 0) == nil)
-        let tall = KaraokeWordGeometry(anchor: anchor, frame: CGRect(x: 12, y: 20, width: 80, height: 400))
-        #expect(tall.followEdge(viewportHeight: 320) == .top)
-    }
-
     @Test func allFeedPagersSnapToOneCompleteViewport() {
         #expect(SingleClipPerSwipeBehavior.settledOffset(original: 0, proposed: 850,
                                                         viewportHeight: 700, contentHeight: 2800) == 700)
@@ -540,46 +520,6 @@ struct JojoTests {
                                                                  viewportHeight: height, contentHeight: height * 5)
             #expect(offset == height * 2)
         }
-    }
-
-    @Test func karaokeReadingWindowAlwaysKeepsThreeStableSlots() {
-        let heights: [Int: CGFloat] = [0: 80, 1: 90, 2: 85, 3: 100]
-        let three = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
-                                                 spacing: 12, viewportHeight: 320)
-        #expect(three == [0, 1, 2])
-        #expect(three.count == 3)
-        #expect(three.contains(1))
-
-        // Tight and unmeasured viewports keep the same slots; text movement handles overflow.
-        let short = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
-                                                 spacing: 12, viewportHeight: 180)
-        #expect(short == [0, 1, 2])
-
-        let tight = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
-                                                 spacing: 12, viewportHeight: 95)
-        #expect(tight == [0, 1, 2])
-
-        let unknown = KaraokeReadingWindow.indices(current: 2, lineCount: 4, heights: [:],
-                                                   spacing: 12, viewportHeight: 320)
-        #expect(unknown == [1, 2, 3])
-
-        let tallCurrent = KaraokeReadingWindow.indices(
-            current: 0, lineCount: 2, heights: [0: 400, 1: 80],
-            spacing: 12, viewportHeight: 320
-        )
-        #expect(tallCurrent == [-1, 0, 1])
-    }
-
-    @Test func karaokeReadingWindowKeepsCurrentLineInTheMiddle() {
-        let heights: [Int: CGFloat] = [0: 120, 1: 120, 2: 120]
-        let mid = KaraokeReadingWindow.indices(current: 1, lineCount: 3, heights: heights,
-                                               spacing: 10, viewportHeight: 400)
-        #expect(mid == [0, 1, 2])
-        #expect(mid[1] == 1)
-        let last = KaraokeReadingWindow.indices(current: 2, lineCount: 3, heights: heights,
-                                                spacing: 10, viewportHeight: 400)
-        #expect(last == [1, 2, 3])
-        #expect(last[1] == 2)
     }
 
     @Test func playbackTapUsesRequestedStateWhileVideoIsBuffering() throws {

@@ -340,8 +340,7 @@ struct ClipStageView: View {
 
                 Group {
                     if subtitlesHidden {
-                        SubtitlesOffPill()
-                            .frame(maxHeight: .infinity)
+                        Color.clear
                     } else {
                         transcript(player: player, showsLearningControls: false)
                             .coachTarget(.transcript, active: isCoachPage)
@@ -405,7 +404,7 @@ struct ClipStageView: View {
                 if showsShortsCaptions {
                     theaterKaraoke(player: player)
                 } else {
-                    SubtitlesOffPill()
+                    Color.clear
                 }
             }
             .frame(width: wordsWidth, alignment: .top)
@@ -562,8 +561,7 @@ struct ClipStageView: View {
 
                 Group {
                     if subtitlesHidden && immersiveFeed {
-                        SubtitlesOffPill()
-                            .padding(.top, 18)
+                        Color.clear
                     } else {
                         transcript(player: player, showsLearningControls: false)
                             .coachTarget(.transcript, active: isCoachPage)
@@ -680,10 +678,9 @@ struct ClipStageView: View {
                             .coachTarget(.transcript, active: isCoachPage)
                             .modifier(TranscriptTopReader(top: $transcriptTop))
                             .padding(.horizontal, 14)
-                            .padding(.top, 14)
+                            .padding(.top, 8)
                     } else {
-                        SubtitlesOffPill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        Color.clear
                     }
                 }
                 .frame(width: size.width, height: layout.karaokeHeight, alignment: .top)
@@ -765,15 +762,18 @@ struct ClipStageView: View {
     }
 
     /// Three-line karaoke on a soft bottom scrim so portrait footage shows through the band.
-    /// The band has a fixed height and top-aligned lines, so the current line never moves
-    /// when the next sentence is shorter or longer.
+    /// Japanese wraps naturally inside a vertically scrollable transcript window.
     private func shortsKaraokeBand(player: (any ClipPlayer)?, width: CGFloat, height: CGFloat) -> some View {
+        let verticalInset: CGFloat = 8
         transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
-            .frame(width: max(0, width - 76), height: max(0, height - 12), alignment: .top)
-            .padding(.bottom, 12)
-            .padding(.top, 36)
+            .frame(
+                width: max(0, width - 76),
+                height: max(0, height - verticalInset * 2),
+                alignment: .top
+            )
             .padding(.leading, 14)
-            .frame(width: width, alignment: .leading)
+            .padding(.vertical, verticalInset)
+            .frame(width: width, height: height, alignment: .bottomLeading)
             .background(
                 LinearGradient(
                     stops: [

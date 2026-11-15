@@ -18,7 +18,6 @@ enum PlayerPrefs {
         sizes[min(max(0, Int(index.rounded())), sizes.count - 1)]
     }
 }
-
 nonisolated enum ImmersionKaraokeStyle: String, CaseIterable, Identifiable {
     case classic = "Classic"
     case amber = "Amber Contrast"
@@ -90,7 +89,6 @@ struct PlayerSettingsSheet: View {
     @Environment(AppModel.self) private var app
     @Environment(PlaybackCoordinator.self) private var coordinator
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(PlayerPrefs.subtitlesHiddenKey) private var subtitlesHidden = false
     @AppStorage(PlayerPrefs.focusModeKey) private var focusMode = false
     @AppStorage(PlayerPrefs.jlptLevelKey) private var storedLevel = ""
     @AppStorage(PlayerPrefs.karaokeTextSizeKey) private var karaokeSize: Double = 1
@@ -246,17 +244,12 @@ struct PlayerSettingsSheet: View {
 
     private var subtitlesSection: some View {
         Section {
-            Toggle(isOn: Binding(get: { !subtitlesHidden }, set: { subtitlesHidden = !$0 })) {
-                Label("Subtitles", systemImage: "captions.bubble")
-            }
             Toggle(isOn: Binding(get: { app.profile.furiganaMode.showsAny }, set: { app.setShowFurigana($0) })) {
                 Label("Furigana", systemImage: "textformat.size.smaller")
             }
-            .disabled(subtitlesHidden)
             Toggle(isOn: Binding(get: { app.profile.showRomaji }, set: { app.setShowRomaji($0) })) {
                 Label("Romaji", systemImage: "character.textbox")
             }
-            .disabled(subtitlesHidden)
             Picker(selection: Binding(
                 get: { app.profile.subtitleDisplay.english },
                 set: { app.setEnglishVisibility($0) }
@@ -267,17 +260,13 @@ struct PlayerSettingsSheet: View {
             } label: {
                 Label("Translation", systemImage: "globe")
             }
-            .disabled(subtitlesHidden)
             Toggle(isOn: Binding(get: { app.profile.tapWordsEnabled }, set: { app.setTapWordsEnabled($0) })) {
                 Label("Tap words for meaning", systemImage: "hand.tap")
             }
-            .disabled(subtitlesHidden)
         } header: {
             Text("Subtitles")
         } footer: {
-            Text(subtitlesHidden
-                 ? "Subtitles are off. Only the video shows — the CC button brings them back."
-                 : "Spoken words light up as they're said.")
+            Text("Use the CC button on the player to show or hide subtitles. Spoken words light up as they're said.")
         }
     }
 
@@ -473,33 +462,5 @@ struct SubtitlesToggleButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(subtitlesHidden ? "Show subtitles" : "Hide subtitles")
         .accessibilityValue(subtitlesHidden ? "Off" : "On")
-    }
-}
-
-/// Shown where the words would be when subtitles are off.
-struct SubtitlesOffPill: View {
-    @AppStorage(PlayerPrefs.subtitlesHiddenKey) private var subtitlesHidden = false
-
-    var body: some View {
-        Button {
-            Haptics.selection()
-            withAnimation(.snappy) { subtitlesHidden = false }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "captions.bubble")
-                Text("Subtitles off")
-                    .foregroundStyle(.secondary)
-                Text("Show")
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.sakuraPink)
-            }
-            .font(.footnote.weight(.semibold))
-            .padding(.horizontal, 14)
-            .frame(minHeight: 36)
-            .background(Color.fieldFill, in: Capsule())
-            .frame(minHeight: 44)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Subtitles are off. Show subtitles")
     }
 }

@@ -67,9 +67,9 @@ nonisolated struct ShortsStageGeometry {
         let controls = max(0, controlsHeight)
         let gaps: CGFloat = controls > 0 ? 6 : 0
         let available = max(0, card.height - controls - gaps)
-        // Cap near a third of the picture so the subject stays clear, while still fitting
-        // about two complete subtitle rows plus readings when Beginner aids are on.
-        let captions = min(max(0, preferredCaptionHeight), available * 0.34)
+        // Immersion keeps at least three natural karaoke text rows visible. This overlays the picture rather
+        // than shrinking it, so a taller band does not steal playback space.
+        let captions = min(max(0, preferredCaptionHeight), available * 0.42)
         let video = max(0, available)
         return Self(cardSize: card, videoHeight: video, captionHeight: captions)
     }
@@ -110,31 +110,6 @@ nonisolated struct ShortsFeedGeometry {
             karaokeHeight: karaoke,
             footerHeight: footer
         )
-    }
-}
-
-/// A stable three-position reading window: previous, active, upcoming.
-nonisolated struct KaraokeReadingWindow {
-    static let maxLines = 3
-
-    /// Always returns three slots. Out-of-range sentinel indices keep the active sentence in
-    /// the middle at the beginning and end of a clip. Measurements remain in the signature so
-    /// callers can share this geometry API, but sentence height never removes a slot.
-    static func indices(
-        current: Int,
-        lineCount: Int,
-        heights: [Int: CGFloat],
-        spacing: CGFloat,
-        viewportHeight: CGFloat,
-        visualRows: [Int: Int]? = nil
-    ) -> [Int] {
-        guard lineCount > 0 else { return [] }
-        let currentIndex = min(max(0, current), lineCount - 1)
-        _ = heights
-        _ = spacing
-        _ = viewportHeight
-        _ = visualRows
-        return [currentIndex - 1, currentIndex, currentIndex + 1]
     }
 }
 
