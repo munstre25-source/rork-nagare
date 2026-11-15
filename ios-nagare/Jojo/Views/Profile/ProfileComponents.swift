@@ -221,34 +221,28 @@ struct AchievementBadge: View {
     }
 }
 
-struct AchievementsSheet: View {
+struct AchievementsView: View {
     let achievements: [ProfileAchievement]
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 16)], spacing: 22) {
-                    ForEach(achievements) { item in
-                        NavigationLink {
-                            AchievementDetailView(item: item)
-                        } label: {
-                            AchievementBadge(item: item)
-                        }
-                        .buttonStyle(.plain)
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 16)], spacing: 22) {
+                ForEach(achievements) { item in
+                    NavigationLink {
+                        AchievementDetailView(item: item)
+                    } label: {
+                        AchievementBadge(item: item)
                     }
-                }
-                .padding(20)
-            }
-            .background(Color.canvas.ignoresSafeArea())
-            .navigationTitle("Achievements")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(20)
         }
+        .background(Color.canvas.ignoresSafeArea())
+        .navigationTitle("Achievements")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 
@@ -299,5 +293,7 @@ struct AchievementDetailView: View {
         .background(Color.canvas.ignoresSafeArea())
         .navigationTitle("Achievement")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 }

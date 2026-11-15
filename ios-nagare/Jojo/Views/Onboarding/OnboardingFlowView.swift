@@ -43,6 +43,37 @@ struct OnboardingFlowView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+
+            #if DEBUG
+            if showSplash {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button {
+                            Haptics.selection()
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                showSplash = false
+                            }
+                            go(to: .paywall)
+                        } label: {
+                            Label("Skip to paywall", systemImage: "forward.end.fill")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, Spacing.m)
+                                .frame(minHeight: 40)
+                                .background(.black.opacity(0.58), in: Capsule())
+                                .overlay(Capsule().strokeBorder(Color.sakuraPink.opacity(0.8), lineWidth: 1))
+                        }
+                        .accessibilityHint("Bypasses onboarding in debug builds")
+                    }
+                    Spacer()
+                }
+                .padding(.top, Spacing.m)
+                .padding(.trailing, Spacing.m)
+                .transition(.opacity)
+                .zIndex(10)
+            }
+            #endif
         }
         .environment(\.brandSurface, activeSurface)
         .environment(\.colorScheme, activeSurface == .cream ? .light : .dark)

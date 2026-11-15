@@ -17,6 +17,8 @@ struct ProfileView: View {
     @State private var showLibrary = false
     @State private var showAchievements = false
     @State private var selectedAchievement: ProfileAchievement?
+    @State private var showAchievementDetail = false
+    @State private var showFeedbackBoard = false
     @State private var showFounderContact = false
     @State private var copiedFounderEmail = false
     private let founderEmail = "ralpayer@outlook.com"
@@ -37,6 +39,11 @@ struct ProfileView: View {
 
     private var showsInlineSettings: Bool {
         marketingScrollsToTheme || marketingProfileAnchor != nil
+    }
+
+    private var hasPushedDestination: Bool {
+        showSettings || showHelp || showStreak || showLibrary || showAchievements
+            || showAchievementDetail || showFeedbackBoard || showFounderContact
     }
 
     private var achievements: [ProfileAchievement] {
@@ -110,33 +117,46 @@ struct ProfileView: View {
                 scrollMarketingProfile(proxy)
             }
             }
+            .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showSettings) {
                 SettingsView(onGiveFeedback: onGiveFeedback, onAcquisitionSurvey: onAcquisitionSurvey)
+                    .toolbar(.hidden, for: .tabBar)
             }
-            .navigationDestination(isPresented: $showHelp) { HelpView(onGiveFeedback: onGiveFeedback) }
-            .navigationDestination(isPresented: $showStreak) { StreakView(initialDate: selectedStreakDate) }
+            .navigationDestination(isPresented: $showHelp) {
+                HelpView(onGiveFeedback: onGiveFeedback)
+                    .toolbar(.visible, for: .navigationBar)
+                    .toolbar(.hidden, for: .tabBar)
+            }
+            .navigationDestination(isPresented: $showStreak) {
+                StreakView(initialDate: selectedStreakDate)
+                    .toolbar(.hidden, for: .tabBar)
+            }
+            .navigationDestination(isPresented: $showLibrary) {
+                LibraryView()
+            }
+            .navigationDestination(isPresented: $showAchievements) {
+                AchievementsView(achievements: achievements)
+            }
+            .navigationDestination(isPresented: $showAchievementDetail) {
+                if let selectedAchievement {
+                    AchievementDetailView(item: selectedAchievement)
+                }
+            }
+            .navigationDestination(isPresented: $showFeedbackBoard) {
+                FeedbackBoardView(embeddedInNavigation: true)
+            }
+            .navigationDestination(isPresented: $showFounderContact) {
+                founderContact
+            }
         }
         .fullScreenCover(item: $reviewSession) { ReviewSessionView(config: $0) }
-        .sheet(isPresented: $showLibrary) { LibraryView(presentedModally: true) }
-        .sheet(isPresented: $showAchievements) {
-            AchievementsSheet(achievements: achievements)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+        .onAppear { app.hidesMainTabBar = hasPushedDestination }
+        .onDisappear { app.hidesMainTabBar = false }
+        .onChange(of: hasPushedDestination) { _, isPushed in
+            app.hidesMainTabBar = isPushed
         }
-        .sheet(item: $selectedAchievement) { item in
-            NavigationStack {
-                AchievementDetailView(item: item)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { selectedAchievement = nil }
-                        }
-                    }
-            }
-            .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showFounderContact) { founderContact }
     }
 
     private var topBar: some View {
@@ -217,6 +237,7 @@ struct ProfileView: View {
                     ForEach(achievements.sorted { $0.unlocked && !$1.unlocked }) { item in
                         Button {
                             selectedAchievement = item
+                            showAchievementDetail = true
                         } label: {
                             AchievementBadge(item: item)
                                 .frame(width: 92)
@@ -234,7 +255,7 @@ struct ProfileView: View {
     private var linksCard: some View {
         VStack(spacing: 0) {
             SettingsRow(symbol: "bubble.left.and.text.bubble.right", title: "Feedback Board") {
-                onGiveFeedback?()
+                showFeedbackBoard = true
             }
             Divider().padding(.leading, 52)
             SettingsRow(symbol: "books.vertical", title: "Library", value: "Saved · History") {
@@ -254,41 +275,34 @@ struct ProfileView: View {
     }
 
     private var founderContact: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.l) {
-                    Text("Tell me what’s working, report a bug, or suggest something you’d like to see in Jojo.")
-                        .foregroundStyle(.secondary)
-                    LabeledContent("Email", value: founderEmail)
-                    Button {
-                        if let mail = URL(string: "mailto:\(founderEmail)?subject=Hi%20from%20Jojo") {
-                            openURL(mail)
-                        }
-                    } label: {
-                        Label("Write an email", systemImage: "envelope")
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.l) {
+                Text("Tell me what’s working, report a bug, or suggest something you’d like to see in Jojo.")
+                    .foregroundStyle(.secondary)
+                LabeledContent("Email", value: founderEmail)
+                Button {
+                    if let mail = URL(string: "mailto:\(founderEmail)?subject=Hi%20from%20Jojo") {
+                        openURL(mail)
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    Button {
-                        UIPasteboard.general.string = founderEmail
-                        copiedFounderEmail = true
-                    } label: {
-                        Label(copiedFounderEmail ? "Email copied" : "Copy email address",
-                              systemImage: copiedFounderEmail ? "checkmark" : "doc.on.doc")
-                    }
+                } label: {
+                    Label("Write an email", systemImage: "envelope")
                 }
-                .padding(Spacing.l)
-            }
-            .background(Color.canvas)
-            .navigationTitle("Contact the founder")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { showFounderContact = false }
+                .buttonStyle(PrimaryButtonStyle())
+                Button {
+                    UIPasteboard.general.string = founderEmail
+                    copiedFounderEmail = true
+                } label: {
+                    Label(copiedFounderEmail ? "Email copied" : "Copy email address",
+                          systemImage: copiedFounderEmail ? "checkmark" : "doc.on.doc")
                 }
             }
+            .padding(Spacing.l)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .background(Color.canvas)
+        .navigationTitle("Contact the founder")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     private var watchText: String {

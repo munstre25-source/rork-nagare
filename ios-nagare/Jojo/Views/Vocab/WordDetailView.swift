@@ -202,14 +202,13 @@ struct WordDetailView: View {
         .background(Color.canvas.ignoresSafeArea())
         .navigationTitle(word.surface)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
-            app.hidesMainTabBar = true
             reinforcing = app.clipsReinforcing(wordKey: word.key, excluding: word.contextClipId)
         }
         .onDisappear {
             app.save()
-            app.hidesMainTabBar = false
         }
         .fullScreenCover(item: $playing) { clip in
             ClipPlayerScreen(clip: clip, startLine: playingLine, loopLine: true)

@@ -5,6 +5,8 @@ import SwiftUI
 struct FeedbackBoardView: View {
     /// When set, the leading control returns to the previous screen instead of closing the sheet.
     var onBack: (() -> Void)? = nil
+    /// Profile pushes the board inside its existing stack so the native back breadcrumb remains visible.
+    var embeddedInNavigation: Bool = false
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -41,25 +43,37 @@ struct FeedbackBoardView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
-                    header
-                    OrangePillBar(items: BoardSort.allCases, selection: $sort, title: \.title)
-                    OrangePillBar(items: ["all", "bug", "feature", "general"], selection: $category, title: { $0.capitalized })
-                    content
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+        Group {
+            if embeddedInNavigation {
+                boardContent
+            } else {
+                NavigationStack { boardContent }
             }
-            .scrollIndicators(.hidden)
-            .scrollDismissesKeyboard(.immediately)
-            .background(Color.studyPage.ignoresSafeArea())
-            .navigationTitle("Feedback")
-            .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search requests")
-            .toolbar {
+        }
+    }
+
+    private var boardContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
+                header
+                OrangePillBar(items: BoardSort.allCases, selection: $sort, title: \.title)
+                OrangePillBar(items: ["all", "bug", "feature", "general"], selection: $category, title: { $0.capitalized })
+                content
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.immediately)
+        .background(Color.studyPage.ignoresSafeArea())
+        .navigationTitle("Feedback")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search requests")
+        .toolbar {
+            if !embeddedInNavigation {
                 ToolbarItem(placement: .cancellationAction) {
                     if let onBack {
                         Button("Back", action: onBack)
@@ -68,69 +82,69 @@ struct FeedbackBoardView: View {
                     }
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                Button("Give feedback") { showComposer = true }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.studyPage)
-            }
-            .navigationDestination(item: $selected) { post in
-                FeedbackPostScreen(post: post, onChange: { updated in
-                    if let index = posts.firstIndex(where: { $0.id == updated.id }) {
-                        posts[index] = updated
-                    }
-                }, onBlocked: {
-                    selected = nil
-                    Task { await reload() }
-                }, onBoardChanged: {
-                    Task { await reload() }
-                })
-            }
-            .sheet(isPresented: $showComposer) {
-                FeedbackComposer { post in
-                    posts.removeAll { $0.id == post.id }
-                    posts.insert(post, at: 0)
-                }
-            }
-            .confirmationDialog(
-                "Report this post?",
-                isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }),
-                titleVisibility: .visible,
-                presenting: reporting
-            ) { post in
-                ForEach(FeedbackReportReason.allCases) { reason in
-                    Button(reason.title) { Task { await report(post, reason: reason) } }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                Text("Reported posts are hidden for review once several people flag them.")
-            }
-            .confirmationDialog(
-                "Block this person?",
-                isPresented: Binding(get: { blocking != nil }, set: { if !$0 { blocking = nil } }),
-                titleVisibility: .visible,
-                presenting: blocking
-            ) { post in
-                Button("Block", role: .destructive) { Task { await block(post) } }
-                Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                Text("You won't see their posts or comments on the board anymore.")
-            }
-            .alert(reportNotice ?? "", isPresented: Binding(get: { reportNotice != nil }, set: { if !$0 { reportNotice = nil } })) {
-                Button("OK", role: .cancel) {}
-            }
-            .refreshable { await reload() }
-            .task(id: sort) { await reload() }
-            .task(id: search) {
-                // Debounce typing; the sort task already covers the first load.
-                guard !search.isEmpty || !posts.isEmpty || failed else { return }
-                try? await Task.sleep(for: .milliseconds(350))
-                guard !Task.isCancelled else { return }
-                await reload()
-            }
-            .onAppear { track("feedback_board_viewed") }
         }
+        .safeAreaInset(edge: .bottom) {
+            Button("Give feedback") { showComposer = true }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.studyPage)
+        }
+        .navigationDestination(item: $selected) { post in
+            FeedbackPostScreen(post: post, onChange: { updated in
+                if let index = posts.firstIndex(where: { $0.id == updated.id }) {
+                    posts[index] = updated
+                }
+            }, onBlocked: {
+                selected = nil
+                Task { await reload() }
+            }, onBoardChanged: {
+                Task { await reload() }
+            })
+        }
+        .sheet(isPresented: $showComposer) {
+            FeedbackComposer { post in
+                posts.removeAll { $0.id == post.id }
+                posts.insert(post, at: 0)
+            }
+        }
+        .confirmationDialog(
+            "Report this post?",
+            isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }),
+            titleVisibility: .visible,
+            presenting: reporting
+        ) { post in
+            ForEach(FeedbackReportReason.allCases) { reason in
+                Button(reason.title) { Task { await report(post, reason: reason) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Reported posts are hidden for review once several people flag them.")
+        }
+        .confirmationDialog(
+            "Block this person?",
+            isPresented: Binding(get: { blocking != nil }, set: { if !$0 { blocking = nil } }),
+            titleVisibility: .visible,
+            presenting: blocking
+        ) { post in
+            Button("Block", role: .destructive) { Task { await block(post) } }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("You won't see their posts or comments on the board anymore.")
+        }
+        .alert(reportNotice ?? "", isPresented: Binding(get: { reportNotice != nil }, set: { if !$0 { reportNotice = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+        .refreshable { await reload() }
+        .task(id: sort) { await reload() }
+        .task(id: search) {
+            // Debounce typing; the sort task already covers the first load.
+            guard !search.isEmpty || !posts.isEmpty || failed else { return }
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            await reload()
+        }
+        .onAppear { track("feedback_board_viewed") }
     }
 
     private var header: some View {

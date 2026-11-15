@@ -217,6 +217,7 @@ struct VocabView: View {
             }
             .scrollIndicators(.hidden)
             .background(Color.studyPage.ignoresSafeArea())
+            .navigationTitle("Vocab")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { key in
@@ -253,6 +254,11 @@ struct VocabView: View {
                 onNewDeck: { buildDeckAfterFilters = true }
             )
             .presentationDetents([.medium, .large])
+        }
+        .onAppear { app.hidesMainTabBar = !path.isEmpty }
+        .onDisappear { app.hidesMainTabBar = false }
+        .onChange(of: path.count) { _, depth in
+            app.hidesMainTabBar = depth > 0
         }
         .onAppear {
             openPendingWordIfNeeded()

@@ -10,43 +10,53 @@ struct LibraryView: View {
     @State private var playing: Clip?
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                picker
-                let clips = app.libraryClips(shelf: shelf)
-                if clips.isEmpty {
-                    emptyState
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: Spacing.m) {
-                            ForEach(clips) { clip in
-                                LibraryClipRow(clip: clip) {
-                                    playing = clip
-                                }
+        Group {
+            if presentedModally {
+                NavigationStack { libraryContent }
+            } else {
+                libraryContent
+            }
+        }
+        .fullScreenCover(item: $playing) { clip in
+            ClipPlayerScreen(clip: clip)
+        }
+    }
+
+    private var libraryContent: some View {
+        VStack(spacing: 0) {
+            picker
+            let clips = app.libraryClips(shelf: shelf)
+            if clips.isEmpty {
+                emptyState
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: Spacing.m) {
+                        ForEach(clips) { clip in
+                            LibraryClipRow(clip: clip) {
+                                playing = clip
                             }
                         }
-                        .padding(Spacing.l)
                     }
+                    .padding(Spacing.l)
                 }
             }
-            .background(Color.canvas.ignoresSafeArea())
-            .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                if presentedModally {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.body.weight(.semibold))
-                        }
-                        .accessibilityLabel("Close Library")
+        }
+        .background(Color.canvas.ignoresSafeArea())
+        .navigationTitle("Library")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+        .toolbar {
+            if presentedModally {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
+                    .accessibilityLabel("Close Library")
                 }
-            }
-            .fullScreenCover(item: $playing) { clip in
-                ClipPlayerScreen(clip: clip)
             }
         }
     }
@@ -95,7 +105,7 @@ struct LibraryView: View {
             Button {
                 Haptics.selection()
                 app.pendingDeepLink = .feed
-                if presentedModally { dismiss() }
+                dismiss()
             } label: {
                 Label("Find a clip", systemImage: "play.fill")
                     .font(.subheadline.weight(.bold))

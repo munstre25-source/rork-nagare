@@ -102,18 +102,25 @@ struct ExploreHomeView: View {
             }
             .scrollIndicators(.hidden)
             .background(Color.studyPage.ignoresSafeArea())
+            .navigationTitle("Explore")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: LearningPath.self) { path in
                 LearningPathScreen(path: path, featuredClips: featuredClips)
+                    .toolbar(.visible, for: .navigationBar)
+                    .toolbar(.hidden, for: .tabBar)
             }
             .navigationDestination(for: SearchRoute.self) { route in
                 SearchView(initialQuery: route.initialQuery,
                            initialScope: route.initialQuery.isEmpty ? .all : .sentences,
                            embedded: true)
+                    .toolbar(.visible, for: .navigationBar)
+                    .toolbar(.hidden, for: .tabBar)
             }
             .navigationDestination(for: TopicHub.self) { _ in
                 TopicStylesView()
+                    .toolbar(.visible, for: .navigationBar)
+                    .toolbar(.hidden, for: .tabBar)
             }
             .navigationDestination(for: ExploreBrowseRoute.self) { _ in
                 ExploreView(initialFilters: exploreFilters) { clip, line, list in
@@ -123,6 +130,8 @@ struct ExploreHomeView: View {
                 }
                 .navigationTitle("Explore Clips")
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbar(.visible, for: .navigationBar)
+                .toolbar(.hidden, for: .tabBar)
             }
             .sheet(isPresented: $showExploreFilters) {
                 ExploreFiltersSheet(
@@ -170,7 +179,14 @@ struct ExploreHomeView: View {
                     .environment(app)
             }
         }
-        .onAppear { reloadPlan() }
+        .onAppear {
+            reloadPlan()
+            app.hidesMainTabBar = path.count > 0
+        }
+        .onDisappear { app.hidesMainTabBar = false }
+        .onChange(of: path.count) { _, depth in
+            app.hidesMainTabBar = depth > 0
+        }
         .onChange(of: app.reviewAvailabilityRevision) { _, _ in reloadPlan() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { reloadPlan() }
