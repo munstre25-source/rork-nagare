@@ -91,16 +91,18 @@ nonisolated struct ShortsFeedGeometry {
     ) -> Self {
         let height = max(0, size.height)
         let footer = min(max(0, footerHeight), height)
-        guard captionsVisible, !focused else {
+        _ = captionsVisible // Visibility changes content, not normal-mode geometry.
+        guard !focused else {
             return Self(videoHeight: max(0, height - footer), karaokeHeight: 0, footerHeight: footer)
         }
 
-        // Match Kiku's lower reading well: retain enough room for complete subtitle rows,
-        // but begin it slightly lower than the old 36%-high panel. The footer is included
-        // in the lower-area budget, so adding the clock never steals space unexpectedly.
+        // Keep the normal reading well stable whether captions are visible or hidden. CC only
+        // changes subtitle visibility; the dedicated focus control is the sole size toggle.
+        // The slightly shorter well gives portrait video a little more room without crowding
+        // complete subtitle rows. The footer is included in this lower-area budget.
         let lowerArea = min(
-            max(footer + 200, height * 0.48, preferredCaptionHeight * 1.1),
-            height * 0.56
+            max(footer + 200, height * 0.45, preferredCaptionHeight),
+            height * 0.53
         )
         let karaoke = max(0, lowerArea - footer)
         return Self(
@@ -111,13 +113,13 @@ nonisolated struct ShortsFeedGeometry {
     }
 }
 
-/// A three-position reading window: previous sentence, timed sentence, upcoming sentence.
+/// A stable three-position reading window: previous, active, upcoming.
 nonisolated struct KaraokeReadingWindow {
     static let maxLines = 3
 
-    /// Indices into `clip.lines`, in ascending order. When the measured lines fit, keep the
-    /// previous sentence above the active sentence and the next one below it. That gives the
-    /// learner a stable three-sentence reading window instead of pinning the active line to top.
+    /// Always returns three slots. Out-of-range sentinel indices keep the active sentence in
+    /// the middle at the beginning and end of a clip. Measurements remain in the signature so
+    /// callers can share this geometry API, but sentence height never removes a slot.
     static func indices(
         current: Int,
         lineCount: Int,
@@ -128,47 +130,11 @@ nonisolated struct KaraokeReadingWindow {
     ) -> [Int] {
         guard lineCount > 0 else { return [] }
         let currentIndex = min(max(0, current), lineCount - 1)
-
-        func height(of index: Int) -> CGFloat? {
-            guard let value = heights[index], value.isFinite, value > 0 else { return nil }
-            return value
-        }
-
-        // Until the current line has been measured, mount it alone so the first frame is
-        // not a clipped bundle of unknown heights.
-        guard let currentHeight = height(of: currentIndex) else { return [currentIndex] }
-
-        func fits(_ indices: [Int]) -> Bool {
-            guard indices.count <= maxLines else { return false }
-            var total: CGFloat = CGFloat(max(0, indices.count - 1)) * spacing
-            var rows = 0
-            for index in indices {
-                let isBoundarySpacer = index < 0 || index >= lineCount
-                guard let lineHeight = height(of: index) ?? (isBoundarySpacer ? currentHeight : nil) else {
-                    return false
-                }
-                total += lineHeight
-                if let visualRows {
-                    guard let lineRows = visualRows[index] ?? (isBoundarySpacer ? 0 : nil) else { return false }
-                    rows += lineRows
-                }
-            }
-            return total <= viewportHeight + 0.5 && (visualRows == nil || rows <= maxLines)
-        }
-
-        let previous = currentIndex > 0 ? currentIndex - 1 : -1
-        let next = currentIndex + 1 < lineCount ? currentIndex + 1 : lineCount
-        if fits([previous, currentIndex, next]) {
-            return [previous, currentIndex, next]
-        }
-
-        // Keep the active sentence centered whenever either neighboring pair fits.
-        let previousPairFits = fits([previous, currentIndex])
-        let nextPairFits = fits([currentIndex, next])
-        if previousPairFits { return [previous, currentIndex, lineCount] }
-        if nextPairFits { return [-1, currentIndex, next] }
-
-        return [-1, currentIndex, lineCount]
+        _ = heights
+        _ = spacing
+        _ = viewportHeight
+        _ = visualRows
+        return [currentIndex - 1, currentIndex, currentIndex + 1]
     }
 }
 

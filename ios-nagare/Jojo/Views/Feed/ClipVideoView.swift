@@ -41,7 +41,7 @@ struct ClipVideoView: View {
             if embedFailed {
                 embedFailure
             }
-            if player?.isPlaying != true, !coordinator.isHoldSlowActive, !embedFailed {
+            if player?.playbackRequested != true, !coordinator.isHoldSlowActive, !embedFailed {
                 Image(systemName: "play.fill")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)

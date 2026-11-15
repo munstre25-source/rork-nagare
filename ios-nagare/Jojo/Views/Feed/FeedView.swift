@@ -411,6 +411,7 @@ struct FeedView: View {
         HStack(spacing: 0) {
             Button {
                 Haptics.selection()
+                GuidanceCenter.shared.noteOpenedLibrary()
                 showLibrary = true
             } label: {
                 Image(systemName: "books.vertical")
@@ -419,8 +420,10 @@ struct FeedView: View {
                     .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Library")
+            .coachTarget(.library, active: isActiveTab)
             Spacer(minLength: 0)
             CenteredModeSwitch(forYouSelected: true, onForYou: {}, onExplore: onOpenExplore)
+                .coachTarget(.exploreSwitch, active: isActiveTab)
             Spacer(minLength: 0)
             // Report lives in the clip's info sheet (the ⓘ under the video), so the corner
             // holds the one thing people look for up here: search.

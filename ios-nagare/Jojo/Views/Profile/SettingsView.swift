@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftData
 import StoreKit
+import CoreTransferable
+import UniformTypeIdentifiers
 
 /// Every app preference, grouped. Opened from the gear on Profile so Profile stays about progress.
 struct SettingsView: View {
@@ -175,12 +177,18 @@ struct LearningSettingsCard: View {
             .buttonStyle(.plain)
             .sheet(isPresented: $showKnownWordImport) { KnownWordImportSheet() }
             divider
-            ShareLink(item: exportCSV, preview: SharePreview("Jojo words.csv")) {
+            ShareLink(
+                item: VocabularyCSVExport(contents: exportCSV),
+                preview: SharePreview("Jojo words.csv")
+            ) {
                 rowLabel("square.and.arrow.up", "Export words (CSV)", value: "\(words.count)")
             }
             .disabled(words.isEmpty)
             divider
-            ShareLink(item: exportAnki, preview: SharePreview("Jojo words for Anki.txt")) {
+            ShareLink(
+                item: VocabularyAnkiExport(contents: exportAnki),
+                preview: SharePreview("Jojo words for Anki.txt")
+            ) {
                 rowLabel("rectangle.stack", "Export for Anki", value: "TSV")
             }
             .disabled(words.isEmpty)
@@ -300,6 +308,41 @@ struct LearningSettingsCard: View {
         }
         .joined(separator: "\n")
     }
+}
+
+private struct VocabularyCSVExport: Transferable {
+    let contents: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .commaSeparatedText) { export in
+            SentTransferredFile(try makeVocabularyExportFile(
+                contents: export.contents,
+                filename: "Jojo words.csv"
+            ))
+        }
+    }
+}
+
+private struct VocabularyAnkiExport: Transferable {
+    let contents: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .plainText) { export in
+            SentTransferredFile(try makeVocabularyExportFile(
+                contents: export.contents,
+                filename: "Jojo words for Anki.txt"
+            ))
+        }
+    }
+}
+
+private func makeVocabularyExportFile(contents: String, filename: String) throws -> URL {
+    let directory = FileManager.default.temporaryDirectory
+        .appending(path: "JojoVocabularyExports", directoryHint: .isDirectory)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let file = directory.appending(path: filename)
+    try contents.write(to: file, atomically: true, encoding: .utf8)
+    return file
 }
 
 private struct KnownWordImportSheet: View {

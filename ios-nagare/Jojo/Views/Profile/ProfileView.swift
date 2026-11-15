@@ -148,6 +148,7 @@ struct ProfileView: View {
             Spacer()
             Button {
                 Haptics.selection()
+                GuidanceCenter.shared.noteOpenedSettings()
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
@@ -159,6 +160,7 @@ struct ProfileView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Settings")
+            .coachTarget(.settings)
         }
     }
 
@@ -473,11 +475,31 @@ struct GlowLevelRow: View {
                 }
             }
             .padding(.leading, 28 + Spacing.m)
+            if app.profile.glow != .off {
+                Toggle(isOn: Binding(
+                    get: { app.profile.fullTextGlow },
+                    set: { app.setFullTextGlow($0) }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Full text glow")
+                            .font(.subheadline.weight(.semibold))
+                        Text(app.profile.fullTextGlow
+                             ? "Glow every visible subtitle and reading."
+                             : "Glow only the active or selected word.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .tint(Color.sakuraButton)
+                .padding(.leading, 28 + Spacing.m)
+                .accessibilityHint("Switches between full subtitle glow and active-word-only glow")
+            }
         }
         .padding(.horizontal, Spacing.l)
         .padding(.vertical, 12)
         .id("text-glow")
         .animation(.easeInOut(duration: 0.35), value: app.profile.glow)
+        .animation(.easeInOut(duration: 0.25), value: app.profile.fullTextGlow)
         .onAppear {
             withAnimation(.easeInOut(duration: 1.15).repeatForever(autoreverses: true)) {
                 breath = true

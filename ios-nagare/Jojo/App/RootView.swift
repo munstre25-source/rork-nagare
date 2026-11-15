@@ -119,11 +119,13 @@ struct MainTabView: View {
                 app.feedChromeHidden = false
             }
             if newTab == .vocab { guide.noteOpenedVocab() }
+            if newTab == .profile { guide.noteOpenedProfile() }
             syncGuideVisibility()
             if newTab != .feed, app.pendingDeepLink == nil { scheduleExperiencePrompt() }
         }
         .onChange(of: showingExplore) { _, exploring in
             if exploring { app.feedChromeHidden = false }
+            if exploring { guide.noteOpenedExplore() }
             syncGuideVisibility()
         }
         .onChange(of: anySheetUp) { _, _ in syncGuideVisibility() }
@@ -184,7 +186,11 @@ struct MainTabView: View {
                 tab = .vocab
                 app.clearDeepLink()
             }
-            if app.pendingDeepLink == .feed { tab = .feed }
+            if app.pendingDeepLink == .feed {
+                showingExplore = false
+                tab = .feed
+                app.clearDeepLink()
+            }
             // Counts opens only; the experience prompt shows at calm moments (see below).
             app.noteMainAppOpenAndShouldAskFeedback()
             syncGuideVisibility()
@@ -223,7 +229,12 @@ struct MainTabView: View {
     }
 
     private func syncGuideVisibility() {
-        guide.feedVisible = tab == .feed && !showingExplore
+        switch tab {
+        case .feed: guide.currentSurface = showingExplore ? .explore : .feed
+        case .vocab: guide.currentSurface = .vocab
+        case .profile: guide.currentSurface = .profile
+        case .library, .explore: guide.currentSurface = .feed
+        }
         guide.blockedByPresentation = anySheetUp
     }
 
@@ -394,5 +405,6 @@ struct JojoDock: View {
         .accessibilityValue(tab == .vocab && vocabBadge > 0 ? "\(vocabBadge) due" : "")
         .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
         .coachTarget(.vocabDock, active: tab == .vocab)
+        .coachTarget(.profileDock, active: tab == .profile)
     }
 }

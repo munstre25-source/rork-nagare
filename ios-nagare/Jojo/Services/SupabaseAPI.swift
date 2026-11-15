@@ -85,7 +85,9 @@ nonisolated struct SupabaseAPI: Sendable {
             "p_offset": 0,
         ])
         return rows.compactMap { row in
-            guard let clip = row.clip?.clip, !clip.lines.isEmpty else { return nil }
+            guard let clip = row.clip?.clip,
+                  clip.isStudyReady,
+                  clip.lines.indices.contains(row.lineIndex) else { return nil }
             return SearchHit(clip: clip, lineIndex: row.lineIndex)
         }
     }
@@ -98,7 +100,9 @@ nonisolated struct SupabaseAPI: Sendable {
             "p_offset": 0,
         ])
         return rows.compactMap { row in
-            guard let clip = row.clip?.clip, !clip.lines.isEmpty else { return nil }
+            guard let clip = row.clip?.clip,
+                  clip.isStudyReady,
+                  clip.lines.indices.contains(row.lineIndex) else { return nil }
             return SearchHit(clip: clip, lineIndex: row.lineIndex)
         }
     }
@@ -109,7 +113,7 @@ nonisolated struct SupabaseAPI: Sendable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let decoded = rows.compactMap { row -> (clip: Clip, json: Data)? in
-            guard let clip = row.value?.clip, !clip.lines.isEmpty,
+            guard let clip = row.value?.clip, clip.isStudyReady,
                   let json = try? encoder.encode(clip) else { return nil }
             return (clip, json)
         }
@@ -197,7 +201,7 @@ nonisolated struct ClipRow: Decodable, Sendable {
         let index = Int(stableHash % UInt32(palette.count))
         return Clip(
             id: id,
-            videoId: videoId ?? "PLACEHOLDER_remote",
+            videoId: videoId ?? "",
             title: title,
             channelName: channelName ?? "Jojo",
             channelAvatarColor: channelAvatarColor ?? "#8E5C9C",

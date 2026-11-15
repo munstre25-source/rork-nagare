@@ -90,6 +90,8 @@ final class UserProfile {
     var appearanceMode: String = JojoScheme.dark.rawValue
     /// `off`, `soft`, `glow`, or `liquid`. Controls the halo on karaoke and dictionary words.
     var glowLevel: String = GlowLevel.glow.rawValue
+    /// When false, only the active or selected karaoke word glows (the original behavior).
+    var fullTextGlow: Bool = true
     var subtitleMode: String = SubtitleMode.both.rawValue
     var showFurigana: Bool = true
     /// `on`, `unknownOnly`, or `off`. Empty on older profiles — derived from `showFurigana`.

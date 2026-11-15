@@ -109,7 +109,7 @@ struct CoachOverlay: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color.designOrange)
                     .textCase(.uppercase)
-                    .accessibilityLabel("Step \(step.rawValue + 1) of \(TourStep.allCases.count), \(step.eyebrow)")
+                    .accessibilityLabel("Step \(step.sequenceIndex + 1) of \(TourStep.allCases.count), \(step.eyebrow)")
                 Spacer(minLength: 8)
                 dots(current: step)
             }
@@ -175,7 +175,7 @@ struct CoachOverlay: View {
         HStack(spacing: 5) {
             ForEach(TourStep.allCases, id: \.rawValue) { step in
                 Capsule()
-                    .fill(step.rawValue <= current.rawValue ? Color.designOrange : Color.white.opacity(0.2))
+                    .fill(step.sequenceIndex <= current.sequenceIndex ? Color.designOrange : Color.white.opacity(0.2))
                     .frame(width: step == current ? 14 : 6, height: 6)
             }
         }

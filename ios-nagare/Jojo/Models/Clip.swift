@@ -173,7 +173,7 @@ nonisolated struct Line: Codable, Hashable, Sendable {
 /// A short video clip with its full transcript.
 nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
     var id: String
-    /// YouTube video ID. Seed clips use "PLACEHOLDER_…" until a real ID is swapped in.
+    /// YouTube video ID. Missing or invalid IDs never enter a learning surface.
     var videoId: String
     var title: String
     var channelName: String
@@ -226,6 +226,11 @@ nonisolated struct Clip: Codable, Hashable, Identifiable, Sendable {
 
     /// Local file or YouTube — anything that isn't the simulated poster.
     var hasPlayableVideo: Bool { hasLocalVideo || hasRealVideo }
+
+    /// A clip can enter a learning surface only when both halves of the lesson exist.
+    /// Keeping this invariant on the model prevents Feed, Explore, Search, and Library
+    /// from drifting into different ideas of what is usable.
+    var isStudyReady: Bool { hasPlayableVideo && !lines.isEmpty }
 
     static func bundledVideoURL(for clipId: String) -> URL? {
         bundledResourceURL(for: clipId, extension: "mp4")

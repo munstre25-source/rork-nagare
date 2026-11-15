@@ -373,7 +373,7 @@ enum LearningInk {
             amberLight: "#4A3828", amberDark: "#E5E5EA"
         )
     }
-    /// Glow behind spoken / selected words only.
+    /// Accent halo used by karaoke, readings, translations, and dictionary text.
     static var glow: Color { JojoPalette.color(
         sakuraLight: "#FF4D8D", sakuraDark: "#FF4FA3",
         amberLight: "#FF7A00", amberDark: "#FFB020"

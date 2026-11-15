@@ -11,6 +11,31 @@ import SwiftData
 @MainActor
 struct JojoTests {
 
+    @Test func glowScopeDefaultsToFullTextAndCanUseClassicScope() {
+        let profile = UserProfile()
+        #expect(profile.fullTextGlow)
+        profile.fullTextGlow = false
+        #expect(!profile.fullTextGlow)
+    }
+
+    @Test func guidedTourCoversTheLearningLoopAndMainDestinations() {
+        // Raw value 5 shipped as Return Tomorrow; keep it decodable while inserting new steps.
+        #expect(TourStep(rawValue: 5) == .returnTomorrow)
+        #expect(TourStep.allCases == [
+            .discover, .watch, .understand, .learn, .practice,
+            .explore, .library, .profile, .settings, .returnTomorrow,
+        ])
+
+        var state = GuidanceState()
+        state.start()
+        var visited = [state.step]
+        while !state.isTourFinished {
+            state.advance()
+            if !state.isTourFinished { visited.append(state.step) }
+        }
+        #expect(visited == TourStep.allCases)
+    }
+
     @Test func savedWordKeyJoinsSurfaceAndReading() {
         #expect(SavedWord.makeKey(surface: "食べる", reading: "たべる") == "食べる|たべる")
         #expect(SavedWord.makeKey(surface: "は", reading: "") == "は|")
@@ -392,12 +417,12 @@ struct JojoTests {
         #expect(hidden.videoHeight > shown.videoHeight)
     }
 
-    @Test func landscapeKaraokeCountsWrappedRowsBeforeAddingAnotherSentence() {
+    @Test func landscapeKaraokeKeepsPreviousActiveAndUpcomingSlotsDespiteWrapping() {
         let heights: [Int: CGFloat] = [0: 80, 1: 40, 2: 40]
         let window = KaraokeReadingWindow.indices(current: 0, lineCount: 3, heights: heights,
                                                    spacing: 8, viewportHeight: 300,
                                                    visualRows: [0: 2, 1: 1, 2: 1])
-        #expect(window == [0, 1])
+        #expect(window == [-1, 0, 1])
     }
 
     @Test func landscapeTheaterFitsVideoWordsAndRevealedControlsInsideTheSafeViewport() {
@@ -462,8 +487,20 @@ struct JojoTests {
             )
             #expect(layout.videoHeight > 0)
             #expect(layout.karaokeHeight >= 160)
+            #expect(layout.videoHeight > layout.karaokeHeight)
+            #expect(layout.karaokeHeight <= size.height * 0.45)
             #expect(layout.footerHeight > 0)
             #expect(abs(layout.videoHeight + layout.karaokeHeight + layout.footerHeight - size.height) < 0.01)
+
+            let hidden = ShortsFeedGeometry.make(
+                in: size,
+                preferredCaptionHeight: 320,
+                captionsVisible: false,
+                focused: false
+            )
+            #expect(hidden.videoHeight == layout.videoHeight)
+            #expect(hidden.karaokeHeight == layout.karaokeHeight)
+            #expect(hidden.footerHeight == layout.footerHeight)
 
             let focused = ShortsFeedGeometry.make(
                 in: size,
@@ -505,43 +542,63 @@ struct JojoTests {
         }
     }
 
-    @Test func karaokeReadingWindowKeepsAtMostThreeCompleteLines() {
+    @Test func karaokeReadingWindowAlwaysKeepsThreeStableSlots() {
         let heights: [Int: CGFloat] = [0: 80, 1: 90, 2: 85, 3: 100]
         let three = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
                                                  spacing: 12, viewportHeight: 320)
-        #expect(three == [1, 2, 3])
-        #expect(three.count <= 3)
+        #expect(three == [0, 1, 2])
+        #expect(three.count == 3)
         #expect(three.contains(1))
 
-        // 90 + 12 + 85 = 187 > 180, so next is dropped; previous would also overflow.
+        // Tight and unmeasured viewports keep the same slots; text movement handles overflow.
         let short = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
                                                  spacing: 12, viewportHeight: 180)
-        #expect(short == [1])
+        #expect(short == [0, 1, 2])
 
         let tight = KaraokeReadingWindow.indices(current: 1, lineCount: 4, heights: heights,
                                                  spacing: 12, viewportHeight: 95)
-        #expect(tight == [1])
+        #expect(tight == [0, 1, 2])
 
         let unknown = KaraokeReadingWindow.indices(current: 2, lineCount: 4, heights: [:],
                                                    spacing: 12, viewportHeight: 320)
-        #expect(unknown == [2])
+        #expect(unknown == [1, 2, 3])
 
         let tallCurrent = KaraokeReadingWindow.indices(
             current: 0, lineCount: 2, heights: [0: 400, 1: 80],
             spacing: 12, viewportHeight: 320
         )
-        #expect(tallCurrent == [0])
+        #expect(tallCurrent == [-1, 0, 1])
     }
 
-    @Test func karaokeReadingWindowKeepsCurrentLineFirst() {
+    @Test func karaokeReadingWindowKeepsCurrentLineInTheMiddle() {
         let heights: [Int: CGFloat] = [0: 120, 1: 120, 2: 120]
         let mid = KaraokeReadingWindow.indices(current: 1, lineCount: 3, heights: heights,
                                                spacing: 10, viewportHeight: 400)
-        #expect(mid == [1, 2])
-        #expect(mid.first == 1)
+        #expect(mid == [0, 1, 2])
+        #expect(mid[1] == 1)
         let last = KaraokeReadingWindow.indices(current: 2, lineCount: 3, heights: heights,
                                                 spacing: 10, viewportHeight: 400)
-        #expect(last == [2])
+        #expect(last == [1, 2, 3])
+        #expect(last[1] == 2)
+    }
+
+    @Test func playbackTapUsesRequestedStateWhileVideoIsBuffering() throws {
+        let clip = try #require(ContentLibrary.loadSeedClips().first)
+        let player = BufferingIntentPlayer(clip: clip)
+
+        player.togglePlay()
+        #expect(player.playbackRequested)
+        #expect(!player.isPlaying)
+
+        // A second tap means pause even though decoded frames have not started yet.
+        player.togglePlay()
+        #expect(!player.playbackRequested)
+        #expect(player.pauseCount == 1)
+
+        player.currentTime = player.duration
+        player.togglePlay()
+        #expect(player.currentTime == 0)
+        #expect(player.playbackRequested)
     }
 
     @Test func feedPageReanchorWaitsPastChromeAnimation() {
@@ -737,6 +794,30 @@ struct JojoTests {
         #expect(try JSONDecoder().decode(Clip.self, from: persisted).lines == clip.lines)
     }
 
+    @Test func publishedCatalogDropsTranscriptOnlyRows() throws {
+        let clip = try #require(ContentLibrary.loadSeedClips().first)
+        let lines = try JSONSerialization.jsonObject(with: JSONEncoder().encode(clip.lines))
+        let playable: [String: Any] = [
+            "id": clip.id,
+            "title": clip.title,
+            "video_id": clip.videoId,
+            "duration_sec": clip.durationSec,
+            "lines": lines,
+        ]
+        var transcriptOnly = playable
+        transcriptOnly["id"] = "transcript-without-video"
+        transcriptOnly.removeValue(forKey: "video_id")
+
+        let page = try SupabaseAPI.decodePublishedPage(
+            JSONSerialization.data(withJSONObject: [playable, transcriptOnly])
+        )
+        #expect(page.rowCount == 2)
+        #expect(page.clips.map(\.clip.id) == [clip.id])
+        #expect(throws: SupabaseError.self) {
+            try SupabaseAPI.decodePublishedPage(JSONSerialization.data(withJSONObject: [transcriptOnly]))
+        }
+    }
+
     @Test func invalidPublishedPagesCannotRetireTheCachedCatalog() throws {
         let empty = try SupabaseAPI.decodePublishedPage(Data("[]".utf8))
         #expect(empty.rowCount == 0)
@@ -766,6 +847,36 @@ struct JojoTests {
         word.dueAt = due
         word.occurrenceCount = seen
         return word
+    }
+
+    private final class BufferingIntentPlayer: ClipPlayer {
+        let clip: Clip
+        var currentTime: Double = 0
+        var isPlaying = false
+        var playbackRequested = false
+        var rate: Double = 1
+        var isMuted = false
+        var loopRange: ClosedRange<Double>?
+        var onFinished: (() -> Void)?
+        var onWatchTick: ((Double) -> Void)?
+        var spokenLine = 0
+        var spokenToken: Int?
+        var pauseCount = 0
+        var duration: Double { clip.durationSec }
+
+        init(clip: Clip) { self.clip = clip }
+
+        func play() { playbackRequested = true }
+        func pause() {
+            playbackRequested = false
+            isPlaying = false
+            pauseCount += 1
+        }
+        func seek(to time: Double) { currentTime = time }
+        func setRate(_ rate: Double) { self.rate = rate }
+        func setMuted(_ muted: Bool) { isMuted = muted }
+        func setLoop(_ range: ClosedRange<Double>?) { loopRange = range }
+        func teardown() {}
     }
 
     private func makeApp() throws -> AppModel {

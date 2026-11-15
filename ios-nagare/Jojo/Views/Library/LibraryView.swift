@@ -92,6 +92,19 @@ struct LibraryView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+            Button {
+                Haptics.selection()
+                app.pendingDeepLink = .feed
+                if presentedModally { dismiss() }
+            } label: {
+                Label("Find a clip", systemImage: "play.fill")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 22)
+                    .frame(minHeight: 46)
+                    .background(Color.sakuraButton, in: Capsule())
+            }
+            .buttonStyle(ChunkyPressStyle())
             Spacer()
         }
         .frame(maxWidth: .infinity)

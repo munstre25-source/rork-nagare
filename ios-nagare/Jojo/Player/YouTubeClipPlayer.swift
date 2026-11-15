@@ -93,6 +93,7 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
 
     var duration: Double { clip.durationSec }
     private var sourceStart: Double { clip.sourceStartSec ?? 0 }
+    var playbackRequested: Bool { wantsPlay }
 
     init(clip: Clip, autoplaysOnLoad: Bool = true) {
         self.clip = clip
@@ -559,8 +560,14 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
             // 0 ended, 1 playing, 2 paused, 3 buffering.
             if value == 0, !didFinish { finish() }
             if value == 1 {
-                isPlaying = true
-                if !isMuted { runCommand("unMute") }
+                // A late "playing" event can arrive after the learner tapped pause. Honor
+                // intent instead of resurrecting playback and making the next tap pause again.
+                isPlaying = wantsPlay
+                if wantsPlay {
+                    if !isMuted { runCommand("unMute") }
+                } else {
+                    runCommand("pauseVideo")
+                }
             } else if value == 2 || value == 3 {
                 isPlaying = false
             }

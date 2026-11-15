@@ -590,7 +590,9 @@ struct ClipStageView: View {
         let player = coordinator.player(for: clip)
         let focus = videoExpanded
         let captionsOn = showsShortsCaptions
-        let karaokeBelow = captionsOn && !focus
+        // Normal portrait playback always keeps its reading well. Hiding captions must not
+        // double as the focus/maximize action; only the dedicated size button changes that.
+        let karaokeBelow = !focus
         let layout = ShortsFeedGeometry.make(
             in: size,
             preferredCaptionHeight: karaokeReadingHeight,
@@ -672,14 +674,21 @@ struct ClipStageView: View {
                     .frame(width: size.width, height: layout.footerHeight)
                     .accessibilityHidden(railHidden)
 
-                transcript(player: player, showsLearningControls: false, showsLineTools: false)
-                    .coachTarget(.transcript, active: isCoachPage)
-                    .modifier(TranscriptTopReader(top: $transcriptTop))
-                    .padding(.horizontal, 14)
-                    .padding(.top, 14)
-                    .frame(width: size.width, height: layout.karaokeHeight, alignment: .top)
-                    .background(Color.karaokePaper)
-                    .clipped()
+                Group {
+                    if captionsOn {
+                        transcript(player: player, showsLearningControls: false, showsLineTools: false)
+                            .coachTarget(.transcript, active: isCoachPage)
+                            .modifier(TranscriptTopReader(top: $transcriptTop))
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+                    } else {
+                        SubtitlesOffPill()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+                .frame(width: size.width, height: layout.karaokeHeight, alignment: .top)
+                .background(Color.karaokePaper)
+                .clipped()
             }
 
             if !karaokeBelow {
@@ -954,8 +963,8 @@ private struct TheaterPlaybackControls: View {
             ? AnyLayout(VStackLayout(spacing: 4))
             : AnyLayout(HStackLayout(spacing: 4))
         return layout {
-            control(player?.isPlaying == true ? "pause.fill" : "play.fill",
-                    label: player?.isPlaying == true ? "Pause" : "Play") {
+            control(player?.playbackRequested == true ? "pause.fill" : "play.fill",
+                    label: player?.playbackRequested == true ? "Pause" : "Play") {
                 if player == nil { coordinator.activate(clip) }
                 else { player?.togglePlay() }
             }
@@ -986,7 +995,20 @@ private struct TheaterPlaybackControls: View {
                 }
             }
 
-            TranscriptDisplayMenu(compact: true, onPresentationChange: onPresentationChange)
+            Button {
+                Haptics.selection()
+                withAnimation(.snappy) { showsCaptions.toggle() }
+            } label: {
+                Image(systemName: showsCaptions ? "captions.bubble.fill" : "captions.bubble")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(showsCaptions ? Color.designOrange : Color.primary)
+                    .contentTransition(.symbolEffect(.replace))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(showsCaptions ? "Hide subtitles" : "Show subtitles")
+            .accessibilityValue(showsCaptions ? "On" : "Off")
 
             ShareLink(item: shareText) {
                 Image(systemName: "square.and.arrow.up")
@@ -1214,14 +1236,14 @@ struct ClipActionRow: View {
                     if player == nil { coordinator.activate(clip) }
                     else { player?.togglePlay() }
                 } label: {
-                    Image(systemName: player?.isPlaying == true ? "pause.fill" : "play.fill")
+                    Image(systemName: player?.playbackRequested == true ? "pause.fill" : "play.fill")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.primary)
                         .frame(width: 28, height: 28)
                         .background(Color.fieldFill, in: Circle())
                         .frame(width: 30, height: 44)
                 }
-                .accessibilityLabel(player?.isPlaying == true ? "Pause" : "Play")
+                .accessibilityLabel(player?.playbackRequested == true ? "Pause" : "Play")
 
                 SubtitlesToggleButton(tint: .secondary, activeTint: .sakuraPink)
 

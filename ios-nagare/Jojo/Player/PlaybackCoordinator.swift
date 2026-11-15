@@ -168,7 +168,7 @@ final class PlaybackCoordinator {
         if let line = player.clip.lines[safe: player.currentLineIndex] {
             player.setLoop(max(0, line.start - 0.3)...min(player.duration, line.end + 0.5))
         }
-        if !player.isPlaying { player.play() }
+        if !player.playbackRequested { player.play() }
     }
 
     func endHoldSlow() {
@@ -186,7 +186,7 @@ final class PlaybackCoordinator {
     /// Pauses for the word popup, remembering whether to resume.
     func pauseForPopup() {
         guard let player else { return }
-        resumeAfterPopup = player.isPlaying
+        resumeAfterPopup = player.playbackRequested
         player.pause()
     }
 

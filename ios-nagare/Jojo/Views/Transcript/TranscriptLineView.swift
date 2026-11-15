@@ -26,6 +26,8 @@ struct TranscriptLineView: View {
     var karaokeTime: Double? = nil
     var lightPaper: Bool = false
     var measuresKaraokeRows = false
+    /// Stable feed window: keep each sentence on one horizontal rail and move its words.
+    var singleLineKaraoke = false
 
     @Environment(AppModel.self) private var app
     @Environment(WordLookupController.self) private var lookup
@@ -95,40 +97,43 @@ struct TranscriptLineView: View {
             HStack(alignment: .top, spacing: 2) {
             VStack(alignment: .leading, spacing: forceDenseAids ? Spacing.s : Spacing.m) {
                 if display.japanese {
-                    // Feed: wider word gaps so furigana/romaji stay tied to their surface.
-                    FlowLayout(spacing: forceDenseAids ? 6 : 4, lineSpacing: forceDenseAids ? 14 : 12) {
-                        ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
-                            KaraokeTokenCell(
-                                token: token,
-                                state: state(for: index),
-                                isLookedUp: app.isLookedUp(token),
-                                familiarity: app.wordState(for: token),
-                                highlight: highlightSurface.map { matches(token, $0) } ?? false,
-                                pulse: isPulsing && pulseTokenIndex == index,
-                                tooltip: pulseTokenIndex == index ? tooltip : nil,
-                                showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
-                                showRomaji: display.romaji,
-                                tapEnabled: display.tapWords,
-                                forceWordTaps: display.tapWords,
-                                minimalStyling: display.minimalJapanese,
-                                stablePlaybackHighlight: respectsProfileDisplay,
-                                lightPaper: lightPaper,
-                                playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
-                                gloss: showsInlineGloss ? inlineGloss(for: token, index: index) : nil,
-                                anchor: KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index),
-                                measuresRowFrames: measuresKaraokeRows,
-                                rowLineIndex: lineIndex,
-                                tracksWordFrame: respectsProfileDisplay && spokenTokenIndex == index,
-                                anchorClipID: clip.id,
-                                onTap: {
-                                    withAnimation(Motion.popupSpring) {
-                                        lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
+                    if singleLineKaraoke {
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(alignment: .bottom, spacing: forceDenseAids ? 6 : 4) {
+                                    ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
+                                        karaokeTokenCell(token, index: index, wordTiming: wordTiming)
+                                            .id(index)
                                     }
                                 }
-                            )
+                                .padding(.horizontal, 2)
+                                .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .scrollDisabled(true)
+                            .onChange(of: spokenTokenIndex) { _, tokenIndex in
+                                guard let tokenIndex else { return }
+                                if respectsProfileDisplay {
+                                    withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.24)) {
+                                        proxy.scrollTo(tokenIndex, anchor: .center)
+                                    }
+                                } else {
+                                    proxy.scrollTo(tokenIndex, anchor: .center)
+                                }
+                            }
+                            .onAppear {
+                                if let spokenTokenIndex { proxy.scrollTo(spokenTokenIndex, anchor: .center) }
+                            }
                         }
+                        .coordinateSpace(name: KaraokeRowsSpace(index: lineIndex))
+                    } else {
+                        // Non-feed transcripts can still wrap naturally for reading and lookup.
+                        FlowLayout(spacing: forceDenseAids ? 6 : 4, lineSpacing: forceDenseAids ? 14 : 12) {
+                            ForEach(Array(line.tokens.enumerated()), id: \.offset) { index, token in
+                                karaokeTokenCell(token, index: index, wordTiming: wordTiming)
+                            }
+                        }
+                        .coordinateSpace(name: KaraokeRowsSpace(index: lineIndex))
                     }
-                    .coordinateSpace(name: KaraokeRowsSpace(index: lineIndex))
                 }
                 if showsTranslation && !line.translation.isEmpty && display.english != .hidden {
                     if display.english == .shown || translationRevealed {
@@ -138,8 +143,13 @@ struct TranscriptLineView: View {
                             .foregroundStyle((lightPaper ? Color(hex: "#454545") : LearningInk.english(onPicture: onPicture)).opacity(onPicture ? 0.92 : 1))
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(singleLineKaraoke ? 1 : nil)
                             .fixedSize(horizontal: false, vertical: true)
                             .shadow(color: onPicture ? .black.opacity(0.5) : .clear, radius: 2, y: 1)
+                            .textGlow(
+                                onPicture ? Color.white : LearningInk.glow,
+                                level: app.profile.fullTextGlow ? app.profile.glow : .off
+                            )
                     }
                     if display.english == .onTap {
                         Button {
@@ -270,6 +280,37 @@ struct TranscriptLineView: View {
         return .normal
     }
 
+    private func karaokeTokenCell(_ token: Token, index: Int, wordTiming: Bool) -> some View {
+        KaraokeTokenCell(
+            token: token,
+            state: state(for: index),
+            isLookedUp: app.isLookedUp(token),
+            familiarity: app.wordState(for: token),
+            highlight: highlightSurface.map { matches(token, $0) } ?? false,
+            pulse: isPulsing && pulseTokenIndex == index,
+            tooltip: pulseTokenIndex == index ? tooltip : nil,
+            showFurigana: display.furiganaMode.shows(for: app.wordState(for: token)),
+            showRomaji: display.romaji,
+            tapEnabled: display.tapWords,
+            forceWordTaps: display.tapWords,
+            minimalStyling: display.minimalJapanese,
+            stablePlaybackHighlight: respectsProfileDisplay,
+            lightPaper: lightPaper,
+            playbackCompleted: wordTiming && token.end <= (karaokeTime ?? 0),
+            gloss: showsInlineGloss ? inlineGloss(for: token, index: index) : nil,
+            anchor: KaraokeWordAnchor(clipID: clip.id, lineIndex: lineIndex, tokenIndex: index),
+            measuresRowFrames: measuresKaraokeRows,
+            rowLineIndex: lineIndex,
+            tracksWordFrame: !singleLineKaraoke && respectsProfileDisplay && spokenTokenIndex == index,
+            anchorClipID: clip.id,
+            onTap: {
+                withAnimation(Motion.popupSpring) {
+                    lookup.select(token: token, tokenIndex: index, lineIndex: lineIndex, clip: clip, app: app)
+                }
+            }
+        )
+    }
+
     private func matches(_ token: Token, _ query: String) -> Bool {
         SearchMatcher.tokenMatches(token, query: query)
     }
@@ -338,6 +379,9 @@ private struct KaraokeTokenCell: View {
     let anchorClipID: String
     let onTap: () -> Void
 
+    @Environment(AppModel.self) private var app
+    @Environment(\.karaokeOnPicture) private var onPicture
+
     var body: some View {
         VStack(spacing: 1) {
             TokenView(
@@ -362,6 +406,10 @@ private struct KaraokeTokenCell: View {
                 Text(gloss)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(LearningInk.english)
+                    .textGlow(
+                        onPicture ? Color.white : LearningInk.glow,
+                        level: app.profile.fullTextGlow ? app.profile.glow : .off
+                    )
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .frame(maxWidth: 120)

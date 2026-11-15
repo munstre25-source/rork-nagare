@@ -6,14 +6,44 @@ nonisolated enum CoachAnchor: String, Sendable, CaseIterable {
     case transcript
     case popupCard
     case popupSpeaker
+    case exploreSwitch
+    case library
     case vocabDock
+    case profileDock
+    case settings
     case vocabReview
     case exploreImport
 }
 
-/// The guided first session: Discover → Watch → Understand → Learn → Practice → Return.
+nonisolated enum CoachSurface: Equatable, Sendable {
+    case feed, explore, vocab, profile
+}
+
+/// The guided first session: the core learning loop, then the app map learners need afterward.
 nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
-    case discover, watch, understand, learn, practice, returnTomorrow
+    // Keep the original raw values stable for tours persisted by older builds.
+    case discover = 0, watch = 1, understand = 2, learn = 3, practice = 4, returnTomorrow = 5
+    case explore = 6, library = 7, profile = 8, settings = 9
+
+    static let allCases: [TourStep] = [
+        .discover, .watch, .understand, .learn, .practice,
+        .explore, .library, .profile, .settings, .returnTomorrow,
+    ]
+
+    var sequenceIndex: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
+    var next: TourStep? {
+        let index = sequenceIndex + 1
+        return Self.allCases.indices.contains(index) ? Self.allCases[index] : nil
+    }
+
+    var requiredSurface: CoachSurface? {
+        switch self {
+        case .settings: .profile
+        case .returnTomorrow: nil
+        default: .feed
+        }
+    }
 
     var anchor: CoachAnchor {
         switch self {
@@ -21,6 +51,10 @@ nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
         case .watch, .understand: .transcript
         case .learn: .popupCard
         case .practice: .popupSpeaker
+        case .explore: .exploreSwitch
+        case .library: .library
+        case .profile: .profileDock
+        case .settings: .settings
         case .returnTomorrow: .vocabDock
         }
     }
@@ -32,6 +66,10 @@ nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
         case .understand: "Understand"
         case .learn: "Learn"
         case .practice: "Practice"
+        case .explore: "Explore"
+        case .library: "Library"
+        case .profile: "Progress"
+        case .settings: "Make it yours"
         case .returnTomorrow: "Come back"
         }
     }
@@ -43,6 +81,10 @@ nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
         case .understand: "Tap a word you don't know"
         case .learn: "It's saved as a flashcard"
         case .practice: "Hear it, then say it"
+        case .explore: "Choose what you want to learn"
+        case .library: "Keep the clips you care about"
+        case .profile: "See your progress grow"
+        case .settings: "Tune Jojo to how you learn"
         case .returnTomorrow: "Your words wait here"
         }
     }
@@ -54,6 +96,10 @@ nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
         case .understand: "Any word in the lines works. Jojo explains it right away."
         case .learn: "No save button needed. Jojo keeps the word and the sentence you found it in."
         case .practice: "Tap the speaker, then say the word out loud."
+        case .explore: "Switch to Explore for search, grammar, speaking scenes, JLPT paths, and your own videos."
+        case .library: "Watched, liked, saved, and Watch Later clips all live behind this button."
+        case .profile: "Open Profile for your streak, activity, achievements, mastery, and learning history."
+        case .settings: "The gear holds subtitles, glow, playback, reminders, exports, goals, and account controls."
         case .returnTomorrow: "Open Vocab for a quick review tomorrow. A few minutes a day is plenty."
         }
     }
@@ -63,13 +109,15 @@ nonisolated enum TourStep: Int, CaseIterable, Sendable, Codable {
         switch self {
         case .understand: "Tip: pause the clip if it's too fast, then tap any word in the lines."
         case .practice: "The speaker is the small button on the word card."
+        case .profile: "Tap Profile in the bottom bar. You can use Next if you want to stay here."
+        case .settings: "Tap the gear in the top-right. You can use Next to finish without opening it."
         default: nil
         }
     }
 
     /// The step that waits for the learner to tap a word shows no Next button at first
     /// (the next steps need the word card). Skip is always available.
-    var waitsForAction: Bool { self == .understand }
+    var waitsForAction: Bool { self == .understand || self == .profile || self == .settings }
 
     var primaryLabel: String { self == .returnTomorrow ? "Got it" : "Next" }
 }
@@ -118,7 +166,7 @@ nonisolated struct GuidanceState: Codable, Equatable, Sendable {
     /// Moves forward one step; finishing the last step completes the tour.
     mutating func advance() {
         guard tour == .active else { return }
-        if let next = TourStep(rawValue: step.rawValue + 1) {
+        if let next = step.next {
             step = next
         } else {
             tour = .completed
@@ -127,7 +175,7 @@ nonisolated struct GuidanceState: Codable, Equatable, Sendable {
 
     /// Moves forward to `target` if it is ahead of the current step (never backwards).
     mutating func jump(to target: TourStep) {
-        guard tour == .active, target.rawValue > step.rawValue else { return }
+        guard tour == .active, target.sequenceIndex > step.sequenceIndex else { return }
         step = target
     }
 
@@ -157,8 +205,8 @@ final class GuidanceCenter {
     static let watchSecondsToAdvance: Double = 5
 
     private(set) var state: GuidanceState
-    /// Set by the main tabs: the tour only shows on the For You feed.
-    var feedVisible = false
+    /// Set by the main tabs so a step only appears where its real control is visible.
+    var currentSurface: CoachSurface = .feed
     /// Set by the main tabs while one of their own sheets is up.
     var blockedByPresentation = false
     private(set) var activeTip: CoachTip?
@@ -189,7 +237,10 @@ final class GuidanceCenter {
 
     /// The step to draw right now (nil while hidden behind another surface).
     var visibleTourStep: TourStep? {
-        guard let step = tourStep, feedVisible, !blockedByPresentation, !SpeechPractice.isListening else { return nil }
+        guard let step = tourStep,
+              step.requiredSurface == nil || step.requiredSurface == currentSurface,
+              !blockedByPresentation,
+              !SpeechPractice.isListening else { return nil }
         return step
     }
 
@@ -234,13 +285,13 @@ final class GuidanceCenter {
         switch event {
         case "word_tapped":
             // Tapping a word early (during Discover/Watch) counts too.
-            if let step = tourStep, step.rawValue <= TourStep.understand.rawValue {
+            if let step = tourStep, step.sequenceIndex <= TourStep.understand.sequenceIndex {
                 state.jump(to: .learn)
                 afterAdvance()
             }
         case "word_heard":
             if let step = tourStep, step == .learn || step == .practice {
-                state.jump(to: .returnTomorrow)
+                state.jump(to: .explore)
                 afterAdvance()
             }
         default:
@@ -262,6 +313,17 @@ final class GuidanceCenter {
     func noteOpenedVocab() {
         guard tourStep == .returnTomorrow else { return }
         state.advance(from: .returnTomorrow)
+        afterAdvance()
+    }
+
+    func noteOpenedExplore() { advanceTour(from: .explore) }
+    func noteOpenedLibrary() { advanceTour(from: .library) }
+    func noteOpenedProfile() { advanceTour(from: .profile) }
+    func noteOpenedSettings() { advanceTour(from: .settings) }
+
+    private func advanceTour(from step: TourStep) {
+        guard tourStep == step else { return }
+        state.advance(from: step)
         afterAdvance()
     }
 

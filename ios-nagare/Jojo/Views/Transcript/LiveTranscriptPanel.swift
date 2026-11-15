@@ -87,7 +87,7 @@ struct LiveTranscriptPanel: View {
         .environment(\.karaokeOnPicture, onPicture)
     }
 
-    /// Landscape budgets actual wrapped rows. An oversized sentence gets its own scroll viewport.
+    /// Feed karaoke keeps three persistent slots. The active sentence is always the middle row.
     private var feedTranscript: some View {
         GeometryReader { viewport in
             let spacing = Spacing.m
@@ -100,32 +100,8 @@ struct LiveTranscriptPanel: View {
                 viewportHeight: availableHeight,
                 visualRows: landscapeReadingWindow ? rowMetrics.mapValues(\.count) : nil
             )
-            let visibleSentenceIndices = window.filter { clip.lines.indices.contains($0) }
-            let currentAlone = visibleSentenceIndices == [clampedCurrentLine]
-            let currentHeight = measuredHeights[clampedCurrentLine] ?? 0
-            let metrics = landscapeReadingWindow ? rowMetrics[clampedCurrentLine] : nil
-            let exceedsRows = (metrics?.count ?? 0) > KaraokeReadingWindow.maxLines
-            let needsWordScroll = currentAlone && (exceedsRows || currentHeight > availableHeight + 0.5)
-            let windowHeight = window.reduce(CGFloat.zero) { $0 + (measuredHeights[$1] ?? 0) }
-                + CGFloat(max(0, window.count - 1)) * spacing
-            let scrollHeight: CGFloat = {
-                if exceedsRows {
-                    return min(viewport.size.height, (metrics?.threeRowHeight ?? availableHeight) + topPad)
-                }
-                guard landscapeReadingWindow, currentHeight > 0 else { return viewport.size.height }
-                return min(viewport.size.height, windowHeight + topPad + Spacing.s)
-            }()
-
-            Group {
-                if needsWordScroll {
-                    scrollingCurrentLine(in: CGSize(width: viewport.size.width, height: scrollHeight))
-                        .frame(height: scrollHeight)
-                } else {
-                    staticWindow(window, spacing: spacing)
-                }
-            }
-            .animation(reduceMotion ? nil : .smooth(duration: 0.34), value: window)
-            // Top-anchored everywhere: the current line keeps one fixed position.
+            staticWindow(window, spacing: spacing)
+            // Three equal slots keep the timed sentence fixed in the middle.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             // Let the last karaoke line dissolve into the dock / video scrim instead of
             // ending at a hard clipped edge. The panel background remains fully painted.
@@ -136,24 +112,11 @@ struct LiveTranscriptPanel: View {
                     endPoint: .bottom
                 )
             }
-            .onPreferenceChange(KaraokeLineHeightPreference.self) { heights in
-                guard !heights.isEmpty else { return }
-                var next = measuredHeights
-                for (index, height) in heights where abs((next[index] ?? 0) - height) > 0.5 {
-                    next[index] = height
-                }
-                if next != measuredHeights { measuredHeights = next }
-            }
             .onChange(of: clip.id) { _, _ in
                 measuredHeights = [:]
                 rowMetrics = [:]
                 lastEvaluatedWord = nil
                 transcriptBrowseUntil = .distantPast
-            }
-            .onPreferenceChange(KaraokeRowFrames.self) { frames in
-                guard landscapeReadingWindow else { return }
-                let next = rowMetrics.merging(frames.mapValues(KaraokeRowMetrics.init)) { _, updated in updated }
-                if next != rowMetrics { rowMetrics = next }
             }
         }
         .background {
@@ -175,11 +138,10 @@ struct LiveTranscriptPanel: View {
 
     private func staticWindow(_ indices: [Int], spacing: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: spacing) {
-            ForEach(indices, id: \.self) { index in
+            ForEach(Array(indices.enumerated()), id: \.offset) { _, index in
                 Group {
                     if clip.lines.indices.contains(index) {
                         windowLine(index)
-                            .transition(.opacity)
                     } else {
                         Color.clear
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -187,17 +149,14 @@ struct LiveTranscriptPanel: View {
                     }
                 }
                 .padding(.horizontal, Spacing.m)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
             }
         }
         .padding(.top, topPad)
         .padding(.bottom, Spacing.s)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity, alignment: .leading)
-        // Keep the next/previous candidates mounted offscreen so heights stay warm for
-        // the window calculator without painting into the next feed page.
-        .background(alignment: .top) {
-            measureNeighbors(of: indices)
-        }
     }
 
     private func scrollingCurrentLine(in size: CGSize) -> some View {
@@ -303,7 +262,8 @@ struct LiveTranscriptPanel: View {
             sentenceMenuPlayer: sentenceMenuPlayer,
             karaokeTime: currentTime,
             lightPaper: usesReadingPlate && JojoPalette.scheme == .light,
-            measuresKaraokeRows: landscapeReadingWindow
+            measuresKaraokeRows: false,
+            singleLineKaraoke: windowMode
         )
         return Group {
             if fadesUpcoming && index > clampedCurrentLine {
@@ -318,11 +278,11 @@ struct LiveTranscriptPanel: View {
                         endPoint: .bottom
                     )
                 }
+                .opacity(0.58)
             } else {
                 line
             }
         }
-        .id(index)
     }
 
     private func follow(_ index: Int, proxy: ScrollViewProxy) {

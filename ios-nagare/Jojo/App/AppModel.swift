@@ -373,10 +373,11 @@ final class AppModel {
         }
         // Only clips whose transcript was taken from the video are study material.
         let verified = merged.filter(\.hasVerifiedTranscript)
-        clips = verified.isEmpty ? merged : verified
-        var indexed = merged
-        var indexedIds = Set(merged.map(\.id))
-        for clip in personalClips where indexedIds.insert(clip.id).inserted {
+        let eligible = verified.isEmpty ? merged : verified
+        clips = eligible.filter(\.isStudyReady)
+        var indexed = clips
+        var indexedIds = Set(clips.map(\.id))
+        for clip in personalClips where clip.isStudyReady && indexedIds.insert(clip.id).inserted {
             indexed.append(clip)
         }
         indexLibrary(indexed)
@@ -422,7 +423,8 @@ final class AppModel {
     /// Bumped when the synced library changes so For You can append new clips.
     var catalogGeneration: Int = 0
 
-    /// Published clips plus the bundled set. A remote row with the same id replaces the bundle.
+    /// Playable, transcript-backed lessons from the published and bundled catalogs.
+    /// A remote row with the same id replaces the bundle before this readiness gate.
     var studyLibrary: [Clip] {
         clips
     }
@@ -1003,7 +1005,7 @@ final class AppModel {
         case .saved: ids = profile.favoriteClipIds.reversed()
         case .later: ids = profile.watchLaterClipIds.reversed()
         }
-        return ids.compactMap { clip(id: $0) }
+        return ids.compactMap { clip(id: $0) }.filter(\.isStudyReady)
     }
 
     /// Rough clips remaining for today's minute goal (~45s average clip).
@@ -1981,6 +1983,11 @@ final class AppModel {
 
     func setGlowLevel(_ level: GlowLevel) {
         profile.glow = level
+        save()
+    }
+
+    func setFullTextGlow(_ enabled: Bool) {
+        profile.fullTextGlow = enabled
         save()
     }
 

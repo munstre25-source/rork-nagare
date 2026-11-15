@@ -18,7 +18,7 @@ nonisolated enum TokenVisualState: Sendable {
 
 /// A three-tier word: furigana (only above kanji), surface, romaji. Always at least 44pt tall and wide.
 /// Hierarchy: mastery-coloured Japanese (amber→green), muted readings, POS underlines,
-/// green spoken cursor, accent tap selection. Glow only on spoken/selected.
+/// green spoken cursor, accent tap selection. The selected glow level applies to every word.
 struct TokenView: View {
     let token: Token
     let state: TokenVisualState
@@ -98,6 +98,7 @@ struct TokenView: View {
                     .font(.system(size: romajiSize, weight: .regular))
                     .foregroundStyle(readingColor.opacity(onPicture ? 0.78 : 0.85))
                     .shadow(color: readingShadow, radius: 2, y: 1)
+                    .textGlow(activeGlowColor, level: activeGlowLevel, boosted: state == .spoken || pulse)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
@@ -287,18 +288,25 @@ struct TokenView: View {
     }
 
     private var activeGlowLevel: GlowLevel {
-        if contrastWord { return .off }
         switch state {
         case .spoken, .selected: return app.profile.glow
-        case .normal: return pulse ? app.profile.glow : .off
+        case .normal: return app.profile.fullTextGlow ? app.profile.glow : .off
         }
     }
 
     private var activeGlowColor: Color {
+        // Amber Contrast uses solid word fills, which can hide the theme's usual green
+        // playback halo. Keep the profile glow preference visible with a neutral rim.
+        if contrastWord {
+            switch state {
+            case .spoken, .selected: return .white
+            case .normal: return .white
+            }
+        }
         switch state {
         case .spoken: return LearningInk.spoken
         case .selected: return LearningInk.selected
-        case .normal: return pulse ? LearningInk.spoken : .clear
+        case .normal: return pulse ? LearningInk.spoken : LearningInk.glow
         }
     }
 

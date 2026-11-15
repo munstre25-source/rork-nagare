@@ -8,6 +8,8 @@ protocol ClipPlayer: AnyObject {
     var currentTime: Double { get }
     var duration: Double { get }
     var isPlaying: Bool { get }
+    /// The learner's intended state. This can differ from `isPlaying` while media buffers.
+    var playbackRequested: Bool { get }
     var rate: Double { get }
     var isMuted: Bool { get }
     var loopRange: ClosedRange<Double>? { get }
@@ -29,8 +31,15 @@ protocol ClipPlayer: AnyObject {
 }
 
 extension ClipPlayer {
+    var playbackRequested: Bool { isPlaying }
+
     func togglePlay() {
-        isPlaying ? pause() : play()
+        if playbackRequested {
+            pause()
+        } else {
+            if currentTime >= duration - 0.05 { seek(to: 0) }
+            play()
+        }
     }
 
     var currentLineIndex: Int { spokenLine }
