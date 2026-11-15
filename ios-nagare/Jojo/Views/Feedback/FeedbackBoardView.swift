@@ -699,6 +699,7 @@ private struct FeedbackPostScreen: View {
         post.commentCount = result.count
         draft = ""
         errorText = nil
+        app.markFeedbackSubmitted()
         onChange(post)
     }
 }
@@ -806,6 +807,7 @@ private struct FeedbackInboxView: View {
         messages.append(message)
         draft = ""
         errorText = nil
+        app.markFeedbackSubmitted()
     }
 }
 
@@ -946,6 +948,7 @@ private struct FeedbackComposer: View {
             errorText = await InsightsService.shared.lastErrorMessage() ?? "Couldn't send — try again in a moment."
             return
         }
+        app.markFeedbackSubmitted()
         onPosted(post)
         dismiss()
     }

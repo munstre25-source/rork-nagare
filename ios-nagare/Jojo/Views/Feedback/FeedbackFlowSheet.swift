@@ -20,7 +20,6 @@ struct FeedbackFlowSheet: View {
     @State private var answered = false
     @State private var markedShown = false
     @State private var showBoard = false
-    @State private var rated = false
     @FocusState private var editorFocused: Bool
 
     private enum Phase { case ask, positive, negative, sent }
@@ -150,17 +149,18 @@ struct FeedbackFlowSheet: View {
             .padding(.horizontal, Spacing.m)
             Spacer(minLength: Spacing.m)
             VStack(spacing: 12) {
-                Button {
-                    rated = true
-                    track("review_request_tapped")
-                    requestReview()
-                } label: {
-                    Label(rated ? "Thanks for rating" : "Rate Jojo", systemImage: "star.fill")
+                if app.shouldOfferAppReview {
+                    Button {
+                        app.markAppReviewRequested()
+                        track("review_request_tapped")
+                        requestReview()
+                    } label: {
+                        Label("Rate Jojo", systemImage: "star.fill")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle(isEnabled: !rated))
-                .disabled(rated)
 
-                Button("Maybe later") { close() }
+                Button(app.shouldOfferAppReview ? "Maybe later" : "Done") { close() }
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                     .frame(minHeight: 44)
@@ -295,18 +295,20 @@ struct FeedbackFlowSheet: View {
     }
 
     /// The App Store rating is offered whatever the answer was (guideline 5.6.1).
+    @ViewBuilder
     private var rateButton: some View {
-        Button {
-            rated = true
-            track("review_request_tapped")
-            requestReview()
-        } label: {
-            Label(rated ? "Thanks for rating" : "Rate Jojo on the App Store", systemImage: "star")
-                .font(.subheadline.weight(.medium))
-                .frame(maxWidth: .infinity, minHeight: 44)
+        if app.shouldOfferAppReview {
+            Button {
+                app.markAppReviewRequested()
+                track("review_request_tapped")
+                requestReview()
+            } label: {
+                Label("Rate Jojo on the App Store", systemImage: "star")
+                    .font(.subheadline.weight(.medium))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.secondary)
-        .disabled(rated)
     }
 
     // MARK: Sent
@@ -351,6 +353,7 @@ struct FeedbackFlowSheet: View {
     private func answerPositive() async {
         answered = true
         isSubmitting = true
+        app.markFeedbackSubmitted()
         track("feedback_prompt_positive")
         // The thanks screen doesn't wait on the network.
         withAnimation(.snappy) { phase = .positive }
@@ -386,6 +389,7 @@ struct FeedbackFlowSheet: View {
             errorText = "Couldn't send. Check your connection and try again."
             return
         }
+        app.markFeedbackSubmitted()
         track("feedback_submitted", props: ["category": category.rawValue, "anonymous": anonymous ? "1" : "0"])
         withAnimation(.snappy) { phase = .sent }
     }

@@ -153,6 +153,10 @@ final class UserProfile {
     /// none | deferred | completed
     var feedbackPromptState: String = "none"
     var feedbackPromptDeferredUntil: Date?
+    /// Set after the learner asks iOS to show the App Store review sheet.
+    var hasRequestedAppReview: Bool = false
+    /// Set after the learner submits feedback from any first-party feedback flow.
+    var hasSubmittedFeedback: Bool = false
     /// Sessions in the main app (after onboarding) — used to time the enjoy/feedback ask.
     var mainAppOpenCount: Int = 0
     /// When onboarding finished; feedback cool-down starts here (nil = legacy / not yet migrated).

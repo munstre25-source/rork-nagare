@@ -30,7 +30,9 @@ final class YouTubeClipPlayer: NSObject, ClipPlayer, WKScriptMessageHandler {
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
 
     @ObservationIgnored private var poller: Task<Void, Never>?
-    @ObservationIgnored private var wantsPlay = false
+    /// Learner intent is observable so every play/pause control updates immediately,
+    /// even while the YouTube embed is still buffering or acknowledging the command.
+    private var wantsPlay = false
     @ObservationIgnored private var watchAccumulator: Double = 0
     @ObservationIgnored private var didFinish = false
     @ObservationIgnored private var clock: Double = 0

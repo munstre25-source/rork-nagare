@@ -479,11 +479,17 @@ struct JojoTests {
                 focused: false
             )
             #expect(layout.videoHeight > 0)
-            #expect(layout.karaokeHeight >= 160)
+            #expect(layout.karaokeHeight >= 220)
             #expect(layout.videoHeight > layout.karaokeHeight)
             #expect(layout.karaokeHeight <= size.height * 0.45)
             #expect(layout.footerHeight > 0)
             #expect(abs(layout.videoHeight + layout.karaokeHeight + layout.footerHeight - size.height) < 0.01)
+
+            let previousLowerArea = min(
+                max(layout.footerHeight + 200, size.height * 0.45, 320),
+                size.height * 0.53
+            )
+            #expect(abs(layout.videoHeight - (size.height - previousLowerArea + 16)) < 0.01)
 
             let hidden = ShortsFeedGeometry.make(
                 in: size,
@@ -539,6 +545,44 @@ struct JojoTests {
         player.togglePlay()
         #expect(player.currentTime == 0)
         #expect(player.playbackRequested)
+    }
+
+    @Test func popupAndOnscreenPlaybackControlsShareOneIntent() {
+        let clip = Clip(
+            id: "playback-intent-test",
+            videoId: "",
+            title: "Playback intent",
+            channelName: "Tests",
+            channelAvatarColor: "#000000",
+            category: "learning",
+            difficulty: "beginner",
+            sourceStartSec: nil,
+            durationSec: 10,
+            lines: [],
+            thumbnailGradient: ["#000000", "#111111"]
+        )
+        let coordinator = PlaybackCoordinator()
+        coordinator.activate(clip)
+        defer { coordinator.stop() }
+        #expect(coordinator.playbackRequested(for: clip))
+
+        // Dictionary/settings presentation temporarily pauses one shared intent.
+        coordinator.pauseForPopup()
+        #expect(!coordinator.playbackRequested(for: clip))
+
+        // A play then pause choice inside settings must survive sheet dismissal.
+        coordinator.togglePlayback(for: clip)
+        #expect(coordinator.playbackRequested(for: clip))
+        coordinator.togglePlayback(for: clip)
+        #expect(!coordinator.playbackRequested(for: clip))
+        coordinator.resumeAfterPopupIfNeeded()
+        #expect(!coordinator.playbackRequested(for: clip))
+
+        // With no explicit choice, closing a popup restores prior playback.
+        coordinator.togglePlayback(for: clip)
+        coordinator.pauseForPopup()
+        coordinator.resumeAfterPopupIfNeeded()
+        #expect(coordinator.playbackRequested(for: clip))
     }
 
     @Test func feedPageReanchorWaitsPastChromeAnimation() {
@@ -778,6 +822,21 @@ struct JojoTests {
                 SupabaseError.function(429, "Jojo AI limit reached")
             ).contains("limit")
         )
+    }
+
+    @Test func completedReviewAndFeedbackActionsAreRemembered() throws {
+        let app = try makeApp()
+        #expect(app.shouldOfferAppReview)
+        #expect(!app.profile.hasSubmittedFeedback)
+
+        app.markAppReviewRequested()
+        app.markFeedbackSubmitted()
+
+        #expect(!app.shouldOfferAppReview)
+        #expect(app.profile.hasRequestedAppReview)
+        #expect(app.profile.hasSubmittedFeedback)
+        #expect(app.profile.feedbackPromptState == "completed")
+        #expect(!app.shouldPresentFeedbackPrompt)
     }
 
     private func makeWord(_ key: String, state: SRSState, due: Date, seen: Int) -> SavedWord {

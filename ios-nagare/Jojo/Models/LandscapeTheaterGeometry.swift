@@ -100,10 +100,14 @@ nonisolated struct ShortsFeedGeometry {
         // changes subtitle visibility; the dedicated focus control is the sole size toggle.
         // The slightly shorter well gives portrait video a little more room without crowding
         // complete subtitle rows. The footer is included in this lower-area budget.
-        let lowerArea = min(
+        let baselineLowerArea = min(
             max(footer + 200, height * 0.45, preferredCaptionHeight),
             height * 0.53
         )
+        // Give the default portrait picture a subtle lift while protecting enough room
+        // for three karaoke rows. Very short viewports keep their existing allocation.
+        let protectedThreeRowArea = min(baselineLowerArea, footer + 220)
+        let lowerArea = max(protectedThreeRowArea, baselineLowerArea - 16)
         let karaoke = max(0, lowerArea - footer)
         return Self(
             videoHeight: max(0, height - lowerArea),

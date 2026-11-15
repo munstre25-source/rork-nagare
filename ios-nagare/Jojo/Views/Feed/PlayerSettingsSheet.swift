@@ -301,6 +301,21 @@ struct PlayerSettingsSheet: View {
 
     private var playbackSection: some View {
         Section {
+            Button {
+                Haptics.selection()
+                coordinator.togglePlayback(for: clip)
+            } label: {
+                Label(
+                    coordinator.playbackRequested(for: clip) ? "Pause video" : "Play video",
+                    systemImage: coordinator.playbackRequested(for: clip) ? "pause.fill" : "play.fill"
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentTransition(.symbolEffect(.replace))
+            }
+            .accessibilityLabel(
+                coordinator.playbackRequested(for: clip) ? "Pause video" : "Play video"
+            )
+
             Picker(selection: Binding(
                 get: { coordinator.preferredRate },
                 set: { target in

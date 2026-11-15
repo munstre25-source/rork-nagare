@@ -41,7 +41,7 @@ struct ClipVideoView: View {
             if embedFailed {
                 embedFailure
             }
-            if player?.playbackRequested != true, !coordinator.isHoldSlowActive, !embedFailed {
+            if !coordinator.playbackRequested(for: clip), !coordinator.isHoldSlowActive, !embedFailed {
                 Image(systemName: "play.fill")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)
@@ -92,11 +92,7 @@ struct ClipVideoView: View {
                 onRevealWatchChrome()
                 return
             }
-            if let player {
-                withAnimation(.snappy) { player.togglePlay() }
-            } else {
-                onActivate()
-            }
+            withAnimation(.snappy) { togglePlayback() }
         }
         .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 48, pressing: { pressing in
             if pressing {
@@ -112,7 +108,7 @@ struct ClipVideoView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(clip.title) video")
         .accessibilityHint("Double tap to save the current line. Hold to slow and loop.")
-        .accessibilityAction(named: "Play or pause") { player?.togglePlay() }
+        .accessibilityAction(named: "Play or pause") { togglePlayback() }
         .accessibilityAction(named: "Save current line") { doubleTapSave() }
         .accessibilityAction(named: "Save to favorites") { _ = app.toggleFavorite(clip.id) }
         .overlay(alignment: .topLeading) { sourceBadge }
@@ -143,6 +139,15 @@ struct ClipVideoView: View {
         Haptics.selection()
         coordinator.pauseForPopup()
         showFeatureRequest = true
+    }
+
+    private func togglePlayback() {
+        if coordinator.player(for: clip) == nil {
+            // Some surfaces intentionally activate at a chosen sentence or loop range.
+            onActivate()
+        } else {
+            coordinator.togglePlayback(for: clip)
+        }
     }
 
     private func doubleTapSave() {

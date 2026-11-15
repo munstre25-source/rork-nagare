@@ -16,6 +16,7 @@ final class PlaybackCoordinator {
     @ObservationIgnored var onFinished: (() -> Void)?
     @ObservationIgnored var onWatchTick: ((Double) -> Void)?
     @ObservationIgnored private var resumeAfterPopup = false
+    private(set) var popupPlaybackRequested: Bool?
     @ObservationIgnored private var rateBeforeHold: Double = 1
     @ObservationIgnored private var loopBeforeHold: ClosedRange<Double>?
     /// Next clip's player, warmed while the current one plays so swiping starts instantly.
@@ -185,20 +186,55 @@ final class PlaybackCoordinator {
 
     /// Pauses for the word popup, remembering whether to resume.
     func pauseForPopup() {
-        guard let player else { return }
+        guard let player else {
+            popupPlaybackRequested = nil
+            return
+        }
         resumeAfterPopup = player.playbackRequested
         player.pause()
+        popupPlaybackRequested = false
     }
 
     func resumeAfterPopupIfNeeded() {
         if resumeAfterPopup { player?.play() }
         resumeAfterPopup = false
+        popupPlaybackRequested = nil
+    }
+
+    func playbackRequested(for clip: Clip) -> Bool {
+        guard player?.clip.id == clip.id else { return false }
+        return popupPlaybackRequested ?? (player?.playbackRequested == true)
+    }
+
+    /// Single play/pause path for the video surface, feed controls, and presented sheets.
+    /// If a dictionary card or settings sheet is open, the choice also replaces the
+    /// automatic resume intent so dismissal cannot undo the learner's last tap.
+    func togglePlayback(for clip: Clip) {
+        if player?.clip.id != clip.id {
+            activate(clip)
+            if popupPlaybackRequested != nil {
+                resumeAfterPopup = true
+                popupPlaybackRequested = true
+            }
+            return
+        }
+
+        if playbackRequested(for: clip) {
+            player?.pause()
+        } else {
+            player?.togglePlay()
+        }
+        if popupPlaybackRequested != nil {
+            resumeAfterPopup = player?.playbackRequested == true
+            popupPlaybackRequested = resumeAfterPopup
+        }
     }
 
     func stop() {
         cancelPreload()
         player?.teardown()
         player = nil
+        popupPlaybackRequested = nil
     }
 
     /// Persist resume point for cold start.

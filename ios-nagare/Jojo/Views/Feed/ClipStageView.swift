@@ -765,7 +765,7 @@ struct ClipStageView: View {
     /// Japanese wraps naturally inside a vertically scrollable transcript window.
     private func shortsKaraokeBand(player: (any ClipPlayer)?, width: CGFloat, height: CGFloat) -> some View {
         let verticalInset: CGFloat = 8
-        transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
+        return transcript(player: player, showsLearningControls: false, showsLineTools: false, onPicture: true)
             .frame(
                 width: max(0, width - 76),
                 height: max(0, height - verticalInset * 2),
@@ -963,10 +963,9 @@ private struct TheaterPlaybackControls: View {
             ? AnyLayout(VStackLayout(spacing: 4))
             : AnyLayout(HStackLayout(spacing: 4))
         return layout {
-            control(player?.playbackRequested == true ? "pause.fill" : "play.fill",
-                    label: player?.playbackRequested == true ? "Pause" : "Play") {
-                if player == nil { coordinator.activate(clip) }
-                else { player?.togglePlay() }
+            control(coordinator.playbackRequested(for: clip) ? "pause.fill" : "play.fill",
+                    label: coordinator.playbackRequested(for: clip) ? "Pause" : "Play") {
+                coordinator.togglePlayback(for: clip)
             }
 
             Button {
@@ -1233,17 +1232,16 @@ struct ClipActionRow: View {
 
                 Button {
                     Haptics.selection()
-                    if player == nil { coordinator.activate(clip) }
-                    else { player?.togglePlay() }
+                    coordinator.togglePlayback(for: clip)
                 } label: {
-                    Image(systemName: player?.playbackRequested == true ? "pause.fill" : "play.fill")
+                    Image(systemName: coordinator.playbackRequested(for: clip) ? "pause.fill" : "play.fill")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.primary)
                         .frame(width: 28, height: 28)
                         .background(Color.fieldFill, in: Circle())
                         .frame(width: 30, height: 44)
                 }
-                .accessibilityLabel(player?.playbackRequested == true ? "Pause" : "Play")
+                .accessibilityLabel(coordinator.playbackRequested(for: clip) ? "Pause" : "Play")
 
                 SubtitlesToggleButton(tint: .secondary, activeTint: .sakuraPink)
 

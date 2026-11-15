@@ -83,6 +83,7 @@ struct AppReviewStepView: View {
             )
         }
         .onAppear {
+            if !app.shouldOfferAppReview { didAskReview = true }
             withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { appeared = true }
             animateStars()
         }
@@ -132,6 +133,7 @@ struct AppReviewStepView: View {
         // Stay on this screen. `requestReview()` is fire-and-forget and the system
         // sheet often appears after a delay — advancing immediately dropped it onto
         // the acquisition questionnaire instead.
+        app.markAppReviewRequested()
         requestReview()
         withAnimation(.snappy) { didAskReview = true }
     }

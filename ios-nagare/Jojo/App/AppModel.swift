@@ -2294,9 +2294,30 @@ final class AppModel {
     /// by the main tabs (calm moments only).
     var shouldPresentFeedbackPrompt: Bool {
         guard profile.onboardingCompleted,
+              !profile.hasSubmittedFeedback,
               profile.feedbackPromptState != "completed",
               !experiencePrompt.hasShown else { return false }
         return experiencePrompt.thresholdsMet
+    }
+
+    /// App Review requests are learner-triggered and should only be offered once.
+    var shouldOfferAppReview: Bool {
+        !profile.hasRequestedAppReview
+    }
+
+    func markAppReviewRequested() {
+        guard !profile.hasRequestedAppReview else { return }
+        profile.hasRequestedAppReview = true
+        save()
+    }
+
+    /// Prevents the automatic feedback ask after feedback was sent elsewhere in the app.
+    func markFeedbackSubmitted() {
+        profile.hasSubmittedFeedback = true
+        profile.feedbackPromptState = "completed"
+        profile.feedbackPromptDeferredUntil = nil
+        experiencePrompt.markShown()
+        save()
     }
 
     /// Records that the prompt appeared. It never returns, whatever the answer.

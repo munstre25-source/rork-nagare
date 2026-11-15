@@ -158,11 +158,12 @@ struct LiveTranscriptPanel: View {
                       !geometry.frame.isEmpty,
                       geometry.frame.minY.isFinite,
                       geometry.frame.maxY.isFinite else { return }
+                let anchor = followAnchor(for: geometry.anchor.lineIndex)
                 if reduceMotion {
-                    proxy.scrollTo(geometry.anchor, anchor: .center)
+                    proxy.scrollTo(geometry.anchor, anchor: anchor)
                 } else {
                     withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.25)) {
-                        proxy.scrollTo(geometry.anchor, anchor: .center)
+                        proxy.scrollTo(geometry.anchor, anchor: anchor)
                     }
                 }
             }
@@ -180,9 +181,13 @@ struct LiveTranscriptPanel: View {
                 if !presented, Date.now >= transcriptBrowseUntil { follow(clampedCurrentLine, proxy: proxy) }
             }
             .onChange(of: size.height) { _, _ in
-                if Date.now >= transcriptBrowseUntil { proxy.scrollTo(clampedCurrentLine, anchor: .center) }
+                if Date.now >= transcriptBrowseUntil {
+                    proxy.scrollTo(clampedCurrentLine, anchor: followAnchor(for: clampedCurrentLine))
+                }
             }
-            .onAppear { proxy.scrollTo(clampedCurrentLine, anchor: .center) }
+            .onAppear {
+                proxy.scrollTo(clampedCurrentLine, anchor: followAnchor(for: clampedCurrentLine))
+            }
         }
     }
 
@@ -230,13 +235,20 @@ struct LiveTranscriptPanel: View {
         guard clip.lines.indices.contains(index) else { return }
         lastEvaluatedWord = nil
         sentenceScrollUntil = Date.now.addingTimeInterval(reduceMotion ? 0 : 0.45)
+        let anchor = followAnchor(for: index)
         if reduceMotion {
-            proxy.scrollTo(index, anchor: .center)
+            proxy.scrollTo(index, anchor: anchor)
         } else {
             withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.45)) {
-                proxy.scrollTo(index, anchor: .center)
+                proxy.scrollTo(index, anchor: anchor)
             }
         }
+    }
+
+    /// The opening line begins at the top of the karaoke well. Once a previous line
+    /// exists, the active line settles in the middle and the transcript moves around it.
+    private func followAnchor(for lineIndex: Int) -> UnitPoint {
+        lineIndex == clip.lines.startIndex ? .top : .center
     }
 
     private var lineStack: some View {
