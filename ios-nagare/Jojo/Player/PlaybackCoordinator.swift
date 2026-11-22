@@ -30,6 +30,7 @@ final class PlaybackCoordinator {
     }
 
     func activate(_ clip: Clip, autoplay: Bool = true, startLine: Int? = nil, loopLine: Bool = false, seekTime: Double? = nil) {
+        if activeClipId != clip.id { endHoldSlow() }
         let defaults = PlaybackDefaults.applyCategoryDefaults(for: clip, hasManualRate: hasManualRate)
         if !hasManualRate {
             preferredRate = defaults.rate
@@ -231,6 +232,7 @@ final class PlaybackCoordinator {
     }
 
     func stop() {
+        endHoldSlow()
         cancelPreload()
         player?.teardown()
         player = nil

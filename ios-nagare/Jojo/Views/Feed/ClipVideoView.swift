@@ -21,9 +21,6 @@ struct ClipVideoView: View {
     var onShadowing: (() -> Void)?
     /// Shows the entire picture inside the frame, the way the maximized feed does.
     var fitsFrame: Bool = false
-    /// Feed focus: a tap on the video brings the chrome back instead of pausing.
-    var watchChromeHidden: Bool = false
-    var onRevealWatchChrome: () -> Void = {}
     /// Advance the feed when a YouTube embed cannot be recovered.
     var onSkip: (() -> Void)? = nil
 
@@ -32,7 +29,7 @@ struct ClipVideoView: View {
     @Environment(\.openURL) private var openURL
     @State private var saveBurst: Bool = false
     @State private var savedWordLabel: String?
-    @State private var holdHint: Bool = false
+    @GestureState private var holdingToSlow = false
     @State private var showFeatureRequest = false
 
     var body: some View {
@@ -85,26 +82,23 @@ struct ClipVideoView: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { doubleTapSave() }
-        .onTapGesture(count: 1) {
-            if embedFailed { return }
-            if watchChromeHidden {
-                onRevealWatchChrome()
-                return
-            }
-            withAnimation(.snappy) { togglePlayback() }
-        }
-        .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 48, pressing: { pressing in
-            if pressing {
-                if player == nil { onActivate() }
+        .gesture(videoGesture)
+        .onChange(of: holdingToSlow) { _, holding in
+            if holding {
+                guard !embedFailed else { return }
+                if coordinator.player(for: clip) == nil { onActivate() }
+                guard coordinator.activeClipId == clip.id else { return }
                 coordinator.beginHoldSlow()
-                withAnimation(.snappy) { holdHint = true }
                 Haptics.medium()
-            } else {
+            } else if coordinator.activeClipId == clip.id {
                 coordinator.endHoldSlow()
-                withAnimation(.snappy) { holdHint = false }
             }
-        }, perform: {})
+        }
+        .onDisappear {
+            if coordinator.activeClipId == clip.id && holdingToSlow {
+                coordinator.endHoldSlow()
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(clip.title) video")
         .accessibilityHint("Double tap to save the current line. Hold to slow and loop.")
@@ -133,6 +127,26 @@ struct ClipVideoView: View {
             ClipFeatureRequestSheet(contextNote: "While watching “\(clip.title)”.")
         }
         .clipped()
+    }
+
+    private var videoGesture: some Gesture {
+        let hold = LongPressGesture(minimumDuration: 0.35, maximumDistance: 48)
+            .sequenced(before: DragGesture(minimumDistance: 0))
+            .updating($holdingToSlow) { phase, holding, _ in
+                // The second phase lasts from hold recognition until release or cancellation.
+                if case .second(true, _) = phase { holding = true }
+            }
+        let taps = TapGesture(count: 2).exclusively(before: TapGesture())
+            .onEnded { tap in
+                switch tap {
+                case .first:
+                    doubleTapSave()
+                case .second:
+                    guard !embedFailed else { return }
+                    withAnimation(.snappy) { togglePlayback() }
+                }
+            }
+        return hold.exclusively(before: taps)
     }
 
     private func openFeatureRequest() {

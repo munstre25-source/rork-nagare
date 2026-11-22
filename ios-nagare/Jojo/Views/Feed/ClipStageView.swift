@@ -311,8 +311,6 @@ struct ClipStageView: View {
                             onInfo: immersiveFeed ? nil : onInfo,
                             onShadowing: immersiveFeed ? nil : onShadowing,
                             fitsFrame: false,
-                            watchChromeHidden: watchChromeHidden,
-                            onRevealWatchChrome: onRevealWatchChrome,
                             onSkip: onSkip
                         )
                         .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
@@ -378,8 +376,6 @@ struct ClipStageView: View {
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     fitsFrame: true,
-                    watchChromeHidden: watchChromeHidden,
-                    onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
@@ -481,8 +477,6 @@ struct ClipStageView: View {
                     onInfo: immersiveFeed ? nil : onInfo,
                     onShadowing: immersiveFeed ? nil : onShadowing,
                     fitsFrame: maximized,
-                    watchChromeHidden: watchChromeHidden,
-                    onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
                 .modifier(ClipVideoFrame(width: videoWidth, height: videoHeight, aspect: resolvedAspect))
@@ -616,8 +610,6 @@ struct ClipStageView: View {
                     onActivate: onActivate,
                     onFullscreen: onFullscreen,
                     fitsFrame: true,
-                    watchChromeHidden: false,
-                    onRevealWatchChrome: onRevealWatchChrome,
                     onSkip: onSkip
                 )
                 // Explicit width: an aspect-fill poster must never widen the stack.
