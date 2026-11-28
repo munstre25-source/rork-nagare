@@ -61,6 +61,10 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
+      - name: Install the pinned Supabase CLI
+        run: |
+          cli=$(npm exec --yes --package=supabase@3.4.0 -- which supabase)
+          printf '%s\n' "$(dirname "$cli")" >> "$GITHUB_PATH"
       - name: Deploy approved functions to Supabase
         env:
           FUNCTION_PLAN: ${{ needs.validate.outputs.functions }}
@@ -78,5 +82,5 @@ jobs:
               true) ;;
               *) exit 1 ;;
             esac
-            npx --yes supabase@3.4.0 functions deploy "$slug" --remote="$SUPABASE_PROJECT_REF" --use-api --yes "${flags[@]}"
+            supabase functions deploy "$slug" --remote="$SUPABASE_PROJECT_REF" --use-api --yes "${flags[@]}"
           done <<< "$rows"
