@@ -1,5 +1,6 @@
 import { applyLocalAlignment, snapshotJson, type LocalAlignment } from "../_shared/local-alignment.ts";
 import { startPipeline, updatePipeline, failureStatus, sealCatalogLines } from "../_shared/pipeline.ts";
+import { MissingWordDefinitions } from "../_shared/catalog-word-definitions.ts";
 import { corsPreflight, errorResponse, jsonResponse, readJson } from "../_shared/http.ts";
 import { isAdminOrCron } from "../_shared/admin.ts";
 import { serviceClient } from "../_shared/supabase.ts";
@@ -153,6 +154,12 @@ export async function handler(req: Request): Promise<Response> {
       changedTranslations: changed, category, timingPreserved: !body.repairTiming, repairedWordLines, lineIndexesPreserved: true, lines: merged, reviewedLineIndexes: indexes,
     });
   } catch (error) {
+    if (error instanceof MissingWordDefinitions) {
+      if (attempt) await updatePipeline(serviceClient(), attempt, {
+        status: "held", stage: "quality_gate", reason: "word_definitions", detail: error.message.slice(0, 300),
+      }).catch(() => {});
+      return errorResponse(422, error.message);
+    }
     if (error instanceof AiBudgetError) {
       if (attempt) await updatePipeline(serviceClient(), attempt, { status: "held", stage: "budget", reason: "gemini_cap", detail: "Shared AI spending allowance reached; retry after allowance is available" }).catch(() => {});
       return errorResponse(429, "AI processing allowance reached");

@@ -1,0 +1,104 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios-nagare/supabase/functions/**'
+      - '!ios-nagare/supabase/functions/**/*.md'
+      - 'ios-nagare/supabase/config.toml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-edge
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ios-nagare
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      deployments: read
+    outputs:
+      functions: ${{ steps.plan.outputs.functions }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+        with:
+          deno-version: v2.9.6
+      - name: Type-check and test Edge Functions
+        run: |
+          mapfile -t entries < <(find supabase/functions -type f \( -name index.ts -o -name '*_test.ts' -o -name '*.test.ts' \) | sort)
+          deno check --config supabase/functions/deno.json --frozen-lockfile "${entries[@]}"
+          deno test --config supabase/functions/deno.json --frozen-lockfile --allow-env supabase/functions
+      - name: List deployment targets for approval
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deployments=$(gh api --paginate --method GET "repos/$GITHUB_REPOSITORY/deployments" \
+            -f environment=supabase-production -F per_page=100 --jq '.[] | [.id, .sha] | @tsv')
+          base=
+          while IFS=$'\t' read -r deployment revision; do
+            [[ -n "$deployment" ]] || continue
+            successful=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$deployment/statuses" \
+              --jq 'any(.[]; .state == "success")')
+            if [[ "$successful" == true ]]; then
+              base=$revision
+              break
+            fi
+          done <<< "$deployments"
+          if [[ -z "$base" ]]; then
+            base=$(jq -er '.git_base' supabase/audit/production-2026-11-28/manifest.json)
+          fi
+          functions=$(python3 supabase/tools/plan-edge-deploy.py "$base" "$GITHUB_SHA")
+          printf 'functions=%s\n' "$functions" >> "$GITHUB_OUTPUT"
+          printf '### Supabase deployment plan\n\nBase: `%s`\nRevision: `%s`\n\n' "$base" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$functions" == '[]' ]]; then
+            printf 'No runtime functions changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' "$functions" | jq -r '.[] | "- `\(.name)` with gateway JWT verification \(.verify_jwt)"' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deploy:
+    needs: validate
+    if: needs.validate.outputs.functions != '[]'
+    runs-on: ubuntu-24.04
+    environment: supabase-production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Supabase CLI
+        run: |
+          cli=$(npm exec --yes --package=supabase@3.4.0 -- which supabase)
+          printf '%s\n' "$(dirname "$cli")" >> "$GITHUB_PATH"
+      - name: Deploy approved functions to Supabase
+        env:
+          FUNCTION_PLAN: ${{ needs.validate.outputs.functions }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          : "${SUPABASE_ACCESS_TOKEN:?Set the environment-scoped deployment token}"
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]]
+          rows=$(printf '%s' "$FUNCTION_PLAN" | jq -er '.[] | [.name, .verify_jwt] | @tsv')
+          while IFS=$'\t' read -r slug verify_jwt; do
+            [[ "$slug" =~ ^[a-z][a-z0-9-]*$ ]]
+            flags=()
+            case "$verify_jwt" in
+              false) flags+=(--no-verify-jwt) ;;
+              true) ;;
+              *) exit 1 ;;
+            esac
+            supabase functions deploy "$slug" --remote="$SUPABASE_PROJECT_REF" --use-api --yes "${flags[@]}"
+          done <<< "$rows"
