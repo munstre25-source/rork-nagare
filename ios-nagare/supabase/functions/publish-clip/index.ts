@@ -10,6 +10,8 @@ import { catalogTable, parseLanguage } from "../_shared/catalog.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { LineLike, validateEnums, validateLines } from "../_shared/validate.ts";
 import { checkYouTubeVideo, ERROR_MESSAGES } from "../_shared/immersion.ts";
+import { MissingWordDefinitions } from "../_shared/catalog-word-definitions.ts";
+import { AiBudgetError } from "../_shared/gemini.ts";
 
 type Body = {
   id?: string;
@@ -141,6 +143,18 @@ Deno.serve(async (req) => {
     if (attempt) await updatePipeline(supabase, attempt, { status: "published", stage: "published", clip_id: id });
     return jsonResponse({ clip: data });
   } catch (err) {
+    if (err instanceof AiBudgetError) {
+      if (pipelineAttempt) await updatePipeline(serviceClient(), pipelineAttempt, {
+        status: "held", stage: "budget", reason: "gemini_cap", detail: "AI processing allowance reached",
+      }).catch(() => {});
+      return errorResponse(429, "AI processing allowance reached");
+    }
+    if (err instanceof MissingWordDefinitions) {
+      if (pipelineAttempt) await updatePipeline(serviceClient(), pipelineAttempt, {
+        status: "held", stage: "quality_gate", reason: "word_definitions", detail: err.message.slice(0, 300),
+      }).catch(() => {});
+      return errorResponse(422, err.message);
+    }
     if (pipelineAttempt) await updatePipeline(serviceClient(), pipelineAttempt, { status: "failed", stage: "error", reason: "publication_error", detail: err instanceof Error ? err.message.slice(0, 300) : "Publication failed" }).catch(() => {});
     const message = err instanceof Error ? err.message : "";
     if (message.startsWith("Missing required env")) {

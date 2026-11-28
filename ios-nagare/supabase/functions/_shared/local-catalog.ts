@@ -1,6 +1,7 @@
 import { applyLocalAlignment, type LocalAlignment } from "./local-alignment.ts";
 import { translationQualityIssue } from "./validate.ts";
 import type { TranslationSource } from "./translation-review.ts";
+import { requireWordDefinitions } from "./catalog-word-definitions.ts";
 export const LOCAL_ASR_MODEL = "Qwen/Qwen3-ASR-0.6B";
 export const LOCAL_ASR_REVISION = "5eb144179a02acc5e5ba31e748d22b0cf3e303b0";
 export const LOCAL_WHISPER_MODEL = "dropbox-dash/faster-whisper-large-v3-turbo";
@@ -38,7 +39,7 @@ export function validateLocalCatalogClip(clip: LocalCatalogClip): TranslationSou
   // Do not trust or retain caller-supplied review claims.
   const source = {videoId: clip.video_id, sourceStartSec: clip.source_start_sec, durationSec: clip.duration_sec,
     lines: clip.lines.map(({ translationReview: _ignored, ...line }) => line)};
-  return applyLocalAlignment(source, clip.alignment);
+  return requireWordDefinitions(applyLocalAlignment(source, clip.alignment));
 }
 export function seconds(iso: string): number {
   const match = /^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/.exec(iso);

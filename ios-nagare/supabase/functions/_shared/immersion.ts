@@ -15,6 +15,7 @@ import { CatalogLanguage, languageName } from "./catalog.ts";
 import { hearSystemCatalog } from "./enrich.ts";
 import { normalizeHeardLines, subtitleEnrichmentIssue } from "./subtitle-data.ts";
 import { sealCatalogLines } from "./pipeline.ts";
+import { MissingWordDefinitions } from "./catalog-word-definitions.ts";
 import { reviewJapaneseTranslations } from "./translation-review.ts";
 import { repairWordTiming } from "./word-timing.ts";
 import { geminiModelAnalyze, geminiModelTranslationReview, subtitlePromptVersion, requireEnv } from "./env.ts";
@@ -208,6 +209,7 @@ export type AnalyzeFailure =
   | "no_dialogue"
   | "transcript_invalid"
   | "translation_unverified"
+  | "word_definitions"
   | "gemini_cap"
   | "model_payment"
   | "model_rejected"
@@ -403,6 +405,7 @@ export async function analyzeWindow(
 }
 
 function classifyModelError(err: unknown): { reason: AnalyzeFailure; detail: string } {
+  if (err instanceof MissingWordDefinitions) return { reason: "word_definitions", detail: err.message };
   if (err instanceof AiBudgetError) return { reason: "gemini_cap", detail: "Shared AI spending allowance reached" };
   if (err instanceof GeminiError) {
     if (err.paymentRequired) return { reason: "model_payment", detail: err.message.slice(0, 160) };

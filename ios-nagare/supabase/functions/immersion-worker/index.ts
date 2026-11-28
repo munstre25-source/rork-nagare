@@ -208,6 +208,7 @@ async function runJob(supabase: Supabase, worker: string, job: Job): Promise<Rec
     case "model_retryable":
       await retryOrFail(supabase, worker, job, "model_timeout", outcome.detail);
       return { outcome: "retry", reason: outcome.reason };
+    case "word_definitions":
     case "enrichment_failed":
       await retryOrFail(supabase, worker, job, "model_unavailable", outcome.detail);
       return { outcome: "retry", reason: outcome.reason };

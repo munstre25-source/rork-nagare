@@ -83,7 +83,7 @@ export async function handler(req: Request): Promise<Response> {
       return jsonResponse({videos,paidApiCalls:0});
     }
     const clips=body.clips;
-    if (!Array.isArray(clips) || !clips.length || clips.length>5) return errorResponse(400,"Provide 1–5 locally processed clips");
+    if (!Array.isArray(clips) || !clips.length || clips.length>20) return errorResponse(400,"Provide 1–20 locally processed clips");
     const metadata=await youtube("videos",{part:"snippet,contentDetails,status",id:clips.map(c=>c.video_id).join(",")});
     const videos=new Map((metadata.items ?? []).map((v: {id:string})=>[v.id,v]));
     const accepted:string[]=[],rejected:Array<{id:string;reason:string}>=[];
