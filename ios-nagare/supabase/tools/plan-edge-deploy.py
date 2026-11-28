@@ -70,8 +70,8 @@ def plan(before, after):
 
     changed = {
         repo / path.decode()
-        for path in git("diff", "--name-only", "--no-renames", "-z", before, after, "--",
-                        FUNCTIONS.relative_to(repo).as_posix()).split(b"\0")
+        for path in git("diff", "--name-only", "--no-renames", "--no-relative", "-z", before, after, "--",
+                        ":(top)" + FUNCTIONS.relative_to(repo).as_posix()).split(b"\0")
         if path
     }
     runtime_changes = {path for path in changed if runtime_file(path)}
