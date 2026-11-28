@@ -8,7 +8,7 @@
 | Edge Functions | GitHub Actions workflow `deploy-supabase-edge.yml` on relevant pushes to `main` |
 | iOS | Revyl remote release build and App Store Connect upload |
 
-The Edge workflow type-checks the pinned Deno dependencies, runs the Edge tests, and identifies affected functions before it requests production approval. It checks direct function changes and follows shared imports transitively. Changes to an established shared dependency lock may require deploying every dependent bundle. A documentation or test-only change cannot deploy a function. Production runs queue without canceling an in-progress deployment.
+The Edge workflow type-checks the pinned Deno dependencies, runs the Edge tests, and identifies affected functions before it requests production approval. It checks direct function changes and follows shared imports transitively. Changes to an established shared dependency lock may require deploying every dependent bundle. The workflow serializes production runs and plans from the last successful deployment, or from the initial audit revision before the first success. If a newer push replaces a pending run, the next plan still includes the undeployed changes.
 
 ## Credentials and approval
 

@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: supabase-production-edge
-  queue: max
+  cancel-in-progress: false
 
 defaults:
   run:
@@ -23,6 +23,9 @@ defaults:
 jobs:
   validate:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      deployments: read
     outputs:
       functions: ${{ steps.plan.outputs.functions }}
     steps:
@@ -41,11 +44,26 @@ jobs:
       - name: List deployment targets for approval
         id: plan
         env:
-          BEFORE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          functions=$(python3 supabase/tools/plan-edge-deploy.py "$BEFORE_SHA" "$GITHUB_SHA")
+          deployments=$(gh api --paginate --method GET "repos/$GITHUB_REPOSITORY/deployments" \
+            -f environment=supabase-production -F per_page=100 --jq '.[] | [.id, .sha] | @tsv')
+          base=
+          while IFS=$'\t' read -r deployment revision; do
+            [[ -n "$deployment" ]] || continue
+            successful=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$deployment/statuses" \
+              --jq 'any(.[]; .state == "success")')
+            if [[ "$successful" == true ]]; then
+              base=$revision
+              break
+            fi
+          done <<< "$deployments"
+          if [[ -z "$base" ]]; then
+            base=$(jq -er '.git_base' supabase/audit/production-2026-11-28/manifest.json)
+          fi
+          functions=$(python3 supabase/tools/plan-edge-deploy.py "$base" "$GITHUB_SHA")
           printf 'functions=%s\n' "$functions" >> "$GITHUB_OUTPUT"
-          printf '### Supabase deployment plan\n\nRevision: `%s`\n\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          printf '### Supabase deployment plan\n\nBase: `%s`\nRevision: `%s`\n\n' "$base" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
           if [[ "$functions" == '[]' ]]; then
             printf 'No runtime functions changed.\n' >> "$GITHUB_STEP_SUMMARY"
           else
