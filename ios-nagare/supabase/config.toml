@@ -1,0 +1,78 @@
+project_id = "jojo-ios"
+
+# Gateway settings match the audited production function inventory.
+
+[functions.admin-dashboard]
+verify_jwt = true
+
+[functions.admin-insights]
+verify_jwt = true
+
+[functions.admin-pipeline]
+verify_jwt = true
+
+[functions.analytics-ingest]
+verify_jwt = true
+
+[functions.analyze-clip]
+verify_jwt = true
+
+[functions.audit-embeds]
+verify_jwt = true
+
+[functions.catalog-inventory]
+verify_jwt = false
+
+[functions.delete-my-data]
+verify_jwt = true
+
+[functions.direct-messages]
+verify_jwt = true
+
+[functions.explain-word]
+verify_jwt = true
+
+[functions.feedback-board]
+verify_jwt = true
+
+[functions.fill-catalog]
+verify_jwt = true
+
+[functions.immersion-health]
+verify_jwt = true
+
+[functions.immersion-submit]
+verify_jwt = true
+
+[functions.immersion-worker]
+verify_jwt = true
+
+[functions.ingest-caption-clips]
+verify_jwt = true
+
+[functions.ingest-local-clips]
+verify_jwt = true
+
+[functions.publish-clip]
+verify_jwt = true
+
+[functions.report-playback]
+verify_jwt = true
+
+[functions.review-catalog]
+verify_jwt = false
+
+[functions.seed-catalog-sources]
+verify_jwt = true
+
+[functions.submit-acquisition]
+verify_jwt = true
+
+[functions.submit-feedback]
+verify_jwt = true
+
+[functions.youtube-embed]
+verify_jwt = true
+
+[functions.youtube-search]
+verify_jwt = true

@@ -10,3 +10,15 @@ node_modules
 !.env.example
 **/supabase/.temp/
 .rork-tmp-rec/
+.vercel/
+
+# Local Apple signing assets and device session state
+/Jojo-Revyl-Signing/
+/supabasetoken
+*.p8
+*.p12
+*.pfx
+*.key
+*.pem
+*.mobileprovision
+**/.revyl/device-sessions.*

@@ -1,0 +1,1401 @@
+{
+  "git_base": "eae5e286d0a3b12d9355d886a950f8f2cc4f3c98",
+  "functions": {
+    "admin-dashboard": {
+      "version": 19,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/analytics.ts": {
+          "git_blob": "0baab9199e1a23e18b03bbc4149dc2b198330110",
+          "sha256": "684e7f8272826d44cceb5958bde79b47d3fb6da9d8b1cf4b19c5e4d8f4e74663"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "admin-dashboard/index.ts": {
+          "git_blob": "9aedb4df038ef44cefe104d3b112d47d115076e9",
+          "sha256": "81c32a46c3ec24ae42b65b0207edc04b7bd13db58aebd41ba2b025e8530220bb"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "admin-insights": {
+      "version": 42,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "admin-insights/index.ts": {
+          "git_blob": "460289f953a2a14d95508567bde2e32f0431d1b2",
+          "sha256": "67eea7a1d9a52fdf29958c7267fce8a69b1361415b8e7444848234779265e123"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "admin-pipeline": {
+      "version": 11,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "admin-pipeline/index.ts": {
+          "git_blob": "6ca0425aa2b11cd919b7e0af52be45a7e3d22e87",
+          "sha256": "04922c09ac13d7da52240ca8d2a20092b3040624ce6281852983242562f17a34"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "analytics-ingest": {
+      "version": 17,
+      "verify_jwt": true,
+      "files": {
+        "_shared/analytics.ts": {
+          "git_blob": "0baab9199e1a23e18b03bbc4149dc2b198330110",
+          "sha256": "684e7f8272826d44cceb5958bde79b47d3fb6da9d8b1cf4b19c5e4d8f4e74663"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/identity.ts": {
+          "git_blob": "51a4bddf0878c1e467025b83c2bf5e46739cd7b1",
+          "sha256": "4372e2e57cce7f2485a1f2266a63a5fae66137faf90a0e1927ba0e83ee1b5dc6"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "analytics-ingest/index.ts": {
+          "git_blob": "41f76a026e3b91b1c1b614d34abe4dd951b67eba",
+          "sha256": "405b3fa462d0db825d4de0db90e60c7a7f5a435c747c17a8ade695955045eb43"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "analyze-clip": {
+      "version": 73,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "cf66e0c7116d8f149c9db45712eb6a66b8100823",
+          "sha256": "aa76e4ec397ec3dcf7686ed9486ee7d474ed6db31a7037f354d244a34185a98c"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "analyze-clip/index.ts": {
+          "git_blob": "5773e4767d2df42b0b9bd430733054f09f1047fd",
+          "sha256": "67e284b7dc6dc0664317cc246b04be5df7115e600b684f950d1eb97f9876ba4f"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "audit-embeds": {
+      "version": 19,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "44ea50a7ce07523f20f3893437da538779f8f767",
+          "sha256": "c03030e0b00bea86afa9e8493c834151dc6650baeb9d1d0fc5066e416f0bad87"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "722cfb43ebb190c32beb5ed572c2dfa97751e16c",
+          "sha256": "5e891a58e64099e21c2f82a9d6740778f5d1b1e9f5178fe7f32a7e6167dea153"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "a660866f7b7cd4e88d3500d838e2cdb069ee9f4e",
+          "sha256": "412c2808a9fcb168eb0a301ad6e8dd4ea177cde312269bcd374b1e8cc7394e58"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "audit-embeds/index.ts": {
+          "git_blob": "ad5480d9450d8d0a0c4b1b1bc117f03bfba278a1",
+          "sha256": "ae03139e6672611d67289d8c9e2381cacfd2b4e10facdb503ef58b2129ccdc2c"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "_shared/translation-review.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/translation-review.ts"
+      ]
+    },
+    "catalog-inventory": {
+      "version": 2,
+      "verify_jwt": false,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "catalog-inventory/index.ts": {
+          "git_blob": "a7cc5ff015987cc412a3189d3bc362789939df86",
+          "sha256": "baa66656a03a9ad2b0466517d74a6914c5274ba18ae27d1d1be7a420b1bf972f",
+          "snapshot": "sources/catalog-inventory/index.ts"
+        }
+      },
+      "worktree_differences": [
+        "catalog-inventory/index.ts"
+      ],
+      "git_differences": [
+        "catalog-inventory/index.ts"
+      ]
+    },
+    "delete-my-data": {
+      "version": 21,
+      "verify_jwt": true,
+      "files": {
+        "_shared/analytics.ts": {
+          "git_blob": "0baab9199e1a23e18b03bbc4149dc2b198330110",
+          "sha256": "684e7f8272826d44cceb5958bde79b47d3fb6da9d8b1cf4b19c5e4d8f4e74663"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "44ea50a7ce07523f20f3893437da538779f8f767",
+          "sha256": "c03030e0b00bea86afa9e8493c834151dc6650baeb9d1d0fc5066e416f0bad87"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "722cfb43ebb190c32beb5ed572c2dfa97751e16c",
+          "sha256": "5e891a58e64099e21c2f82a9d6740778f5d1b1e9f5178fe7f32a7e6167dea153"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "a660866f7b7cd4e88d3500d838e2cdb069ee9f4e",
+          "sha256": "412c2808a9fcb168eb0a301ad6e8dd4ea177cde312269bcd374b1e8cc7394e58"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "delete-my-data/index.ts": {
+          "git_blob": "a982b00a73e130caf55228296ee17ae8c84d6b2e",
+          "sha256": "6c1099af31e0aaa45e621eed3f5d89842ed24faaf52a92924d4ffa069634cc90"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "_shared/translation-review.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/translation-review.ts"
+      ]
+    },
+    "direct-messages": {
+      "version": 32,
+      "verify_jwt": true,
+      "files": {
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "direct-messages/index.ts": {
+          "git_blob": "b15c33a93d7481d2d3c8e207cd5069f221956323",
+          "sha256": "61518c29bd6210716f6725ba4a14655a985bab15180c376f795404a1321b26c9"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "explain-word": {
+      "version": 59,
+      "verify_jwt": true,
+      "files": {
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/explain.ts": {
+          "git_blob": "984d699b7aa09e95cfc139b1782a9630a1e0ac14",
+          "sha256": "6c54bf99978e83d4efbcf45915a4280e9bf2a4940a977aab1f6a1be68a1a378c"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "2c2d5d822288c23c7e809dad530d5aff873bb2a6",
+          "sha256": "01bd1328fe4318cf4a123bc0d7e1d282f26987d1c391bf9dd8399ee1cb0a1828"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/identity.ts": {
+          "git_blob": "51a4bddf0878c1e467025b83c2bf5e46739cd7b1",
+          "sha256": "4372e2e57cce7f2485a1f2266a63a5fae66137faf90a0e1927ba0e83ee1b5dc6"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/revenuecat.ts": {
+          "git_blob": "b5dcd8a10d6714fa9e5bbdb2715d117c202f1cf5",
+          "sha256": "e0913d377e3b685e03ee59d9e89c26000645508019ed1b015b202012443cafc6"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "explain-word/index.ts": {
+          "git_blob": "bd0eb99ccba6da3f2f3ab31485dc1984664a845e",
+          "sha256": "00985d4b1eab7bc24ad6e2c671dc44877a1498a5bf98714ce0d353f8d57cbe65"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts",
+        "explain-word/index.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts",
+        "explain-word/index.ts"
+      ]
+    },
+    "feedback-board": {
+      "version": 33,
+      "verify_jwt": true,
+      "files": {
+        "_shared/analytics.ts": {
+          "git_blob": "0baab9199e1a23e18b03bbc4149dc2b198330110",
+          "sha256": "684e7f8272826d44cceb5958bde79b47d3fb6da9d8b1cf4b19c5e4d8f4e74663"
+        },
+        "_shared/env.ts": {
+          "git_blob": "0057feafa89707d54dbda355d92374815ba054fe",
+          "sha256": "8e65630ff61cb667a8a10eefd6dc9701649d99e13a68051314616c032a617062"
+        },
+        "_shared/feedback.ts": {
+          "git_blob": "3c4f38752258aa2cdca4c9dec50ea19e8e724224",
+          "sha256": "aa6e129d9a8c346eebd6b1abfb5dcf509f223bcab0d94fbb94cb97b2216310b7"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/identity.ts": {
+          "git_blob": "51a4bddf0878c1e467025b83c2bf5e46739cd7b1",
+          "sha256": "4372e2e57cce7f2485a1f2266a63a5fae66137faf90a0e1927ba0e83ee1b5dc6"
+        },
+        "_shared/moderation.ts": {
+          "git_blob": "aa1ddc6a683957ca1f3b8064ddc380f21ef7d0a6",
+          "sha256": "0ed079a152ad74be0eb6754fea106817046391f8cef166d2f712ed8b7dfa9ac4"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "feedback-board/index.ts": {
+          "git_blob": "26ca13a6ff5f2013ba97e50b87be6e22fef725ed",
+          "sha256": "99064c63e69f72f7132f8f3d1196042cf851093313a6b83c826f7af23a22a2b8"
+        }
+      },
+      "worktree_differences": [
+        "_shared/env.ts"
+      ],
+      "git_differences": [
+        "_shared/env.ts"
+      ]
+    },
+    "fill-catalog": {
+      "version": 88,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "cf66e0c7116d8f149c9db45712eb6a66b8100823",
+          "sha256": "aa76e4ec397ec3dcf7686ed9486ee7d474ed6db31a7037f354d244a34185a98c"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "fill-catalog/index.ts": {
+          "git_blob": "24dfbd5bf449b855253cb7bca54dd41e0b3b816c",
+          "sha256": "1850d3a2e3a3ea72c3e6bca83c5613a37c388198e4e1a36bd6d80a3ec51c78c6"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "immersion-health": {
+      "version": 29,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "aad3df056d277e21a03bd407c2ff9aee88c79cb5",
+          "sha256": "bcc1f9bc044d77b77e195312bb58910679fffc5e78856e9b81c1767a76d98941"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "immersion-health/index.ts": {
+          "git_blob": "57b89f5ef4313cacc2d21b1e79991aa4349bc357",
+          "sha256": "209c0d885cee22a1646c54d7f643f60a4b8bc50825e962f8b7c20f2d3d32bd94"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts"
+      ]
+    },
+    "immersion-submit": {
+      "version": 25,
+      "verify_jwt": true,
+      "files": {
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "44ea50a7ce07523f20f3893437da538779f8f767",
+          "sha256": "c03030e0b00bea86afa9e8493c834151dc6650baeb9d1d0fc5066e416f0bad87"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "722cfb43ebb190c32beb5ed572c2dfa97751e16c",
+          "sha256": "5e891a58e64099e21c2f82a9d6740778f5d1b1e9f5178fe7f32a7e6167dea153"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "a660866f7b7cd4e88d3500d838e2cdb069ee9f4e",
+          "sha256": "412c2808a9fcb168eb0a301ad6e8dd4ea177cde312269bcd374b1e8cc7394e58"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "immersion-submit/index.ts": {
+          "git_blob": "86662fd3a11db38680c4e262e6c1073868739690",
+          "sha256": "1255ce901dcb5706266498efa025276aafb28216eddb685b5f0fdc5ed8735562"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "_shared/translation-review.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/translation-review.ts"
+      ]
+    },
+    "immersion-worker": {
+      "version": 41,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "cf66e0c7116d8f149c9db45712eb6a66b8100823",
+          "sha256": "aa76e4ec397ec3dcf7686ed9486ee7d474ed6db31a7037f354d244a34185a98c"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "immersion-worker/index.ts": {
+          "git_blob": "d839e18ab04f564dc8cfda959d7088be6d1ad2a6",
+          "sha256": "2ce60b7326b0413ef744f0ccf2213cedcd40f143cc04172590921495ffa5edd0"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "ingest-caption-clips": {
+      "version": 10,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "ingest-caption-clips/index.ts": {
+          "git_blob": "db578b0832dc224c5c9e9fcd1aa33063ccbbb50c",
+          "sha256": "101ca80e73cf997b594e5058dad2c09cd7b790d86195291d4850b5751a561693"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "ingest-local-clips": {
+      "version": 7,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/local-alignment.ts": {
+          "git_blob": "dace99e7300087f299ca1cb74adbd34d2198fdd6",
+          "sha256": "4ca930ec283e427a16ebedb8af2b61eae52af77d7ced00301aa17b6f0c015262"
+        },
+        "_shared/local-catalog.ts": {
+          "git_blob": "c3d8171ab3356800fe1a8d7eb5fb0aa86fc83a21",
+          "sha256": "cb7ac26f27a1c76647f5f0f76f314d0596b94e331d9146efcf352d7463b20cd3"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "ingest-local-clips/index.ts": {
+          "git_blob": "ef2ee66b4f2ebe167dc161a6e23e48451f4c41df",
+          "sha256": "d546ee0a00dd266e22c0a7e94ef298bbef506cc38f71a6e9d5ee63ef0148ad8e",
+          "snapshot": "sources/ingest-local-clips/index.ts"
+        }
+      },
+      "worktree_differences": [
+        "_shared/local-catalog.ts"
+      ],
+      "git_differences": [
+        "ingest-local-clips/index.ts"
+      ]
+    },
+    "publish-clip": {
+      "version": 60,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "cf66e0c7116d8f149c9db45712eb6a66b8100823",
+          "sha256": "aa76e4ec397ec3dcf7686ed9486ee7d474ed6db31a7037f354d244a34185a98c"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "publish-clip/index.ts": {
+          "git_blob": "d66d2c2706ebd36788fc6b09a2782e523ba7eb00",
+          "sha256": "3a3b835b267aa452a917051f975bfd15f75b44e4547a32a7f6b6efb069c6c21f"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "publish-clip/index.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "report-playback": {
+      "version": 13,
+      "verify_jwt": true,
+      "files": {
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/feedback.ts": {
+          "git_blob": "3c4f38752258aa2cdca4c9dec50ea19e8e724224",
+          "sha256": "aa6e129d9a8c346eebd6b1abfb5dcf509f223bcab0d94fbb94cb97b2216310b7"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/identity.ts": {
+          "git_blob": "51a4bddf0878c1e467025b83c2bf5e46739cd7b1",
+          "sha256": "4372e2e57cce7f2485a1f2266a63a5fae66137faf90a0e1927ba0e83ee1b5dc6"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "report-playback/index.ts": {
+          "git_blob": "69a2283bbf766c8e55e6a449f11e59d0c3f41bd5",
+          "sha256": "80d298ff7909bf3b42caa62420aaf9edfa0c9bdcfaf2a0d730ee4bdb91429338"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "review-catalog": {
+      "version": 25,
+      "verify_jwt": false,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "0fd46da13b8a359872805ac52751d8c941b4bbdf",
+          "sha256": "6d55adbcfb9a112916fc6182cf57385ad885e585a2cd75d7cacafa13a4cecef6"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/local-alignment.ts": {
+          "git_blob": "dace99e7300087f299ca1cb74adbd34d2198fdd6",
+          "sha256": "4ca930ec283e427a16ebedb8af2b61eae52af77d7ced00301aa17b6f0c015262"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "84742a7acb409704ee9479201c89b2106b510d28",
+          "sha256": "de300abf97eaf6650bcfe3ba897f5a71d050b402cbd424b2adfe01f68d062dab"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "_shared/word-timing.ts": {
+          "git_blob": "b82ea730e4b6d297ed7041bfee80e184a624146e",
+          "sha256": "d47f0b8d3c39169f463392a344fae4d540c6f9a43f4e0a6cd1f7d0b8cc95510c"
+        },
+        "review-catalog/index.ts": {
+          "git_blob": "f452227e75cae37cb2b1261084b4d0598db770d3",
+          "sha256": "11086c71b1b0b54a5f19b686693a413651fb840caa20af733bbb6532e9a23ed8"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "review-catalog/index.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/limits.ts"
+      ]
+    },
+    "seed-catalog-sources": {
+      "version": 16,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/content-classification.ts": {
+          "git_blob": "e61390873cef97a69d907aaa8a4b359fb96f9fe5",
+          "sha256": "78ab7b8d14b5c8b4033d3f02637dd24c5af9cf91ea4acdbb2a0662a939dcae28"
+        },
+        "_shared/enrich.ts": {
+          "git_blob": "fef16bbf757abbe18bc7ade8d061b1b41cfc8dce",
+          "sha256": "28465561be2e2c4484cade5d055528202079b1338b5dcc49e55db50e40384375"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/gemini.ts": {
+          "git_blob": "44ea50a7ce07523f20f3893437da538779f8f767",
+          "sha256": "c03030e0b00bea86afa9e8493c834151dc6650baeb9d1d0fc5066e416f0bad87"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/immersion.ts": {
+          "git_blob": "722cfb43ebb190c32beb5ed572c2dfa97751e16c",
+          "sha256": "5e891a58e64099e21c2f82a9d6740778f5d1b1e9f5178fe7f32a7e6167dea153"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/openrouter-budget.ts": {
+          "git_blob": "d543171984530df8374bb1ad1fa3d2fffdc2075e",
+          "sha256": "fdfbd96bc8c823f4b399ad0c670f6554e736fe8cc726bfc6a9c9c6f91b006750"
+        },
+        "_shared/pipeline.ts": {
+          "git_blob": "0a65f27cfd463061764b2adc65f7cf2ff958ceff",
+          "sha256": "058e62699e8cbd20afec4f76267202281e1dfdd7f474fba1936d2e314aba6e77"
+        },
+        "_shared/subtitle-data.ts": {
+          "git_blob": "f070d4d444a9df47a22d8c14fa7d59f68160e6ea",
+          "sha256": "2ca846253a05f43bb23587162c2862afacba49f179b7c256914e8aa056f4febe"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/timing.ts": {
+          "git_blob": "02d0aa5a9c325fcebfe5cd02d4e295b653428846",
+          "sha256": "469dd849e59a12ef1bc24b9e591452cfab92d3952b513bec6b73da8bc602c432"
+        },
+        "_shared/translation-review.ts": {
+          "git_blob": "a660866f7b7cd4e88d3500d838e2cdb069ee9f4e",
+          "sha256": "412c2808a9fcb168eb0a301ad6e8dd4ea177cde312269bcd374b1e8cc7394e58"
+        },
+        "_shared/validate.ts": {
+          "git_blob": "b8dad9c83c39c214aa1f0d8782b715bdd233a998",
+          "sha256": "fe8ab83d7c057ca23af3d7304ef5145230d259ac00d241b65022585f2501ed49"
+        },
+        "seed-catalog-sources/index.ts": {
+          "git_blob": "471cc16a94ad03b238ac2e5aaf40055afacf04e1",
+          "sha256": "c34c8bdc7250ad6e3d36b6a41244e189f71762daa0aaf1c7e74ee25550ae1850"
+        }
+      },
+      "worktree_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/pipeline.ts",
+        "_shared/translation-review.ts"
+      ],
+      "git_differences": [
+        "_shared/gemini.ts",
+        "_shared/immersion.ts",
+        "_shared/limits.ts",
+        "_shared/translation-review.ts"
+      ]
+    },
+    "submit-acquisition": {
+      "version": 41,
+      "verify_jwt": true,
+      "files": {
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "submit-acquisition/index.ts": {
+          "git_blob": "52212cc7e1c61c623018593a4cdb5ba2bed76b44",
+          "sha256": "bfcebf8edb7aab93296b648bfc2092c2e8d872a416ad350c3fc3fcb44e02f9ad"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "submit-feedback": {
+      "version": 44,
+      "verify_jwt": true,
+      "files": {
+        "_shared/analytics.ts": {
+          "git_blob": "0baab9199e1a23e18b03bbc4149dc2b198330110",
+          "sha256": "684e7f8272826d44cceb5958bde79b47d3fb6da9d8b1cf4b19c5e4d8f4e74663"
+        },
+        "_shared/env.ts": {
+          "git_blob": "297b72363db4f733d3809794f76d3435fbb25cfc",
+          "sha256": "76620b18522328ccf4d94d8d4841406f624ed99b8f93a328df88f3732ab6a2cd"
+        },
+        "_shared/feedback.ts": {
+          "git_blob": "3c4f38752258aa2cdca4c9dec50ea19e8e724224",
+          "sha256": "aa6e129d9a8c346eebd6b1abfb5dcf509f223bcab0d94fbb94cb97b2216310b7"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/identity.ts": {
+          "git_blob": "51a4bddf0878c1e467025b83c2bf5e46739cd7b1",
+          "sha256": "4372e2e57cce7f2485a1f2266a63a5fae66137faf90a0e1927ba0e83ee1b5dc6"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "_shared/user.ts": {
+          "git_blob": "705f52d8e9ee640500c51d4e114d9385157c964c",
+          "sha256": "b1559963cd25c8e7f69e7a0e734ad4b4b40e199a15db76a3720e4bdced644c94"
+        },
+        "submit-feedback/index.ts": {
+          "git_blob": "8db18e1c0d78ca0e1d86c7a65c24e75ab8a6ebc3",
+          "sha256": "d7c5533aebff7f49c97807feb5dffab2318ead2ed0d3bc411c7a7e059b1aeb19"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "youtube-embed": {
+      "version": 14,
+      "verify_jwt": true,
+      "files": {
+        "youtube-embed/index.ts": {
+          "git_blob": "83877fdd0a58869cb38381507c6f953a1d0fd069",
+          "sha256": "f19a181e8e7f16a916f717e4796c74aa5cf35165c327a819cdf89f7b333478ce"
+        }
+      },
+      "worktree_differences": [],
+      "git_differences": []
+    },
+    "youtube-search": {
+      "version": 41,
+      "verify_jwt": true,
+      "files": {
+        "_shared/admin.ts": {
+          "git_blob": "3306b08342c751f0e7d0a8a6daa804138c01e934",
+          "sha256": "7546ce0d8815bf1d3e30bb5795ccbcc44cbf8725984967eaf64e24d3041d314c"
+        },
+        "_shared/catalog.ts": {
+          "git_blob": "be50789da129b015edc412d57455e85930076668",
+          "sha256": "c6d46ef98346abc848eced6318a40d12288bc847f504023c1abe2aebedd26b70"
+        },
+        "_shared/env.ts": {
+          "git_blob": "0057feafa89707d54dbda355d92374815ba054fe",
+          "sha256": "8e65630ff61cb667a8a10eefd6dc9701649d99e13a68051314616c032a617062"
+        },
+        "_shared/http.ts": {
+          "git_blob": "fae6432ead2ea6409215cd577702166589797c2b",
+          "sha256": "bc5fe7c750c65d7a5a9eca323a10d876f01e8ee299368a1bfa19289809eacf14"
+        },
+        "_shared/limits.ts": {
+          "git_blob": "82072458ad74a2cbd4d2c9ba3c407d725e0cd212",
+          "sha256": "aa878102a673dcf4a03512408e20c8e14d8f39c9aa4df0f9a82b494a35bafc5e"
+        },
+        "_shared/supabase.ts": {
+          "git_blob": "fc973279fcfab0d5b55eeffc1887bc6bb87b04e1",
+          "sha256": "d390ec69bd1361f893520bc672838a5b40d3a1658ef3dfa501ec4b5a68f67675"
+        },
+        "youtube-search/index.ts": {
+          "git_blob": "7eb81de6b039cc6242908237048cf5dd782219aa",
+          "sha256": "50d5a1b1dcba454b9bf21ea5d99092b0a52fb76a2a35c3a428638703f47e99fd"
+        }
+      },
+      "worktree_differences": [
+        "_shared/env.ts",
+        "_shared/limits.ts"
+      ],
+      "git_differences": [
+        "_shared/env.ts",
+        "_shared/limits.ts"
+      ]
+    }
+  },
+  "migration_versions_only_remote": [
+    "20261029065845",
+    "20261029065918",
+    "20261029065952",
+    "20261103012533"
+  ],
+  "migration_versions_only_local": [
+    "20261029120000",
+    "20261029120100",
+    "20261029120200",
+    "20261029160000",
+    "20261030173000",
+    "20261030180000",
+    "20261030220000",
+    "20261101120000",
+    "20261101130000",
+    "20261101131500",
+    "20261101231929",
+    "20261103013000"
+  ]
+}
